@@ -1,5 +1,11 @@
+# System files
 .DS_Store
+Thumbs.db
+
+# Visual Studio Code
 .vscode/
+
+# JetBrains
 .idea/
 
 .env
