@@ -1,2 +1,10 @@
-# Exclude the project virtual environment from image builds
-.venv
+.gitignore
+
+.venv/
+
+.ruff_cache/
+.mypy_cache/
+
+__pycache__/
+
+Dockerfile

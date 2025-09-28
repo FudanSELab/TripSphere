@@ -22,6 +22,7 @@ dev = [
     "grpcio-tools>=1.75.0",
     "mypy>=1.18.2",
     "mypy-protobuf>=3.6.0",
+    "pyright>=1.1.405",
     "types-grpcio>=1.0.0.20250914",
 ]
 
@@ -32,5 +33,16 @@ tripsphere = { workspace = true }
 members = ["libs/*"]
 
 [tool.ruff]
-extend = "../ruff.toml"
+target-version = "py312"
 extend-exclude = ["libs/tripsphere"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src", "tests"]

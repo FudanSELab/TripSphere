@@ -9,7 +9,11 @@ logger = logging.getLogger(__name__)
 
 class MetadataServiceServicer(metadata_pb2_grpc.MetadataServiceServicer):
     async def GetVersion(
-        self, request: metadata_pb2.GetVersionRequest, context: grpc.aio.ServicerContext
+        self,
+        request: metadata_pb2.GetVersionRequest,
+        context: grpc.aio.ServicerContext[
+            metadata_pb2.GetVersionRequest, metadata_pb2.GetVersionResponse
+        ],
     ) -> metadata_pb2.GetVersionResponse:
         try:
             _version = version("itinerary")
