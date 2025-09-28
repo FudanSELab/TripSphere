@@ -1,8 +1,5 @@
-# Use a Python image with uv pre-installed
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-
-# Install the project into `/app`
-WORKDIR /app
+# First, build the application in the `/app` directory.
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
@@ -10,8 +7,13 @@ ENV UV_COMPILE_BYTECODE=1
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
 
-# Ensure installed tools can be executed out of the box
-ENV UV_TOOL_BIN_DIR=/usr/local/bin
+# Disable Python downloads, because we want to use the system interpreter
+# across both images. If using a managed Python version, it needs to be
+# copied from the build image into the final image.
+ENV UV_PYTHON_DOWNLOADS=0
+
+# Install the project into `/app`
+WORKDIR /app
 
 # Install the project's dependencies using the lockfile and settings
 COPY libs /app/libs
@@ -28,14 +30,32 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Install OpenTelemetry auto instrumentation
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv run opentelemetry-bootstrap -a requirements | uv pip install --requirement -
+    uv run --locked --no-dev opentelemetry-bootstrap -a requirements | uv pip install --requirements -
+
+
+# Then, use a final image without uv
+FROM python:3.12-slim-bookworm
+# It is important to use the image that matches the builder, as the path to the
+# Python executable must be the same, e.g., using `python:3.11-slim-bookworm`
+# will fail.
+
+# Setup a non-root user
+RUN groupadd --system --gid 999 nonroot \
+ && useradd --system --gid 999 --uid 999 --create-home nonroot
+
+# Copy the application from the builder
+COPY --from=builder --chown=nonroot:nonroot /app /app
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Reset the entrypoint, don't invoke `uv`
-ENTRYPOINT []
+# Use the non-root user to run our application
+USER nonroot
 
+# Use `/app` as the working directory
+WORKDIR /app
+
+# Set the OpenTelemetry environment variables
 ENV OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
     OTEL_SERVICE_NAME="trip-itinerary-service" \
     OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317"

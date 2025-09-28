@@ -19,7 +19,7 @@ uv run -m grpc_tools.protoc \
 Third, install the auto instrumentation:
 
 ```shell
-uv run opentelemetry-bootstrap -a requirements | uv pip install --requirement -
+uv run opentelemetry-bootstrap -a requirements | uv pip install --requirements -
 ```
 
 Finally, start the server:
