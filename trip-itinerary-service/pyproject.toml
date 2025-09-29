@@ -23,6 +23,8 @@ dev = [
     "mypy>=1.18.2",
     "mypy-protobuf>=3.6.0",
     "pyright>=1.1.405",
+    "pytest>=8.4.2",
+    "pytest-mock>=3.15.1",
     "types-grpcio>=1.0.0.20250914",
 ]
 
