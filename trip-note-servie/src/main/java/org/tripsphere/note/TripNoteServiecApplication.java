@@ -1,4 +1,4 @@
-package org.tripsphere.trip_note_serviec;
+package org.tripsphere.note;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
