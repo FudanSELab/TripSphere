@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.tripsphere</groupId>
-	<artifactId>trip-note-serviec</artifactId>
+	<artifactId>trip-note-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>trip-note-serviec</name>
+	<name>trip-note-service</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>

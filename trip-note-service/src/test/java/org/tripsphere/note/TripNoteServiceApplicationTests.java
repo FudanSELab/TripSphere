@@ -1,10 +1,10 @@
-package org.tripsphere.trip_note_serviec;
+package org.tripsphere.note;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class TripNoteServiecApplicationTests {
+class TripNoteServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
