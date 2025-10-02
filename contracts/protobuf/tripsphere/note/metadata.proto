@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package tripsphere.note;
+
+option java_multiple_files = true;
+option java_package = "org.tripsphere.note.proto";
+
+service MetadataService {
+  // Get the version of note service.
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
+}
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  string version = 1; // e.g., "0.1.0"
+}
