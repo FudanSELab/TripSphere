@@ -1,4 +1,3 @@
-import argparse
 import logging
 from concurrent import futures
 
@@ -22,14 +21,4 @@ def serve(port: int) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=50051)
-    parser.add_argument("--log_level", type=str, default="INFO")
-    args = parser.parse_args()
-
-    logging.basicConfig(
-        level=args.log_level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-
-    serve(args.port)
+    serve(50051)

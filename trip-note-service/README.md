@@ -1,15 +1,15 @@
-First, generate the gRPC code:
+To generate the gRPC java code:
 
 ```shell
-mvnw clean
-mvnw protobuf:compile
-mvnw protobuf:compile-custom
+./mvnw clean
+./mvnw protobuf:compile
+./mvnw protobuf:compile-custom
 ```
 
 Then, build jar package:
 
 ```shell
-mvnw package
+./mvnw package
 ```
 
 Finally, start the server:

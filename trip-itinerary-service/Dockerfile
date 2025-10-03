@@ -49,16 +49,17 @@ COPY --from=builder --chown=nonroot:nonroot /app /app
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Set the OpenTelemetry environment variables
+ENV OTEL_SERVICE_NAME="trip-itinerary-service" \
+    OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317"
+
 # Use the non-root user to run our application
 USER nonroot
 
 # Use `/app` as the working directory
 WORKDIR /app
 
-# Set the OpenTelemetry environment variables
-ENV OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
-    OTEL_SERVICE_NAME="trip-itinerary-service" \
-    OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317"
+EXPOSE 50051
 
 # Run the gRPC server by default
-CMD ["python", "-m", "itinerary.server"]
+ENTRYPOINT ["python", "-m", "itinerary.server"]
