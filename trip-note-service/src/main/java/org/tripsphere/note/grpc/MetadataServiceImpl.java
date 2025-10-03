@@ -6,9 +6,9 @@ import net.devh.boot.grpc.server.service.GrpcService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
-import org.tripsphere.note.proto.GetVersionRequest;
-import org.tripsphere.note.proto.GetVersionResponse;
-import org.tripsphere.note.proto.MetadataServiceGrpc;
+import org.tripsphere.note.GetVersionRequest;
+import org.tripsphere.note.GetVersionResponse;
+import org.tripsphere.note.MetadataServiceGrpc;
 
 @GrpcService
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
