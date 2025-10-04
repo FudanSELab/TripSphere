@@ -7,7 +7,7 @@ import pytest
 import pytest_mock
 from tripsphere.itinerary import metadata_pb2, metadata_pb2_grpc
 
-from itinerary.services.metadata import MetadataServiceServicer
+from itinerary.grpc.metadata import MetadataServiceServicer
 
 
 @pytest.fixture(scope="module")
