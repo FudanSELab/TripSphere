@@ -4,7 +4,7 @@ from concurrent import futures
 import grpc
 from tripsphere.itinerary import metadata_pb2_grpc
 
-from itinerary.services.metadata import MetadataServiceServicer
+from itinerary.grpc.metadata import MetadataServiceServicer
 
 logger = logging.getLogger(__name__)
 
