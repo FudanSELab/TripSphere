@@ -6,7 +6,8 @@ COPY .mvn/ .mvn/
 COPY mvnw mvnw.cmd ./
 COPY pom.xml ./
 
-RUN ./mvnw -B dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw -B dependency:go-offline
 
 COPY src ./src
 
