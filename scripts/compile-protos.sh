@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# This script is used to generate protobuf files for all services.
+# Useful to ensure code can compile, and provide hints for IDEs.
+# Several dev tools like protoc, uv, mvnw may be required to run this script.
+
 set -eu
 
 compile_service_proto() {

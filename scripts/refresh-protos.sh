@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# This script is used to copy files from contracts/protobuf to service dirs.
+
 set -eu
 
 readonly SRC_DIR="contracts/protobuf"

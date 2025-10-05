@@ -6,4 +6,4 @@ refresh-protos:
 
 .PHONY: compile-protos
 compile-protos:
-	@bash hack/compile-protos.sh $(SERVICE)
+	@bash scripts/compile-protos.sh $(SERVICE)
