@@ -15,8 +15,19 @@ ENV UV_PYTHON_DOWNLOADS=0
 # Install the project into `/app`
 WORKDIR /app
 
-# Install the project's dependencies using the lockfile and settings
 COPY libs /app/libs
+
+# Compile the gRPC Python files
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv run --locked --no-sync --with grpcio-tools -m grpc_tools.protoc \
+        -Ilibs/proto \
+        --python_out=libs/tripsphere/src \
+        --grpc_python_out=libs/tripsphere/src \
+        libs/proto/tripsphere/**/*.proto
+
+# Install the project's dependencies using the lockfile and settings
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -24,7 +35,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
-COPY . /app
+COPY pyproject.toml uv.lock README.md /app/
+COPY src /app/src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
