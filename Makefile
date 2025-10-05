@@ -12,4 +12,4 @@ compile-protos:
 
 .PHONY: build-image
 build-image:
-	@bash hack/build-image.sh $(PREFIX) $(TAG)
+	@bash scripts/build-image.sh $(PREFIX) $(TAG) $(SERVICE)
