@@ -26,6 +26,8 @@ compile_service_proto() {
         echo "[WARN] Skip $service_dir (language not recognized)"
         return
     fi
+
+    echo "[OK] Protos compiled for $service_dir"
 }
 
 compile_proto_java() {
@@ -60,7 +62,7 @@ compile_proto_python() {
 compile_proto_go() {
     local service_dir=$1
 
-    echo "Not Implemented Yet"
+    echo "TODO: Not Implemented Yet"
 }
 
 if [[ $# -eq 0 ]]; then
