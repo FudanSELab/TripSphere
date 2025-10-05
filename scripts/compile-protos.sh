@@ -41,7 +41,12 @@ compile_proto_python() {
     local service_dir=$1
     local src_dir="$service_dir/libs/proto"
     local dest_dir="$service_dir/libs/tripsphere/src"
-    local protos=$(find "$src_dir" -name "*.proto")
+
+    # Clean up old generated gRPC files
+    find "$dest_dir" -type f ! -name "py.typed" ! -name "__init__.py" -delete
+
+    local protos
+    protos=$(find "$src_dir" -name "*.proto")
 
     uv run --project "$service_dir" -m grpc_tools.protoc \
         -I"$src_dir" \
