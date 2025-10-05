@@ -1,48 +1,51 @@
 #!/bin/bash
 set -eu
 
-SRC_DIR="contracts/protobuf"
+readonly SRC_DIR="contracts/protobuf"
 
-refresh_service() {
-  SERVICE_DIR=$1
-  echo "====== Processing $SERVICE_DIR ======"
+refresh_local_proto() {
+    local service_dir=$1
+    local service_lang=""
+    local dest_dir=""
 
-  if [[ -f "$SERVICE_DIR/pom.xml" ]]; then
-    DEST_DIR="$SERVICE_DIR/src/main/proto"
-    echo "Detected Java service, copying protos to $DEST_DIR"
+    echo "====== Refresh $service_dir protos ======"
 
-  elif [[ -f "$SERVICE_DIR/pyproject.toml" ]]; then
-    DEST_DIR="$SERVICE_DIR/libs/proto"
-    echo "Detected Python service, copying protos to $DEST_DIR"
+    if [[ -f "$service_dir/pom.xml" ]]; then
+        service_lang="Java"
+        dest_dir="$service_dir/src/main/proto"
 
-  elif [[ -f "$SERVICE_DIR/go.mod" ]]; then
-    DEST_DIR="$SERVICE_DIR/proto"
-    echo "Detected Go service, copying protos to $DEST_DIR"
+    elif [[ -f "$service_dir/pyproject.toml" ]]; then
+        service_lang="Python"
+        dest_dir="$service_dir/libs/proto"
 
-  else
-    echo "[WARN] Skipping $SERVICE_DIR (language not recognized)"
-    return
-  fi
+    elif [[ -f "$service_dir/go.mod" ]]; then
+        service_lang="Go"
+        dest_dir="$service_dir/proto"
 
-  rm -rf "$DEST_DIR"
-  mkdir -p "$DEST_DIR"
-  cp -r "$SRC_DIR/"* "$DEST_DIR/"
+    else
+        echo "[WARN] Skip $service_dir (language not recognized)"
+        return
+    fi
 
-  echo "[OK] Protos refreshed for $SERVICE_DIR"
+    echo "Detected $service_lang service, refreshing protos in $dest_dir"
+
+    rm -rf "$dest_dir"
+    mkdir -p "$dest_dir"
+    cp -r "$SRC_DIR/"* "$dest_dir/"
+
+    echo "[OK] Protos refreshed for $service_dir"
 }
 
 if [[ $# -eq 0 ]]; then
-  SERVICE_DIRS=(trip-*-service)
+    SERVICE_DIRS=(trip-*-service)
 else
-  SERVICE_DIRS=("$@")
+    SERVICE_DIRS=("$@")
 fi
 
 for dir in "${SERVICE_DIRS[@]}"; do
-  if [[ -d "$dir" ]]; then
-    refresh_service "$dir"
-  else
-    echo "[WARN] Directory $dir not found"
-  fi
+    if [[ -d "$dir" ]]; then
+        refresh_local_proto "$dir"
+    else
+        echo "[WARN] Directory $dir not found"
+    fi
 done
-
-echo "[DONE] All protos refreshed!"

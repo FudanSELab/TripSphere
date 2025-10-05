@@ -1,9 +1,15 @@
 # TripSphere
 
-Refresh proto files for a specific service, for example:
+Refresh protobuf files for a specific service. For example, for trip-itinerary-service:
 
 ```shell
-scripts/refresh-protos.sh trip-itinerary-service
+make refresh-protos SERVICE=trip-itinerary-service
 ```
 
-This will copy the latest proto files from `contracts/protobuf` into somewhere `proto` directory of the specified service. Then cd into the service directory and run its command to regenerate the gRPC code.
+This will copy the protobuf files from `contracts/protobuf` to a `proto` directory of the specified service.
+
+Then compile the protobuf files. For example, for trip-itinerary-service:
+
+```shell
+make compile-protos SERVICE=trip-itinerary-service
+```

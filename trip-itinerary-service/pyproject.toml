@@ -2,9 +2,6 @@
 name = "itinerary"
 version = "0.1.0"
 readme = "README.md"
-authors = [
-    { name = "Senyu Xie", email = "senyuxie@qq.com" }
-]
 requires-python = ">=3.12"
 dependencies = [
     "grpcio>=1.75.0",
