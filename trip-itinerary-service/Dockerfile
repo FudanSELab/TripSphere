@@ -63,7 +63,10 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Set the OpenTelemetry environment variables
 ENV OTEL_SERVICE_NAME="trip-itinerary-service" \
-    OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317"
+    OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317" \
+    OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
+    OTEL_PYTHON_LOG_LEVEL="info" \
+    OTEL_PYTHON_LOG_CORRELATION="true"
 
 # Use the non-root user to run our application
 USER nonroot
@@ -74,4 +77,4 @@ WORKDIR /app
 EXPOSE 50051
 
 # Run the gRPC server by default
-ENTRYPOINT ["python", "-m", "itinerary.server"]
+ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "itinerary.server"]

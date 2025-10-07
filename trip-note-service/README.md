@@ -1,6 +1,6 @@
 To generate the gRPC java code:
 
-```shell
+```bash
 ./mvnw clean
 ./mvnw protobuf:compile
 ./mvnw protobuf:compile-custom
@@ -8,12 +8,12 @@ To generate the gRPC java code:
 
 Then, build jar package:
 
-```shell
+```bash
 ./mvnw package
 ```
 
 Finally, start the server:
 
-```shell
+```bash
 java -jar target/trip-note-service-0.1.0.jar
 ```
