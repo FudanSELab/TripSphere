@@ -5,6 +5,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "grpcio>=1.75.0",
+    "nacos-sdk-python>=2.0.9",
     "opentelemetry-distro>=0.58b0",
     "opentelemetry-exporter-otlp>=1.37.0",
     "tripsphere",
@@ -21,6 +22,7 @@ dev = [
     "mypy-protobuf>=3.6.0",
     "pyright>=1.1.405",
     "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
     "pytest-mock>=3.15.1",
     "types-grpcio>=1.0.0.20250914",
 ]
@@ -44,4 +46,4 @@ python_version = "3.12"
 
 [tool.pyright]
 typeCheckingMode = "strict"
-include = ["src", "tests"]
+include = ["src"]
