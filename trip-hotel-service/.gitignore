@@ -31,5 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
-/src/main/java/org/tripsphere/hotel/HotelApplication.java
-/src/main/proto/metadata.proto
+
+### Protobuf ###
+src/main/proto/

@@ -1,8 +1,8 @@
 package org.tripsphere.hotel.dao;
 
-import org.tripsphere.hotel.model.Hotel;
-import org.springframework.stereotype.Repository;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+import org.tripsphere.hotel.model.Hotel;
 
 import java.util.Optional;
 
