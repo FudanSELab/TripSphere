@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tripsphere.hotel;
+
+option java_multiple_files = true;
+option java_package = "org.tripsphere.hotel";
+option java_outer_classname = "MetadataProto";
+
+service MetadataService {
+  // Get the version of hotel service.
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
+}
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  string version = 1; // e.g., "0.1.0"
+}
