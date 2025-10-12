@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     nacos: Nacos = Field(default_factory=Nacos)
 
 
+settings = Settings()
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logger.debug(f"{Settings()}")
+    logger.debug(f"{settings}")

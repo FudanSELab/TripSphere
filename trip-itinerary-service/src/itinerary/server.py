@@ -4,7 +4,9 @@ import logging
 import grpc
 from tripsphere.itinerary import metadata_pb2_grpc
 
+from itinerary.config.settings import settings
 from itinerary.grpc.metadata import MetadataServiceServicer
+from itinerary.nacos.client import NacosNaming
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +17,25 @@ async def serve(port: int) -> None:
         MetadataServiceServicer(), server
     )
     server.add_insecure_port(f"[::]:{port}")
-    logger.info(f"Start gRPC server on port {port}")
+
+    nacos_naming = NacosNaming()
+
+    logger.info(f"Starting gRPC server on port {port}")
     await server.start()
-    await server.wait_for_termination()
+    logger.info("Registering instance with Nacos...")
+    await nacos_naming.register()
+
+    try:
+        # Keep the gRPC server running
+        await server.wait_for_termination()
+    finally:
+        logger.info("Deregistering instance from Nacos...")
+        await nacos_naming.deregister()
+        logger.info("Stopping gRPC server...")
+        await server.stop(5)
 
 
 if __name__ == "__main__":
-    asyncio.run(serve(50051))
+    fmt = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] - %(message)s"
+    logging.basicConfig(level=logging.INFO, format=fmt)
+    asyncio.run(serve(settings.grpc.port))
