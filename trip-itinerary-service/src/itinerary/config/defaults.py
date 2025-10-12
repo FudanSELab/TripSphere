@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class ServiceDefaults(BaseModel):
     name: str = "trip-itinerary-service"
+    namespace: str = "tripsphere"
 
 
 class GrpcDefaults(BaseModel):

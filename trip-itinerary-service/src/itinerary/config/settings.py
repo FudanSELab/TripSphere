@@ -9,17 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 class Service(BaseModel):
-    name: str = Field(defaults.service.name)
+    name: str = Field(default=defaults.service.name)
+    namespace: str = Field(default=defaults.service.namespace)
 
 
 class Grpc(BaseModel):
-    port: int = Field(defaults.grpc.port)
+    port: int = Field(default=defaults.grpc.port)
 
 
 class Nacos(BaseModel):
-    server_address: str = Field(defaults.nacos.server_address)
-    namespace_id: str = Field(defaults.nacos.namespace_id)
-    group_name: str = Field(defaults.nacos.group_name)
+    server_address: str = Field(default=defaults.nacos.server_address)
+    namespace_id: str = Field(default=defaults.nacos.namespace_id)
+    group_name: str = Field(default=defaults.nacos.group_name)
 
 
 class Settings(BaseSettings):
