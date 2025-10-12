@@ -15,7 +15,7 @@ ENV UV_PYTHON_DOWNLOADS=0
 # Install the project into `/app`
 WORKDIR /app
 
-COPY libs /app/libs
+COPY libs ./libs
 
 # Compile the gRPC Python files
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -35,8 +35,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
-COPY pyproject.toml uv.lock README.md /app/
-COPY src /app/src
+COPY pyproject.toml uv.lock README.md .
+COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
@@ -78,3 +78,4 @@ EXPOSE 50051
 
 # Run the gRPC server by default
 ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "itinerary.server"]
+CMD []
