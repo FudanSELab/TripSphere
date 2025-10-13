@@ -17,7 +17,8 @@ public class HotelService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    @Autowired private HotelRepository hotelRepository;
+    @Autowired
+    private HotelRepository hotelRepository;
 
     public int isExist(String id) {
         Hotel checkHotel = new Hotel();
@@ -37,22 +38,19 @@ public class HotelService {
         return hotel.getId();
     }
 
-    public void deleteHotel(String id) {
-        int exist = this.isExist(id);
-        if (exist == 0) {
-            return;
-        }
+    public boolean deleteHotel(String id) {
         Optional<Hotel> hotelOptional = hotelRepository.findById(id);
-        if (hotelOptional.isPresent()) return;
-        Hotel hotel = hotelOptional.get();
-        hotelRepository.delete(hotel);
+        if (hotelOptional.isPresent()) {
+            Hotel hotel = hotelOptional.get();
+            hotelRepository.delete(hotel);
+        } else
+            return false;
+        return true;
     }
 
-    public void changHotel(Hotel hotel) {
-        int exist = this.isExist(hotel.getId());
-        if (exist == 0) return;
+    public boolean changHotel(Hotel hotel) {
         Optional<Hotel> hotelOptionalOld = hotelRepository.findById(hotel.getId());
-        if (hotelOptionalOld.isPresent()) return;
+        if (!hotelOptionalOld.isPresent()) return false;
         Hotel hotelOld = hotelOptionalOld.get();
         hotelOld.setName(hotel.getName());
         hotelOld.setCountry(hotel.getCountry());
@@ -63,6 +61,7 @@ public class HotelService {
         hotelOld.setIntroduction(hotel.getIntroduction());
         hotelOld.setTags(hotel.getTags());
         hotelOld.setRooms(hotel.getRooms());
-        return;
+        hotelRepository.save(hotelOld);
+        return true;
     }
 }

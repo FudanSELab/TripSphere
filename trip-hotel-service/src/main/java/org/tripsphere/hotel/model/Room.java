@@ -1,15 +1,18 @@
 package org.tripsphere.hotel.model;
 
+import lombok.Data;
+
 import java.util.List;
 
+@Data
 public class Room {
-    String name;
-    int total_number;
-    int remaining_number;
-    double bed_width;
-    int bed_number;
-    double min_area;
-    double max_area;
-    int people_number;
-    List<String> tags;
+    private String name;
+    private int total_number;
+    private int remaining_number;
+    private double bed_width;
+    private int bed_number;
+    private double min_area;
+    private double max_area;
+    private int people_number;
+    private List<String> tags;
 }

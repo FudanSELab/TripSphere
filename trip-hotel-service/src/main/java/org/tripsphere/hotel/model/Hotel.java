@@ -20,7 +20,8 @@ import java.util.List;
 @Document("Hotels")
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class Hotel implements Serializable {
-    @Id private String id;
+    @Id
+    private String id;
     private String name;
     private String country;
     private String province;
