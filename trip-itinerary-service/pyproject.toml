@@ -8,6 +8,7 @@ dependencies = [
     "nacos-sdk-python>=2.0.9",
     "opentelemetry-distro>=0.58b0",
     "opentelemetry-exporter-otlp>=1.37.0",
+    "pydantic-settings>=2.11.0",
     "tripsphere",
 ]
 
