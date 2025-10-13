@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package org.tripsphere.hotel;
+
+option java_multiple_files = true;
+option java_package = "org.tripsphere.hotel";
+option java_outer_classname = "HotelServiceProto";
+
+// 房间信息
+message Room {
+  string name = 1;
+  int32 total_number = 2;
+  int32 remaining_number = 3;
+  double bed_width = 4;
+  int32 bed_number = 5;
+  double min_area = 6;
+  double max_area = 7;
+  int32 people_number = 8;
+  repeated string tags = 9;
+}
+// 酒店信息
+message Hotel {
+  string id = 1;
+  string name = 2;
+  string country = 3;
+  string province = 4;
+  string city = 5;
+  string zone = 6;
+  string address = 7;
+  string introduction = 8;
+  repeated string tags = 9;
+  repeated Room rooms = 10;
+}
+
+// 添加酒店请求
+message AddHotelRequest {
+  Hotel hotel = 1;
+}
+
+// 添加酒店响应
+message AddHotelResponse {
+  string id = 1;  // 返回添加成功的酒店ID
+}
+
+// 删除酒店请求
+message DeleteHotelRequest {
+  string id = 1;  // 要删除的酒店ID
+}
+
+// 删除酒店响应
+message DeleteHotelResponse {
+  bool success = 1;
+}
+
+// 修改酒店请求
+message ChangeHotelRequest {
+  Hotel hotel = 1;  // 包含要修改的酒店信息，必须包含ID
+}
+
+// 修改酒店响应
+message ChangeHotelResponse {
+  bool success = 1;
+}
+
+// 酒店服务
+service HotelService {
+  // 添加酒店
+  rpc AddHotel(AddHotelRequest) returns (AddHotelResponse);
+
+  // 删除酒店
+  rpc DeleteHotel(DeleteHotelRequest) returns (DeleteHotelResponse);
+
+  // 修改酒店
+  rpc ChangeHotel(ChangeHotelRequest) returns (ChangeHotelResponse);
+}
