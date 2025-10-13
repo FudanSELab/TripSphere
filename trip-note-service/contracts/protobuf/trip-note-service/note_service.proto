@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package tripsphere.note;
+
+option java_package = "org.tripsphere.note.grpc";
+option java_outer_classname = "NoteServiceProto";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+// Note Service Definition
+service NoteService {
+  // Create a new note
+  rpc CreateNote(CreateNoteRequest) returns (CreateNoteResponse);
+  
+  // Get a note by ID
+  rpc GetNote(GetNoteRequest) returns (GetNoteResponse);
+  
+  // Update an existing note
+  rpc UpdateNote(UpdateNoteRequest) returns (UpdateNoteResponse);
+  
+  // Delete a note
+  rpc DeleteNote(DeleteNoteRequest) returns (DeleteNoteResponse);
+  
+  // List user notes with pagination
+  rpc ListUserNotes(ListUserNotesRequest) returns (ListUserNotesResponse);
+  
+  // Generate AI-powered note content
+  rpc GenerateNoteContent(GenerateNoteContentRequest) returns (GenerateNoteContentResponse);
+}
+
+// Common Types
+message Note {
+  string id = 1;
+  string user_id = 2;
+  string trip_id = 3;
+  string title = 4;
+  string content = 5;
+  NoteType type = 6;
+  repeated string tags = 7;
+  Location location = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  bool is_public = 11;
+  int32 version = 12;
+}
+
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  string address = 3;
+  string place_name = 4;
+}
+
+enum NoteType {
+  NOTE_TYPE_UNSPECIFIED = 0;
+  NOTE_TYPE_TEXT = 1;
+  NOTE_TYPE_PHOTO = 2;
+  NOTE_TYPE_AUDIO = 3;
+  NOTE_TYPE_VIDEO = 4;
+  NOTE_TYPE_MIXED = 5;
+}
+
+// Request/Response Messages
+message CreateNoteRequest {
+  string user_id = 1;
+  string trip_id = 2;
+  string title = 3;
+  string content = 4;
+  NoteType type = 5;
+  repeated string tags = 6;
+  Location location = 7;
+  bool is_public = 8;
+}
+
+message CreateNoteResponse {
+  Note note = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message GetNoteRequest {
+  string note_id = 1;
+  string user_id = 2;
+}
+
+message GetNoteResponse {
+  Note note = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message UpdateNoteRequest {
+  string note_id = 1;
+  string user_id = 2;
+  string title = 3;
+  string content = 4;
+  repeated string tags = 5;
+  Location location = 6;
+  bool is_public = 7;
+}
+
+message UpdateNoteResponse {
+  Note note = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message DeleteNoteRequest {
+  string note_id = 1;
+  string user_id = 2;
+}
+
+message DeleteNoteResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListUserNotesRequest {
+  string user_id = 1;
+  string trip_id = 2; // Optional: filter by trip
+  int32 page = 3;
+  int32 size = 4;
+  string sort_by = 5; // created_at, updated_at, title
+  bool ascending = 6;
+  repeated string tags = 7; // Optional: filter by tags
+  NoteType type = 8; // Optional: filter by type
+}
+
+message ListUserNotesResponse {
+  repeated Note notes = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 size = 4;
+  bool has_next = 5;
+  bool success = 6;
+  string message = 7;
+}
+
+message GenerateNoteContentRequest {
+  string user_id = 1;
+  string trip_id = 2;
+  string prompt = 3;
+  string context = 4; // Optional: existing content or context
+  Location location = 5; // Optional: location context
+  repeated string tags = 6; // Optional: suggested tags
+}
+
+message GenerateNoteContentResponse {
+  string generated_content = 1;
+  repeated string suggested_tags = 2;
+  string suggested_title = 3;
+  bool success = 4;
+  string message = 5;
+}

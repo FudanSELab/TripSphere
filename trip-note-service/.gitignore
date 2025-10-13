@@ -34,3 +34,26 @@ build/
 
 ### Protobuf ###
 src/main/proto/
+libs/tripsphere/
+
+### Environment Variables ###
+.env
+.env.local
+.env.development
+.env.production
+
+### Logs ###
+logs/
+*.log
+
+### Database ###
+*.db
+*.sqlite
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Application Specific ###
+application-local.yml
+application-prod.yml
