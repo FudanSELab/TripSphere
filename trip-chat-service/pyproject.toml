@@ -3,8 +3,48 @@ name = "chat"
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "grpcio>=1.75.1",
+    "nacos-sdk-python>=2.0.9",
+    "opentelemetry-distro>=0.58b0",
+    "opentelemetry-exporter-otlp>=1.37.0",
+    "pydantic-settings>=2.11.0",
+    "tripsphere",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.1,<0.10.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.75.1",
+    "mypy>=1.18.2",
+    "mypy-protobuf>=3.6.0",
+    "pyright>=1.1.406",
+    "pytest>=8.4.2",
+    "types-grpcio>=1.0.0.20251009",
+    "v2-stubs>=2.0.9",
+]
+
+[tool.uv.sources]
+tripsphere = { workspace = true }
+v2-stubs = { path = "../libs/v2-stubs", editable = true }
+
+[tool.uv.workspace]
+members = ["libs/tripsphere"]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["libs/tripsphere"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src"]

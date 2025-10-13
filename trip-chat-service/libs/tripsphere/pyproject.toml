@@ -1,0 +1,11 @@
+[project]
+name = "tripsphere"
+version = "0.1.0"
+readme = "README.md"
+dependencies = [
+    "protobuf>=6.32.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
