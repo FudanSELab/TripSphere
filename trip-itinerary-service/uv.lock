@@ -700,6 +700,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-mock" },
     { name = "types-grpcio" },
+    { name = "v2-stubs" },
 ]
 
 [package.metadata]
@@ -722,6 +723,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-mock", specifier = ">=3.15.1" },
     { name = "types-grpcio", specifier = ">=1.0.0.20250914" },
+    { name = "v2-stubs", editable = "../libs/v2-stubs" },
 ]
 
 [[package]]
@@ -1494,6 +1496,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/15/22/9ee70a2574a4f4599c47dd506532914ce044817c7752a79b6a51286319bc/urllib3-2.5.0.tar.gz", hash = "sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760", size = 393185, upload-time = "2025-06-18T14:07:41.644Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/c2/fe1e52489ae3122415c51f387e221dd0773709bad6c6cdaa599e8a2c5185/urllib3-2.5.0-py3-none-any.whl", hash = "sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc", size = 129795, upload-time = "2025-06-18T14:07:40.39Z" },
+]
+
+[[package]]
+name = "v2-stubs"
+version = "2.0.9"
+source = { editable = "../libs/v2-stubs" }
+dependencies = [
+    { name = "mypy" },
+    { name = "nacos-sdk-python" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mypy", specifier = ">=1.18.2" },
+    { name = "nacos-sdk-python", specifier = "==2.0.9" },
 ]
 
 [[package]]
