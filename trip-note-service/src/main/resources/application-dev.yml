@@ -12,7 +12,3 @@ grpc:
 logging:
   level:
     org.tripsphere.note: DEBUG
-
-app:
-  ai:
-    enabled: false

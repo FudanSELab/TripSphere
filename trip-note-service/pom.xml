@@ -21,7 +21,6 @@
         <protobuf-plugin.version>0.6.1</protobuf-plugin.version>
         <grpc.version>1.58.0</grpc.version>
         <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
-        <spring-ai-alibaba.version>1.0.0-M2</spring-ai-alibaba.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
     </properties>
 
