@@ -1,0 +1,3 @@
+SHOW_CONTENT_SIZE: int
+
+def truncate_content(content: str): ...

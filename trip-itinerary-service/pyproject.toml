@@ -26,10 +26,12 @@ dev = [
     "pytest-asyncio>=1.2.0",
     "pytest-mock>=3.15.1",
     "types-grpcio>=1.0.0.20250914",
+    "v2-stubs>=2.0.9",
 ]
 
 [tool.uv.sources]
 tripsphere = { workspace = true }
+v2-stubs = { path = "../libs/v2-stubs", editable = true }
 
 [tool.uv.workspace]
 members = ["libs/tripsphere"]

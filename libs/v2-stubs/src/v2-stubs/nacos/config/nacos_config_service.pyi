@@ -1,0 +1,29 @@
+from _typeshed import Incomplete
+from typing import Callable
+from v2.nacos.common.client_config import ClientConfig as ClientConfig
+from v2.nacos.common.constants import Constants as Constants
+from v2.nacos.common.nacos_exception import INVALID_PARAM as INVALID_PARAM, NacosException as NacosException
+from v2.nacos.config.cache.config_info_cache import ConfigInfoCache as ConfigInfoCache
+from v2.nacos.config.filter.config_encryption_filter import ConfigEncryptionFilter as ConfigEncryptionFilter
+from v2.nacos.config.filter.config_filter import ConfigFilterChainManager as ConfigFilterChainManager
+from v2.nacos.config.model.config_param import ConfigParam as ConfigParam, UsageType as UsageType
+from v2.nacos.config.remote.config_grpc_client_proxy import ConfigGRPCClientProxy as ConfigGRPCClientProxy
+from v2.nacos.nacos_client import NacosClient as NacosClient
+
+class NacosConfigService(NacosClient):
+    lock: Incomplete
+    config_filter_chain_manager: Incomplete
+    namespace_id: Incomplete
+    config_info_cache: Incomplete
+    last_all_sync_time: Incomplete
+    grpc_client_proxy: Incomplete
+    def __init__(self, client_config: ClientConfig) -> None: ...
+    @staticmethod
+    async def create_config_service(client_config: ClientConfig): ...
+    async def get_config(self, param: ConfigParam) -> str: ...
+    async def publish_config(self, param: ConfigParam) -> bool: ...
+    async def remove_config(self, param: ConfigParam): ...
+    async def add_listener(self, data_id: str, group: str, listener: Callable) -> None: ...
+    async def remove_listener(self, data_id: str, group: str, listener: Callable): ...
+    async def server_health(self) -> bool: ...
+    async def shutdown(self) -> None: ...

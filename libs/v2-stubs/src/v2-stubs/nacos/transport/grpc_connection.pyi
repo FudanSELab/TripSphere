@@ -1,0 +1,23 @@
+import grpc
+from _typeshed import Incomplete
+from collections.abc import Generator
+from v2.nacos.common.nacos_exception import NacosException as NacosException
+from v2.nacos.transport.connection import Connection as Connection
+from v2.nacos.transport.grpc_util import GrpcUtils as GrpcUtils
+from v2.nacos.transport.grpcauto.nacos_grpc_service_pb2 import Payload as Payload
+from v2.nacos.transport.grpcauto.nacos_grpc_service_pb2_grpc import BiRequestStreamStub as BiRequestStreamStub, RequestStub as RequestStub
+from v2.nacos.transport.model.rpc_request import Request as Request
+from v2.nacos.transport.model.rpc_response import Response as Response
+
+class GrpcConnection(Connection):
+    channel: Incomplete
+    client: Incomplete
+    bi_stream_client: Incomplete
+    queue: Incomplete
+    def __init__(self, server_info, connection_id, channel, client: RequestStub, bi_stream_client: BiRequestStreamStub) -> None: ...
+    async def request(self, request: Request, timeout_millis) -> Response: ...
+    def set_channel(self, channel: grpc.Channel) -> None: ...
+    async def close(self) -> None: ...
+    async def send_bi_request(self, payload: Payload) -> None: ...
+    async def request_payloads(self) -> Generator[Incomplete]: ...
+    def bi_stream_send(self): ...

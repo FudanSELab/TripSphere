@@ -1,0 +1,1 @@
+Type stub library for the `v2.nacos` package.
