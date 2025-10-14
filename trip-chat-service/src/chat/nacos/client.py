@@ -27,26 +27,35 @@ class NacosNaming:
             .namespace_id(settings.nacos.namespace_id)
             .build()
         )
+        self.naming_service: NacosNamingService
         self.service_name = settings.service.name
         self.ip = get_local_ip()
         self.port = settings.grpc.port
 
-    async def register(self) -> None:
-        naming_service = await NacosNamingService.create_naming_service(
-            self.client_config
+    @classmethod
+    async def create_naming(cls) -> "NacosNaming":
+        instance = cls()
+        instance.naming_service = await NacosNamingService.create_naming_service(
+            client_config=instance.client_config
         )
-        await naming_service.register_instance(
+        return instance
+
+    async def register(self, ephemeral: bool = True) -> None:
+        await self.naming_service.register_instance(
             request=RegisterInstanceParam(
-                service_name=self.service_name, ip=self.ip, port=self.port
+                ip=self.ip,
+                port=self.port,
+                service_name=self.service_name,
+                ephemeral=ephemeral,
             )
         )
 
-    async def deregister(self) -> None:
-        naming_service = await NacosNamingService.create_naming_service(
-            self.client_config
-        )
-        await naming_service.deregister_instance(
+    async def deregister(self, ephemeral: bool = True) -> None:
+        await self.naming_service.deregister_instance(
             request=DeregisterInstanceParam(
-                service_name=self.service_name, ip=self.ip, port=self.port
+                ip=self.ip,
+                port=self.port,
+                service_name=self.service_name,
+                ephemeral=ephemeral,
             )
         )

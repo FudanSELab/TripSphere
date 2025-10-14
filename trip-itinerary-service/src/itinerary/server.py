@@ -18,19 +18,19 @@ async def serve(port: int) -> None:
     )
     server.add_insecure_port(f"[::]:{port}")
 
-    nacos_naming = NacosNaming()
+    nacos_naming = await NacosNaming.create_naming()
 
     logger.info(f"Starting gRPC server on port {port}")
     await server.start()
     logger.info("Registering instance with Nacos...")
-    await nacos_naming.register()
+    await nacos_naming.register(ephemeral=True)
 
     try:
         # Keep the gRPC server running
         await server.wait_for_termination()
     finally:
         logger.info("Deregistering instance from Nacos...")
-        await nacos_naming.deregister()
+        await nacos_naming.deregister(ephemeral=True)
         logger.info("Stopping gRPC server...")
         await server.stop(5)
 
