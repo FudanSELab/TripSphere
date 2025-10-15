@@ -1,0 +1,59 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Protobuf ###
+src/main/proto/
+libs/tripsphere/
+
+### Environment Variables ###
+.env
+.env.local
+.env.development
+.env.production
+
+### Logs ###
+logs/
+*.log
+
+### Database ###
+*.db
+*.sqlite
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Application Specific ###
+application-local.yml
+application-prod.yml
