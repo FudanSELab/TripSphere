@@ -22,14 +22,15 @@ async def serve(port: int) -> None:
 
     logger.info(f"Starting gRPC server on port {port}")
     await server.start()
-    logger.info("Registering instance with Nacos...")
+    logger.info("Registering service instance...")
     await nacos_naming.register(ephemeral=True)
 
     try:
+        logger.info("Everything is ready. Itinerary service is running.")
         # Keep the gRPC server running
         await server.wait_for_termination()
     finally:
-        logger.info("Deregistering instance from Nacos...")
+        logger.info("Deregistering service instance...")
         await nacos_naming.deregister(ephemeral=True)
         logger.info("Stopping gRPC server...")
         await server.stop(5)
