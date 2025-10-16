@@ -436,7 +436,7 @@ requires-dist = [
 dev = [
     { name = "grpcio-tools", specifier = ">=1.75.1" },
     { name = "mypy", specifier = ">=1.18.2" },
-    { name = "mypy-protobuf", specifier = ">=3.6.0" },
+    { name = "mypy-protobuf", git = "https://github.com/nipunn1313/mypy-protobuf?branch=main" },
     { name = "pyright", specifier = ">=1.1.406" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
@@ -868,14 +868,10 @@ wheels = [
 [[package]]
 name = "mypy-protobuf"
 version = "3.6.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/nipunn1313/mypy-protobuf?branch=main#afdf55f7fbbe334ac1ed2791ef4ece3ad6724dab" }
 dependencies = [
     { name = "protobuf" },
     { name = "types-protobuf" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4d/6f/282d64d66bf48ce60e38a6560753f784e0f88ab245ac2fb5e93f701a36cd/mypy-protobuf-3.6.0.tar.gz", hash = "sha256:02f242eb3409f66889f2b1a3aa58356ec4d909cdd0f93115622e9e70366eca3c", size = 24445, upload-time = "2024-04-01T20:24:42.837Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/73/d6b999782ae22f16971cc05378b3b33f6a89ede3b9619e8366aa23484bca/mypy_protobuf-3.6.0-py3-none-any.whl", hash = "sha256:56176e4d569070e7350ea620262478b49b7efceba4103d468448f1d21492fd6c", size = 16434, upload-time = "2024-04-01T20:24:40.583Z" },
 ]
 
 [[package]]

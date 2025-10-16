@@ -1,4 +1,5 @@
 from importlib.metadata import PackageNotFoundError
+from typing import AsyncGenerator
 
 import grpc
 import pytest
@@ -10,7 +11,7 @@ from chat.grpc.metadata import MetadataServiceServicer
 
 
 @pytest_asyncio.fixture
-async def server_port():
+async def server_port() -> AsyncGenerator[int, None]:
     server = grpc.aio.server()
     metadata_pb2_grpc.add_MetadataServiceServicer_to_server(
         MetadataServiceServicer(), server
@@ -22,7 +23,7 @@ async def server_port():
 
 
 @pytest_asyncio.fixture
-async def channel(server_port: int):
+async def channel(server_port: int) -> AsyncGenerator[grpc.aio.Channel, None]:
     channel = grpc.aio.insecure_channel(f"localhost:{server_port}")
     yield channel
     await channel.close()
@@ -31,8 +32,8 @@ async def channel(server_port: int):
 @pytest.mark.asyncio
 async def test_get_version_success(
     channel: grpc.aio.Channel, mocker: pytest_mock.MockerFixture
-):
-    mocked_version = "3.1.4"
+) -> None:
+    mocked_version = "3.14.0"
     mocker.patch("chat.grpc.metadata.version", return_value=mocked_version)
     stub = metadata_pb2_grpc.MetadataServiceStub(channel)
     response = await stub.GetVersion(metadata_pb2.GetVersionRequest())
@@ -42,7 +43,7 @@ async def test_get_version_success(
 @pytest.mark.asyncio
 async def test_get_version_package_not_found(
     channel: grpc.aio.Channel, mocker: pytest_mock.MockerFixture
-):
+) -> None:
     mocker.patch("chat.grpc.metadata.version", side_effect=PackageNotFoundError)
     stub = metadata_pb2_grpc.MetadataServiceStub(channel)
     with pytest.raises(grpc.RpcError) as exc_info:
