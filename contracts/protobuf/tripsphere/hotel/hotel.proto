@@ -6,7 +6,7 @@ option java_multiple_files = true;
 option java_package = "org.tripsphere.hotel";
 option java_outer_classname = "HotelServiceProto";
 
-// 房间信息
+// room info
 message Room {
   string name = 1;
   int32 total_number = 2;
@@ -18,7 +18,14 @@ message Room {
   int32 people_number = 8;
   repeated string tags = 9;
 }
-// 酒店信息
+
+// the location of hotel
+message Location {
+  double lng = 1;
+  double lat = 2;
+}
+
+// hotel info
 message Hotel {
   string id = 1;
   string name = 2;
@@ -30,46 +37,121 @@ message Hotel {
   string introduction = 8;
   repeated string tags = 9;
   repeated Room rooms = 10;
+  Location location = 11;
 }
 
-// 添加酒店请求
 message AddHotelRequest {
   Hotel hotel = 1;
 }
 
-// 添加酒店响应
 message AddHotelResponse {
-  string id = 1;  // 返回添加成功的酒店ID
+  string id = 1;  //hotel id
 }
 
-// 删除酒店请求
 message DeleteHotelRequest {
-  string id = 1;  // 要删除的酒店ID
+  string id = 1;  //hotel id
 }
 
-// 删除酒店响应
 message DeleteHotelResponse {
   bool success = 1;
 }
 
-// 修改酒店请求
 message ChangeHotelRequest {
-  Hotel hotel = 1;  // 包含要修改的酒店信息，必须包含ID
+  Hotel hotel = 1;  // must include id
 }
 
-// 修改酒店响应
 message ChangeHotelResponse {
   bool success = 1;
 }
 
-// 酒店服务
+message HotelPage {
+  repeated Hotel content = 1; // content of page
+  int32 total_pages = 2; //total number of pages
+  int64 total_elements = 3; // total number of hotels
+  int32 size = 4; // the size of page
+  int32 number = 5; // size number, start from 0
+  bool first = 6; // if this page is first page
+  bool last = 7; // if this page is last page
+  int32 number_of_elements = 8; // the actual number of hotel on this page
+}
+
+message FindHotelWithinRadiusPageRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  int32 number = 3;// page number
+  int32 size = 4; // page size
+  string name = 5;
+  repeated string tags = 6 ;
+}
+
+message FindHotelWithinRadiusPageResponse{
+  HotelPage hotel_page = 1;
+}
+
+message FindHotelsWithinCirclePageRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  int32 number = 3;// page number
+  int32 size = 4; // page size
+  string name = 5;
+  repeated string tags = 6;
+}
+
+message FindHotelsWithinCirclePageResponse{
+  HotelPage hotel_page = 1;
+}
+
+message FindHotelWithinRadiusRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  string name = 3;
+  repeated string tags = 4;
+}
+
+message FindHotelWithinRadiusResponse{
+  repeated Hotel content = 1;
+}
+
+message FindHotelsWithinCircleRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  string name = 3;
+  repeated string tags = 4;
+}
+
+message FindHotelsWithinCircleResponse{
+  repeated Hotel content = 1;
+}
+
+message FindHotelByIdRequest{
+  string id = 1;
+}
+
+message FindHotelByIdResponse{
+  Hotel hotel = 1;
+}
+
 service HotelService {
-  // 添加酒店
   rpc AddHotel(AddHotelRequest) returns (AddHotelResponse);
 
-  // 删除酒店
   rpc DeleteHotel(DeleteHotelRequest) returns (DeleteHotelResponse);
 
-  // 修改酒店
   rpc ChangeHotel(ChangeHotelRequest) returns (ChangeHotelResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  //and list them in order from near to far, and result has been paginated
+  rpc FindHotelWithinRadiusPage(FindHotelWithinRadiusPageRequest) returns (FindHotelWithinRadiusPageResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  //and result has been paginated
+  rpc FindHotelsWithinCirclePage(FindHotelsWithinCirclePageRequest) returns (FindHotelsWithinCirclePageResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  //and list them in order from near to far
+  rpc FindHotelWithinRadius(FindHotelWithinRadiusRequest) returns (FindHotelWithinRadiusResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  rpc FindHotelsWithinCircle(FindHotelsWithinCircleRequest) returns (FindHotelsWithinCircleResponse);
+
+  rpc FindHotelById(FindHotelByIdRequest) returns (FindHotelByIdResponse);
 }
