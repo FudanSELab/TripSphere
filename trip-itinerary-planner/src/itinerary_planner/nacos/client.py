@@ -1,0 +1,62 @@
+import socket
+
+from v2.nacos import (
+    ClientConfigBuilder,
+    DeregisterInstanceParam,
+    NacosNamingService,
+    RegisterInstanceParam,
+)
+
+from itinerary_planner.config.settings import settings
+
+
+def get_local_ip() -> str:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return str(s.getsockname()[0])
+    except Exception:
+        return socket.gethostbyname(socket.gethostname())
+
+
+class NacosNaming:
+    def __init__(self) -> None:
+        self.client_config = (
+            ClientConfigBuilder()
+            .server_address(settings.nacos.server_address)
+            .namespace_id(settings.nacos.namespace_id)
+            .build()
+        )
+        self.naming_service: NacosNamingService
+        self.service_name = settings.service.name
+        self.ip = get_local_ip()
+        self.port = settings.grpc.port
+
+    @classmethod
+    async def create_naming(cls) -> "NacosNaming":
+        instance = cls()
+        instance.naming_service = await NacosNamingService.create_naming_service(
+            client_config=instance.client_config
+        )
+        return instance
+
+    async def register(self, ephemeral: bool = True) -> None:
+        await self.naming_service.register_instance(
+            request=RegisterInstanceParam(
+                ip=self.ip,
+                port=self.port,
+                service_name=self.service_name,
+                ephemeral=ephemeral,
+            )
+        )
+
+    async def deregister(self, ephemeral: bool = True) -> None:
+        await self.naming_service.deregister_instance(
+            request=DeregisterInstanceParam(
+                ip=self.ip,
+                port=self.port,
+                service_name=self.service_name,
+                ephemeral=ephemeral,
+            )
+        )
+

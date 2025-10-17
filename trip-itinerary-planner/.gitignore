@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+
+# UV
+.uv/
+uv.lock
+
+# Generated protobuf
+libs/tripsphere/src/tripsphere/**/*_pb2.py
+libs/tripsphere/src/tripsphere/**/*_pb2.pyi
+libs/tripsphere/src/tripsphere/**/*_pb2_grpc.py
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type checking
+.mypy_cache/
+.pytype/
+
+# Environment
+.env
+.env.local
+

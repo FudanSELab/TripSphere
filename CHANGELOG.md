@@ -5,3 +5,9 @@ Please update changelog as part of any significant pull request. Place short des
 ## Unreleased
 
 - The initial code repository is created.
+- **trip-itinerary-planner**: Added AI-powered itinerary planning microservice using LangGraph and OpenAI
+  - Intelligent multi-stage planning workflow (research, suggest, schedule, finalize)
+  - gRPC API for itinerary generation
+  - Integration with Nacos service discovery
+  - OpenTelemetry observability
+  - Comprehensive documentation and examples
