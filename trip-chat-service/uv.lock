@@ -403,8 +403,7 @@ source = { editable = "." }
 dependencies = [
     { name = "grpcio" },
     { name = "nacos-sdk-python" },
-    { name = "opentelemetry-distro" },
-    { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-distro", extra = ["otlp"] },
     { name = "pydantic-settings" },
     { name = "tripsphere" },
 ]
@@ -426,8 +425,7 @@ dev = [
 requires-dist = [
     { name = "grpcio", specifier = ">=1.75.1" },
     { name = "nacos-sdk-python", specifier = ">=2.0.9" },
-    { name = "opentelemetry-distro", specifier = ">=0.58b0" },
-    { name = "opentelemetry-exporter-otlp", specifier = ">=1.37.0" },
+    { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.58b0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "tripsphere", editable = "libs/tripsphere" },
 ]
@@ -928,6 +926,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c3/20/597f387b42c649bac39af9ff8ad5bfdc163ce1a30cdecb16474ab8e57905/opentelemetry_distro-0.58b0.tar.gz", hash = "sha256:ef993c845c11fd156046a96e5ffe1ecfe33f7282fa6149cf9decb26ff8716666", size = 2583, upload-time = "2025-09-11T11:42:12.034Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/84/34/53016553489592262408b72e94466403da3c84ebe044b073bbcc1a6b228b/opentelemetry_distro-0.58b0-py3-none-any.whl", hash = "sha256:d90dddc3ae93d60d917a267a0099bd72f87fa3454b49ca8799f97cb58c777ef4", size = 3346, upload-time = "2025-09-11T11:40:56.853Z" },
+]
+
+[package.optional-dependencies]
+otlp = [
+    { name = "opentelemetry-exporter-otlp" },
 ]
 
 [[package]]

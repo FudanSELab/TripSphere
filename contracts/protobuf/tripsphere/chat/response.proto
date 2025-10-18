@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package tripsphere.chat;
+
+import "google/protobuf/timestamp.proto";
+
+message Response {
+  string response_id = 1;                    // ID of the response
+  google.protobuf.Timestamp created_at = 2;  // Time at which the response was created
+}
+
+service ResponseService {
+  // Create a new response.
+  rpc CreateResponse(CreateResponseRequest) returns (CreateResponseResponse) {}
+}
+
+message CreateResponseRequest {
+  string conversation_id = 1;
+}
+
+message CreateResponseResponse {
+  Response response = 1;
+}

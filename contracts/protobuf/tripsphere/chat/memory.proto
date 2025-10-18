@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package tripsphere.chat;
-
-enum MemoryStrategy {
-  MEMORY_STRATEGY_NOTSET = 0;   // No memory strategy set
-  MEMORY_STRATEGY_SLIDING = 1;  // Use sliding window strategy
-  MEMORY_STRATEGY_MEMORYOS = 2; // Use MemoryOS for memory management
-}

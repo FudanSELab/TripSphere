@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package tripsphere.chat;
+
+import "google/protobuf/timestamp.proto";
+
+message Conversation {
+  string conversation_id = 1;                // ID of the conversation
+  google.protobuf.Timestamp created_at = 2;  // Time at which the conversation was created
+}
+
+service ConversationService {
+  // Create a new conversation.
+  rpc CreateConversation(CreateConversationRequest) returns (CreateConversationResponse) {}
+
+  // Delete a conversation.
+  rpc DeleteConversation(DeleteConversationRequest) returns (DeleteConversationResponse) {}
+
+  // Get details of a conversation.
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {}
+}
+
+message CreateConversationRequest {}
+
+message CreateConversationResponse {
+  Conversation conversation = 1;  // Details of the created conversation
+}
+
+message DeleteConversationRequest {
+  string conversation_id = 1;  // ID of the conversation to delete
+}
+
+message DeleteConversationResponse {}
+
+message GetConversationRequest {
+  string conversation_id = 1;  // ID of the conversation to retrieve
+}
+
+message GetConversationResponse {
+  Conversation conversation = 1;  // Details of the requested conversation
+}
