@@ -11,6 +11,9 @@ service ItineraryPlannerService {
   // Plan an itinerary based on user preferences and constraints
   rpc PlanItinerary(PlanItineraryRequest) returns (PlanItineraryResponse) {}
   
+  // Plan an itinerary with human-in-the-loop interaction
+  rpc PlanItineraryInteractive(stream PlanItineraryInteractiveRequest) returns (stream PlanItineraryInteractiveResponse) {}
+  
   // Refine an existing itinerary
   rpc RefineItinerary(RefineItineraryRequest) returns (RefineItineraryResponse) {}
 }
@@ -92,4 +95,62 @@ message Summary {
   string currency = 2;
   int32 total_activities = 3;
   repeated string highlights = 4;
+}
+
+// Human-in-the-loop messages
+
+message PlanItineraryInteractiveRequest {
+  oneof request_type {
+    InitialRequest initial_request = 1;
+    UserResponse user_response = 2;
+  }
+}
+
+message InitialRequest {
+  string user_id = 1;
+  string destination = 2;
+  string start_date = 3;
+  string end_date = 4;
+  repeated string interests = 5;
+  string budget_level = 6;
+  int32 num_travelers = 7;
+  map<string, string> preferences = 8;
+}
+
+message UserResponse {
+  string question_id = 1;
+  string answer = 2;
+}
+
+message PlanItineraryInteractiveResponse {
+  oneof response_type {
+    StatusUpdate status_update = 1;
+    Question question = 2;
+    FinalItinerary final_itinerary = 3;
+    ErrorMessage error = 4;
+  }
+}
+
+message StatusUpdate {
+  string stage = 1;  // e.g., "research", "activities", "scheduling"
+  string message = 2;
+  int32 progress_percentage = 3;
+}
+
+message Question {
+  string question_id = 1;
+  string question_text = 2;
+  repeated string suggested_answers = 3;  // Optional suggestions
+  bool requires_answer = 4;  // If false, can skip
+}
+
+message FinalItinerary {
+  string itinerary_id = 1;
+  Itinerary itinerary = 2;
+  string message = 3;
+}
+
+message ErrorMessage {
+  string error_code = 1;
+  string error_message = 2;
 }

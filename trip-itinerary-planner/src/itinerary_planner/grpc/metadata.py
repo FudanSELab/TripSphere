@@ -25,4 +25,3 @@ class MetadataServiceServicer(metadata_pb2_grpc.MetadataServiceServicer):
             )
         logger.info(f"{self.GetVersion.__name__} returns version {_version}")
         return metadata_pb2.GetVersionResponse(version=_version)
-

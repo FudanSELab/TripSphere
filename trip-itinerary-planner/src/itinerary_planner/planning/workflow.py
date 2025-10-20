@@ -1,13 +1,16 @@
 """LangGraph workflow for itinerary planning."""
 
 import logging
-from typing import Any
+from typing import Any, Literal, cast
 
 from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from itinerary_planner.planning.nodes import (
+    check_need_clarification,
     create_daily_schedule,
     finalize_itinerary,
+    incorporate_user_response,
     research_destination,
     suggest_activities,
 )
@@ -16,30 +19,59 @@ from itinerary_planner.planning.state import ItineraryState
 logger = logging.getLogger(__name__)
 
 
-def create_planning_workflow() -> StateGraph:
+def should_ask_user(state: ItineraryState) -> Literal["ask_question", "continue"]:
+    """Determine if we should ask the user a question or continue."""
+    if state.get("needs_user_input", False):
+        return "ask_question"
+    return "continue"
+
+
+def create_planning_workflow() -> CompiledStateGraph[ItineraryState]:
     """Create and configure the itinerary planning workflow.
 
     The workflow follows these steps:
     1. Research destination - Gather information about the destination
-    2. Suggest activities - Generate relevant activity suggestions
-    3. Create daily schedule - Organize activities into a coherent daily plan
-    4. Finalize itinerary - Format and structure the final itinerary
+    2. Check for clarification - Determine if we need additional user input
+    3. [If needed] Ask question - Wait for user input
+    4. Suggest activities - Generate relevant activity suggestions
+    5. Create daily schedule - Organize activities into a coherent daily plan
+    6. Finalize itinerary - Format and structure the final itinerary
 
     Returns:
         Compiled StateGraph ready for execution
     """
     # Create workflow
-    workflow = StateGraph(ItineraryState)
+    workflow = StateGraph[ItineraryState](ItineraryState)
 
     # Add nodes
     workflow.add_node("research_destination", research_destination)
+    workflow.add_node("check_clarification", check_need_clarification)
+    workflow.add_node(
+        "ask_question", lambda state: state
+    )  # Placeholder for interruption
+    workflow.add_node("incorporate_response", incorporate_user_response)
     workflow.add_node("suggest_activities", suggest_activities)
     workflow.add_node("create_daily_schedule", create_daily_schedule)
     workflow.add_node("finalize_itinerary", finalize_itinerary)
 
     # Define the flow
     workflow.set_entry_point("research_destination")
-    workflow.add_edge("research_destination", "suggest_activities")
+    workflow.add_edge("research_destination", "check_clarification")
+
+    # Conditional edge: check if we need user input
+    workflow.add_conditional_edges(
+        "check_clarification",
+        should_ask_user,
+        {
+            "ask_question": "ask_question",
+            "continue": "suggest_activities",
+        },
+    )
+
+    # After asking question, incorporate response and continue
+    workflow.add_edge("ask_question", "incorporate_response")
+    workflow.add_edge("incorporate_response", "suggest_activities")
+
     workflow.add_edge("suggest_activities", "create_daily_schedule")
     workflow.add_edge("create_daily_schedule", "finalize_itinerary")
     workflow.add_edge("finalize_itinerary", END)
@@ -48,7 +80,7 @@ def create_planning_workflow() -> StateGraph:
     app = workflow.compile()
 
     logger.info("Planning workflow created and compiled")
-    return app
+    return cast(CompiledStateGraph[ItineraryState], app)
 
 
 class ItineraryPlanner:
@@ -100,6 +132,9 @@ class ItineraryPlanner:
             "destination_info": "",
             "activity_suggestions": [],
             "daily_schedule": {},
+            "pending_question": None,
+            "user_responses": {},
+            "needs_user_input": False,
             "itinerary": {},
             "error": None,
         }
@@ -113,7 +148,7 @@ class ItineraryPlanner:
                 raise Exception(result["error"])
 
             logger.info(f"Successfully planned itinerary {result['itinerary']['id']}")
-            return result["itinerary"]
+            return cast(dict[str, Any], result["itinerary"])
 
         except Exception as e:
             logger.error(f"Failed to plan itinerary: {e}")
@@ -151,4 +186,3 @@ class ItineraryPlanner:
         # 4. Updating and returning the refined itinerary
 
         raise NotImplementedError("Itinerary refinement not yet implemented")
-

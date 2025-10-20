@@ -59,4 +59,3 @@ class NacosNaming:
                 ephemeral=ephemeral,
             )
         )
-

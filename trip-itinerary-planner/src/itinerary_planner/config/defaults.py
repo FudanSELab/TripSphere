@@ -32,4 +32,3 @@ class Defaults(BaseModel):
 
 
 defaults = Defaults()
-

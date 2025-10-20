@@ -33,7 +33,12 @@ class LLM(BaseModel):
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_nested_delimiter="__", cli_parse_args=True)
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__",
+        cli_parse_args=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
     service: Service = Field(default_factory=Service)
     grpc: Grpc = Field(default_factory=Grpc)
     nacos: Nacos = Field(default_factory=Nacos)
@@ -46,4 +51,3 @@ settings = Settings()
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     logger.debug(f"{settings}")
-

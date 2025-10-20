@@ -56,7 +56,7 @@ async def serve(port: int) -> None:
                 await nacos_naming.deregister(ephemeral=True)
             except Exception as e:
                 logger.warning(f"Failed to deregister from Nacos: {e}")
-        
+
         logger.info("Stopping gRPC server...")
         await server.stop(5)
 
@@ -65,4 +65,3 @@ if __name__ == "__main__":
     fmt = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] - %(message)s"
     logging.basicConfig(level=logging.INFO, format=fmt)
     asyncio.run(serve(settings.grpc.port))
-

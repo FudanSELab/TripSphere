@@ -28,11 +28,11 @@ install-dev:
 
 compile-proto:
 	uv run --with grpcio-tools -m grpc_tools.protoc \
-		-Ilibs/proto \
+		-I../contracts/protobuf \
 		--python_out=libs/tripsphere/src \
 		--pyi_out=libs/tripsphere/src \
 		--grpc_python_out=libs/tripsphere/src \
-		libs/proto/tripsphere/**/*.proto
+		../contracts/protobuf/tripsphere/**/*.proto
 
 run:
 	@if [ -z "$$LLM__API_KEY" ]; then \
@@ -56,7 +56,7 @@ lint:
 		exit 1; \
 	fi
 	uv run mypy src/
-	uv run ruff check src/
+	uv run ruff check --ignore E501 src/
 
 format:
 	@if ! uv run --no-sync ruff --version > /dev/null 2>&1; then \
@@ -64,7 +64,7 @@ format:
 		exit 1; \
 	fi
 	uv run ruff format src/
-	uv run ruff check --fix src/
+	uv run ruff check --ignore E501 --fix src/
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -76,16 +76,16 @@ clean:
 	rm -rf libs/tripsphere/src/tripsphere/**/*_pb2.pyi
 	rm -rf libs/tripsphere/src/tripsphere/**/*_pb2_grpc.py
 
-docker-build:
-	docker build -t trip-itinerary-planner:latest .
+# docker-build:
+# 	docker build -t trip-itinerary-planner:latest .
 
-docker-run:
-	@echo "Make sure to set LLM__API_KEY environment variable"
-	docker run -e LLM__API_KEY="${LLM__API_KEY}" \
-		-e NACOS__SERVER_ADDRESS="host.docker.internal:8848" \
-		-p 50059:50059 \
-		trip-itinerary-planner:latest
+# docker-run:
+# 	@echo "Make sure to set LLM__API_KEY environment variable"
+# 	docker run -e LLM__API_KEY="${LLM__API_KEY}" \
+# 		-e NACOS__SERVER_ADDRESS="host.docker.internal:8848" \
+# 		-p 50059:50059 \
+# 		trip-itinerary-planner:latest
 
-example:
-	cd examples && uv run python -m example_client
+client:
+	uv run python -m examples.example_client
 

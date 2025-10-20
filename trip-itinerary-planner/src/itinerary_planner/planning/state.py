@@ -3,6 +3,15 @@
 from typing import Any, TypedDict
 
 
+class Question(TypedDict):
+    """A question to ask the user."""
+
+    question_id: str
+    question_text: str
+    suggested_answers: list[str]
+    requires_answer: bool
+
+
 class ItineraryState(TypedDict):
     """State object for the itinerary planning workflow."""
 
@@ -21,7 +30,11 @@ class ItineraryState(TypedDict):
     activity_suggestions: list[dict[str, Any]]
     daily_schedule: dict[int, list[dict[str, Any]]]
 
+    # Human-in-the-loop fields
+    pending_question: Question | None
+    user_responses: dict[str, str]  # Maps question_id to answer
+    needs_user_input: bool
+
     # Output fields
     itinerary: dict[str, Any]
     error: str | None
-

@@ -5,12 +5,14 @@ An AI-powered microservice for intelligent travel itinerary planning using LangG
 ## Features
 
 - **Intelligent Planning**: Uses LangGraph workflow with OpenAI GPT models for context-aware itinerary generation
+- **Human-in-the-Loop**: Interactive planning with AI asking clarifying questions for personalized results
 - **Multi-stage Planning**: 
   - Destination research and analysis
+  - Intelligent clarification checking
   - Activity suggestion based on interests and budget
   - Daily schedule optimization
   - Complete itinerary finalization
-- **gRPC API**: High-performance service interface
+- **gRPC API**: High-performance service interface with streaming support
 - **Service Discovery**: Integration with Nacos for service registration
 - **Observability**: OpenTelemetry instrumentation for distributed tracing
 
@@ -21,12 +23,20 @@ An AI-powered microservice for intelligent travel itinerary planning using LangG
 The service uses a LangGraph state machine with the following nodes:
 
 1. **Research Destination**: Gathers comprehensive information about the destination
-2. **Suggest Activities**: Generates activity recommendations based on user preferences
-3. **Create Daily Schedule**: Organizes activities into an optimal daily itinerary
-4. **Finalize Itinerary**: Structures and formats the complete trip plan
+2. **Check Clarification**: Determines if additional user input is needed
+3. **Ask Question** (conditional): Poses clarifying questions to the user
+4. **Suggest Activities**: Generates activity recommendations based on user preferences
+5. **Create Daily Schedule**: Organizes activities into an optimal daily itinerary
+6. **Finalize Itinerary**: Structures and formats the complete trip plan
 
+**Standard Workflow:**
 ```
-[Start] → Research → Suggest Activities → Create Schedule → Finalize → [End]
+[Start] → Research → Check → Suggest Activities → Create Schedule → Finalize → [End]
+```
+
+**Interactive Workflow (with Human-in-the-Loop):**
+```
+[Start] → Research → Check → Ask Question → Incorporate Response → Suggest → Schedule → Finalize → [End]
 ```
 
 ### Tech Stack
@@ -68,17 +78,6 @@ The service can be configured via environment variables:
 
 **Configuration Examples:**
 
-Standard OpenAI:
-```bash
-export LLM__API_KEY="sk-your-key"
-```
-
-With Custom Proxy:
-```bash
-export LLM__API_KEY="your-key"
-export LLM__BASE_URL="https://your-proxy.com/v1"
-```
-
 Using .env file:
 ```bash
 cp env.example .env
@@ -104,13 +103,12 @@ uv sync
 2. Generate protobuf files:
 ```bash
 # From the project root
-./scripts/compile-protos.sh
+make compile-proto
 ```
 
 3. Set environment variables:
 ```bash
-export LLM__API_KEY="your-openai-api-key"
-export NACOS__SERVER_ADDRESS="localhost:8848"
+
 ```
 
 4. Run the service:
@@ -129,7 +127,7 @@ uv run pytest
 
 ### PlanItinerary
 
-Creates a new itinerary based on user preferences.
+Creates a new itinerary based on user preferences (non-interactive, single request/response).
 
 **Request**:
 ```protobuf
@@ -154,6 +152,47 @@ message PlanItineraryResponse {
   string message = 4;
 }
 ```
+
+### PlanItineraryInteractive (New! 🎉)
+
+Creates a new itinerary with human-in-the-loop interaction. The AI can ask clarifying questions during planning to gather additional information for more personalized results.
+
+**Features**:
+- Bidirectional streaming for real-time interaction
+- Progress updates during planning
+- AI-generated clarifying questions
+- Support for suggested answers
+
+**Request Stream**:
+```protobuf
+message PlanItineraryInteractiveRequest {
+  oneof request_type {
+    InitialRequest initial_request = 1;    // First message
+    UserResponse user_response = 2;         // Follow-up answers
+  }
+}
+```
+
+**Response Stream**:
+```protobuf
+message PlanItineraryInteractiveResponse {
+  oneof response_type {
+    StatusUpdate status_update = 1;         // Progress updates
+    Question question = 2;                  // Questions for user
+    FinalItinerary final_itinerary = 3;     // Final result
+    ErrorMessage error = 4;                 // Errors
+  }
+}
+```
+
+**Example Flow**:
+1. Client sends `InitialRequest` with travel preferences
+2. Server responds with `StatusUpdate` messages showing progress
+3. Server may send `Question` messages asking for clarification
+4. Client responds with `UserResponse` containing answers
+5. Server continues planning and sends `FinalItinerary`
+
+See [HUMAN_IN_THE_LOOP.md](./HUMAN_IN_THE_LOOP.md) for detailed documentation and examples.
 
 ### RefineItinerary
 

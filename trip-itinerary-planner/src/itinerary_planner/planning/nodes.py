@@ -2,6 +2,7 @@
 
 import json
 import logging
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -9,24 +10,24 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
 from itinerary_planner.config.settings import settings
-from itinerary_planner.planning.state import ItineraryState
+from itinerary_planner.planning.state import ItineraryState, Question
 
 logger = logging.getLogger(__name__)
 
 
 def get_llm() -> ChatOpenAI:
     """Get configured LLM instance."""
-    llm_kwargs = {
+    llm_kwargs: dict[str, Any] = {
         "model": settings.llm.model,
         "temperature": settings.llm.temperature,
         "max_tokens": settings.llm.max_tokens,
         "api_key": settings.llm.api_key.get_secret_value(),
     }
-    
+
     # Add base_url if configured
     if settings.llm.base_url:
         llm_kwargs["base_url"] = settings.llm.base_url
-    
+
     return ChatOpenAI(**llm_kwargs)
 
 
@@ -38,20 +39,23 @@ async def research_destination(state: ItineraryState) -> dict[str, Any]:
 
     messages = [
         SystemMessage(
-            content="You are a knowledgeable travel expert with deep knowledge of destinations worldwide."
+            content=(
+                "You are a knowledgeable travel expert with deep knowledge of destinations worldwide."
+            )
         ),
         HumanMessage(
-            content=f"""Provide a comprehensive overview of {state['destination']} for trip planning.
+            content=f"""Provide a comprehensive overview of {state["destination"]} \
+for trip planning.
 Include:
 1. Top attractions and landmarks
 2. Local cuisine and dining options
 3. Cultural considerations and customs
 4. Best areas to stay
 5. Transportation options
-6. Weather considerations for {state['start_date']} to {state['end_date']}
+6. Weather considerations for {state["start_date"]} to {state["end_date"]}
 
-Focus on aspects relevant to these interests: {', '.join(state['interests'])}
-Budget level: {state['budget_level']}
+Focus on aspects relevant to these interests: {", ".join(state["interests"])}
+Budget level: {state["budget_level"]}
 """
         ),
     ]
@@ -76,19 +80,21 @@ async def suggest_activities(state: ItineraryState) -> dict[str, Any]:
 
     messages = [
         SystemMessage(
-            content="""You are an expert travel planner. Generate activity suggestions in JSON format.
-Each activity should include: name, description, category, estimated_duration_hours, estimated_cost, location, time_of_day_preference."""
+            content=(
+                "You are an expert travel planner. Generate activity suggestions in JSON format.\nEach activity should include: name, description, category, estimated_duration_hours, estimated_cost, location, time_of_day_preference."
+            )
         ),
         HumanMessage(
             content=f"""Based on this destination information:
-{state['destination_info']}
+{state["destination_info"]}
 
-Generate {num_days * 4} diverse activity suggestions for a {num_days}-day trip to {state['destination']}.
+Generate {num_days * 4} diverse activity suggestions for a \
+{num_days}-day trip to {state["destination"]}.
 
 Traveler preferences:
-- Interests: {', '.join(state['interests'])}
-- Budget level: {state['budget_level']}
-- Number of travelers: {state['num_travelers']}
+- Interests: {", ".join(state["interests"])}
+- Budget level: {state["budget_level"]}
+- Number of travelers: {state["num_travelers"]}
 
 Provide the activities as a JSON array. Each activity should have:
 - name: string
@@ -139,15 +145,15 @@ async def create_daily_schedule(state: ItineraryState) -> dict[str, Any]:
 
     messages = [
         SystemMessage(
-            content="""You are an expert at creating optimal daily travel itineraries.
-Create a balanced schedule that considers timing, location proximity, and traveler energy levels.
-Return your response as a JSON object mapping day numbers to activity lists."""
+            content=(
+                "You are an expert at creating optimal daily travel itineraries.\nCreate a balanced schedule that considers timing, location proximity, and traveler energy levels.\nReturn your response as a JSON object mapping day numbers to activity lists."
+            )
         ),
         HumanMessage(
-            content=f"""Create a {num_days}-day itinerary for {state['destination']}.
+            content=f"""Create a {num_days}-day itinerary for {state["destination"]}.
 
 Available activities:
-{json.dumps(state['activity_suggestions'], indent=2)}
+{json.dumps(state["activity_suggestions"], indent=2)}
 
 Requirements:
 - Organize 3-5 activities per day
@@ -157,7 +163,7 @@ Requirements:
 - Account for travel time between locations
 - Start days around 9 AM, end around 9 PM
 
-Dates: {', '.join(dates)}
+Dates: {", ".join(dates)}
 
 Return a JSON object with this structure:
 {{
@@ -258,14 +264,18 @@ async def finalize_itinerary(state: ItineraryState) -> dict[str, Any]:
     # Generate highlights
     llm = get_llm()
     messages = [
-        SystemMessage(content="You are a travel expert. Create concise, exciting highlights."),
+        SystemMessage(
+            content="You are a travel expert. Create concise, exciting highlights."
+        ),
         HumanMessage(
-            content=f"""Summarize the top 3-5 highlights of this {num_days}-day trip to {state['destination']}.
+            content=f"""Summarize the top 3-5 highlights of this {num_days}-day \
+trip to {state["destination"]}.
             
-Activities: {json.dumps(state['daily_schedule'], indent=2)}
+Activities: {json.dumps(state["daily_schedule"], indent=2)}
 
 Return a JSON array of strings, each being a one-sentence highlight.
-Example: ["Visit the iconic Eiffel Tower at sunrise", "Enjoy authentic French cuisine in Le Marais"]
+Example: ["Visit the iconic Eiffel Tower at sunrise", \
+"Enjoy authentic French cuisine in Le Marais"]
 
 Return ONLY the JSON array.
 """
@@ -307,3 +317,108 @@ Return ONLY the JSON array.
     logger.info(f"Finalized itinerary {itinerary_id}")
     return {"itinerary": itinerary, "error": None}
 
+
+async def check_need_clarification(state: ItineraryState) -> dict[str, Any]:
+    """Check if we need to ask the user for clarification or additional information."""
+    logger.info("Checking if clarification is needed")
+
+    llm = get_llm()
+
+    # Check if interests are too vague or if we need more specific information
+    messages = [
+        SystemMessage(
+            content=(
+                "You are an expert travel planner assistant. Analyze the "
+                "user's travel request and determine if you need additional "
+                "information to create a better itinerary.\n\n"
+                "Consider:\n"
+                "1. Are the interests too vague or general?\n"
+                "2. Are there specific preferences we should know about "
+                "(dietary restrictions, mobility issues, etc.)?\n"
+                "3. Is the budget level clear enough?\n"
+                "4. Do we need to know about specific must-see attractions?\n"
+                "5. Should we know about the travel style "
+                "(relaxed vs. packed schedule)?\n\n"
+                "Respond with JSON:\n"
+                "{\n"
+                '  "needs_clarification": true/false,\n'
+                '  "question": "Your question here if needs_clarification '
+                'is true",\n'
+                '  "suggested_answers": ["option1", "option2", ...] '
+                "// Optional\n"
+                "}"
+            )
+        ),
+        HumanMessage(
+            content=f"""Analyze this travel request:
+- Destination: {state["destination"]}
+- Dates: {state["start_date"]} to {state["end_date"]}
+- Interests: {", ".join(state["interests"])}
+- Budget level: {state["budget_level"]}
+- Number of travelers: {state["num_travelers"]}
+- Preferences: {state["preferences"]}
+- User responses so far: {state.get("user_responses", {})}
+
+Destination info gathered:
+{state.get("destination_info", "Not yet gathered")}
+
+Do we need to ask the user for additional information? If so, what should we ask?
+Return ONLY a JSON object."""
+        ),
+    ]
+
+    response = await llm.ainvoke(messages)
+    response_text = str(response.content).strip()
+
+    try:
+        # Remove markdown code blocks if present
+        if response_text.startswith("```"):
+            response_text = response_text.split("```")[1]
+            if response_text.startswith("json"):
+                response_text = response_text[4:]
+
+        clarification_check = json.loads(response_text)
+
+        if clarification_check.get("needs_clarification", False):
+            question_id = str(uuid.uuid4())
+            question: Question = {
+                "question_id": question_id,
+                "question_text": clarification_check.get(
+                    "question", "Could you provide more details?"
+                ),
+                "suggested_answers": clarification_check.get("suggested_answers", []),
+                "requires_answer": True,
+            }
+
+            logger.info(f"Generated question: {question['question_text']}")
+            return {
+                "pending_question": question,
+                "needs_user_input": True,
+            }
+        else:
+            logger.info("No clarification needed, proceeding with planning")
+            return {
+                "pending_question": None,
+                "needs_user_input": False,
+            }
+
+    except json.JSONDecodeError:
+        logger.warning(
+            "Failed to parse clarification check, proceeding without questions"
+        )
+        return {
+            "pending_question": None,
+            "needs_user_input": False,
+        }
+
+
+async def incorporate_user_response(state: ItineraryState) -> dict[str, Any]:
+    """Incorporate the user's response into the planning context."""
+    logger.info("Incorporating user response")
+
+    # The user response should already be in state['user_responses']
+    # We just need to clear the pending question and flag
+    return {
+        "pending_question": None,
+        "needs_user_input": False,
+    }
