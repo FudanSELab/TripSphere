@@ -1,0 +1,25 @@
+networks:
+  default:
+    name: tripsphere
+    driver: bridge
+
+services:
+  nacos:
+    image: nacos/nacos-server:v2.5.1
+    container_name: nacos
+    environment:
+      - MODE=standalone
+    ports:
+      - "8080:8080"
+      - "8848:8848"
+      - "9848:9848"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.86.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol-config.yaml"]
+    volumes:
+      - ./otel-collector/otelcol-config.yaml:/etc/otelcol-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"

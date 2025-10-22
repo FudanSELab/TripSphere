@@ -3,21 +3,51 @@ syntax = "proto3";
 package tripsphere.chat;
 
 import "google/protobuf/timestamp.proto";
-
-message Response {
-  string response_id = 1;                    // ID of the response
-  google.protobuf.Timestamp created_at = 2;  // Time at which the response was created
-}
+import "tripsphere/chat/protocol.proto";
 
 service ResponseService {
-  // Create a new response.
   rpc CreateResponse(CreateResponseRequest) returns (CreateResponseResponse) {}
+
+  rpc CreateResponseStream(CreateResponseRequest) returns (stream CreateResponseStreamResponse) {}
+
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
+
+  rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
 }
 
 message CreateResponseRequest {
   string conversation_id = 1;
+  Message message = 2;
 }
 
 message CreateResponseResponse {
-  Response response = 1;
+  oneof payload {
+    Task task = 1;
+    Message message = 2;
+  }
 }
+
+message CreateResponseStreamResponse {
+  oneof payload {
+    Task task = 1;
+    Message message = 2;
+    TaskStatusUpdateEvent status_update = 3;
+    TaskArtifactUpdateEvent artifact_update = 4;
+  }
+}
+
+message GetTaskRequest {
+  string conversation_id = 1;
+  string task_id = 2;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message CancelTaskRequest {
+  string conversation_id = 1;
+  string task_id = 2;
+}
+
+message CancelTaskResponse {}

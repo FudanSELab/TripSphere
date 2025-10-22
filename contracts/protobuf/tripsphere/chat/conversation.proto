@@ -2,40 +2,81 @@ syntax = "proto3";
 
 package tripsphere.chat;
 
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "tripsphere/chat/protocol.proto";
 
 message Conversation {
-  string conversation_id = 1;                // ID of the conversation
-  google.protobuf.Timestamp created_at = 2;  // Time at which the conversation was created
+  // ID for the conversation.
+  string conversation_id = 1;
+  // Time at which the conversation was created.
+  google.protobuf.Timestamp created_at = 2;
+  // Additional metadata for the conversation.
+  google.protobuf.Struct metadata = 3;
+}
+
+message ConversationItem {
+  google.protobuf.Timestamp created_at = 1;
+  oneof content {
+    Task task = 2;
+    Message message = 3;
+  }
 }
 
 service ConversationService {
-  // Create a new conversation.
   rpc CreateConversation(CreateConversationRequest) returns (CreateConversationResponse) {}
 
-  // Delete a conversation.
   rpc DeleteConversation(DeleteConversationRequest) returns (DeleteConversationResponse) {}
 
-  // Get details of a conversation.
   rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {}
+
+  rpc UpdateConversation(UpdateConversationRequest) returns (UpdateConversationResponse) {}
+
+  rpc ListConversationItems(ListConversationItemsRequest) returns (stream ListConversationItemsResponse) {}
 }
 
 message CreateConversationRequest {}
 
 message CreateConversationResponse {
-  Conversation conversation = 1;  // Details of the created conversation
+  Conversation conversation = 1;
 }
 
 message DeleteConversationRequest {
-  string conversation_id = 1;  // ID of the conversation to delete
+  string conversation_id = 1;
 }
 
 message DeleteConversationResponse {}
 
 message GetConversationRequest {
-  string conversation_id = 1;  // ID of the conversation to retrieve
+  string conversation_id = 1;
 }
 
 message GetConversationResponse {
-  Conversation conversation = 1;  // Details of the requested conversation
+  Conversation conversation = 1;
+}
+
+message UpdateConversationRequest {
+  string conversation_id = 1;
+  google.protobuf.Struct metadata = 2;
+}
+
+message UpdateConversationResponse {
+  // Updated conversation details.
+  Conversation conversation = 1;
+}
+
+message ListConversationItemsRequest {
+  string conversation_id = 1;
+  int32 page_size = 2;
+  // The last task/message ID from the previous page.
+  string page_token = 3;
+  // The order of items, "asc" or "desc", default is "desc".
+  string order = 4;
+}
+
+message ListConversationItemsResponse {
+  repeated ConversationItem items = 1;
+  // Total number of items in the conversation.
+  int32 total_count = 2;
+  string next_page_token = 3;
 }
