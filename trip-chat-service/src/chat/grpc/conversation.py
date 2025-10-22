@@ -16,9 +16,9 @@ class ConversationServiceServicer(conversation_pb2_grpc.ConversationServiceServi
         ],
     ) -> conversation_pb2.CreateConversationResponse:
         metadata = context.invocation_metadata()
-        metadata = dict(metadata) if metadata else {}
-        user_id = metadata.get("x-user-id", "")
-        logger.info(f"Creating conversation for user_id {user_id}")
+        metadata_dict = dict(metadata) if metadata is not None else {}
+        user_id = metadata_dict.get("user-id", "")
+        logger.info(f"Creating conversation for user_id {user_id!r}")
         return conversation_pb2.CreateConversationResponse()
 
     async def DeleteConversation(

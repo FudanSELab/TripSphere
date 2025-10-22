@@ -23,11 +23,17 @@ class Nacos(BaseModel):
     group_name: str = Field(default=defaults.nacos.group_name)
 
 
+class Mongodb(BaseModel):
+    uri: str = Field(default=defaults.mongodb.uri)
+    database: str = Field(default=defaults.mongodb.database)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_nested_delimiter="__", cli_parse_args=True)
     service: Service = Field(default_factory=Service)
     grpc: Grpc = Field(default_factory=Grpc)
     nacos: Nacos = Field(default_factory=Nacos)
+    mongodb: Mongodb = Field(default_factory=Mongodb)
 
 
 settings = Settings()

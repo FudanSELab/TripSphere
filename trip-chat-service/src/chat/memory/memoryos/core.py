@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from chat.memory.manager import MemoryManager
 from chat.memory.memoryos.mid_term import MidTermMemory
@@ -8,9 +8,7 @@ from chat.memory.memoryos.short_term import ShortTermMemory
 
 
 class DialogPage(BaseModel):
-    query: str
-    response: str
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime
 
 
 class QueryResult(BaseModel): ...
@@ -21,7 +19,7 @@ class Memoryos(MemoryManager[DialogPage, QueryResult]):
         self.short_term_memory = ShortTermMemory(short_term_capacity)
         self.mid_term_memory = MidTermMemory()
 
-    async def add(self, session_id: str, content: DialogPage) -> None: ...
+    async def add(self, conversation_id: str, content: DialogPage) -> None: ...
 
-    async def retrieve(self, session_id: str, query: str) -> QueryResult:
+    async def retrieve(self, conversation_id: str, query: str) -> QueryResult:
         return QueryResult()
