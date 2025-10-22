@@ -3,6 +3,7 @@ syntax = "proto3";
 package tripsphere.chat;
 
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 
 message FilePart {
   oneof file {

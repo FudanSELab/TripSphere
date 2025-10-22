@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package tripsphere.chat;
 
-import "google/protobuf/timestamp.proto";
 import "tripsphere/chat/protocol.proto";
 
 service ResponseService {
