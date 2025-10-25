@@ -5,7 +5,7 @@ from bson import ObjectId
 from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
 
 from chat.config.settings import settings
-from chat.storage.mongodb.schema import (
+from chat.persistence.mongodb.schema import (
     ConversationItemDocument,
     ConversationItemKind,
     MessageDocument,
@@ -25,7 +25,7 @@ class ConversationItemCollection:
         result = await self.collection.insert_one(
             document.model_dump(by_alias=True, exclude_none=True)
         )
-        document.id = result.inserted_id
+        document.id = str(result.inserted_id)
         return document
 
     @staticmethod

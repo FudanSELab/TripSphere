@@ -8,11 +8,11 @@ from chat.conversation.models import (
     Conversation,
     ConversationItem,
 )
-from chat.storage.mongodb.collections import (
+from chat.persistence.mongodb.collections import (
     ConversationCollection,
     ConversationItemCollection,
 )
-from chat.storage.mongodb.schema import (
+from chat.persistence.mongodb.schema import (
     ConversationDocument,
     MessageDocument,
     TaskDocument,

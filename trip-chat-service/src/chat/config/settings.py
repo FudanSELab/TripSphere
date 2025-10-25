@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,7 +30,9 @@ class Mongodb(BaseModel):
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_nested_delimiter="__", cli_parse_args=True)
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__", cli_parse_args="pytest" not in sys.argv[0]
+    )
     service: Service = Field(default_factory=Service)
     grpc: Grpc = Field(default_factory=Grpc)
     nacos: Nacos = Field(default_factory=Nacos)

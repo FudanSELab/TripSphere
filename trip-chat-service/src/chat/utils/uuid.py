@@ -93,5 +93,8 @@ def uuid7() -> UUID:
 
 
 if __name__ == "__main__":
+    import logging
+
+    logging.basicConfig(level=logging.DEBUG)
     for _ in range(1000):
-        print(uuid7())
+        logging.debug(uuid7())

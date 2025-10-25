@@ -15,12 +15,14 @@ class ConversationItemKind(StrEnum):
 
 class ConversationItemDocument(BaseModel):
     id: PyObjectId | None = Field(default=None, alias="_id")
+    kind: ConversationItemKind
     conversation_id: PyObjectId
     created_at: datetime
     metadata: dict[str, Any] | None = Field(default=None)
 
 
 class MessageDocument(ConversationItemDocument):
+    kind: ConversationItemKind = Field(default=ConversationItemKind.MESSAGE)
     task_id: PyObjectId | None = Field(default=None)
     role: Role
     parts: list[Part]
@@ -33,6 +35,7 @@ class TaskStatus(BaseModel):
 
 
 class TaskDocument(ConversationItemDocument):
+    kind: ConversationItemKind = Field(default=ConversationItemKind.TASK)
     status: TaskStatus
     artifacts: list[Artifact] | None = Field(default=None)
     history: list[PyObjectId] | None = Field(

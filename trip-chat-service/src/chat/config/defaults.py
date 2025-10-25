@@ -27,7 +27,7 @@ class MemoryDefaults(BaseModel):
 
 class MongodbDefaults(BaseModel):
     uri: str = "mongodb://localhost:27017"
-    database: str = "tripsphere_chat_database"
+    database: str = "trip_chat_database"
 
 
 class Defaults(BaseModel):

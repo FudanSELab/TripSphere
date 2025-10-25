@@ -4,7 +4,7 @@ from bson import ObjectId
 from pymongo import AsyncMongoClient
 
 from chat.config.settings import settings
-from chat.storage.mongodb.schema import ConversationDocument
+from chat.persistence.mongodb.schema import ConversationDocument
 
 
 class ConversationCollection:
@@ -17,7 +17,7 @@ class ConversationCollection:
         result = await self.collection.insert_one(
             document.model_dump(by_alias=True, exclude_none=True)
         )
-        document.id = result.inserted_id
+        document.id = str(result.inserted_id)
         return document
 
     async def find_by_id(self, conversation_id: str) -> ConversationDocument | None:
