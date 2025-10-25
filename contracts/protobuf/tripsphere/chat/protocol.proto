@@ -32,8 +32,6 @@ enum Role {
   ROLE_UNSPECIFIED = 0;
   ROLE_USER = 1;
   ROLE_AGENT = 2;
-  ROLE_ASSISTANT = 3;
-  ROLE_SYSTEM = 4;
 }
 
 message Message {
@@ -45,8 +43,23 @@ message Message {
   string task_id = 3;
   // A role for the message.
   Role role = 4;
+  // Parts is the container of the message content.
   repeated Part parts = 5;
+  // Any optional metadata to provide along with the message.
   google.protobuf.Struct metadata = 6;
+}
+
+message Artifact {
+  // ID for the artifact.
+  string artifact_id = 1;
+  // A human readable name for the artifact.
+  string name = 2;
+  // Optional human readable description of the artifact.
+  string description = 3;
+  // The content of the artifact.
+  repeated Part parts = 4;
+  // Optional metadata included with the artifact.
+  google.protobuf.Struct metadata = 5;
 }
 
 enum TaskState {
@@ -81,19 +94,8 @@ message Task {
   repeated Artifact artifacts = 4;
   // The history of interactions from a task.
   repeated Message history = 5;
+  // A key/value object to store custom metadata about a task.
   google.protobuf.Struct metadata = 6;
-}
-
-message Artifact {
-  // ID for the artifact.
-  string artifact_id = 1;
-  // A human readable name for the artifact.
-  string name = 2;
-  // Optional human readable description of the artifact.
-  string description = 3;
-  // The content of the artifact.
-  repeated Part parts = 4;
-  google.protobuf.Struct metadata = 5;
 }
 
 message TaskStatusUpdateEvent {

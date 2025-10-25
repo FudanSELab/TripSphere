@@ -40,3 +40,23 @@ class ConversationServiceServicer(conversation_pb2_grpc.ConversationServiceServi
         ],
     ) -> conversation_pb2.GetConversationResponse:
         return conversation_pb2.GetConversationResponse()
+
+    async def UpdateConversation(
+        self,
+        request: conversation_pb2.UpdateConversationRequest,
+        context: grpc.aio.ServicerContext[
+            conversation_pb2.UpdateConversationRequest,
+            conversation_pb2.UpdateConversationResponse,
+        ],
+    ) -> conversation_pb2.UpdateConversationResponse:
+        return conversation_pb2.UpdateConversationResponse()
+
+    async def ListConversationItems(
+        self,
+        request: conversation_pb2.ListConversationItemsRequest,
+        context: grpc.aio.ServicerContext[
+            conversation_pb2.ListConversationItemsRequest,
+            conversation_pb2.ListConversationItemsResponse,
+        ],
+    ) -> conversation_pb2.ListConversationItemsResponse:
+        return conversation_pb2.ListConversationItemsResponse()

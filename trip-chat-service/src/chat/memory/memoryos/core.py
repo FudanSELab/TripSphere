@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from a2a.types import Message, Task
 from pydantic import BaseModel
 
 from chat.memory.manager import MemoryManager
@@ -8,6 +9,8 @@ from chat.memory.memoryos.short_term import ShortTermMemory
 
 
 class DialogPage(BaseModel):
+    query: Message
+    response: Message | Task
     timestamp: datetime
 
 

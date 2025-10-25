@@ -4,6 +4,7 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "a2a-sdk>=0.3.10",
     "grpcio>=1.75.1",
     "nacos-sdk-python>=2.0.9",
     "opentelemetry-distro[otlp]>=0.58b0",

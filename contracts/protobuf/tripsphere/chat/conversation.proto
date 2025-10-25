@@ -16,11 +16,11 @@ message Conversation {
 }
 
 message ConversationItem {
-  google.protobuf.Timestamp created_at = 1;
   oneof content {
-    Task task = 2;
-    Message message = 3;
+    Task task = 1;
+    Message message = 2;
   }
+  google.protobuf.Timestamp created_at = 3;
 }
 
 service ConversationService {
@@ -32,7 +32,7 @@ service ConversationService {
 
   rpc UpdateConversation(UpdateConversationRequest) returns (UpdateConversationResponse) {}
 
-  rpc ListConversationItems(ListConversationItemsRequest) returns (stream ListConversationItemsResponse) {}
+  rpc ListConversationItems(ListConversationItemsRequest) returns (ListConversationItemsResponse) {}
 }
 
 message CreateConversationRequest {}
@@ -67,8 +67,9 @@ message UpdateConversationResponse {
 
 message ListConversationItemsRequest {
   string conversation_id = 1;
+  // Number of items to return in one page.
   int32 page_size = 2;
-  // The last task/message ID from the previous page.
+  // Base64 encoded item ID returned from previous call.
   string page_token = 3;
   // The order of items, "asc" or "desc", default is "desc".
   string order = 4;
@@ -78,5 +79,6 @@ message ListConversationItemsResponse {
   repeated ConversationItem items = 1;
   // Total number of items in the conversation.
   int32 total_count = 2;
+  // Base64 encoded item ID to be used to fetch the next page.
   string next_page_token = 3;
 }
