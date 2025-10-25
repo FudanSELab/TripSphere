@@ -1,5 +1,5 @@
 import base64
-from typing import Any
+from typing import Any, Literal
 
 from bson import ObjectId
 from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
@@ -42,12 +42,16 @@ class ConversationItemCollection:
         return ObjectId(binary)
 
     async def list_by_conversation(
-        self, conversation_id: str, page_size: int, page_token: str | None, order: str
+        self,
+        conversation_id: str,
+        page_size: int,
+        page_token: str | None,
+        order: Literal["asc", "desc"],
     ) -> tuple[list[TaskDocument | MessageDocument], int, str | None]:
         query: dict[str, Any] = {"conversation_id": conversation_id}
-        if last_id := self.decode_token(page_token) is not None:
+        if last_id := self.decode_token(page_token):
             # When order is 'desc', we want items with _id < last_id
-            query["_id"] = {"$lt" if order == "desc" else "$gt": last_id}
+            query["_id"] = {("$lt" if order == "desc" else "$gt"): last_id}
 
         cursor = (
             self.collection.find(query)
@@ -55,7 +59,7 @@ class ConversationItemCollection:
             .limit(limit=page_size)
         )
 
-        documents = await cursor.to_list(length=None)
+        documents = await cursor.to_list()
         total = await self.collection.count_documents(
             {"conversation_id": conversation_id}
         )
