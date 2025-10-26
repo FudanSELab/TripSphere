@@ -27,6 +27,10 @@ class ConversationItemCollection:
         document.id = str(result.inserted_id)
         return document
 
+    async def delete_by_conversation(self, conversation_id: str) -> int:
+        result = await self.collection.delete_many({"conversation_id": conversation_id})
+        return result.deleted_count
+
     async def list_by_conversation(
         self,
         conversation_id: str,

@@ -8,6 +8,7 @@ from chat.conversation.models import (
     Conversation,
     ConversationItem,
 )
+from chat.exceptions import ConversationNotFoundError
 from chat.persistence.mongodb.collections import (
     ConversationCollection,
     ConversationItemCollection,
@@ -47,7 +48,10 @@ class DefaultConversationManager(ConversationManager):
         return conversation
 
     async def delete_conversation(self, conversation_id: str) -> None:
-        await self.conversation_collection.delete_by_id(conversation_id)
+        deleted_count = await self.conversation_collection.delete_by_id(conversation_id)
+        if deleted_count == 0:
+            raise ConversationNotFoundError(conversation_id)
+        await self.conversation_item_collection.delete_by_conversation(conversation_id)
 
     async def update_conversation(
         self, conversation_id: str, metadata: dict[str, Any] | None = None
@@ -55,6 +59,8 @@ class DefaultConversationManager(ConversationManager):
         document = await self.conversation_collection.update_metadata(
             conversation_id, metadata or {}
         )
+        if document is None:
+            raise ConversationNotFoundError(conversation_id)
         return Conversation(
             conversation_id=document.id,
             user_id=document.user_id,
@@ -65,7 +71,7 @@ class DefaultConversationManager(ConversationManager):
     async def get_conversation(self, conversation_id: str) -> Conversation:
         document = await self.conversation_collection.find_by_id(conversation_id)
         if document is None:
-            raise ValueError(f"Conversation with ID {conversation_id} not found.")
+            raise ConversationNotFoundError(conversation_id)
         return Conversation(
             conversation_id=document.id,
             user_id=document.user_id,
@@ -80,6 +86,9 @@ class DefaultConversationManager(ConversationManager):
         page_token: str | None = None,
         order: Literal["asc", "desc"] = "desc",
     ) -> tuple[list[ConversationItem], int, str | None]:
+        if not await self.conversation_collection.find_by_id(conversation_id):
+            raise ConversationNotFoundError(conversation_id)
+
         result = await self.conversation_item_collection.list_by_conversation(
             conversation_id=conversation_id,
             page_size=page_size,

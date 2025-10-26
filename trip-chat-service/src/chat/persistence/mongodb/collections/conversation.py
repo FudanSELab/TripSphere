@@ -21,24 +21,25 @@ class ConversationCollection:
         return document
 
     async def find_by_id(self, conversation_id: str) -> ConversationDocument | None:
-        document = await self.collection.find_one(
-            ObjectId(conversation_id), {"items": 0}
-        )
+        document = await self.collection.find_one(ObjectId(conversation_id))
         if document is not None:
             return ConversationDocument.model_validate(document)
         return None
 
     async def update_metadata(
         self, conversation_id: str, metadata: dict[str, Any]
-    ) -> ConversationDocument:
-        await self.collection.update_one(
+    ) -> ConversationDocument | None:
+        result = await self.collection.update_one(
             {"_id": ObjectId(conversation_id)}, {"$set": {"metadata": metadata}}
         )
+        if result.matched_count == 0:
+            return None
         document = await self.collection.find_one(ObjectId(conversation_id))
         return ConversationDocument.model_validate(document)
 
-    async def delete_by_id(self, conversation_id: str) -> None:
-        await self.collection.delete_one({"_id": ObjectId(conversation_id)})
+    async def delete_by_id(self, conversation_id: str) -> int:
+        result = await self.collection.delete_one({"_id": ObjectId(conversation_id)})
+        return result.deleted_count
 
 
 if __name__ == "__main__":

@@ -29,6 +29,8 @@ class ConversationServiceServicer(conversation_pb2_grpc.ConversationServiceServi
             conversation_pb2.DeleteConversationResponse,
         ],
     ) -> conversation_pb2.DeleteConversationResponse:
+        # TODO: Cancel all related incomplete tasks.
+        # TODO: Delete conversation and its items.
         return conversation_pb2.DeleteConversationResponse()
 
     async def GetConversation(
