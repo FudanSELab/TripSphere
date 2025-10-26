@@ -1,7 +1,5 @@
-import base64
 from typing import Any, Literal
 
-from bson import ObjectId
 from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
 
 from chat.config.settings import settings
@@ -11,6 +9,7 @@ from chat.persistence.mongodb.schema import (
     MessageDocument,
     TaskDocument,
 )
+from chat.utils.base64 import decode_page_token, encode_page_token
 
 
 class ConversationItemCollection:
@@ -28,19 +27,6 @@ class ConversationItemCollection:
         document.id = str(result.inserted_id)
         return document
 
-    @staticmethod
-    def encode_token(oid: ObjectId | None) -> str | None:
-        if oid is None:
-            return None
-        return base64.urlsafe_b64encode(oid.binary).decode("utf-8")
-
-    @staticmethod
-    def decode_token(token: str | None) -> ObjectId | None:
-        if token is None:
-            return None
-        binary = base64.urlsafe_b64decode(token.encode("utf-8"))
-        return ObjectId(binary)
-
     async def list_by_conversation(
         self,
         conversation_id: str,
@@ -49,7 +35,7 @@ class ConversationItemCollection:
         order: Literal["asc", "desc"],
     ) -> tuple[list[TaskDocument | MessageDocument], int, str | None]:
         query: dict[str, Any] = {"conversation_id": conversation_id}
-        if last_id := self.decode_token(page_token):
+        if last_id := decode_page_token(page_token):
             # When order is 'desc', we want items with _id < last_id
             query["_id"] = {("$lt" if order == "desc" else "$gt"): last_id}
 
@@ -75,7 +61,7 @@ class ConversationItemCollection:
                 raise ValueError(f"Unknown ConversationItemKind: {document['kind']}")
 
         conversation_items = [_from_dict(document) for document in documents]
-        next_page_token = self.encode_token(documents[-1]["_id"])
+        next_page_token = encode_page_token(documents[-1]["_id"])
 
         return conversation_items, total, next_page_token
 
