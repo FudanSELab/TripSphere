@@ -99,14 +99,13 @@ class DefaultConversationManager(ConversationManager):
                     metadata=document.metadata,
                 )
             else:
-                task_status = TaskStatus(
-                    state=document.status.state,
-                    timestamp=document.status.timestamp.isoformat(),
-                )
                 return Task(
                     id=document.id or "TASK_ID_NOT_SET",
                     context_id=document.conversation_id,
-                    status=task_status,
+                    status=TaskStatus(
+                        state=document.status.state,
+                        timestamp=document.status.timestamp.isoformat(),
+                    ),
                     artifacts=document.artifacts,
                     metadata=document.metadata,
                 )

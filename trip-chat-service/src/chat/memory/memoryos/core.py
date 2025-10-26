@@ -17,7 +17,7 @@ class DialogPage(BaseModel):
 class QueryResult(BaseModel): ...
 
 
-class Memoryos(MemoryManager[DialogPage, QueryResult]):
+class MemoryosMemoryManager(MemoryManager[DialogPage, QueryResult]):
     def __init__(self, short_term_capacity: int) -> None:
         self.short_term_memory = ShortTermMemory(short_term_capacity)
         self.mid_term_memory = MidTermMemory()
