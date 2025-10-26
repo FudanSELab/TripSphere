@@ -10,6 +10,7 @@ from pymongo import AsyncMongoClient
 from chat.config.settings import settings
 from chat.persistence.mongodb.collections import ConversationItemCollection
 from chat.persistence.mongodb.schema import MessageDocument
+from chat.utils.base64 import encode_page_token
 
 
 @pytest_asyncio.fixture
@@ -61,7 +62,7 @@ async def test_list_by_conversation_desc(
     items, total, next_page_token = result
     assert len(items) == 5
     assert total == 20
-    assert next_page_token == collection.encode_token(insert_result.inserted_ids[15])
+    assert next_page_token == encode_page_token(insert_result.inserted_ids[15])
     for i, item in enumerate(items):
         assert isinstance(item, MessageDocument)
         assert isinstance(item.parts[0].root, TextPart)
@@ -76,7 +77,7 @@ async def test_list_by_conversation_desc(
     items, total, next_page_token = result
     assert len(items) == 10
     assert total == 20
-    assert next_page_token == collection.encode_token(insert_result.inserted_ids[5])
+    assert next_page_token == encode_page_token(insert_result.inserted_ids[5])
     for i, item in enumerate(items):
         assert isinstance(item, MessageDocument)
         assert isinstance(item.parts[0].root, TextPart)
