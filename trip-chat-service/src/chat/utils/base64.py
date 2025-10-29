@@ -1,16 +1,15 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+from uuid import UUID
 
-from bson import ObjectId
 
-
-def encode_page_token(oid: ObjectId | None) -> str | None:
-    if oid is None:
+def encode_page_token(uid: UUID | None) -> str | None:
+    if uid is None:
         return None
-    return urlsafe_b64encode(oid.binary).decode("utf-8")
+    return urlsafe_b64encode(uid.bytes).decode("utf-8")
 
 
-def decode_page_token(token: str | None) -> ObjectId | None:
+def decode_page_token(token: str | None) -> UUID | None:
     if token is None:
         return None
     binary = urlsafe_b64decode(token.encode("utf-8"))
-    return ObjectId(binary)
+    return UUID(bytes=binary)

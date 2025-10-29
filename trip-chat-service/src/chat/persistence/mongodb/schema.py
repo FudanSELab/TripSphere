@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any
+from uuid import UUID
 
 from a2a.types import Artifact, Part, Role, TaskState
 from pydantic import BaseModel, BeforeValidator, Field
@@ -14,7 +15,7 @@ class ConversationItemKind(StrEnum):
 
 
 class ConversationItemDocument(BaseModel):
-    id: PyObjectId | None = Field(default=None, alias="_id")
+    id: UUID = Field(alias="_id")
     kind: ConversationItemKind
     conversation_id: PyObjectId
     created_at: datetime
@@ -48,6 +49,12 @@ class ConversationDocument(BaseModel):
     user_id: str
     created_at: datetime
     metadata: dict[str, Any] | None = Field(default=None)
+
+
+class DialogPage(BaseModel):
+    query: MessageDocument
+    response: MessageDocument | TaskDocument
+    timestamp: datetime
 
 
 if __name__ == "__main__":

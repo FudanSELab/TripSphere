@@ -11,13 +11,14 @@ from chat.config.settings import settings
 from chat.persistence.mongodb.collections import ConversationItemCollection
 from chat.persistence.mongodb.schema import MessageDocument
 from chat.utils.base64 import encode_page_token
+from chat.utils.uuid import uuid7
 
 
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncMongoClient[dict[str, Any]], None]:
     settings.mongodb.database = "test_database"
     client: AsyncMongoClient[dict[str, Any]] = AsyncMongoClient(
-        "mongodb://localhost:27017"
+        "mongodb://localhost:27017", uuidRepresentation="standard"
     )
     yield client
     await client.close()
@@ -42,6 +43,7 @@ async def test_list_by_conversation_desc(
     conversation_id = ObjectId()
     messages = [
         MessageDocument(
+            _id=uuid7(),
             conversation_id=str(conversation_id),
             role=Role.user if i % 2 == 0 else Role.agent,
             created_at=datetime.now(),

@@ -94,7 +94,7 @@ async def test_list_conversation_items_desc(mocker: pytest_mock.MockerFixture) -
     conversation_id = ObjectId()
     messages = [
         MessageDocument(
-            _id=str(ObjectId()),
+            _id=uuid7(),
             conversation_id=str(conversation_id),
             role=Role.user if i % 2 == 0 else Role.agent,
             created_at=datetime.now(),
@@ -122,17 +122,20 @@ async def test_list_conversation_items_desc(mocker: pytest_mock.MockerFixture) -
         return_value=(
             list(reversed(messages[15:20])),
             20,
-            encode_page_token(ObjectId(messages[15].id)),
+            encode_page_token(messages[15].id),
         )
     )
 
-    items, total, next_page_token = await conversation_manager.list_conversation_items(
+    result = await conversation_manager.list_conversation_items(
         str(conversation_id), page_size=5, page_token=None, order="desc"
     )
+    items = result["items"]
+    total_count = result["total_count"]
+    next_page_token = result["next_page_token"]
 
-    assert len(items) == 5 and total == 20
+    assert len(items) == 5 and total_count == 20
     conversation_item_collection.list_by_conversation.assert_awaited_once()
-    assert next_page_token == encode_page_token(ObjectId(messages[15].id))
+    assert next_page_token == encode_page_token(messages[15].id)
     for i, item in enumerate(items):
         assert isinstance(item.content, Message)
         assert isinstance(item.content.parts[0].root, TextPart)
@@ -142,17 +145,20 @@ async def test_list_conversation_items_desc(mocker: pytest_mock.MockerFixture) -
         return_value=(
             list(reversed(messages[5:15])),
             20,
-            encode_page_token(ObjectId(messages[5].id)),
+            encode_page_token(messages[5].id),
         )
     )
 
-    items, total, next_page_token = await conversation_manager.list_conversation_items(
+    result = await conversation_manager.list_conversation_items(
         str(conversation_id), page_size=10, page_token=next_page_token, order="desc"
     )
+    items = result["items"]
+    total_count = result["total_count"]
+    next_page_token = result["next_page_token"]
 
-    assert len(items) == 10 and total == 20
+    assert len(items) == 10 and total_count == 20
     conversation_item_collection.list_by_conversation.assert_awaited_once()
-    assert next_page_token == encode_page_token(ObjectId(messages[5].id))
+    assert next_page_token == encode_page_token(messages[5].id)
     for i, item in enumerate(items):
         assert isinstance(item.content, Message)
         assert isinstance(item.content.parts[0].root, TextPart)

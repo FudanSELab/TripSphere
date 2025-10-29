@@ -3,7 +3,7 @@ from typing import Any, Literal
 
 from a2a.types import Message, Task, TaskStatus
 
-from chat.conversation.manager import ConversationManager
+from chat.conversation.manager import ConversationManager, ListConversationItemsResult
 from chat.conversation.models import (
     Conversation,
     ConversationItem,
@@ -18,6 +18,29 @@ from chat.persistence.mongodb.schema import (
     MessageDocument,
     TaskDocument,
 )
+
+
+def from_document(document: MessageDocument | TaskDocument) -> Message | Task:
+    if isinstance(document, MessageDocument):
+        return Message(
+            message_id=str(document.id) or "MESSAGE_ID_NOT_SET",
+            context_id=document.conversation_id,
+            role=document.role,
+            parts=document.parts,
+            task_id=document.task_id,
+            metadata=document.metadata,
+        )
+    else:
+        return Task(
+            id=str(document.id) or "TASK_ID_NOT_SET",
+            context_id=document.conversation_id,
+            status=TaskStatus(
+                state=document.status.state,
+                timestamp=document.status.timestamp.isoformat(),
+            ),
+            artifacts=document.artifacts,
+            metadata=document.metadata,
+        )
 
 
 class DefaultConversationManager(ConversationManager):
@@ -85,44 +108,29 @@ class DefaultConversationManager(ConversationManager):
         page_size: int,
         page_token: str | None = None,
         order: Literal["asc", "desc"] = "desc",
-    ) -> tuple[list[ConversationItem], int, str | None]:
+    ) -> ListConversationItemsResult:
         if not await self.conversation_collection.find_by_id(conversation_id):
             raise ConversationNotFoundError(conversation_id)
 
-        result = await self.conversation_item_collection.list_by_conversation(
+        (
+            documents,
+            total_count,
+            next_page_token,
+        ) = await self.conversation_item_collection.list_by_conversation(
             conversation_id=conversation_id,
             page_size=page_size,
             page_token=page_token,
             order=order,
         )
-        documents, total, next_page_token = result
-
-        def _from_document(document: MessageDocument | TaskDocument) -> Message | Task:
-            if isinstance(document, MessageDocument):
-                return Message(
-                    message_id=document.id or "MESSAGE_ID_NOT_SET",
-                    context_id=document.conversation_id,
-                    role=document.role,
-                    parts=document.parts,
-                    task_id=document.task_id,
-                    metadata=document.metadata,
-                )
-            else:
-                return Task(
-                    id=document.id or "TASK_ID_NOT_SET",
-                    context_id=document.conversation_id,
-                    status=TaskStatus(
-                        state=document.status.state,
-                        timestamp=document.status.timestamp.isoformat(),
-                    ),
-                    artifacts=document.artifacts,
-                    metadata=document.metadata,
-                )
 
         conversation_items = [
             ConversationItem(
-                created_at=document.created_at, content=_from_document(document)
+                created_at=document.created_at, content=from_document(document)
             )
             for document in documents
         ]
-        return conversation_items, total, next_page_token
+        return ListConversationItemsResult(
+            items=conversation_items,
+            total_count=total_count,
+            next_page_token=next_page_token,
+        )

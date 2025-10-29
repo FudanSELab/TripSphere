@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 from chat.conversation.models import Conversation, ConversationItem
+
+
+class ListConversationItemsResult(TypedDict):
+    items: list[ConversationItem]
+    total_count: int
+    next_page_token: str | None
 
 
 class ConversationManager(ABC):
@@ -28,4 +34,4 @@ class ConversationManager(ABC):
         page_size: int,
         page_token: str | None = None,
         order: Literal["asc", "desc"] = "desc",
-    ) -> tuple[list[ConversationItem], int, str | None]: ...
+    ) -> ListConversationItemsResult: ...

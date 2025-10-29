@@ -18,7 +18,7 @@ class NacosDefaults(BaseModel):
 
 class MemoryosDefaults(BaseModel):
     short_term_capacity: int = 16
-    mid_term_capacity: int = 1024
+    mid_term_capacity: int = 128
 
 
 class MemoryDefaults(BaseModel):

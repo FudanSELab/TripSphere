@@ -5,6 +5,10 @@ package tripsphere.chat;
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
+option java_multiple_files = true;
+option java_package = "org.tripsphere.chat";
+option java_outer_classname = "ProtocolProto";
+
 message FilePart {
   oneof file {
     string file_with_uri = 1;
@@ -47,6 +51,8 @@ message Message {
   repeated Part parts = 5;
   // Any optional metadata to provide along with the message.
   google.protobuf.Struct metadata = 6;
+  // The URIs of extensions that are present or contributed to this Message.
+  repeated string extensions = 7;
 }
 
 message Artifact {
@@ -60,6 +66,8 @@ message Artifact {
   repeated Part parts = 4;
   // Optional metadata included with the artifact.
   google.protobuf.Struct metadata = 5;
+  // The URIs of extensions that are present or contributed to this Artifact.
+  repeated string extensions = 6;
 }
 
 enum TaskState {
