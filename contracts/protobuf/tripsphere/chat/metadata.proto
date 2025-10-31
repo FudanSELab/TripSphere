@@ -14,5 +14,6 @@ service MetadataService {
 message GetVersionRequest {}
 
 message GetVersionResponse {
-  string version = 1;  // e.g., "0.1.0"
+  // Version of the chat service, e.g., "0.1.0"
+  string version = 1;
 }

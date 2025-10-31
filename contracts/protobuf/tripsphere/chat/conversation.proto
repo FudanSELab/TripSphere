@@ -21,7 +21,9 @@ message Conversation {
 
 message ConversationItem {
   oneof content {
+    // A2A Task is a snapshot of the stateful task at a point in time.
     Task task = 1;
+    // A2A Message is used for immediate, self-contained interactions.
     Message message = 2;
   }
   google.protobuf.Timestamp created_at = 3;
@@ -36,7 +38,11 @@ service ConversationService {
 
   rpc UpdateConversation(UpdateConversationRequest) returns (UpdateConversationResponse) {}
 
+  rpc GetConversationItem(GetConversationItemRequest) returns (GetConversationItemResponse) {}
+
   rpc ListConversationItems(ListConversationItemsRequest) returns (ListConversationItemsResponse) {}
+
+  rpc ExtendConversationItems(ExtendConversationItemsRequest) returns (ExtendConversationItemsResponse) {}
 }
 
 message CreateConversationRequest {}
@@ -69,6 +75,15 @@ message UpdateConversationResponse {
   Conversation conversation = 1;
 }
 
+message GetConversationItemRequest {
+  string conversation_id = 1;
+  string item_id = 2;
+}
+
+message GetConversationItemResponse {
+  ConversationItem item = 1;
+}
+
 message ListConversationItemsRequest {
   string conversation_id = 1;
   // Number of items to return in one page.
@@ -81,8 +96,15 @@ message ListConversationItemsRequest {
 
 message ListConversationItemsResponse {
   repeated ConversationItem items = 1;
+  // Base64 encoded item ID for fetching the next page.
+  string next_page_token = 2;
   // Total number of items in the conversation.
-  int32 total_count = 2;
-  // Base64 encoded item ID to be used to fetch the next page.
-  string next_page_token = 3;
+  int32 total_size = 3;
 }
+
+message ExtendConversationItemsRequest {
+  string conversation_id = 1;
+  repeated ConversationItem items = 2;
+}
+
+message ExtendConversationItemsResponse {}

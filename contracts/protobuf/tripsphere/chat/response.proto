@@ -15,17 +15,23 @@ service ResponseService {
 
   rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
 
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {}
+
   rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
 }
 
 message CreateResponseRequest {
-  string conversation_id = 1;
-  Message message = 2;
+  // The message to send to the assistant.
+  Message message = 1;
+  // Optional metadata for the request.
+  google.protobuf.Struct metadata = 2;
 }
 
 message CreateResponseResponse {
   oneof payload {
+    // A2A Task is a snapshot of the stateful task at a point in time.
     Task task = 1;
+    // A2A Message is used for immediate, self-contained interactions.
     Message message = 2;
   }
 }
@@ -40,12 +46,44 @@ message CreateResponseStreamResponse {
 }
 
 message GetTaskRequest {
-  string conversation_id = 1;
-  string task_id = 2;
+  string task_id = 1;
+  // The number of most recent messages from the task's history to retrieve.
+  int32 history_length = 2;
 }
 
 message GetTaskResponse {
   Task task = 1;
+}
+
+message ListTasksRequest {
+  // Filter tasks by context ID to get tasks from a specific conversation.
+  string conversation_id = 1;
+  // Filter tasks by their current status state.
+  TaskState status = 2;
+  // Maximum number of tasks to return. Must be between 1 and 100.
+  // Defaults to 50 if not specified.
+  int32 page_size = 3;
+  // Token for pagination. Use the next_page_token from a previous ListTasksResponse.
+  string page_token = 4;
+  // Number of recent messages to include in each task's history.
+  // Must be non-negative. Defaults to 0 if not specified.
+  int32 history_length = 5;
+  // Filter tasks updated after this timestamp.
+  // Only tasks with a last updated time >= this value will be returned.
+  google.protobuf.Timestamp last_updated_time = 6;
+  // Whether to include artifacts in the returned tasks.
+  // Defaults to false to reduce payload size.
+  bool include_artifacts = 7;
+}
+
+message ListTasksResponse {
+  // Array of tasks matching the specified criteria.
+  repeated Task tasks = 1;
+  // Token for retrieving the next page of results.
+  // Empty string if no more results.
+  string next_page_token = 2;
+  // Total number of tasks available (before pagination).
+  int32 total_size = 3;
 }
 
 message CancelTaskRequest {
