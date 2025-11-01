@@ -18,7 +18,7 @@ class ConversationServiceServicer(conversation_pb2_grpc.ConversationServiceServi
         metadata = context.invocation_metadata()
         metadata_dict = dict(metadata) if metadata is not None else {}
         user_id = metadata_dict.get("user-id", "")
-        logger.info(f"Creating conversation for user_id {user_id!r}")
+        logger.info(f"CreateConversationRequest  user_id {user_id!r}")
         return conversation_pb2.CreateConversationResponse()
 
     async def DeleteConversation(
@@ -62,3 +62,23 @@ class ConversationServiceServicer(conversation_pb2_grpc.ConversationServiceServi
         ],
     ) -> conversation_pb2.ListConversationItemsResponse:
         return conversation_pb2.ListConversationItemsResponse()
+
+    async def GetConversationItem(
+        self,
+        request: conversation_pb2.GetConversationItemRequest,
+        context: grpc.aio.ServicerContext[
+            conversation_pb2.GetConversationItemRequest,
+            conversation_pb2.GetConversationItemResponse,
+        ],
+    ) -> conversation_pb2.GetConversationItemResponse:
+        return conversation_pb2.GetConversationItemResponse()
+
+    async def ExtendConversationItems(
+        self,
+        request: conversation_pb2.ExtendConversationItemsRequest,
+        context: grpc.aio.ServicerContext[
+            conversation_pb2.ExtendConversationItemsRequest,
+            conversation_pb2.ExtendConversationItemsResponse,
+        ],
+    ) -> conversation_pb2.ExtendConversationItemsResponse:
+        return conversation_pb2.ExtendConversationItemsResponse()

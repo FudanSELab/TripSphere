@@ -76,8 +76,7 @@ message UpdateConversationResponse {
 }
 
 message GetConversationItemRequest {
-  string conversation_id = 1;
-  string item_id = 2;
+  string item_id = 1;
 }
 
 message GetConversationItemResponse {

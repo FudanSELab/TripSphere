@@ -95,6 +95,7 @@ def uuid7() -> UUID:
 if __name__ == "__main__":
     import logging
 
-    logging.basicConfig(level=logging.DEBUG)
+    fmt = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] - %(message)s"
+    logging.basicConfig(level=logging.DEBUG, format=fmt)
     for _ in range(1000):
         logging.debug(uuid7())

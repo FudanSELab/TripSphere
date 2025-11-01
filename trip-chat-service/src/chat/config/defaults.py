@@ -16,15 +16,6 @@ class NacosDefaults(BaseModel):
     group_name: str = "DEFAULT_GROUP"
 
 
-class MemoryosDefaults(BaseModel):
-    short_term_capacity: int = 16
-    mid_term_capacity: int = 128
-
-
-class MemoryDefaults(BaseModel):
-    memoryos: MemoryosDefaults = Field(default_factory=MemoryosDefaults)
-
-
 class MongodbDefaults(BaseModel):
     uri: str = "mongodb://localhost:27017"
     database: str = "trip_chat_database"
@@ -34,7 +25,6 @@ class Defaults(BaseModel):
     service: ServiceDefaults = Field(default_factory=ServiceDefaults)
     grpc: GrpcDefaults = Field(default_factory=GrpcDefaults)
     nacos: NacosDefaults = Field(default_factory=NacosDefaults)
-    memory: MemoryDefaults = Field(default_factory=MemoryDefaults)
     mongodb: MongodbDefaults = Field(default_factory=MongodbDefaults)
 
 

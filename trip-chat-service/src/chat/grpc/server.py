@@ -5,10 +5,10 @@ import grpc
 from tripsphere.chat import conversation_pb2_grpc, metadata_pb2_grpc, response_pb2_grpc
 
 from chat.config.settings import settings
-from chat.grpc.conversation import ConversationServiceServicer
-from chat.grpc.metadata import MetadataServiceServicer
-from chat.grpc.response import ResponseServiceServicer
-from chat.nacos.client import NacosNaming
+from chat.grpc.servicers.conversation import ConversationServiceServicer
+from chat.grpc.servicers.metadata import MetadataServiceServicer
+from chat.grpc.servicers.response import ResponseServiceServicer
+from chat.infrastructure.nacos.naming import NacosNaming
 
 logger = logging.getLogger(__name__)
 
