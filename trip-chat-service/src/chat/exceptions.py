@@ -6,6 +6,14 @@ class ConversationNotFoundError(Exception):
         self.conversation_id = conversation_id
 
 
+class ConversationItemNotFoundError(Exception):
+    """Raised when a conversation item is not found."""
+
+    def __init__(self, item_id: str):
+        super().__init__(f"Conversation item with ID {item_id} is not found.")
+        self.item_id = item_id
+
+
 class TaskNotFoundError(Exception):
     """Raised when a task is not found."""
 
