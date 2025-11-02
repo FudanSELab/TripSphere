@@ -89,8 +89,8 @@ message ListConversationItemsRequest {
   int32 page_size = 2;
   // Base64 encoded item ID returned from previous call.
   string page_token = 3;
-  // The order of items, "asc" or "desc", default is "desc".
-  string order = 4;
+  // "forward" or "backward", default is "backward".
+  string direction = 4;
 }
 
 message ListConversationItemsResponse {

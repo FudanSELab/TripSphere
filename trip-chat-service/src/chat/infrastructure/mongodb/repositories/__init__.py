@@ -1,3 +1,3 @@
-from .conversation import ConversationItemRepository, ConversationRepository
+from .conversation import MongoConversationRepository
 
-__all__ = ["ConversationRepository", "ConversationItemRepository"]
+__all__ = ["MongoConversationRepository"]

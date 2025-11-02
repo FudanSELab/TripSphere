@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package tripsphere.chat;
+
+import "google/protobuf/struct.proto";
+import "tripsphere/chat/conversation.proto";
+import "tripsphere/chat/protocol.proto";
+
+option java_multiple_files = true;
+option java_package = "org.tripsphere.chat";
+option java_outer_classname = "MemoryProto";
+
+message MemoryItem {
+    string item_id = 1;
+    repeated Part content = 2;
+    google.protobuf.Struct metadata = 3;
+}
+
+message MemoryBundle {
+    repeated MemoryItem memories = 1;
+    repeated ConversationItem history = 2;
+}
+
+service MemoryService {
+  rpc AddMemoryItem (AddMemoryItemRequest) returns (AddMemoryItemResponse);
+
+  rpc GetMemoryItem (GetMemoryItemRequest) returns (GetMemoryItemResponse);
+
+  rpc DeleteMemoryItem (DeleteMemoryItemRequest) returns (DeleteMemoryItemResponse);
+
+  rpc ListMemoryItems (ListMemoryItemsRequest) returns (ListMemoryItemsResponse);
+
+  rpc GetMemoryBundle (GetMemoryBundleRequest) returns (GetMemoryBundleResponse);
+}
+
+message AddMemoryItemRequest {}
+
+message AddMemoryItemResponse {}
+
+message GetMemoryItemRequest {}
+
+message GetMemoryItemResponse {}
+
+message DeleteMemoryItemRequest {}
+
+message DeleteMemoryItemResponse {}
+
+message ListMemoryItemsRequest {}
+
+message ListMemoryItemsResponse {}
+
+message GetMemoryBundleRequest {}
+
+message GetMemoryBundleResponse {}

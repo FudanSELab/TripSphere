@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package tripsphere.chat;
 
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "tripsphere/chat/protocol.proto";
 
 option java_multiple_files = true;
