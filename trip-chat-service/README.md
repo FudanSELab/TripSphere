@@ -41,7 +41,11 @@ $env:OTEL_PYTHON_LOG_CORRELATION="true"
 Start the MongoDB community server container:
 
 ```bash
-docker run --name mongodb -p 27017:27017 --network tripsphere -d mongodb/mongodb-community-server:latest
+docker run -d \
+    -p 27017:27017 \
+    --network tripsphere \
+    --name mongodb \
+    mongodb/mongodb-community-server:latest
 ```
 
 Finally, start the server:

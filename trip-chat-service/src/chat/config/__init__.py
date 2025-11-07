@@ -1,5 +1,5 @@
 # Application Configurations
 
 """
-Priority: cli arguments > environment variables > default values
+Priority: CLI arguments > environment variables > default field values
 """

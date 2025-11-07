@@ -74,8 +74,8 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 50057
+EXPOSE 24210
 
-# Run the gRPC server by default
-ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "chat.server"]
+# Run the ASGI server by default
+ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "chat"]
 CMD []

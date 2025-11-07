@@ -1,47 +1,50 @@
 import logging
 import sys
+from functools import lru_cache
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from chat.config.defaults import defaults
-
 logger = logging.getLogger(__name__)
 
 
-class Service(BaseModel):
-    name: str = Field(default=defaults.service.name)
-    namespace: str = Field(default=defaults.service.namespace)
+class AppSettings(BaseModel):
+    name: str = Field(default="trip-chat-service")
 
 
-class Grpc(BaseModel):
-    port: int = Field(default=defaults.grpc.port)
+class ServerSettings(BaseModel):
+    host: str = Field(default="127.0.0.1")
+    port: int = Field(default=24210)
 
 
-class Nacos(BaseModel):
-    server_address: str = Field(default=defaults.nacos.server_address)
-    namespace_id: str = Field(default=defaults.nacos.namespace_id)
-    group_name: str = Field(default=defaults.nacos.group_name)
+class NacosSettings(BaseModel):
+    server_address: str = Field(default="localhost:8848")
+    namespace_id: str = Field(default="public")
+    group_name: str = Field(default="DEFAULT_GROUP")
 
 
-class Mongodb(BaseModel):
-    uri: str = Field(default=defaults.mongodb.uri)
-    database: str = Field(default=defaults.mongodb.database)
+class MongodbSettings(BaseModel):
+    uri: str = Field(default="mongodb://localhost:27017")
+    database: str = Field(default="chat_service_database")
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_nested_delimiter="__", cli_parse_args="pytest" not in sys.argv[0]
+        env_nested_delimiter="_",
+        env_nested_max_split=1,
+        cli_parse_args="pytest" not in sys.argv[0],
     )
-    service: Service = Field(default_factory=Service)
-    grpc: Grpc = Field(default_factory=Grpc)
-    nacos: Nacos = Field(default_factory=Nacos)
-    mongodb: Mongodb = Field(default_factory=Mongodb)
+    app: AppSettings = Field(default_factory=AppSettings)
+    server: ServerSettings = Field(default_factory=ServerSettings)
+    nacos: NacosSettings = Field(default_factory=NacosSettings)
+    mongodb: MongodbSettings = Field(default_factory=MongodbSettings)
 
 
-settings = Settings()
+@lru_cache(maxsize=1, typed=True)
+def get_settings() -> Settings:
+    return Settings()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logger.debug(f"{settings}")
+    logger.debug(f"{get_settings()}")

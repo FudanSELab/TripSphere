@@ -4,6 +4,8 @@ Please update changelog as part of any significant pull request. Place short des
 
 ## Unreleased
 
+- trip-chat-service:
+  - TODO
 - trip-itinerary-planner:
   - LLM-powered itinerary planning using LangGraph and OpenAI
   - Human-in-the-Loop functionality for user feedback and adjustments
