@@ -2,14 +2,12 @@ import os
 import sys
 from typing import NoReturn
 
-from litestar.cli.main import litestar_group
-
 from chat.config.settings import get_settings
 
 
 def setup_environment() -> None:
     """
-    Configure the environment variables and path.
+    Configure the environment variables.
     """
     settings = get_settings()
     os.environ.setdefault("LITESTAR_APP", "chat.asgi:create_app")
@@ -31,6 +29,8 @@ def run_cli() -> NoReturn:
     setup_environment()
 
     try:
+        from litestar.cli.main import litestar_group
+
         settings = get_settings()
         sys.exit(
             litestar_group(  # pyright: ignore
@@ -46,8 +46,7 @@ def run_cli() -> NoReturn:
     except ImportError as exc:
         print(
             "Could not load required libraries.",
-            "Please check your installation and "
-            "make sure you activated any necessary virtual environment.",
+            "Please check your activated environment.",
         )
         print(exc)
         sys.exit(1)

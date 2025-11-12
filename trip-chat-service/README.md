@@ -57,7 +57,7 @@ uv run opentelemetry-instrument \
     --logs_exporter otlp \
     --service_name trip-chat-service \
     --exporter_otlp_endpoint http://127.0.0.1:4317 \
-    python -m chat.server --nacos.server_address 127.0.0.1:8848
+    python -m chat
 ```
 
 If you are using PowerShell:
@@ -69,5 +69,5 @@ uv run opentelemetry-instrument `
     --logs_exporter otlp `
     --service_name trip-chat-service `
     --exporter_otlp_endpoint http://127.0.0.1:4317 `
-    python -m chat.server --nacos.server_address 127.0.0.1:8848
+    python -m chat
 ```

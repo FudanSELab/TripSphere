@@ -23,7 +23,7 @@ class NacosSettings(BaseModel):
     group_name: str = Field(default="DEFAULT_GROUP")
 
 
-class MongodbSettings(BaseModel):
+class MongoSettings(BaseModel):
     uri: str = Field(default="mongodb://localhost:27017")
     database: str = Field(default="chat_service_database")
 
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
-    mongodb: MongodbSettings = Field(default_factory=MongodbSettings)
+    mongo: MongoSettings = Field(default_factory=MongoSettings)
 
 
 @lru_cache(maxsize=1, typed=True)
