@@ -2,7 +2,7 @@ import logging
 import sys
 from functools import lru_cache
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,15 @@ class MongoSettings(BaseModel):
     database: str = Field(default="chat_service_database")
 
 
+class OpenAISettings(BaseModel):
+    api_key: SecretStr = Field(default=SecretStr("api-key"))
+    base_url: str = Field(default="https://api.openai.com/v1")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
         env_nested_delimiter="_",
         env_nested_max_split=1,
         cli_parse_args="pytest" not in sys.argv[0],
@@ -38,6 +45,7 @@ class Settings(BaseSettings):
     server: ServerSettings = Field(default_factory=ServerSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
+    openai: OpenAISettings = Field(default_factory=OpenAISettings)
 
 
 @lru_cache(maxsize=1, typed=True)

@@ -1,0 +1,30 @@
+from typing import Any, cast
+
+from litestar.datastructures import State
+from pymongo import AsyncMongoClient
+
+from chat.config.settings import get_settings
+from chat.conversation.repositories import (
+    ConversationRepository,
+    MessageRepository,
+    MongoConversationRepository,
+    MongoMessageRepository,
+)
+
+
+async def provide_conversation_repository(state: State) -> ConversationRepository:
+    mongo_client = cast(AsyncMongoClient[dict[str, Any]], state.mongo_client)
+    settings = get_settings()
+    database = mongo_client.get_database(settings.mongo.database)
+    return MongoConversationRepository(
+        database.get_collection(MongoConversationRepository.COLLECTION_NAME)
+    )
+
+
+async def provide_message_repository(state: State) -> MessageRepository:
+    mongo_client = cast(AsyncMongoClient[dict[str, Any]], state.mongo_client)
+    settings = get_settings()
+    database = mongo_client.get_database(settings.mongo.database)
+    return MongoMessageRepository(
+        database.get_collection(MongoMessageRepository.COLLECTION_NAME)
+    )

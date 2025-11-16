@@ -1,5 +1,5 @@
 # Application Configurations
 
 """
-Priority: CLI arguments > environment variables > default field values
+Priority: CLI arguments > environment variables > dotenv file > default field values
 """

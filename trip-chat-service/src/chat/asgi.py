@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
-from importlib import metadata
-from typing import AsyncGenerator, cast
+from importlib.metadata import version
+from typing import Any, AsyncGenerator, cast
 
-from litestar import Litestar, Router, get
-from pydantic import BaseModel, Field
+from litestar import Litestar, Router
+from litestar.openapi.config import OpenAPIConfig
+from litestar.openapi.plugins import ScalarRenderPlugin
+from pymongo import AsyncMongoClient
 
 from chat.config.settings import get_settings
 from chat.controllers import (
@@ -16,7 +18,23 @@ from chat.infra.nacos.naming import NacosNaming
 
 
 @asynccontextmanager
-async def nacos(app: Litestar) -> AsyncGenerator[None, None]:
+async def mongo_client(app: Litestar) -> AsyncGenerator[None, None]:
+    """
+    PyMongo provides built-in connection pool. Only one client instance is required.
+    """
+    mongo_client = getattr(app.state, "mongo_client", None)
+    if mongo_client is None:
+        settings = get_settings()
+        mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
+        app.state.mongo_client = mongo_client
+    try:
+        yield
+    finally:
+        await mongo_client.close()
+
+
+@asynccontextmanager
+async def nacos_naming(app: Litestar) -> AsyncGenerator[None, None]:
     nacos_naming = getattr(app.state, "nacos_naming", None)
     if nacos_naming is None:
         settings = get_settings()
@@ -34,30 +52,24 @@ async def nacos(app: Litestar) -> AsyncGenerator[None, None]:
         await cast(NacosNaming, nacos_naming).deregister(ephemeral=True)
 
 
-class RootResponse(BaseModel):
-    version: str = Field(
-        description="Current version of chat service.",
-        examples=["3.14.1"],
-    )
-
-
-@get("/")
-async def root() -> RootResponse:
-    """
-    Root endpoint.
-    """
-    return RootResponse(version=metadata.version("chat"))
-
-
 def create_app() -> Litestar:
     v1_router = Router(
         path="/api/v1",
         route_handlers=[
-            ConversationController,
             MessageController,
+            ConversationController,
             ChatController,
             TaskController,
         ],
     )
-    application = Litestar([root, v1_router], lifespan=[nacos])
+    openapi_config = OpenAPIConfig(
+        title=get_settings().app.name,
+        version=version("chat"),
+        render_plugins=[ScalarRenderPlugin()],
+    )
+    application = Litestar(
+        [v1_router],
+        openapi_config=openapi_config,
+        lifespan=[mongo_client, nacos_naming],
+    )
     return application

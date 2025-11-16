@@ -12,7 +12,7 @@ try:
     logger.debug("Using built-in uuid7 from standard library.")
 
 except AttributeError:
-    logger.debug("Built-in uuid7 not found, fallback to custom implementation.")
+    logger.debug("Built-in uuid7 not found, using fallback implementation.")
 
     _UINT_128_MAX = (1 << 128) - 1
     _RFC_4122_VERSION_7_FLAGS = (7 << 76) | (0x8000 << 48)
