@@ -12,6 +12,7 @@ import org.tripsphere.hotel.*;
 import org.tripsphere.hotel.service.HotelService;
 import org.tripsphere.hotel.model.Hotel;
 import org.tripsphere.hotel.model.Room;
+import org.tripsphere.hotel.model.Address;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +28,16 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
                          io.grpc.stub.StreamObserver<org.tripsphere.hotel.AddHotelResponse> responseObserver) {
         Hotel hotel = new Hotel();
         hotel.setName(request.getHotel().getName());
-        hotel.setCountry(request.getHotel().getCountry());
-        hotel.setProvince(request.getHotel().getProvince());
-        hotel.setCity(request.getHotel().getCity());
-        hotel.setZone(request.getHotel().getZone());
-        hotel.setAddress(request.getHotel().getAddress());
+
+        Address address = new Address();
+        address.setCountry(request.getHotel().getAddress().getCountry());
+        address.setProvince(request.getHotel().getAddress().getProvince());
+        address.setCity(request.getHotel().getAddress().getCity());
+        address.setCounty(request.getHotel().getAddress().getCounty());
+        address.setDistrict(request.getHotel().getAddress().getDistrict());
+        address.setStreet(request.getHotel().getAddress().getStreet());
+        hotel.setAddress(address);
+
         hotel.setIntroduction(request.getHotel().getIntroduction());
         hotel.setTags(request.getHotel().getTagsList());
 
@@ -79,11 +85,16 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         Hotel hotel = new Hotel();
         hotel.setId(request.getHotel().getId());
         hotel.setName(request.getHotel().getName());
-        hotel.setCountry(request.getHotel().getCountry());
-        hotel.setProvince(request.getHotel().getProvince());
-        hotel.setCity(request.getHotel().getCity());
-        hotel.setZone(request.getHotel().getZone());
-        hotel.setAddress(request.getHotel().getAddress());
+
+        Address address = new Address();
+        address.setCountry(request.getHotel().getAddress().getCountry());
+        address.setProvince(request.getHotel().getAddress().getProvince());
+        address.setCity(request.getHotel().getAddress().getCity());
+        address.setCounty(request.getHotel().getAddress().getCounty());
+        address.setDistrict(request.getHotel().getAddress().getDistrict());
+        address.setStreet(request.getHotel().getAddress().getStreet());
+        hotel.setAddress(address);
+
         hotel.setIntroduction(request.getHotel().getIntroduction());
         hotel.setTags(request.getHotel().getTagsList());
 
@@ -204,11 +215,6 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         org.tripsphere.hotel.Hotel.Builder hotelBuilder = org.tripsphere.hotel.Hotel.newBuilder()
                 .setId(hotel.getId() == null ? "" : hotel.getId())
                 .setName(hotel.getName() == null ? "" : hotel.getName())
-                .setCountry(hotel.getCountry() == null ? "" : hotel.getCountry())
-                .setProvince(hotel.getProvince() == null ? "" : hotel.getProvince())
-                .setCity(hotel.getCity() == null ? "" : hotel.getCity())
-                .setZone(hotel.getZone() == null ? "" : hotel.getZone())
-                .setAddress(hotel.getAddress() == null ? "" : hotel.getAddress())
                 .setIntroduction(hotel.getIntroduction() == null ? "" : hotel.getIntroduction());
 
         if (hotel.getTags() != null)
@@ -233,11 +239,24 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
                         .setMinArea(room.getMin_area())
                         .setMaxArea(room.getMax_area())
                         .setPeopleNumber(room.getPeople_number());
-
                 if (room.getTags() != null)
                     roomBuilder.addAllTags(room.getTags());
+                hotelBuilder.addRooms(roomBuilder.build());
             }
         }
+
+
+        if (hotel.getAddress() != null){
+            org.tripsphere.hotel.Address.Builder addressBuilder = org.tripsphere.hotel.Address.newBuilder()
+                    .setCountry(hotel.getAddress().getCountry() == null ? "" : hotel.getAddress().getCountry())
+                    .setProvince(hotel.getAddress().getProvince() == null ? "" : hotel.getAddress().getProvince())
+                    .setCity(hotel.getAddress().getCity() == null ? "" : hotel.getAddress().getCity())
+                    .setCounty(hotel.getAddress().getCounty() == null ? "" : hotel.getAddress().getCounty())
+                    .setDistrict(hotel.getAddress().getDistrict() == null ? "" : hotel.getAddress().getDistrict())
+                    .setStreet(hotel.getAddress().getStreet() == null ? "" : hotel.getAddress().getStreet());
+            hotelBuilder.setAddress(addressBuilder.build());
+        }
+
         FindHotelByIdResponse response = FindHotelByIdResponse.newBuilder().setHotel(hotelBuilder.build()).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
@@ -272,11 +291,6 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
             org.tripsphere.hotel.Hotel.Builder hotelBuilder = org.tripsphere.hotel.Hotel.newBuilder()
                     .setId(hotel.getId() == null ? "" : hotel.getId())
                     .setName(hotel.getName() == null ? "" : hotel.getName())
-                    .setCountry(hotel.getCountry() == null ? "" : hotel.getCountry())
-                    .setProvince(hotel.getProvince() == null ? "" : hotel.getProvince())
-                    .setCity(hotel.getCity() == null ? "" : hotel.getCity())
-                    .setZone(hotel.getZone() == null ? "" : hotel.getZone())
-                    .setAddress(hotel.getAddress() == null ? "" : hotel.getAddress())
                     .setIntroduction(hotel.getIntroduction() == null ? "" : hotel.getIntroduction());
 
             if (hotel.getTags() != null)
@@ -290,25 +304,16 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
                 hotelBuilder.setLocation(locationProto);
             }
 
-            if (hotel.getRooms() != null) {
-                for (Room room : hotel.getRooms()) {
-                    org.tripsphere.hotel.Room.Builder roomBuilder = org.tripsphere.hotel.Room.newBuilder()
-                            .setName(room.getName() == null ? "" : room.getName())
-                            .setTotalNumber(room.getTotal_number())
-                            .setRemainingNumber(room.getRemaining_number())
-                            .setBedWidth(room.getBed_width())
-                            .setBedNumber(room.getBed_number())
-                            .setMinArea(room.getMin_area())
-                            .setMaxArea(room.getMax_area())
-                            .setPeopleNumber(room.getPeople_number());
-
-                    if (room.getTags() != null)
-                        roomBuilder.addAllTags(room.getTags());
-
-                    hotelBuilder.addRooms(roomBuilder.build());
-                }
+            if (hotel.getAddress() != null){
+                org.tripsphere.hotel.Address.Builder addressBuilder = org.tripsphere.hotel.Address.newBuilder()
+                        .setCountry(hotel.getAddress().getCountry() == null ? "" : hotel.getAddress().getCountry())
+                        .setProvince(hotel.getAddress().getProvince() == null ? "" : hotel.getAddress().getProvince())
+                        .setCity(hotel.getAddress().getCity() == null ? "" : hotel.getAddress().getCity())
+                        .setCounty(hotel.getAddress().getCounty() == null ? "" : hotel.getAddress().getCounty())
+                        .setDistrict(hotel.getAddress().getDistrict() == null ? "" : hotel.getAddress().getDistrict())
+                        .setStreet(hotel.getAddress().getStreet() == null ? "" : hotel.getAddress().getStreet());
+                hotelBuilder.setAddress(addressBuilder.build());
             }
-
             hotelProtos.add(hotelBuilder.build());
         }
         return hotelProtos;

@@ -27,11 +27,9 @@ public class Hotel implements Serializable {
     @Id
     private String id;
     private String name;
-    private String country;
-    private String province;
-    private String city;
-    private String zone;
-    private String address;
+
+    private Address address;
+
     private String introduction;
     private List<String> tags;
     private List<Room> rooms;

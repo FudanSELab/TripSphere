@@ -62,11 +62,7 @@ public class HotelService {
         if (!hotelOptionalOld.isPresent()) return false;
         Hotel hotelOld = hotelOptionalOld.get();
         hotelOld.setName(hotel.getName());
-        hotelOld.setCountry(hotel.getCountry());
-        hotelOld.setProvince(hotel.getCountry());
-        hotelOld.setCity(hotel.getCity());
         hotelOld.setAddress(hotel.getAddress());
-        hotelOld.setZone(hotel.getZone());
         hotelOld.setIntroduction(hotel.getIntroduction());
         hotelOld.setTags(hotel.getTags());
         hotelOld.setRooms(hotel.getRooms());
