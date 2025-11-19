@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package tripsphere.hotel;
+package org.tripsphere.hotel;
 
 option java_multiple_files = true;
 option java_package = "org.tripsphere.hotel";
-option java_outer_classname = "HotelProto";
+option java_outer_classname = "HotelServiceProto";
 
 // room info
 message Room {
@@ -19,6 +19,16 @@ message Room {
   repeated string tags = 9;
 }
 
+// address info
+message Address {
+  string country = 1;
+  string province = 2;
+  string city = 3;
+  string county = 4;
+  string district = 5;
+  string street = 6;
+}
+
 // the location of hotel
 message Location {
   double lng = 1;
@@ -29,15 +39,11 @@ message Location {
 message Hotel {
   string id = 1;
   string name = 2;
-  string country = 3;
-  string province = 4;
-  string city = 5;
-  string zone = 6;
-  string address = 7;
-  string introduction = 8;
-  repeated string tags = 9;
-  repeated Room rooms = 10;
-  Location location = 11;
+  Address address = 3;
+  string introduction = 4;
+  repeated string tags = 5;
+  repeated Room rooms = 6;
+  Location location = 7;
 }
 
 message AddHotelRequest {
