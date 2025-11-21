@@ -10,6 +10,9 @@ class TaskRepository(ABC):
     @abstractmethod
     async def save(self, task: Task) -> None: ...
 
+    @abstractmethod
+    async def find_by_id(self, task_id: str) -> Task | None: ...
+
 
 class MongoTaskRepository(TaskRepository):
     COLLECTION_NAME = "tasks"
@@ -22,3 +25,5 @@ class MongoTaskRepository(TaskRepository):
         await self.collection.replace_one(
             {"_id": document["_id"]}, document, upsert=True
         )
+
+    async def find_by_id(self, task_id: str) -> Task | None: ...

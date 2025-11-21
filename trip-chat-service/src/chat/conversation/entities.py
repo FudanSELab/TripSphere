@@ -41,8 +41,10 @@ class Message(BaseModel):
         default=None, description="Optional Task ID associated with this message."
     )
     author: Author = Field(..., description="Author of the message.")
-    content: list[Part] | None = Field(
-        default=None, description="Content parts of the message."
+    content: list[Part] = Field(
+        default_factory=list[Part],
+        description="Content parts of the message."
+        "It stores the final content to be rendered, if associated with a task.",
     )
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(default=None)

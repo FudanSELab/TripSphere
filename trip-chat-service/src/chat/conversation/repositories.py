@@ -15,6 +15,15 @@ class ConversationRepository(ABC):
     @abstractmethod
     async def find_by_id(self, conversation_id: str) -> Conversation | None: ...
 
+    @abstractmethod
+    async def list_by_user(
+        self,
+        user_id: str,
+        limit: int,
+        token: str | None = None,
+        direction: Literal["forward", "backward"] = "backward",
+    ) -> tuple[list[Conversation], str | None]: ...
+
 
 class MessageRepository(ABC):
     @abstractmethod
@@ -38,7 +47,7 @@ class MessageRepository(ABC):
             direction: Determines the sort order of messages.
 
         Returns:
-            A tuple comprises a Message list and an optional next pagination token.
+            A tuple containing a Message list and an optional next pagination token.
         """
         ...
 
@@ -60,6 +69,32 @@ class MongoConversationRepository(ConversationRepository):
         if document is not None:
             return Conversation.model_validate(document)
         return None
+
+    async def list_by_user(
+        self,
+        user_id: str,
+        limit: int,
+        token: str | None = None,
+        direction: Literal["forward", "backward"] = "backward",
+    ) -> tuple[list[Conversation], str | None]:
+        query: dict[str, Any] = {"user_id": user_id}
+        if last_id := decode_uuid_cursor(token):
+            # When direction is "backward", fetch docs with _id < last_id
+            query["_id"] = {("$lt" if direction == "backward" else "$gt"): last_id}
+
+        cursor = (
+            self.collection.find(query)
+            .sort("_id", DESCENDING if direction == "backward" else ASCENDING)
+            .limit(limit=limit)
+        )
+        documents = await cursor.to_list()
+
+        if len(documents) == 0:
+            return [], None  # No more results
+
+        conversations = [Conversation.model_validate(doc) for doc in documents]
+        next_token = encode_uuid_cursor(documents[-1]["_id"])
+        return conversations, next_token
 
 
 class MongoMessageRepository(MessageRepository):

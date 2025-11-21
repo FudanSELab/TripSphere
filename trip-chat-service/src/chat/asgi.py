@@ -3,6 +3,7 @@ from importlib.metadata import version
 from typing import Any, AsyncGenerator, cast
 
 from litestar import Litestar, Router
+from litestar.contrib.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from pymongo import AsyncMongoClient
@@ -20,7 +21,7 @@ from chat.infra.nacos.naming import NacosNaming
 @asynccontextmanager
 async def mongo_client(app: Litestar) -> AsyncGenerator[None, None]:
     """
-    PyMongo provides built-in connection pool. Only one client instance is required.
+    PyMongo uses built-in connection pool. Only one client is required.
     """
     mongo_client = getattr(app.state, "mongo_client", None)
     if mongo_client is None:
@@ -67,9 +68,11 @@ def create_app() -> Litestar:
         version=version("chat"),
         render_plugins=[ScalarRenderPlugin()],
     )
+    opentelemetry_config = OpenTelemetryConfig()
     application = Litestar(
         [v1_router],
         openapi_config=openapi_config,
         lifespan=[mongo_client, nacos_naming],
+        plugins=[OpenTelemetryPlugin(config=opentelemetry_config)],
     )
     return application

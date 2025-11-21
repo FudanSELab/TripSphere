@@ -78,3 +78,11 @@ class Task(BaseModel):
         description="List of actions associated with this task.",
     )
     metadata: dict[str, Any] | None = Field(default=None)
+
+    def is_terminal_state(self) -> bool:
+        return self.status.state in {
+            TaskState.COMPLETED,
+            TaskState.CANCELLED,
+            TaskState.FAILED,
+            TaskState.REJECTED,
+        }

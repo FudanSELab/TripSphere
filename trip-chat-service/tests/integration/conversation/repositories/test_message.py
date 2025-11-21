@@ -16,7 +16,9 @@ from chat.utils.uuid import uuid7
 @pytest_asyncio.fixture
 async def collection() -> AsyncGenerator[AsyncCollection[dict[str, Any]], None]:
     client = AsyncMongoClient[dict[str, Any]]("mongodb://localhost:27017")
-    yield client.get_database("test_database").get_collection("messages")
+    yield client.get_database("test_database").get_collection(
+        MongoMessageRepository.COLLECTION_NAME
+    )
     await client.close()
 
 
@@ -50,10 +52,7 @@ async def test_list_by_conversation(
     documents = [message.model_dump(by_alias=True) for message in messages]
     insert_result = await collection.insert_many(documents)
 
-    (
-        messages,
-        next_token,
-    ) = await message_repository.list_by_conversation(
+    messages, next_token = await message_repository.list_by_conversation(
         conversation_id=conversation_id,
         limit=5,
         token=None,
@@ -66,10 +65,7 @@ async def test_list_by_conversation(
         assert isinstance(message.content[0].root, TextPart)
         assert message.content[0].root.text == f"Message content {19 - i}"
 
-    (
-        messages,
-        next_token,
-    ) = await message_repository.list_by_conversation(
+    messages, next_token = await message_repository.list_by_conversation(
         conversation_id=conversation_id,
         limit=10,
         token=next_token,
