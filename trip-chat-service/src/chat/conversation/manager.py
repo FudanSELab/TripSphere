@@ -3,6 +3,7 @@ from typing import Any
 from chat.common.parts import Part
 from chat.conversation.entities import Author, Conversation, Message
 from chat.conversation.repositories import ConversationRepository, MessageRepository
+from chat.task.entities import Task
 
 
 class ConversationManager:
@@ -24,8 +25,15 @@ class ConversationManager:
         await self.conversation_repository.save(conversation)
         return conversation
 
-    async def append_text_query(
-        self, conversation: Conversation, query: str
+    async def delete_conversation(self, conversation: Conversation) -> None:
+        raise NotImplementedError
+
+    async def add_text_query(
+        self,
+        conversation: Conversation,
+        query: str,
+        associated_task: Task | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Message:
         """
         Appends a user text message to the conversation.
@@ -33,33 +41,30 @@ class ConversationManager:
         Arguments:
             conversation: The conversation to which the query is appended.
             query: The user's chat query message.
+            associated_task: Optional Task associated with this message.
+            metadata: Optional metadata for the message.
+                Useful for specifying the agent to handle this user message.
 
         Returns:
             The newly appended query message.
         """
         query_message = Message(
             conversation_id=conversation.conversation_id,
+            task_id=associated_task.task_id if associated_task else None,
             author=Author.user(),
             content=[Part.from_text(query)],
+            metadata=metadata,
         )
         await self.message_repository.save(query_message)
         return query_message
 
-    async def delete_conversation(self, conversation: Conversation) -> None:
-        raise NotImplementedError
-
-    async def append_agent_answer(
-        self,
-        conversation: Conversation,
-        author: Author,
-        answer_parts: list[Part],
-        task_id: str | None = None,
+    async def add_empty_answer(
+        self, conversation: Conversation, associated_task: Task | None = None
     ) -> Message:
         response_message = Message(
             conversation_id=conversation.conversation_id,
-            author=author,
-            content=answer_parts,
-            task_id=task_id,
+            task_id=associated_task.task_id if associated_task else None,
+            author=Author.agent(),
         )
         await self.message_repository.save(response_message)
         return response_message

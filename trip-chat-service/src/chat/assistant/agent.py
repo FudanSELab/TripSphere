@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -9,11 +10,14 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 
-from chat.common.parts import Part, TextPart
+from chat.common.parts import Part
 from chat.config.settings import get_settings
-from chat.conversation.entities import Author, Message
-from chat.prompts.assistant import CLASSIFY_INTENT, SIMPLE_RESPONSE
+from chat.conversation.entities import Conversation, Message
+from chat.conversation.manager import ConversationManager
+from chat.conversation.repositories import MessageRepository
+from chat.prompts.assistant import CHAT_ASSISTANT, CLASSIFY_INTENT
 from chat.task.entities import Task
+from chat.task.repositories import TaskRepository
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +33,10 @@ class Classification(BaseModel):
 
 
 class ChatAssistantState(BaseModel):
-    query_content: str
+    conversation: Conversation
+    user_query: Message
     classification: Classification | None = Field(default=None)
-    author: Author = Field(default_factory=lambda: Author.agent())
-    response: list[Part] = Field(default_factory=list[Part])
+    agent_answer: Message
     task: Task | None = Field(default=None)
 
 
@@ -42,23 +46,25 @@ class SimpleResponse(BaseNode[ChatAssistantState, None, None]):
 
     async def run(self, ctx: GraphRunContext[ChatAssistantState]) -> End:
         simple_agent = Agent(
-            self.chat_model, output_type=str, instructions=SIMPLE_RESPONSE
+            self.chat_model, output_type=str, instructions=CHAT_ASSISTANT
         )
-        result = await simple_agent.run(ctx.state.query_content)
-        ctx.state.author = Author.agent("chat-assistant")
-        ctx.state.response.append(Part.from_text(result.output))
+        result = await simple_agent.run(ctx.state.user_query.text_content())
+        ctx.state.agent_answer.author.name = "chat-assistant"
+        ctx.state.agent_answer.content.append(Part.from_text(result.output))
         return End(None)
 
 
 @dataclass
 class HotelAdvice(BaseNode[ChatAssistantState, None, None]):
     async def run(self, ctx: GraphRunContext[ChatAssistantState]) -> End:
+        ctx.state.agent_answer.author.name = "hotel-advisor"
         return End(None)  # TODO: Invoke remote agent through A2A
 
 
 @dataclass
 class AttractionAdvice(BaseNode[ChatAssistantState, None, None]):
     async def run(self, ctx: GraphRunContext[ChatAssistantState]) -> End:
+        ctx.state.agent_answer.author.name = "attraction-advisor"
         return End(None)  # TODO: Invoke remote agent through A2A
 
 
@@ -69,60 +75,97 @@ class ClassifyIntent(BaseNode[ChatAssistantState]):
     async def run(
         self, ctx: GraphRunContext[ChatAssistantState]
     ) -> SimpleResponse | HotelAdvice | AttractionAdvice:
+        agent: str | None = None
+        if ctx.state.user_query.metadata:
+            agent = ctx.state.user_query.metadata.get("agent")
+        if ctx.state.task is not None:
+            agent = ctx.state.task.task_agent
+        match agent:
+            case "chat-assistant":
+                return SimpleResponse(chat_model=self.chat_model)
+            case "hotel-advisor":
+                return HotelAdvice()
+            case "attraction-advisor":
+                return AttractionAdvice()
+            case _:
+                ...  # Fallback to classification
         classify_agent = Agent(
-            self.chat_model, output_type=Classification, instructions=CLASSIFY_INTENT
+            self.chat_model,
+            output_type=Classification,
+            instructions=[CHAT_ASSISTANT, CLASSIFY_INTENT],
         )
-        result = await classify_agent.run(ctx.state.query_content)
-        logger.debug(result.all_messages())
+        result = await classify_agent.run(ctx.state.user_query.text_content())
         ctx.state.classification = result.output
-        match result.output.intent:
+        match ctx.state.classification.intent:
             case "simple_response":
                 return SimpleResponse(chat_model=self.chat_model)
             case "hotel_advice":
                 return HotelAdvice()
             case "attraction_advice":
                 return AttractionAdvice()
-            case _:
-                raise ValueError(f"Unknown intent: {result.output.intent}")
 
 
-@dataclass
-class Initialize(BaseNode[ChatAssistantState]):
-    chat_model: OpenAIChatModel
-
-    async def run(self, ctx: GraphRunContext[ChatAssistantState]) -> ClassifyIntent:
-        return ClassifyIntent(chat_model=self.chat_model)
+@lru_cache(maxsize=1, typed=True)
+def get_graph() -> Graph[ChatAssistantState]:
+    return Graph[ChatAssistantState](
+        nodes=[ClassifyIntent, SimpleResponse, HotelAdvice, AttractionAdvice]
+    )
 
 
 class ChatAssistant:
-    def __init__(self, model_name: str = "gpt-4o") -> None:
+    def __init__(
+        self,
+        model_name: str,
+        conversation_manager: ConversationManager,
+        message_repository: MessageRepository,
+        task_repository: TaskRepository,
+    ) -> None:
         self.model_name = model_name
-        self.graph = Graph[ChatAssistantState](
-            nodes=[
-                Initialize,
-                ClassifyIntent,
-                SimpleResponse,
-                HotelAdvice,
-                AttractionAdvice,
-            ]
+        self.conversation_manager = conversation_manager
+        self.message_repository = message_repository
+        self.task_repository = task_repository
+        self.graph = get_graph()
+
+    async def invoke(
+        self,
+        conversation: Conversation,
+        message: Message,
+        associated_task: Task | None = None,
+    ) -> ChatAssistantState:
+        # Append a new empty agent answer message to the conversation
+        agent_answer = await self.conversation_manager.add_empty_answer(
+            conversation=conversation, associated_task=associated_task
         )
 
-    async def run(self, message: Message) -> ChatAssistantState:
-        settings = get_settings()
-        base_url = settings.openai.base_url
-        api_key = settings.openai.api_key.get_secret_value()
+        openai = get_settings().openai
         chat_model = OpenAIChatModel(
             self.model_name,
-            provider=OpenAIProvider(base_url=base_url, api_key=api_key),
+            provider=OpenAIProvider(
+                base_url=openai.base_url,
+                api_key=openai.api_key.get_secret_value(),
+            ),
             settings=ModelSettings(temperature=0),
         )
-        init_node = Initialize(chat_model=chat_model)
-        # Currently, we only use the text parts of the message
-        text_parts = [
-            part.root.text
-            for part in message.content
-            if isinstance(part.root, TextPart)
-        ]
-        state = ChatAssistantState(query_content="\n".join(text_parts))
-        await self.graph.run(init_node, state=state)
-        return state
+        start_node = ClassifyIntent(chat_model=chat_model)
+        state = ChatAssistantState(
+            conversation=conversation,
+            user_query=message,
+            agent_answer=agent_answer,
+            task=associated_task,
+        )
+        result = await self.graph.run(start_node, state=state)
+
+        # If a task is newly created, link messages to it
+        if state.task and associated_task is None:
+            state.agent_answer.task_id = state.task.task_id
+            state.user_query.task_id = state.task.task_id
+            await self.message_repository.save(state.user_query)
+
+        # Update task history if applicable
+        if state.task is not None:
+            state.task.history.append(state.user_query.message_id)
+            state.task.history.append(state.agent_answer.message_id)
+            await self.task_repository.save(state.task)
+
+        await self.message_repository.save(state.agent_answer)
+        return result.state

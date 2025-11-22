@@ -20,10 +20,10 @@ class CursorPagination(BaseModel, Generic[C, T]):
     cursor: C | None = Field(None)
 
 
-StrUUID: TypeAlias = str
+UUIDStr: TypeAlias = str
 
 
-def encode_uuid_cursor(uid: StrUUID | None) -> str | None:
+def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:
     """
     Arguments:
         uid: UUID string to encode.
@@ -36,7 +36,7 @@ def encode_uuid_cursor(uid: StrUUID | None) -> str | None:
     return urlsafe_b64encode(UUID(uid).bytes).decode("utf-8")
 
 
-def decode_uuid_cursor(cursor: str | None) -> StrUUID | None:
+def decode_uuid_cursor(cursor: str | None) -> UUIDStr | None:
     """
     Arguments:
         cursor: Base64-encoded UUID string to decode.

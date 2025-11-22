@@ -9,14 +9,16 @@ from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
     provide_message_repository,
-    provide_task_manager,
     provide_task_repository,
+)
+from chat.common.exceptions import (
+    ConversationAccessDeniedException,
+    ConversationNotFoundException,
 )
 from chat.common.schema import ResponseBody
 from chat.conversation.entities import Conversation
 from chat.conversation.manager import ConversationManager
 from chat.conversation.repositories import ConversationRepository
-from chat.task.manager import TaskManager
 from chat.utils.pagination import CursorPagination
 
 ConversationPagination: TypeAlias = CursorPagination[str, Conversation]
@@ -79,16 +81,17 @@ class ConversationController(Controller):
         "/{conversation_id:str}",
         dependencies={
             "task_repository": Provide(provide_task_repository),
-            "task_manager": Provide(provide_task_manager),
         },
     )
     async def delete_conversation(
         self,
         conversation_repository: ConversationRepository,
-        task_manager: TaskManager,
         conversation_id: str,
+        user_id: Annotated[str, Parameter(header="X-User-Id")],
     ) -> None:
         conversation = await conversation_repository.find_by_id(conversation_id)
         if conversation is None:
-            raise Exception  # TODO: Use proper exception
+            raise ConversationNotFoundException(conversation_id)
+        if conversation.user_id != user_id:
+            raise ConversationAccessDeniedException(conversation_id, user_id)
         raise NotImplementedError

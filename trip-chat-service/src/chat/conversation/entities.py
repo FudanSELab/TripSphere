@@ -3,7 +3,7 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field
 
-from chat.common.parts import Part
+from chat.common.parts import Part, TextPart
 from chat.utils.uuid import uuid7
 
 
@@ -47,7 +47,29 @@ class Message(BaseModel):
         "It stores the final content to be rendered, if associated with a task.",
     )
     created_at: datetime = Field(default_factory=datetime.now)
-    metadata: dict[str, Any] | None = Field(default=None)
+    metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional key-value metadata. Useful for adding extra information. "
+        "For example, specifying the agent to handle user message through 'agent' key.",
+    )
+
+    def text_content(self) -> str | None:
+        texts: list[str] = []
+        last_part: Part | None = None
+        for part in self.content:
+            if isinstance(part, TextPart):
+                # Adjacent text parts should be joined together
+                # But if there're other parts in between (like tool calls)
+                # they should have newlines between them
+                if isinstance(last_part, TextPart):
+                    texts[-1] += part.text
+                else:
+                    texts.append(part.text)
+            last_part = part
+        if not texts:
+            return None
+
+        return "\n\n".join(texts)
 
 
 class Conversation(BaseModel):

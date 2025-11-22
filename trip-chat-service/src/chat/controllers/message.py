@@ -9,6 +9,7 @@ from chat.common.deps import (
     provide_conversation_repository,
     provide_message_repository,
 )
+from chat.common.exceptions import ConversationNotFoundException
 from chat.common.schema import ResponseBody
 from chat.conversation.entities import Message
 from chat.conversation.manager import ConversationManager
@@ -51,7 +52,7 @@ class MessageController(Controller):
     ) -> ResponseBody[MessagePagination]:
         conversation = await conversation_repository.find_by_id(conversation_id)
         if conversation is None:
-            raise Exception  # TODO: Use proper exception
+            raise ConversationNotFoundException(conversation_id)
         messages, next_cursor = await conversation_manager.list_messages(
             conversation, results_per_page, cursor
         )
