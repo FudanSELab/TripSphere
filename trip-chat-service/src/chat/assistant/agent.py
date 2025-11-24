@@ -106,7 +106,7 @@ class ClassifyIntent(BaseNode[ChatAssistantState]):
 
 
 @lru_cache(maxsize=1, typed=True)
-def get_graph() -> Graph[ChatAssistantState]:
+def get_pydantic_graph() -> Graph[ChatAssistantState]:
     return Graph[ChatAssistantState](
         nodes=[ClassifyIntent, SimpleResponse, HotelAdvice, AttractionAdvice]
     )
@@ -124,7 +124,7 @@ class ChatAssistantFacade:
         self.conversation_manager = conversation_manager
         self.message_repository = message_repository
         self.task_repository = task_repository
-        self.graph = get_graph()
+        self.graph = get_pydantic_graph()
 
     async def invoke(
         self,

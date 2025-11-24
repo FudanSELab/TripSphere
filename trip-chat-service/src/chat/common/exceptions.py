@@ -5,6 +5,27 @@ from litestar.exceptions import (
 )
 
 
+class MessageNotFoundException(NotFoundException):
+    def __init__(self, message_id: str):
+        """
+        Raised when a Message is not found.
+        """
+        super().__init__(
+            f"Message {message_id} is not found.", extra={"message_id": message_id}
+        )
+
+
+class MessageAccessDeniedException(PermissionDeniedException):
+    def __init__(self, message_id: str, user_id: str):
+        """
+        Raised when a user tries to access a Message that doesn't belong to them.
+        """
+        super().__init__(
+            f"User {user_id} is not authorized to access message {message_id}.",
+            extra={"message_id": message_id, "user_id": user_id},
+        )
+
+
 class ConversationNotFoundException(NotFoundException):
     def __init__(self, conversation_id: str):
         """
@@ -19,7 +40,7 @@ class ConversationNotFoundException(NotFoundException):
 class ConversationAccessDeniedException(PermissionDeniedException):
     def __init__(self, conversation_id: str, user_id: str):
         """
-        Raised when a user tries to access a not owned conversation.
+        Raised when a user tries to access a Conversation that doesn't belong to them.
         """
         super().__init__(
             f"User {user_id} is not authorized to access "
@@ -37,30 +58,25 @@ class TaskNotFoundException(NotFoundException):
 
 
 class TaskAccessDeniedException(PermissionDeniedException):
-    def __init__(self, conversation_id: str, task_id: str, user_id: str):
+    def __init__(self, task_id: str, user_id: str):
         """
-        Raised when a user tries to access a not owned task.
+        Raised when a user tries to access a Task that doesn't belong to them.
         """
         super().__init__(
-            f"User {user_id} is not authorized to access "
-            f"task {task_id} in conversation {conversation_id}.",
-            extra={
-                "conversation_id": conversation_id,
-                "task_id": task_id,
-                "user_id": user_id,
-            },
+            f"User {user_id} is not authorized to access task {task_id}.",
+            extra={"task_id": task_id, "user_id": user_id},
         )
 
 
 class TaskImmutabilityException(HTTPException):
     def __init__(self, task_id: str):
         """
-        Once a task reaches a terminal state
+        Once a Task reaches a terminal state
         (completed, cancelled, rejected, or failed), it cannot be modified.
         """
         super().__init__(
             detail=f"Task {task_id} has reached a terminal state "
-            "and it cannot be restarted or modified.",
-            status_code=409,
+            "and it cannot be restarted, modified or subscribed to.",
+            status_code=409,  # 409: Conflict with the current state of Task
             extra={"task_id": task_id},
         )

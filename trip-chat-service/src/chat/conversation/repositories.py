@@ -30,6 +30,9 @@ class MessageRepository(ABC):
     async def save(self, message: Message) -> None: ...
 
     @abstractmethod
+    async def find_by_id(self, message_id: str) -> Message | None: ...
+
+    @abstractmethod
     async def list_by_conversation(
         self,
         conversation_id: str,
@@ -108,6 +111,12 @@ class MongoMessageRepository(MessageRepository):
         await self.collection.replace_one(
             {"_id": document["_id"]}, document, upsert=True
         )
+
+    async def find_by_id(self, message_id: str) -> Message | None:
+        document = await self.collection.find_one({"_id": message_id})
+        if document is not None:
+            return Message.model_validate(document)
+        return None
 
     async def list_by_conversation(
         self,

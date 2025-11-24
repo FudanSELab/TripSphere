@@ -29,7 +29,7 @@ def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:
         uid: UUID string to encode.
 
     Returns:
-        Base64-encoded UUID string or None if input is None.
+        Base64-encoded UUID string or None if `uid` is None.
     """
     if uid is None:
         return None
@@ -42,7 +42,7 @@ def decode_uuid_cursor(cursor: str | None) -> UUIDStr | None:
         cursor: Base64-encoded UUID string to decode.
 
     Returns:
-        Decoded UUID string or None if input is None.
+        Decoded UUID string or None if `cursor` is None.
     """
     if cursor is None:
         return None

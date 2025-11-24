@@ -35,7 +35,7 @@ class Message(BaseModel):
         examples=["019a3b16-4759-767c-bc8c-eb3e094c71b9"],
     )
     conversation_id: str = Field(
-        ..., description="Conversation ID this message belongs to."
+        ..., description="ID of the Conversation that this Message belongs to."
     )
     task_id: str | None = Field(
         default=None, description="Optional Task ID associated with this message."
@@ -43,8 +43,9 @@ class Message(BaseModel):
     author: Author = Field(..., description="Author of the message.")
     content: list[Part] = Field(
         default_factory=list[Part],
-        description="Content parts of the message."
-        "It stores the final content to be rendered, if associated with a task.",
+        description="Content parts of the message. "
+        "If a Message is associated with a Task, "
+        "the Task appends Parts, which are to be rendered, to this list.",
     )
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(

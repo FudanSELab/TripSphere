@@ -1,8 +1,10 @@
-from typing import Annotated
+from typing import Annotated, AsyncGenerator
 
 from litestar import Controller, get, post
 from litestar.di import Provide
 from litestar.params import Parameter
+from litestar.response import ServerSentEvent
+from litestar.types import SSEData
 
 from chat.common.deps import (
     provide_conversation_repository,
@@ -54,15 +56,18 @@ class TaskController(Controller):
         if conversation is None:
             raise ConversationNotFoundException(task.conversation_id)
         if conversation.user_id != user_id:
-            raise TaskAccessDeniedException(task.conversation_id, task_id, user_id)
+            raise TaskAccessDeniedException(task_id, user_id)
         if task.is_terminal_state():
             raise TaskImmutabilityException(task_id)
         raise NotImplementedError
 
+    async def _stream_generator(self) -> AsyncGenerator[SSEData, None]:
+        yield ""
+
     @post("/{task_id:str}:subscribe")
-    async def subscribe_task(self, task_id: str) -> None:
+    async def subscribe_task(self, task_id: str) -> ServerSentEvent:
         raise NotImplementedError
 
-    @post("/{task_id:str}:notify")
+    @post("/{task_id:str}:notify")  # A2A push notification webhook
     async def notify_task_update(self, task_id: str) -> None:
         raise NotImplementedError

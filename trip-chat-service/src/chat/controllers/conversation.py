@@ -26,7 +26,7 @@ ConversationPagination: TypeAlias = CursorPagination[str, Conversation]
 
 class CreateConversationRequest(BaseModel):
     title: str | None = Field(
-        default=None, description="Conversation title can be specified."
+        default=None, description="Optional specified conversation title."
     )
     metadata: dict[str, Any] | None = Field(
         default=None, description="Optional metadata for the conversation."
@@ -65,10 +65,7 @@ class ConversationController(Controller):
         ] = None,
     ) -> ResponseBody[ConversationPagination]:
         conversations, next_cursor = await conversation_repository.list_by_user(
-            user_id=user_id,
-            limit=results_per_page,
-            token=cursor,
-            direction="backward",
+            user_id, limit=results_per_page, token=cursor, direction="backward"
         )
         pagination = ConversationPagination(
             items=conversations,

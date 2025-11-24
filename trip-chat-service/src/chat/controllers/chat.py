@@ -2,6 +2,7 @@ from typing import Annotated, Any, AsyncGenerator
 
 from litestar import Controller, post
 from litestar.di import Provide
+from litestar.exceptions import ValidationException
 from litestar.params import Parameter
 from litestar.response import ServerSentEvent
 from litestar.types import SSEData
@@ -29,21 +30,21 @@ from chat.task.repositories import TaskRepository
 
 
 class ChatRequest(BaseModel):
-    conversation_id: str = Field(..., description="UUID of the conversation.")
+    conversation_id: str = Field(..., description="Conversation ID.")
     task_id: str | None = Field(
-        default=None, description="Optional UUID of an existing task to resume."
+        default=None, description="Optional ID of an existing Task to resume."
     )
-    content: str = Field(..., description="User sent chat message content.")
+    content: str = Field(..., description="Query Message content sent by the user.")
     metadata: dict[str, Any] | None = Field(
-        default=None, description="Optional metadata for the query message."
+        default=None, description="Optional metadata for the query Message."
     )
 
 
 class ChatResponse(BaseModel):
-    query_id: str = Field(..., description="UUID of the user query message.")
-    answer_id: str = Field(..., description="UUID of the agent answer message.")
+    query_id: str = Field(..., description="ID of the user query Message.")
+    answer_id: str = Field(..., description="ID of the agent answer Message.")
     task_id: str | None = Field(
-        default=None, description="Optional UUID of the associated task."
+        default=None, description="Optional ID of the associated Task."
     )
 
 
@@ -77,7 +78,15 @@ class ChatController(Controller):
         if task is None:
             raise TaskNotFoundException(task_id)
         if task.conversation_id != conversation.conversation_id:
-            raise Exception  # TODO: Define a proper exception
+            raise ValidationException(
+                detail=f"Task {task_id} doesn't belong to "
+                f"conversation {conversation.conversation_id}.",
+                extra={
+                    "conversation_id": conversation.conversation_id,
+                    "task_id": task_id,
+                    "task_conversation_id": task.conversation_id,
+                },
+            )
         if task.is_terminal_state():
             raise TaskImmutabilityException(task_id)
         return task
