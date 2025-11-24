@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Literal
+from typing import Any, AsyncGenerator, Literal
 
 from pydantic import BaseModel, Field
 from pydantic_ai.agent import Agent
@@ -45,10 +45,10 @@ class SimpleResponse(BaseNode[ChatAssistantState, None, None]):
     chat_model: OpenAIChatModel
 
     async def run(self, ctx: GraphRunContext[ChatAssistantState]) -> End:
-        simple_agent = Agent(
+        naive_chat_agent = Agent(
             self.chat_model, output_type=str, instructions=CHAT_ASSISTANT
         )
-        result = await simple_agent.run(ctx.state.user_query.text_content())
+        result = await naive_chat_agent.run(ctx.state.user_query.text_content())
         ctx.state.agent_answer.author.name = "chat-assistant"
         ctx.state.agent_answer.content.append(Part.from_text(result.output))
         return End(None)
@@ -88,13 +88,13 @@ class ClassifyIntent(BaseNode[ChatAssistantState]):
             case "attraction-advisor":
                 return AttractionAdvice()
             case _:
-                ...  # Fallback to classification
-        classify_agent = Agent(
-            self.chat_model,
+                ...  # Fallback to agentic classification
+        intent_classifier = Agent(
+            model=self.chat_model,
             output_type=Classification,
             instructions=[CHAT_ASSISTANT, CLASSIFY_INTENT],
         )
-        result = await classify_agent.run(ctx.state.user_query.text_content())
+        result = await intent_classifier.run(ctx.state.user_query.text_content())
         ctx.state.classification = result.output
         match ctx.state.classification.intent:
             case "simple_response":
@@ -112,7 +112,7 @@ def get_graph() -> Graph[ChatAssistantState]:
     )
 
 
-class ChatAssistant:
+class ChatAssistantFacade:
     def __init__(
         self,
         model_name: str,
@@ -147,13 +147,14 @@ class ChatAssistant:
             settings=ModelSettings(temperature=0),
         )
         start_node = ClassifyIntent(chat_model=chat_model)
-        state = ChatAssistantState(
+        initial_state = ChatAssistantState(
             conversation=conversation,
             user_query=message,
             agent_answer=agent_answer,
             task=associated_task,
         )
-        result = await self.graph.run(start_node, state=state)
+        result = await self.graph.run(start_node, state=initial_state)
+        state = result.state  # Final state after graph execution
 
         # If a task is newly created, link messages to it
         if state.task and associated_task is None:
@@ -169,3 +170,11 @@ class ChatAssistant:
 
         await self.message_repository.save(state.agent_answer)
         return result.state
+
+    async def stream(
+        self,
+        conversation: Conversation,
+        message: Message,
+        associated_task: Task | None = None,
+    ) -> AsyncGenerator[Any, None]:  # TODO: Specify proper type
+        yield

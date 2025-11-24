@@ -12,6 +12,7 @@ from chat.common.deps import (
 from chat.common.exceptions import (
     ConversationNotFoundException,
     TaskAccessDeniedException,
+    TaskImmutabilityException,
     TaskNotFoundException,
 )
 from chat.common.schema import ResponseBody
@@ -54,6 +55,8 @@ class TaskController(Controller):
             raise ConversationNotFoundException(task.conversation_id)
         if conversation.user_id != user_id:
             raise TaskAccessDeniedException(task.conversation_id, task_id, user_id)
+        if task.is_terminal_state():
+            raise TaskImmutabilityException(task_id)
         raise NotImplementedError
 
     @post("/{task_id:str}:subscribe")
