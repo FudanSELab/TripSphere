@@ -36,17 +36,17 @@ class ConversationManager:
         metadata: dict[str, Any] | None = None,
     ) -> Message:
         """
-        Appends a user text message to the conversation.
+        Appends a user text Message to the conversation.
 
         Arguments:
             conversation: The conversation to which the query is appended.
-            query: The user's chat query message.
-            associated_task: Optional Task associated with this message.
-            metadata: Optional metadata for the message.
-                Useful for specifying the agent to handle this user message.
+            query: The user's chat query Message.
+            associated_task: Optional Task associated with this Message.
+            metadata: Optional metadata for the Message.
+                Useful for specifying the agent to handle this user Message.
 
         Returns:
-            The newly appended query message.
+            The newly appended query Message.
         """
         query_message = Message(
             conversation_id=conversation.conversation_id,

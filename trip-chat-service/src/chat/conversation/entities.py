@@ -38,20 +38,19 @@ class Message(BaseModel):
         ..., description="ID of the Conversation that this Message belongs to."
     )
     task_id: str | None = Field(
-        default=None, description="Optional Task ID associated with this message."
+        default=None, description="Optional Task ID associated with this Message."
     )
-    author: Author = Field(..., description="Author of the message.")
+    author: Author = Field(..., description="Author of the Message.")
     content: list[Part] = Field(
         default_factory=list[Part],
-        description="Content parts of the message. "
-        "If a Message is associated with a Task, "
-        "the Task appends Parts, which are to be rendered, to this list.",
+        description="Content Parts, which are to be rendered, of the Message. "
+        "If a Message is associated with a Task, the Task appends Parts to this list.",
     )
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(
         default=None,
         description="Optional key-value metadata. Useful for adding extra information. "
-        "For example, specifying the agent to handle user message through 'agent' key.",
+        "For example, specifying the agent to handle user Message through 'agent' key.",
     )
 
     def text_content(self) -> str | None:
@@ -79,7 +78,7 @@ class Conversation(BaseModel):
         default_factory=lambda: str(uuid7()),
         examples=["019a3b16-4759-767c-bc8c-eb3e094c71b9"],
     )
-    title: str | None = Field(default=None, description="Title of the conversation.")
-    user_id: str = Field(..., description="ID of the conversation's owner.")
+    title: str | None = Field(default=None, description="Title of the Conversation.")
+    user_id: str = Field(..., description="ID of the Conversation's owner.")
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(default=None)

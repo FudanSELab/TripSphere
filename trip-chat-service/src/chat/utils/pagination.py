@@ -17,7 +17,9 @@ class CursorPagination(BaseModel, Generic[C, T]):
         ..., description="List of data being sent as part of the response."
     )
     results_per_page: int = Field(..., description="Maximal number of items to send.")
-    cursor: C | None = Field(None)
+    cursor: C | None = Field(
+        None, description="Designating the last identifier in the given items."
+    )
 
 
 UUIDStr: TypeAlias = str

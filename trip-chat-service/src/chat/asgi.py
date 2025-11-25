@@ -1,9 +1,13 @@
+import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from importlib.metadata import version
+from pathlib import Path
 from typing import Any, AsyncGenerator, cast
 
 from litestar import Litestar, Router
 from litestar.contrib.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
+from litestar.logging import LoggingConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from pymongo import AsyncMongoClient
@@ -16,6 +20,8 @@ from chat.controllers import (
     TaskController,
 )
 from chat.infra.nacos.naming import NacosNaming
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -47,10 +53,42 @@ async def nacos_naming(app: Litestar) -> AsyncGenerator[None, None]:
         )
         app.state.nacos_naming = nacos_naming
     try:
+        logger.info("Registering service instance...")
         await cast(NacosNaming, nacos_naming).register(ephemeral=True)
         yield
     finally:
+        logger.info("Deregistering service instance...")
         await cast(NacosNaming, nacos_naming).deregister(ephemeral=True)
+
+
+def configure_logging() -> LoggingConfig:
+    settings = get_settings()
+    # Compatibility with Windows file naming restrictions
+    timestamp = datetime.now().isoformat().replace(":", "-")
+
+    handlers = ["queue_listener"]
+    if settings.log.level == "DEBUG" or settings.log.file:
+        handlers.append("file")
+        Path("logs").mkdir(parents=True, exist_ok=True)
+
+    return LoggingConfig(
+        configure_root_logger=False,
+        loggers={
+            "chat": {
+                "level": settings.log.level,
+                "handlers": handlers,
+                "propagate": False,
+            }
+        },
+        handlers={
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": f"logs/{timestamp}.log",
+                "level": "DEBUG",
+                "formatter": "standard",
+            }
+        },
+    )
 
 
 def create_app() -> Litestar:
@@ -69,10 +107,12 @@ def create_app() -> Litestar:
         render_plugins=[ScalarRenderPlugin()],
     )
     opentelemetry_config = OpenTelemetryConfig()
+    logging_config = configure_logging()
     application = Litestar(
         [v1_router],
         openapi_config=openapi_config,
         lifespan=[mongo_client, nacos_naming],
         plugins=[OpenTelemetryPlugin(config=opentelemetry_config)],
+        logging_config=logging_config,
     )
     return application

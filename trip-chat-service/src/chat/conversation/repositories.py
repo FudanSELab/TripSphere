@@ -41,13 +41,13 @@ class MessageRepository(ABC):
         direction: Literal["forward", "backward"] = "backward",
     ) -> tuple[list[Message], str | None]:
         """
-        List messages of conversation with cursor-based pagination.
+        List Messages of Conversation with cursor-based pagination.
 
         Arguments:
-            conversation_id: ID of the conversation to fetch messages from.
-            limit: Maximum number of messages to return.
+            conversation_id: ID of the Conversation to fetch Messages from.
+            limit: Maximum number of Messages to return.
             token: Optional pagination token from the previous call.
-            direction: Determines the sort order of messages.
+            direction: Determines the sort order of Messages.
 
         Returns:
             A tuple containing a Message list and an optional next pagination token.

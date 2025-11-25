@@ -1,8 +1,9 @@
 import logging
 import sys
 from functools import lru_cache
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,20 @@ class OpenAISettings(BaseModel):
     base_url: str = Field(default="https://api.openai.com/v1")
 
 
+class LogSettings(BaseModel):
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        default="INFO"
+    )
+    file: bool = Field(default=False)
+
+    @field_validator("level", mode="before")
+    @classmethod
+    def normalize_level(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.upper()
+        return value
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -46,6 +61,7 @@ class Settings(BaseSettings):
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
+    log: LogSettings = Field(default_factory=LogSettings)
 
 
 @lru_cache(maxsize=1, typed=True)

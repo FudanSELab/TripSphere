@@ -68,7 +68,7 @@ class MessageController(Controller):
             raise ConversationNotFoundException(conversation_id)
         if conversation.user_id != user_id:
             raise PermissionDeniedException(
-                detail=f"User {user_id} is not authorized to access the"
+                detail=f"User {user_id} is not authorized to access the "
                 f"messages of conversation {conversation_id}.",
                 extra={"conversation_id": conversation_id, "user_id": user_id},
             )
