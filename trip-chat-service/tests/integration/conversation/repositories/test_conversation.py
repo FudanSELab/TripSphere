@@ -50,27 +50,37 @@ async def test_list_by_user(
     documents = [conv.model_dump(by_alias=True) for conv in conversations]
     insert_result = await collection.insert_many(documents)
 
-    (conversations, next_token) = await conversation_repository.list_by_user(
+    conversations, next_token = await conversation_repository.list_by_user(
         user_id=user_id,
-        limit=5,
+        limit=10,
         token=None,
         direction="backward",
     )
-    assert len(conversations) == 5
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[15])
+    assert len(conversations) == 10
+    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[10])
     for i, conversation in enumerate(conversations):
         assert conversation.title == f"Conversation {19 - i}"
         assert conversation.metadata == {"index": 19 - i}
 
     # Fetch the next page
-    (conversations, next_token) = await conversation_repository.list_by_user(
+    conversations, next_token = await conversation_repository.list_by_user(
         user_id=user_id,
         limit=10,
         token=next_token,
         direction="backward",
     )
     assert len(conversations) == 10
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[5])
+    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[0])
     for i, conversation in enumerate(conversations):
-        assert conversation.title == f"Conversation {14 - i}"
-        assert conversation.metadata == {"index": 14 - i}
+        assert conversation.title == f"Conversation {9 - i}"
+        assert conversation.metadata == {"index": 9 - i}
+
+    # Fetch beyond the last page
+    conversations, next_token = await conversation_repository.list_by_user(
+        user_id=user_id,
+        limit=10,
+        token=next_token,
+        direction="backward",
+    )
+    assert len(conversations) == 0
+    assert next_token is None

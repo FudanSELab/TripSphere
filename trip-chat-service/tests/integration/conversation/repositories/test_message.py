@@ -54,12 +54,12 @@ async def test_list_by_conversation(
 
     messages, next_token = await message_repository.list_by_conversation(
         conversation_id=conversation_id,
-        limit=5,
+        limit=10,
         token=None,
         direction="backward",
     )
-    assert len(messages) == 5
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[15])
+    assert len(messages) == 10
+    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[10])
     for i, message in enumerate(messages):
         assert message.content
         assert isinstance(message.content[0].root, TextPart)
@@ -72,8 +72,17 @@ async def test_list_by_conversation(
         direction="backward",
     )
     assert len(messages) == 10
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[5])
+    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[0])
     for i, message in enumerate(messages):
         assert message.content
         assert isinstance(message.content[0].root, TextPart)
-        assert message.content[0].root.text == f"Message content {14 - i}"
+        assert message.content[0].root.text == f"Message content {9 - i}"
+
+    messages, next_token = await message_repository.list_by_conversation(
+        conversation_id=conversation_id,
+        limit=10,
+        token=next_token,
+        direction="backward",
+    )
+    assert len(messages) == 0
+    assert next_token is None
