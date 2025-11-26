@@ -67,11 +67,11 @@ def configure_logging() -> LoggingConfig:
     timestamp = datetime.now().isoformat().replace(":", "-")
 
     handlers = ["queue_listener"]
-    if settings.log.level == "DEBUG" or settings.log.file:
+    if settings.log.file or settings.log.level == "DEBUG":
         handlers.append("file")
         Path("logs").mkdir(parents=True, exist_ok=True)
 
-    return LoggingConfig(
+    logging_config = LoggingConfig(
         configure_root_logger=False,
         loggers={
             "chat": {
@@ -89,6 +89,12 @@ def configure_logging() -> LoggingConfig:
             }
         },
     )
+
+    logging_config.formatters["standard"] = {
+        "format": "%(levelname)s - %(asctime)s - %(name)s "
+        "- %(filename)s:%(lineno)d - %(message)s"
+    }
+    return logging_config
 
 
 def create_app() -> Litestar:

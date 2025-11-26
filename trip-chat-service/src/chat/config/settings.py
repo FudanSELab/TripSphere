@@ -26,7 +26,7 @@ class NacosSettings(BaseModel):
 
 class MongoSettings(BaseModel):
     uri: str = Field(default="mongodb://localhost:27017")
-    database: str = Field(default="chat_service_database")
+    database: str = Field(default="chat_db")
 
 
 class OpenAISettings(BaseModel):

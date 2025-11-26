@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated, Any, AsyncGenerator
 
 from litestar import Controller, post
@@ -27,6 +28,8 @@ from chat.conversation.manager import ConversationManager
 from chat.conversation.repositories import ConversationRepository, MessageRepository
 from chat.task.entities import Task
 from chat.task.repositories import TaskRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ChatRequest(BaseModel):
