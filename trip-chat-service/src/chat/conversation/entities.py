@@ -8,7 +8,7 @@ from chat.utils.uuid import uuid7
 
 
 class Author(BaseModel):
-    role: Literal["user", "agent", "system"]
+    role: Literal["user", "agent"]
     name: str | None = Field(
         default=None,
         description="Optional name of the user/agent.",
@@ -22,10 +22,6 @@ class Author(BaseModel):
     @classmethod
     def agent(cls, name: str | None = None) -> Self:
         return cls(role="agent", name=name)
-
-    @classmethod
-    def system(cls, name: str | None = None) -> Self:
-        return cls(role="system", name=name)
 
 
 class Message(BaseModel):
@@ -57,14 +53,14 @@ class Message(BaseModel):
         texts: list[str] = []
         last_part: Part | None = None
         for part in self.content:
-            if isinstance(part, TextPart):
+            if isinstance(part.root, TextPart):
                 # Adjacent text parts should be joined together
                 # But if there're other parts in between (like tool calls)
                 # they should have newlines between them
-                if isinstance(last_part, TextPart):
-                    texts[-1] += part.text
+                if last_part and isinstance(last_part.root, TextPart):
+                    texts[-1] += part.root.text
                 else:
-                    texts.append(part.text)
+                    texts.append(part.root.text)
             last_part = part
         if not texts:
             return None
