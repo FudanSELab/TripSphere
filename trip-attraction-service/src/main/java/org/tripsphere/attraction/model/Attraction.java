@@ -1,4 +1,4 @@
-package org.tripsphere.hotel.model;
+package org.tripsphere.attraction.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -16,24 +16,20 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.util.List;
 
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
 @Data
-@Document("Hotels")
+@Document("Attractions")
 @JsonInclude(JsonInclude.Include.ALWAYS)
-    public class Hotel implements Serializable {
+public class Attraction implements Serializable {
     @Id
     private String id;
     private String name;
-
     private Address address;
-
     private String introduction;
     private List<String> tags;
-    private List<Room> rooms;
-
+    private List<File> images;
     @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
     private GeoJsonPoint location;
 }

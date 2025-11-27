@@ -25,13 +25,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <dependency>
-                <groupId>io.modelcontextprotocol.sdk</groupId>
-                <artifactId>mcp-bom</artifactId>
-                <version>0.12.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -70,8 +63,13 @@
             <!--  Java 9+ compatibility - Do NOT update to 2.0.0  -->
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <version>1.3.5</version>
+            <version>2.1.1</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -79,12 +77,8 @@
             <version>2.15.2</version> <!-- 版本号根据实际情况选择 -->
         </dependency>
         <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-mcp-annotations</artifactId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
         </dependency>
     </dependencies>
 

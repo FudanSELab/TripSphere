@@ -1,5 +1,6 @@
 package org.tripsphere.hotel.service;
 
+import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -103,6 +104,7 @@ public class HotelService {
      * @param radiusKm distance to center(km)
      * @return The list of hotels
      */
+    @McpTool(name = "add", description = "Add two numbers together")
     public List<Hotel> findHotelsWithinCircle(double lng, double lat, double radiusKm, String name, List<String> tags) {
         double radiusInRadians = radiusKm / 6378.1; // convert km -> radians for $centerSphere
         String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
