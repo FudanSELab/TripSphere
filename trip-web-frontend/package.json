@@ -1,0 +1,35 @@
+{
+  "name": "trip-web-frontend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@vueuse/core": "^13.5.0",
+    "cherry-markdown": "^0.8.64",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.515.0",
+    "nuxt": "^4.2.1",
+    "pinia": "^3.0.3",
+    "radix-vue": "^1.9.17",
+    "tailwind-merge": "^3.2.0",
+    "vue": "^3.5.25",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.5.0",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@pinia/nuxt": "^0.10.1",
+    "@types/node": "^22.16.0",
+    "eslint": "^9.29.0",
+    "typescript": "^5.8.3"
+  }
+}
