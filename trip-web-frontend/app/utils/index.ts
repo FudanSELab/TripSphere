@@ -140,6 +140,7 @@ export function sleep(ms: number): Promise<void> {
  */
 export function generateId(): string {
   const timestamp = Date.now().toString(16).padStart(12, '0')
-  const random = Math.random().toString(16).slice(2, 14).padStart(12, '0')
-  return `${timestamp.slice(0, 8)}-${timestamp.slice(8, 12)}-7${random.slice(0, 3)}-${random.slice(3, 7)}-${random.slice(7, 19).padEnd(12, '0')}`
+  const random1 = Math.random().toString(16).slice(2, 14).padStart(12, '0')
+  const random2 = Math.random().toString(16).slice(2, 14).padStart(12, '0')
+  return `${timestamp.slice(0, 8)}-${timestamp.slice(8, 12)}-7${random1.slice(0, 3)}-${random1.slice(3, 7)}-${random2.slice(0, 12)}`
 }

@@ -46,6 +46,15 @@ export const useAuth = () => {
     error.value = null
 
     try {
+      // Validate input
+      if (!credentials.username || !credentials.password) {
+        error.value = 'Username and password are required'
+        return false
+      }
+
+      // Sanitize username for mock email (only allow alphanumeric and basic chars)
+      const sanitizedUsername = credentials.username.replace(/[^a-zA-Z0-9_-]/g, '')
+      
       // TODO: Replace with actual API call when user service is ready
       // Simulated login for now
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -53,8 +62,8 @@ export const useAuth = () => {
       // Mock response
       const mockUser: User = {
         id: 'user-' + Math.random().toString(36).slice(2, 11),
-        username: credentials.username,
-        email: `${credentials.username}@example.com`,
+        username: sanitizedUsername,
+        email: `${sanitizedUsername}@example.com`,
         createdAt: new Date().toISOString(),
       }
       
@@ -89,6 +98,22 @@ export const useAuth = () => {
     error.value = null
 
     try {
+      // Validate input
+      if (!data.username || !data.email || !data.password) {
+        error.value = 'All fields are required'
+        return false
+      }
+
+      // Sanitize username (only allow alphanumeric and basic chars)
+      const sanitizedUsername = data.username.replace(/[^a-zA-Z0-9_-]/g, '')
+      
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(data.email)) {
+        error.value = 'Invalid email address'
+        return false
+      }
+
       // TODO: Replace with actual API call when user service is ready
       // Simulated registration for now
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -96,7 +121,7 @@ export const useAuth = () => {
       // Mock response
       const mockUser: User = {
         id: 'user-' + Math.random().toString(36).slice(2, 11),
-        username: data.username,
+        username: sanitizedUsername,
         email: data.email,
         createdAt: new Date().toISOString(),
       }
