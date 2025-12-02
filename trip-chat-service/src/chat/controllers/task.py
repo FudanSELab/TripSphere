@@ -1,10 +1,9 @@
-from typing import Annotated, AsyncGenerator
+from typing import Annotated
 
 from litestar import Controller, get, post
 from litestar.di import Provide
 from litestar.params import Parameter
 from litestar.response import ServerSentEvent
-from litestar.types import SSEData
 
 from chat.common.deps import (
     provide_conversation_repository,
@@ -60,9 +59,6 @@ class TaskController(Controller):
         if task.is_terminal_state():
             raise TaskImmutabilityException(task_id)
         raise NotImplementedError
-
-    async def _stream_generator(self) -> AsyncGenerator[SSEData, None]:
-        yield ""
 
     @post("/{task_id:str}:subscribe")
     async def subscribe_task(self, task_id: str) -> ServerSentEvent:

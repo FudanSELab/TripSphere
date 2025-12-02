@@ -26,4 +26,8 @@ class MongoTaskRepository(TaskRepository):
             {"_id": document["_id"]}, document, upsert=True
         )
 
-    async def find_by_id(self, task_id: str) -> Task | None: ...
+    async def find_by_id(self, task_id: str) -> Task | None:
+        document = await self.collection.find_one({"_id": task_id})
+        if document is not None:
+            return Task.model_validate(document)
+        return None

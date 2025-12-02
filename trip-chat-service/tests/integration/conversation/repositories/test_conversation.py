@@ -15,7 +15,7 @@ from chat.utils.uuid import uuid7
 @pytest_asyncio.fixture
 async def collection() -> AsyncGenerator[AsyncCollection[dict[str, Any]], None]:
     client = AsyncMongoClient[dict[str, Any]]("mongodb://localhost:27017")
-    yield client.get_database("test_database").get_collection(
+    yield client.get_database("test_db").get_collection(
         MongoConversationRepository.COLLECTION_NAME
     )
     await client.close()

@@ -9,7 +9,7 @@ from litestar.response import ServerSentEvent
 from litestar.types import SSEData
 from pydantic import BaseModel, Field
 
-from chat.assistant.agent import ChatAssistantFacade
+from chat.agent.facade import AgentFacade
 from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
@@ -120,29 +120,23 @@ class ChatController(Controller):
             associated_task=task_resume,
             metadata=data.metadata,
         )
-        chat_assistant = ChatAssistantFacade(
+        facade = AgentFacade(
             model_name="gpt-4o-mini",
             conversation_manager=conversation_manager,
             message_repository=message_repository,
             task_repository=task_repository,
         )
-        state = await chat_assistant.invoke(conversation, user_query, task_resume)
-        return ResponseBody(
-            data=ChatResponse(
-                query_id=user_query.message_id,
-                answer_id=state.agent_answer.message_id,
-                task_id=state.task.task_id if state.task else None,
-            )
-        )
+        _ = await facade.invoke(conversation, user_query, task_resume)  # TODO
+        raise NotImplementedError
 
-    async def _stream_generator(
+    async def _wrap_stream(
         self,
+        facade: AgentFacade,
         conversation: Conversation,
         message: Message,
         task: Task | None,
-        chat_assistant: ChatAssistantFacade,
     ) -> AsyncGenerator[SSEData, None]:
-        async for chunk in chat_assistant.stream(conversation, message, task):
+        async for chunk in facade.stream(conversation, message, task):
             yield chunk  # TODO: Wrap chunk into proper SSEData
 
     @post(":stream")
@@ -171,7 +165,7 @@ class ChatController(Controller):
             associated_task=task_resume,
             metadata=data.metadata,
         )
-        chat_assistant = ChatAssistantFacade(
+        facade = AgentFacade(
             model_name="gpt-4o-mini",
             conversation_manager=conversation_manager,
             message_repository=message_repository,
@@ -179,7 +173,5 @@ class ChatController(Controller):
         )
 
         return ServerSentEvent(
-            self._stream_generator(
-                conversation, user_query, task_resume, chat_assistant
-            )
+            self._wrap_stream(facade, conversation, user_query, task_resume)
         )
