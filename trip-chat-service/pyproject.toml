@@ -12,7 +12,7 @@ dependencies = [
     "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
     "pymongo>=4.15.3",
-    "tripsphere",
+    "tripsphere>=0.1.0",
 ]
 
 [project.scripts]
@@ -36,8 +36,8 @@ dev = [
 ]
 
 [tool.uv.sources]
-tripsphere = { workspace = true }
 v2-stubs = { path = "../libs/v2-stubs", editable = true }
+tripsphere = { workspace = true }
 
 [tool.uv.workspace]
 members = ["libs/tripsphere"]
