@@ -3,7 +3,7 @@ from typing import Annotated, Any, AsyncGenerator, cast
 
 from httpx import AsyncClient
 from litestar import Controller, post
-from litestar.datastructures import ImmutableState
+from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.exceptions import ValidationException
 from litestar.params import Parameter
@@ -105,7 +105,7 @@ class ChatController(Controller):
         task_repository: TaskRepository,
         data: ChatRequest,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
-        state: ImmutableState,
+        state: State,  # For accessing NacosNaming and AsyncClient
     ) -> ResponseBody[ChatResponse]:
         conversation = await self._find_validate_conversation(
             conversation_repository, data.conversation_id, user_id
@@ -154,7 +154,7 @@ class ChatController(Controller):
         task_repository: TaskRepository,
         data: ChatRequest,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
-        state: ImmutableState,
+        state: State,  # For accessing NacosNaming and AsyncClient
     ) -> ServerSentEvent:
         conversation = await self._find_validate_conversation(
             conversation_repository, data.conversation_id, user_id

@@ -15,14 +15,14 @@ from a2a.types import Task as A2ATask
 from a2a.types import TaskState as A2ATaskStete
 from a2a.types import TextPart as A2ATextPart
 from httpx import AsyncClient
-from pydantic_ai import Agent, BinaryContent, ModelSettings, RunContext
+from pydantic_ai import Agent, BinaryContent, ModelSettings, RunContext, Tool
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from chat.agent.connection import RemoteAgentConnection, TaskUpdateCallback
 from chat.agent.context import ContextProvider
 from chat.config.settings import get_settings
-from chat.conversation.models import Conversation, Message
+from chat.conversation.models import Author, Conversation, Message
 from chat.infra.nacos.naming import NacosNaming
 from chat.prompts.agent import DELEGATOR_INSTRUCTIONS
 from chat.task.models import Task
@@ -78,11 +78,12 @@ class AgentFacade:
             ),
             settings=ModelSettings(temperature=0.0),
         )
+
         self.root_agent = Agent[FacadeDeps](
             model=chat_model,
             instructions=self.root_instruction,
             deps_type=FacadeDeps,
-            tools=[self.send_message],
+            tools=[Tool(self.send_message, takes_ctx=True)],
         )
 
     async def register_remote_agent(self, base_url: str) -> None:
@@ -98,7 +99,8 @@ class AgentFacade:
     ) -> Self:
         instance = cls(httpx_client)
         # TODO: Remote agents discovery through Nacos
-        await instance._post_init(["http://localhost:8001"])
+        # await instance._post_init(["http://localhost:8001"])
+        await instance._post_init([])
         return instance
 
     async def invoke(
@@ -110,15 +112,19 @@ class AgentFacade:
         if self.root_agent is None:
             raise RuntimeError("Root agent is not initialized.")
 
-        await self.root_agent.run(
-            "",
+        # TODO: Implement context injection
+        result = await self.root_agent.run(
+            user_query.text_content(),
             deps=FacadeDeps(
                 conversation_id=conversation.conversation_id,
                 task_id=associated_task.task_id if associated_task else None,
                 user_query_id=user_query.message_id,
             ),
-        )  # TODO
-        raise NotImplementedError  # TODO
+        )
+        logger.debug(f"Root agent run result: {result}")
+        return Message(
+            conversation_id=conversation.conversation_id, author=Author.agent()
+        )  # TODO: Dummy return
 
     async def stream(
         self,
@@ -152,7 +158,7 @@ class AgentFacade:
         )
 
     async def send_message(
-        self, agent_name: str, message: str, ctx: RunContext[FacadeDeps]
+        self, ctx: RunContext[FacadeDeps], agent_name: str, message: str
     ) -> list[str | dict[str, Any] | BinaryContent]:
         """
         Sends a message to a remote agent named `agent_name`.
