@@ -1,9 +1,9 @@
 from typing import Any
 
 from chat.common.parts import Part
-from chat.conversation.entities import Author, Conversation, Message
+from chat.conversation.models import Author, Conversation, Message
 from chat.conversation.repositories import ConversationRepository, MessageRepository
-from chat.task.entities import Task
+from chat.task.models import Task
 
 
 class ConversationManager:
@@ -52,7 +52,7 @@ class ConversationManager:
             conversation_id=conversation.conversation_id,
             task_id=associated_task.task_id if associated_task else None,
             author=Author.user(),
-            content=[Part.from_text(query)],
+            content=[Part.from_text(query.rstrip())],
             metadata=metadata,
         )
         await self.message_repository.save(query_message)

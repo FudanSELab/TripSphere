@@ -1,4 +1,4 @@
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any
 
 from litestar import Controller, delete, get, post
 from litestar.di import Provide
@@ -9,19 +9,18 @@ from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
     provide_message_repository,
-    provide_task_repository,
 )
 from chat.common.exceptions import (
     ConversationAccessDeniedException,
     ConversationNotFoundException,
 )
 from chat.common.schema import ResponseBody
-from chat.conversation.entities import Conversation
 from chat.conversation.manager import ConversationManager
+from chat.conversation.models import Conversation
 from chat.conversation.repositories import ConversationRepository
 from chat.utils.pagination import CursorPagination
 
-ConversationPagination: TypeAlias = CursorPagination[str, Conversation]
+ConversationPagination = CursorPagination[str, Conversation]
 
 
 class CreateConversationRequest(BaseModel):
@@ -74,12 +73,7 @@ class ConversationController(Controller):
         )
         return ResponseBody(data=pagination)
 
-    @delete(
-        "/{conversation_id:str}",
-        dependencies={
-            "task_repository": Provide(provide_task_repository),
-        },
-    )
+    @delete("/{conversation_id:str}")
     async def delete_conversation(
         self,
         conversation_repository: ConversationRepository,

@@ -1,7 +1,9 @@
 import logging
-from typing import Annotated, Any, AsyncGenerator
+from typing import Annotated, Any, AsyncGenerator, cast
 
+from httpx import AsyncClient
 from litestar import Controller, post
+from litestar.datastructures import ImmutableState
 from litestar.di import Provide
 from litestar.exceptions import ValidationException
 from litestar.params import Parameter
@@ -23,10 +25,11 @@ from chat.common.exceptions import (
     TaskNotFoundException,
 )
 from chat.common.schema import ResponseBody
-from chat.conversation.entities import Conversation, Message
 from chat.conversation.manager import ConversationManager
-from chat.conversation.repositories import ConversationRepository, MessageRepository
-from chat.task.entities import Task
+from chat.conversation.models import Conversation, Message
+from chat.conversation.repositories import ConversationRepository
+from chat.infra.nacos.naming import NacosNaming
+from chat.task.models import Task
 from chat.task.repositories import TaskRepository
 
 logger = logging.getLogger(__name__)
@@ -90,7 +93,7 @@ class ChatController(Controller):
                     "task_conversation_id": task.conversation_id,
                 },
             )
-        if task.is_terminal_state():
+        if task.is_terminal():
             raise TaskImmutabilityException(task_id)
         return task
 
@@ -98,11 +101,11 @@ class ChatController(Controller):
     async def chat(
         self,
         conversation_repository: ConversationRepository,
-        message_repository: MessageRepository,
         conversation_manager: ConversationManager,
         task_repository: TaskRepository,
         data: ChatRequest,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
+        state: ImmutableState,
     ) -> ResponseBody[ChatResponse]:
         conversation = await self._find_validate_conversation(
             conversation_repository, data.conversation_id, user_id
@@ -120,14 +123,18 @@ class ChatController(Controller):
             associated_task=task_resume,
             metadata=data.metadata,
         )
-        facade = AgentFacade(
-            model_name="gpt-4o-mini",
-            conversation_manager=conversation_manager,
-            message_repository=message_repository,
-            task_repository=task_repository,
+        nacos_naming = cast(NacosNaming, state.nacos_naming)
+        httpx_client = cast(AsyncClient, state.httpx_client)
+        facade = await AgentFacade.create_facade(httpx_client, nacos_naming)
+        agent_answer = await facade.invoke(conversation, user_query, task_resume)
+
+        return ResponseBody(
+            data=ChatResponse(
+                query_id=user_query.message_id,
+                answer_id=agent_answer.message_id,
+                task_id=agent_answer.task_id,
+            )
         )
-        _ = await facade.invoke(conversation, user_query, task_resume)  # TODO
-        raise NotImplementedError
 
     async def _wrap_stream(
         self,
@@ -143,11 +150,11 @@ class ChatController(Controller):
     async def stream_chat(
         self,
         conversation_repository: ConversationRepository,
-        message_repository: MessageRepository,
         conversation_manager: ConversationManager,
         task_repository: TaskRepository,
         data: ChatRequest,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
+        state: ImmutableState,
     ) -> ServerSentEvent:
         conversation = await self._find_validate_conversation(
             conversation_repository, data.conversation_id, user_id
@@ -165,12 +172,9 @@ class ChatController(Controller):
             associated_task=task_resume,
             metadata=data.metadata,
         )
-        facade = AgentFacade(
-            model_name="gpt-4o-mini",
-            conversation_manager=conversation_manager,
-            message_repository=message_repository,
-            task_repository=task_repository,
-        )
+        nacos_naming = cast(NacosNaming, state.nacos_naming)
+        httpx_client = cast(AsyncClient, state.httpx_client)
+        facade = await AgentFacade.create_facade(httpx_client, nacos_naming)
 
         return ServerSentEvent(
             self._wrap_stream(facade, conversation, user_query, task_resume)

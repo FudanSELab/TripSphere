@@ -1,5 +1,5 @@
-from chat.conversation.entities import Conversation, Message
-from chat.memory.entities import Memory
+from chat.conversation.models import Conversation, Message
+from chat.memory.models import Memory
 
 
 class MemoryManager:

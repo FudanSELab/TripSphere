@@ -7,7 +7,6 @@ from litestar.response import ServerSentEvent
 
 from chat.common.deps import (
     provide_conversation_repository,
-    provide_task_manager,
     provide_task_repository,
 )
 from chat.common.exceptions import (
@@ -18,7 +17,7 @@ from chat.common.exceptions import (
 )
 from chat.common.schema import ResponseBody
 from chat.conversation.repositories import ConversationRepository
-from chat.task.entities import Task
+from chat.task.models import Task
 from chat.task.repositories import TaskRepository
 
 
@@ -28,7 +27,6 @@ class TaskController(Controller):
     dependencies = {
         "conversation_repository": Provide(provide_conversation_repository),
         "task_repository": Provide(provide_task_repository),
-        "task_manager": Provide(provide_task_manager),
     }
 
     @get("/{task_id:str}")
@@ -56,7 +54,7 @@ class TaskController(Controller):
             raise ConversationNotFoundException(task.conversation_id)
         if conversation.user_id != user_id:
             raise TaskAccessDeniedException(task_id, user_id)
-        if task.is_terminal_state():
+        if task.is_terminal():
             raise TaskImmutabilityException(task_id)
         raise NotImplementedError
 

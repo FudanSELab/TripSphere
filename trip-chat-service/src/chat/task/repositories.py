@@ -3,7 +3,7 @@ from typing import Any
 
 from pymongo.asynchronous.collection import AsyncCollection
 
-from chat.task.entities import Task
+from chat.task.models import Task
 
 
 class TaskRepository(ABC):

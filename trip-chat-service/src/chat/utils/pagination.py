@@ -1,5 +1,5 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from typing import Generic, TypeAlias, TypeVar
+from typing import Generic, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -22,7 +22,7 @@ class CursorPagination(BaseModel, Generic[C, T]):
     )
 
 
-UUIDStr: TypeAlias = str
+UUIDStr = str
 
 
 def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:

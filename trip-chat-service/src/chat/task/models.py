@@ -69,7 +69,7 @@ class Task(BaseModel):
     task_agent: str = Field(
         ...,
         description="Agent responsible for the Task.",
-        examples=["chat-assistant", "attraction-advisor"],
+        examples=["chat-assistant", "review-summary"],
     )
     conversation_id: str = Field(
         ..., description="ID of the Conversation that this Task belongs to."
@@ -85,7 +85,7 @@ class Task(BaseModel):
     )
     metadata: dict[str, Any] | None = Field(default=None)
 
-    def is_terminal_state(self) -> bool:
+    def is_terminal(self) -> bool:
         return self.status.state in {
             TaskState.COMPLETED,
             TaskState.CANCELLED,

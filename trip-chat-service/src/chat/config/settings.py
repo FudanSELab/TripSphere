@@ -34,7 +34,7 @@ class OpenAISettings(BaseModel):
     base_url: str = Field(default="https://api.openai.com/v1")
 
 
-class LogSettings(BaseModel):
+class LogsSettings(BaseModel):
     level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO"
     )
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
-    log: LogSettings = Field(default_factory=LogSettings)
+    logs: LogsSettings = Field(default_factory=LogsSettings)
 
 
 @lru_cache(maxsize=1, typed=True)

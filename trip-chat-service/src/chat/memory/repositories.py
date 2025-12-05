@@ -3,7 +3,7 @@ from typing import Any
 
 from pymongo.asynchronous.collection import AsyncCollection
 
-from chat.memory.entities import Memory
+from chat.memory.models import Memory
 
 
 class MemoryRepository(ABC):

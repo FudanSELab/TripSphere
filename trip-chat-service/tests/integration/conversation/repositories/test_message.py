@@ -7,7 +7,7 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
 from chat.common.parts import Part, TextPart
-from chat.conversation.entities import Author, Message
+from chat.conversation.models import Author, Message
 from chat.conversation.repositories import MongoMessageRepository
 from chat.utils.pagination import encode_uuid_cursor
 from chat.utils.uuid import uuid7

@@ -1,4 +1,4 @@
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 from litestar import Controller, get
 from litestar.di import Provide
@@ -16,12 +16,12 @@ from chat.common.exceptions import (
     MessageNotFoundException,
 )
 from chat.common.schema import ResponseBody
-from chat.conversation.entities import Message
 from chat.conversation.manager import ConversationManager
+from chat.conversation.models import Message
 from chat.conversation.repositories import ConversationRepository, MessageRepository
 from chat.utils.pagination import CursorPagination
 
-MessagePagination: TypeAlias = CursorPagination[str, Message]
+MessagePagination = CursorPagination[str, Message]
 
 
 class MessageController(Controller):
