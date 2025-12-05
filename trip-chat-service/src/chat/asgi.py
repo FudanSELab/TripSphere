@@ -1,18 +1,16 @@
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
 from importlib.metadata import version
-from pathlib import Path
 from typing import Any, AsyncGenerator
 
 from httpx import AsyncClient
 from litestar import Litestar, Router
 from litestar.contrib.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
-from litestar.logging import LoggingConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from pymongo import AsyncMongoClient
 
+from chat.config.logging import configure_logging
 from chat.config.settings import get_settings
 from chat.controllers import (
     ChatController,
@@ -78,43 +76,6 @@ async def nacos_naming(app: Litestar) -> AsyncGenerator[None, None]:
         await nacos_naming.deregister(ephemeral=True)
 
 
-def configure_logging() -> LoggingConfig:
-    settings = get_settings()
-
-    chat_handlers = ["queue_listener"]
-    handlers: dict[str, dict[str, Any]] = {}
-
-    if settings.logs.file or settings.logs.level == "DEBUG":
-        Path("logs").mkdir(parents=True, exist_ok=True)
-        # Compatibility with Windows file naming restrictions
-        timestamp = datetime.now().isoformat().replace(":", "-")
-        handlers["file"] = {
-            "class": "logging.FileHandler",
-            "filename": f"logs/{timestamp}.log",
-            "level": "DEBUG",
-            "formatter": "standard",
-        }
-        chat_handlers.append("file")
-
-    logging_config = LoggingConfig(
-        configure_root_logger=False,
-        handlers=handlers,
-        loggers={
-            "chat": {
-                "level": settings.logs.level,
-                "handlers": chat_handlers,
-                "propagate": False,
-            }
-        },
-    )
-
-    logging_config.formatters["standard"] = {
-        "format": "%(levelname)s - %(asctime)s - %(name)s "
-        "- %(filename)s:%(lineno)d - %(message)s"
-    }
-    return logging_config
-
-
 def create_app() -> Litestar:
     v1_router = Router(
         path="/api/v1",
@@ -133,6 +94,7 @@ def create_app() -> Litestar:
     )
     opentelemetry_config = OpenTelemetryConfig()
     logging_config = configure_logging()
+
     application = Litestar(
         [v1_router],
         openapi_config=openapi_config,
