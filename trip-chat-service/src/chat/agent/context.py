@@ -1,8 +1,12 @@
-from pydantic_ai.messages import ModelMessage
+from chat.conversation.models import Message
+from chat.memory.models import Memory
 
 
 class ContextProvider:
     def __init__(self) -> None: ...
 
-    async def history_messages(self) -> list[ModelMessage]:
+    async def memories(self) -> list[Memory]:
+        return []
+
+    async def history_messages(self) -> list[Message]:
         return []
