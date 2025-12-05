@@ -77,6 +77,7 @@ async def nacos_naming(app: Litestar) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> Litestar:
+    settings = get_settings()
     v1_router = Router(
         path="/api/v1",
         route_handlers=[
@@ -88,7 +89,7 @@ def create_app() -> Litestar:
         ],
     )
     openapi_config = OpenAPIConfig(
-        title=get_settings().app.name,
+        title=settings.app.name,
         version=version("chat"),
         render_plugins=[ScalarRenderPlugin()],
     )
@@ -97,6 +98,7 @@ def create_app() -> Litestar:
 
     application = Litestar(
         [v1_router],
+        debug=settings.app.debug,
         openapi_config=openapi_config,
         lifespan=[httpx_client, mongo_client, nacos_naming],
         plugins=[OpenTelemetryPlugin(config=opentelemetry_config)],

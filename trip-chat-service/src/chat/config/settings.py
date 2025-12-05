@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class AppSettings(BaseModel):
     name: str = Field(default="trip-chat-service")
+    debug: bool = Field(default=False)
 
 
 class ServerSettings(BaseModel):
@@ -62,6 +63,10 @@ class Settings(BaseSettings):
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     logs: LogsSettings = Field(default_factory=LogsSettings)
+
+    def model_post_init(self, _: Any) -> None:
+        if self.app.debug is True:
+            self.logs.level = "DEBUG"
 
 
 @lru_cache(maxsize=1, typed=True)
