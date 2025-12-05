@@ -80,29 +80,30 @@ async def nacos_naming(app: Litestar) -> AsyncGenerator[None, None]:
 
 def configure_logging() -> LoggingConfig:
     settings = get_settings()
-    # Compatibility with Windows file naming restrictions
-    timestamp = datetime.now().isoformat().replace(":", "-")
 
-    handlers = ["queue_listener"]
+    chat_handlers = ["queue_listener"]
+    handlers: dict[str, dict[str, Any]] = {}
+
     if settings.logs.file or settings.logs.level == "DEBUG":
-        handlers.append("file")
         Path("logs").mkdir(parents=True, exist_ok=True)
+        # Compatibility with Windows file naming restrictions
+        timestamp = datetime.now().isoformat().replace(":", "-")
+        handlers["file"] = {
+            "class": "logging.FileHandler",
+            "filename": f"logs/{timestamp}.log",
+            "level": "DEBUG",
+            "formatter": "standard",
+        }
+        chat_handlers.append("file")
 
     logging_config = LoggingConfig(
         configure_root_logger=False,
+        handlers=handlers,
         loggers={
             "chat": {
                 "level": settings.logs.level,
-                "handlers": handlers,
+                "handlers": chat_handlers,
                 "propagate": False,
-            }
-        },
-        handlers={
-            "file": {
-                "class": "logging.FileHandler",
-                "filename": f"logs/{timestamp}.log",
-                "level": "DEBUG",
-                "formatter": "standard",
             }
         },
     )
