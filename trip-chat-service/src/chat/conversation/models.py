@@ -12,7 +12,7 @@ class Author(BaseModel):
     name: str | None = Field(
         default=None,
         description="Optional name of the user/agent.",
-        examples=["chat-assistant"],
+        examples=["chat_assistant"],
     )
 
     @classmethod

@@ -11,7 +11,6 @@ from a2a.types import AgentCard, FileWithUri, Role, TransportProtocol
 from a2a.types import DataPart as A2ADataPart
 from a2a.types import Message as A2AMessage
 from a2a.types import Part as A2APart
-from a2a.types import Task as A2ATask
 from a2a.types import TaskState as A2ATaskStete
 from a2a.types import TextPart as A2ATextPart
 from httpx import AsyncClient
@@ -106,8 +105,8 @@ class AgentFacade:
     ) -> Self:
         instance = cls(httpx_client, context_provider=context_provider)
         # TODO: Remote agents discovery through Nacos
-        # await instance._post_init(["http://localhost:8001"])
-        await instance._post_init(remote_agent_urls=[])
+        await instance._post_init(["http://localhost:8000"])
+        # await instance._post_init(remote_agent_urls=[])
         return instance
 
     async def invoke(
@@ -131,6 +130,10 @@ class AgentFacade:
                 conversation_id=conversation.conversation_id,
                 task_id=associated_task.task_id if associated_task else None,
                 user_query_id=user_query.message_id,
+                active_agent=associated_task.task_agent if associated_task else None,
+                session_active=(
+                    (not associated_task.is_terminal()) if associated_task else False
+                ),
             ),
         )
         logger.debug(f"Root agent run result: {result.output}")
@@ -157,7 +160,7 @@ class AgentFacade:
 
         remote_agents_info: list[dict[str, str]] = []
         for card in self.agent_cards.values():
-            logger.debug(f"Found agent card: {card}")
+            logger.debug(f"Found registered agent: {card.name}")
             agent_info = {"name": card.name, "description": card.description}
             remote_agents_info.append(agent_info)
         return remote_agents_info
@@ -166,8 +169,11 @@ class AgentFacade:
         remote_agents_info = self.remote_agents()
         agents_info = [json.dumps(agent) for agent in remote_agents_info]
         agents = "\n".join(agents_info)
+        current_active_agent: str | None = None
+        if ctx.deps.session_active and ctx.deps.active_agent:
+            current_active_agent = ctx.deps.active_agent
         return DELEGATOR_INSTRUCTIONS.format(
-            agents=agents, current_active_agent=ctx.deps.active_agent
+            agents=agents, current_active_agent=current_active_agent
         )
 
     async def send_message(
@@ -183,6 +189,7 @@ class AgentFacade:
         Returns:
             A list of response parts from the remote agent.
         """
+        logger.debug(f"Sending message to agent {agent_name}: {message}")
         if agent_name not in self.remote_agent_connections:
             raise ValueError(f"Agent {agent_name} is not found.")
 
@@ -205,31 +212,33 @@ class AgentFacade:
 
         result = await connection.send_message(request_message)
         if isinstance(result, A2AMessage):
+            logger.debug(f"Received A2AMessage from agent {agent_name}: {result}")
             return [convert_part(part) for part in result.parts]
-        task: A2ATask = result
+
+        logger.debug(f"Received A2ATask from agent {agent_name}: {result}")
         # Assume completion unless a state returns that isn't complete
-        ctx.deps.session_active = task.status.state not in [
+        ctx.deps.session_active = result.status.state not in [
             A2ATaskStete.completed,
             A2ATaskStete.canceled,
             A2ATaskStete.failed,
             A2ATaskStete.unknown,
         ]
         if ctx.deps.task_id is None:
-            ctx.deps.task_id = task.id
+            ctx.deps.task_id = result.id
 
-        if task.status.state == A2ATaskStete.input_required:
+        if result.status.state == A2ATaskStete.input_required:
             ...  # TODO: Handle input required state
-        elif task.status.state == A2ATaskStete.canceled:
-            raise RuntimeError(f"Agent {agent_name} task {task.id} was cancelled.")
-        elif task.status.state == A2ATaskStete.failed:
-            raise RuntimeError(f"Agent {agent_name} task {task.id} failed.")
+        elif result.status.state == A2ATaskStete.canceled:
+            raise RuntimeError(f"Agent {agent_name} task {result.id} was cancelled.")
+        elif result.status.state == A2ATaskStete.failed:
+            raise RuntimeError(f"Agent {agent_name} task {result.id} failed.")
 
         response: list[str | dict[str, Any] | BinaryContent] = []
-        if task.status.message:
+        if result.status.message:
             # Assume the information is in the A2AMessage of A2ATaskStatus
-            response.extend(convert_part(part) for part in task.status.message.parts)
-        if task.artifacts is not None:
-            for artifact in task.artifacts:
+            response.extend(convert_part(part) for part in result.status.message.parts)
+        if result.artifacts is not None:
+            for artifact in result.artifacts:
                 response.extend(convert_part(part) for part in artifact.parts)
         return response
 

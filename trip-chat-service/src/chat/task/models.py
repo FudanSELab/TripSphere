@@ -69,7 +69,7 @@ class Task(BaseModel):
     task_agent: str = Field(
         ...,
         description="Agent responsible for the Task.",
-        examples=["chat-assistant", "review-summary"],
+        examples=["chat_assistant", "review_summary"],
     )
     conversation_id: str = Field(
         ..., description="ID of the Conversation that this Task belongs to."
