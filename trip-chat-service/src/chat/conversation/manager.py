@@ -58,17 +58,6 @@ class ConversationManager:
         await self.message_repository.save(query_message)
         return query_message
 
-    async def add_empty_answer(
-        self, conversation: Conversation, associated_task: Task | None = None
-    ) -> Message:
-        response_message = Message(
-            conversation_id=conversation.conversation_id,
-            task_id=associated_task.task_id if associated_task else None,
-            author=Author.agent(),
-        )
-        await self.message_repository.save(response_message)
-        return response_message
-
     async def list_messages(
         self,
         conversation: Conversation,

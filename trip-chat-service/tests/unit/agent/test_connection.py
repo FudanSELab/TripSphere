@@ -85,7 +85,7 @@ async def test_send_message_raises_error_when_no_result(
     card, factory, client = mock_deps
     connection = RemoteAgentConnection(card, factory)
 
-    # Return no messages or tasks
+    # Returns no A2AMessages or A2ATasks
     async def mock_send_message(_: A2AMessage) -> AsyncGenerator[None, None]:
         return
         yield  # Never reached, just to make it an async generator

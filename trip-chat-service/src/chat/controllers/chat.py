@@ -11,6 +11,7 @@ from litestar.response import ServerSentEvent
 from litestar.types import SSEData
 from pydantic import BaseModel, Field
 
+from chat.agent.context import ContextProvider
 from chat.agent.facade import AgentFacade
 from chat.common.deps import (
     provide_conversation_manager,
@@ -27,7 +28,7 @@ from chat.common.exceptions import (
 from chat.common.schema import ResponseBody
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Conversation, Message
-from chat.conversation.repositories import ConversationRepository
+from chat.conversation.repositories import ConversationRepository, MessageRepository
 from chat.infra.nacos.naming import NacosNaming
 from chat.task.models import Task
 from chat.task.repositories import TaskRepository
@@ -101,6 +102,7 @@ class ChatController(Controller):
     async def chat(
         self,
         conversation_repository: ConversationRepository,
+        message_repository: MessageRepository,
         conversation_manager: ConversationManager,
         task_repository: TaskRepository,
         data: ChatRequest,
@@ -125,8 +127,13 @@ class ChatController(Controller):
         )
         nacos_naming = cast(NacosNaming, state.nacos_naming)
         httpx_client = cast(AsyncClient, state.httpx_client)
-        facade = await AgentFacade.create_facade(httpx_client, nacos_naming)
+        context_provider = ContextProvider(conversation, message_repository)
+        facade = await AgentFacade.create_facade(
+            httpx_client, nacos_naming, context_provider=context_provider
+        )
         agent_answer = await facade.invoke(conversation, user_query, task_resume)
+
+        await message_repository.save(agent_answer)
 
         return ResponseBody(
             data=ChatResponse(

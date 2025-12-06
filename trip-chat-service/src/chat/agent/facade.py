@@ -16,11 +16,13 @@ from a2a.types import TaskState as A2ATaskStete
 from a2a.types import TextPart as A2ATextPart
 from httpx import AsyncClient
 from pydantic_ai import Agent, BinaryContent, ModelSettings, RunContext, Tool
+from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from chat.agent.connection import RemoteAgentConnection, TaskUpdateCallback
-from chat.agent.context import ContextProvider
+from chat.agent.context import ContextProvider, convert_message
+from chat.common.parts import Part
 from chat.config.settings import get_settings
 from chat.conversation.models import Author, Conversation, Message
 from chat.infra.nacos.naming import NacosNaming
@@ -47,6 +49,7 @@ class AgentFacade:
     def __init__(
         self,
         httpx_client: AsyncClient,
+        context_provider: ContextProvider | None = None,
         task_callback: TaskUpdateCallback | None = None,
     ) -> None:
         self.task_callback = task_callback
@@ -61,7 +64,7 @@ class AgentFacade:
         self.client_factory = ClientFactory(config)
         self.remote_agent_connections: dict[str, RemoteAgentConnection] = {}
         self.agent_cards: dict[str, AgentCard] = {}
-        self.context_provider: ContextProvider | None = None
+        self.context_provider = context_provider
         self.root_agent: Agent[FacadeDeps] | None = None
 
     async def _post_init(self, remote_agent_urls: list[str]) -> None:
@@ -84,6 +87,7 @@ class AgentFacade:
             instructions=self.root_instruction,
             deps_type=FacadeDeps,
             tools=[Tool(self.send_message, takes_ctx=True)],
+            instrument=True,
         )
 
     async def register_remote_agent(self, base_url: str) -> None:
@@ -95,12 +99,15 @@ class AgentFacade:
 
     @classmethod
     async def create_facade(
-        cls, httpx_client: AsyncClient, nacos_naming: NacosNaming
+        cls,
+        httpx_client: AsyncClient,
+        _: NacosNaming,
+        context_provider: ContextProvider | None = None,
     ) -> Self:
-        instance = cls(httpx_client)
+        instance = cls(httpx_client, context_provider=context_provider)
         # TODO: Remote agents discovery through Nacos
         # await instance._post_init(["http://localhost:8001"])
-        await instance._post_init([])
+        await instance._post_init(remote_agent_urls=[])
         return instance
 
     async def invoke(
@@ -112,19 +119,26 @@ class AgentFacade:
         if self.root_agent is None:
             raise RuntimeError("Root agent is not initialized.")
 
-        # TODO: Implement context injection
+        message_history: list[ModelMessage] = []
+        if self.context_provider is not None:
+            messages = await self.context_provider.history_messages(exclude_last=True)
+            message_history = [convert_message(message) for message in messages]
+
         result = await self.root_agent.run(
             user_query.text_content(),
+            message_history=message_history,
             deps=FacadeDeps(
                 conversation_id=conversation.conversation_id,
                 task_id=associated_task.task_id if associated_task else None,
                 user_query_id=user_query.message_id,
             ),
         )
-        logger.debug(f"Root agent run result: {result}")
+        logger.debug(f"Root agent run result: {result.output}")
         return Message(
-            conversation_id=conversation.conversation_id, author=Author.agent()
-        )  # TODO: Dummy return
+            conversation_id=conversation.conversation_id,
+            author=Author.agent(),
+            content=[Part.from_text(result.output)],
+        )
 
     async def stream(
         self,
@@ -144,9 +158,8 @@ class AgentFacade:
         remote_agents_info: list[dict[str, str]] = []
         for card in self.agent_cards.values():
             logger.debug(f"Found agent card: {card}")
-            remote_agents_info.append(
-                {"name": card.name, "description": card.description}
-            )
+            agent_info = {"name": card.name, "description": card.description}
+            remote_agents_info.append(agent_info)
         return remote_agents_info
 
     def root_instruction(self, ctx: RunContext[FacadeDeps]) -> str:
@@ -190,10 +203,10 @@ class AgentFacade:
             task_id=task_id,
         )
 
-        response = await connection.send_message(request_message)
-        if isinstance(response, A2AMessage):
-            return convert_parts(response.parts)
-        task: A2ATask = response
+        result = await connection.send_message(request_message)
+        if isinstance(result, A2AMessage):
+            return [convert_part(part) for part in result.parts]
+        task: A2ATask = result
         # Assume completion unless a state returns that isn't complete
         ctx.deps.session_active = task.status.state not in [
             A2ATaskStete.completed,
@@ -201,9 +214,24 @@ class AgentFacade:
             A2ATaskStete.failed,
             A2ATaskStete.unknown,
         ]
-        ctx.deps.task_id = task.id
+        if ctx.deps.task_id is None:
+            ctx.deps.task_id = task.id
 
-        raise NotImplementedError
+        if task.status.state == A2ATaskStete.input_required:
+            ...  # TODO: Handle input required state
+        elif task.status.state == A2ATaskStete.canceled:
+            raise RuntimeError(f"Agent {agent_name} task {task.id} was cancelled.")
+        elif task.status.state == A2ATaskStete.failed:
+            raise RuntimeError(f"Agent {agent_name} task {task.id} failed.")
+
+        response: list[str | dict[str, Any] | BinaryContent] = []
+        if task.status.message:
+            # Assume the information is in the A2AMessage of A2ATaskStatus
+            response.extend(convert_part(part) for part in task.status.message.parts)
+        if task.artifacts is not None:
+            for artifact in task.artifacts:
+                response.extend(convert_part(part) for part in artifact.parts)
+        return response
 
 
 def convert_part(part: A2APart) -> str | dict[str, Any] | BinaryContent:
@@ -230,10 +258,3 @@ def convert_part(part: A2APart) -> str | dict[str, Any] | BinaryContent:
         media_type=media_type or "application/octet-stream",
         identifier=file.name,
     )
-
-
-def convert_parts(parts: list[A2APart]) -> list[str | dict[str, Any] | BinaryContent]:
-    """
-    Convert a list of A2A Parts to formats suitable for PydanticAI.
-    """
-    return [convert_part(part) for part in parts]

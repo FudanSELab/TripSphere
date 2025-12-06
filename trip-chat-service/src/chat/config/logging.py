@@ -15,7 +15,7 @@ timestamp = datetime.now().isoformat().replace(":", "-")
 def configure_logging() -> LoggingConfig:
     settings = get_settings()
 
-    chat_handlers = ["queue_listener"]
+    logger_handlers = ["queue_listener"]
     handlers: dict[str, dict[str, Any]] = {}
 
     if settings.logs.file or settings.logs.level == "DEBUG":
@@ -26,7 +26,7 @@ def configure_logging() -> LoggingConfig:
             "level": "DEBUG",
             "formatter": "standard",
         }
-        chat_handlers.append("file")
+        logger_handlers.append("file")
 
     logging_config = LoggingConfig(
         configure_root_logger=False,
@@ -40,7 +40,7 @@ def configure_logging() -> LoggingConfig:
         loggers={
             "chat": {
                 "level": settings.logs.level,
-                "handlers": chat_handlers,
+                "handlers": logger_handlers,
                 "propagate": False,
             }
         },
