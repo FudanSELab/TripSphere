@@ -1,4 +1,4 @@
-from chat_assistant.agent import app
+from .agent import app
 
 if __name__ == "__main__":
     import uvicorn

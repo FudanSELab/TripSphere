@@ -2,6 +2,7 @@ import logging
 import warnings
 from datetime import datetime
 
+from a2a.types import AgentCapabilities, AgentCard
 from dotenv import load_dotenv
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
@@ -33,7 +34,7 @@ Current Datetime (with Timezone): {current_datetime}
 """.strip()
 
 
-def root_instruction(ctx: ReadonlyContext) -> str:
+def root_instruction(_: ReadonlyContext) -> str:
     # Get current datetime with timezone
     current_datetime = datetime.now().astimezone().isoformat()
     return INSTRUCTION.format(current_datetime=current_datetime)
@@ -46,4 +47,14 @@ root_agent = LlmAgent(
     instruction=root_instruction,
     tools=[weather_toolset],
 )
-app = to_a2a(root_agent)
+agent_card = AgentCard(
+    name="chat_assistant",
+    description="An agent that can help users with weather information.",
+    version="0.1.0",
+    url="http://localhost:8000",
+    skills=[],
+    capabilities=AgentCapabilities(),
+    default_input_modes=[],
+    default_output_modes=[],
+)
+app = to_a2a(root_agent, agent_card=agent_card)
