@@ -1,3 +1,5 @@
+from typing import Any
+
 from litestar.exceptions import (
     HTTPException,
     NotFoundException,
@@ -15,14 +17,16 @@ class MessageNotFoundException(NotFoundException):
         )
 
 
-class MessageAccessDeniedException(PermissionDeniedException):
-    def __init__(self, message_id: str, user_id: str):
+class MessageImmutabilityException(HTTPException):
+    def __init__(self, message_id: str):
         """
-        Raised when a user tries to access a Message that doesn't belong to them.
+        Once a Message reaches a terminal state, it cannot be modified.
         """
         super().__init__(
-            f"User {user_id} is not authorized to access message {message_id}.",
-            extra={"message_id": message_id, "user_id": user_id},
+            detail=f"Message {message_id} has reached a terminal state,"
+            " and it cannot be modified.",
+            status_code=409,  # 409: Conflict with the current state of Message
+            extra={"message_id": message_id},
         )
 
 
@@ -38,45 +42,15 @@ class ConversationNotFoundException(NotFoundException):
 
 
 class ConversationAccessDeniedException(PermissionDeniedException):
-    def __init__(self, conversation_id: str, user_id: str):
+    def __init__(self, conversation_id: str, user_id: str, **kwargs: Any):
         """
         Raised when a user tries to access a Conversation that doesn't belong to them.
         """
+        # Pop conversation_id and user_id to prevent duplication
+        kwargs.pop("conversation_id", None)
+        kwargs.pop("user_id", None)
         super().__init__(
             f"User {user_id} is not authorized to access "
             f"conversation {conversation_id}.",
-            extra={"conversation_id": conversation_id, "user_id": user_id},
-        )
-
-
-class TaskNotFoundException(NotFoundException):
-    def __init__(self, task_id: str):
-        """
-        Raised when a Task is not found.
-        """
-        super().__init__(f"Task {task_id} is not found.", extra={"task_id": task_id})
-
-
-class TaskAccessDeniedException(PermissionDeniedException):
-    def __init__(self, task_id: str, user_id: str):
-        """
-        Raised when a user tries to access a Task that doesn't belong to them.
-        """
-        super().__init__(
-            f"User {user_id} is not authorized to access task {task_id}.",
-            extra={"task_id": task_id, "user_id": user_id},
-        )
-
-
-class TaskImmutabilityException(HTTPException):
-    def __init__(self, task_id: str):
-        """
-        Once a Task reaches a terminal state
-        (completed, cancelled, rejected, or failed), it cannot be modified.
-        """
-        super().__init__(
-            detail=f"Task {task_id} has reached a terminal state "
-            "and it cannot be restarted, modified or subscribed to.",
-            status_code=409,  # 409: Conflict with the current state of Task
-            extra={"task_id": task_id},
+            extra={"conversation_id": conversation_id, "user_id": user_id, **kwargs},
         )

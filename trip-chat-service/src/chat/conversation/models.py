@@ -33,15 +33,12 @@ class Message(BaseModel):
     conversation_id: str = Field(
         ..., description="ID of the Conversation that this Message belongs to."
     )
-    task_id: str | None = Field(
-        default=None, description="Optional Task ID associated with this Message."
-    )
     author: Author = Field(..., description="Author of the Message.")
     content: list[Part] = Field(
         default_factory=list[Part],
-        description="Content Parts, which are to be rendered, of the Message. "
-        "If a Message is associated with a Task, the Task appends Parts to this list.",
+        description="Content Parts, which are to be rendered, of the Message.",
     )
+    events: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(
         default=None,

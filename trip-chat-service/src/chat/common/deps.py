@@ -11,7 +11,6 @@ from chat.conversation.repositories import (
     MongoConversationRepository,
     MongoMessageRepository,
 )
-from chat.task.repositories import MongoTaskRepository, TaskRepository
 
 
 async def provide_conversation_repository(state: State) -> ConversationRepository:
@@ -37,12 +36,3 @@ async def provide_conversation_manager(
     message_repository: MessageRepository,
 ) -> ConversationManager:
     return ConversationManager(conversation_repository, message_repository)
-
-
-async def provide_task_repository(state: State) -> TaskRepository:
-    mongo_client = cast(AsyncMongoClient[dict[str, Any]], state.mongo_client)
-    settings = get_settings()
-    database = mongo_client.get_database(settings.mongo.database)
-    return MongoTaskRepository(
-        database.get_collection(MongoTaskRepository.COLLECTION_NAME)
-    )

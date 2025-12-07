@@ -12,13 +12,7 @@ from pymongo import AsyncMongoClient
 
 from chat.config.logging import configure_logging
 from chat.config.settings import get_settings
-from chat.controllers import (
-    ChatController,
-    ConversationController,
-    MemoryController,
-    MessageController,
-    TaskController,
-)
+from chat.controllers import ConversationController, MemoryController, MessageController
 from chat.infra.nacos.naming import NacosNaming
 
 logger = logging.getLogger(__name__)
@@ -80,13 +74,7 @@ def create_app() -> Litestar:
     settings = get_settings()
     v1_router = Router(
         path="/api/v1",
-        route_handlers=[
-            ChatController,
-            ConversationController,
-            MemoryController,
-            MessageController,
-            TaskController,
-        ],
+        route_handlers=[ConversationController, MemoryController, MessageController],
     )
     openapi_config = OpenAPIConfig(
         title=settings.app.name,

@@ -3,7 +3,6 @@ from typing import Any
 from chat.common.parts import Part
 from chat.conversation.models import Author, Conversation, Message
 from chat.conversation.repositories import ConversationRepository, MessageRepository
-from chat.task.models import Task
 
 
 class ConversationManager:
@@ -32,7 +31,6 @@ class ConversationManager:
         self,
         conversation: Conversation,
         query: str,
-        associated_task: Task | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Message:
         """
@@ -50,7 +48,6 @@ class ConversationManager:
         """
         query_message = Message(
             conversation_id=conversation.conversation_id,
-            task_id=associated_task.task_id if associated_task else None,
             author=Author.user(),
             content=[Part.from_text(query.rstrip())],
             metadata=metadata,

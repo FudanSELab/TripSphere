@@ -14,13 +14,10 @@ from chat.common.exceptions import (
     ConversationAccessDeniedException,
     ConversationNotFoundException,
 )
-from chat.common.schema import ResponseBody
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Conversation
 from chat.conversation.repositories import ConversationRepository
 from chat.utils.pagination import CursorPagination
-
-ConversationPagination = CursorPagination[str, Conversation]
 
 
 class CreateConversationRequest(BaseModel):
@@ -47,11 +44,11 @@ class ConversationController(Controller):
         conversation_manager: ConversationManager,
         data: CreateConversationRequest,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
-    ) -> ResponseBody[Conversation]:
+    ) -> Conversation:
         conversation = await conversation_manager.create_conversation(
             user_id=user_id, title=data.title, metadata=data.metadata
         )
-        return ResponseBody(data=conversation)
+        return conversation
 
     @get()
     async def list_user_conversations(
@@ -62,16 +59,14 @@ class ConversationController(Controller):
         cursor: Annotated[
             str | None, Parameter(description="Base64-encoded UUID.")
         ] = None,
-    ) -> ResponseBody[ConversationPagination]:
+    ) -> CursorPagination[str, Conversation]:
         conversations, next_cursor = await conversation_repository.list_by_user(
             user_id, limit=results_per_page, token=cursor, direction="backward"
         )
-        pagination = ConversationPagination(
-            items=conversations,
-            results_per_page=results_per_page,
-            cursor=next_cursor,
+        pagination = CursorPagination[str, Conversation](
+            items=conversations, results_per_page=results_per_page, cursor=next_cursor
         )
-        return ResponseBody(data=pagination)
+        return pagination
 
     @delete("/{conversation_id:str}")
     async def delete_conversation(
