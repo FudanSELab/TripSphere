@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from chat.common.parts import Part
 from chat.conversation.models import Author, Conversation, Message
@@ -27,29 +27,28 @@ class ConversationManager:
     async def delete_conversation(self, conversation: Conversation) -> None:
         raise NotImplementedError
 
-    async def add_text_query(
+    async def add_user_query(
         self,
         conversation: Conversation,
-        query: str,
+        content: list[Part],
         metadata: dict[str, Any] | None = None,
     ) -> Message:
         """
-        Appends a user text Message to the conversation.
+        Appends a user Message to the Conversation.
 
         Arguments:
-            conversation: The conversation to which the query is appended.
+            conversation: The Conversation to which the query is appended.
             query: The user's chat query Message.
-            associated_task: Optional Task associated with this Message.
             metadata: Optional metadata for the Message.
-                Useful for specifying the agent to handle this user Message.
+                Useful for specifying the agent to handle this query.
 
         Returns:
             The newly appended query Message.
         """
         query_message = Message(
             conversation_id=conversation.conversation_id,
-            author=Author.user(),
-            content=[Part.from_text(query.rstrip())],
+            author=Author.user("default"),
+            content=content,
             metadata=metadata,
         )
         await self.message_repository.save(query_message)
@@ -60,11 +59,12 @@ class ConversationManager:
         conversation: Conversation,
         results_per_page: int,
         cursor: str | None = None,
+        direction: Literal["forward", "backward"] = "backward",
     ) -> tuple[list[Message], str | None]:
         messages, next_cursor = await self.message_repository.list_by_conversation(
             conversation_id=conversation.conversation_id,
             limit=results_per_page,
             token=cursor,
-            direction="backward",
+            direction=direction,
         )
         return messages, next_cursor

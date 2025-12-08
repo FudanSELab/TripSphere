@@ -17,7 +17,7 @@ from pydantic_ai.messages import (
 from pydantic_ai.messages import FilePart as AIFilePart
 from pydantic_ai.messages import TextPart as AITextPart
 
-from chat.common.parts import DataPart, Part, TextPart
+from chat.common.parts import DataPart, FileWithBytes, FileWithUri, Part, TextPart
 from chat.conversation.models import Conversation, Message
 from chat.conversation.repositories import MessageRepository
 from chat.memory.models import Memory
@@ -40,7 +40,7 @@ class ContextProvider:
         messages.reverse()  # From the oldest to the newest
         if exclude_last is True and len(messages) > 0:
             messages = messages[:-1]
-        return messages
+        return messages  # Return messages in chronological order
 
 
 def convert_message(message: Message) -> ModelMessage:
@@ -52,7 +52,7 @@ def convert_message(message: Message) -> ModelMessage:
         )
     elif message.author.role == "agent":
         return ModelResponse(
-            parts=[convert_response_part(part, timestamp) for part in message.content],
+            parts=[convert_response_part(part) for part in message.content],
             metadata=message.metadata,
         )
     else:
@@ -67,7 +67,7 @@ def convert_request_part(part: Part, timestamp: datetime) -> ModelRequestPart:
         data = json.dumps(part.root.data)
         return UserPromptPart(content=data, timestamp=timestamp)
 
-    file = part.root
+    file = part.root.file
     media_type: str | None = None
     if file.mime_type is not None:
         media_type = file.mime_type
@@ -75,7 +75,7 @@ def convert_request_part(part: Part, timestamp: datetime) -> ModelRequestPart:
         media_type, _ = guess_type(file.name)
     media_type = media_type or "application/octet-stream"
 
-    if file.bytes is not None:
+    if isinstance(file, FileWithBytes):
         return UserPromptPart(
             content=[
                 BinaryContent(
@@ -109,15 +109,15 @@ def convert_request_part(part: Part, timestamp: datetime) -> ModelRequestPart:
         )
 
 
-def convert_response_part(part: Part, timestamp: datetime) -> ModelResponsePart:
+def convert_response_part(part: Part) -> ModelResponsePart:
     if isinstance(part.root, TextPart):
         return AITextPart(content=part.root.text)
 
     if isinstance(part.root, DataPart):
         return AITextPart(content=json.dumps(part.root.data))
 
-    file = part.root
-    if file.uri is not None:
+    file = part.root.file
+    if isinstance(file, FileWithUri):
         return AITextPart(content=json.dumps(file))
 
     media_type: str | None = None

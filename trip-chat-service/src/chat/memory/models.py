@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -10,7 +11,8 @@ class Memory(BaseModel):
     memory_id: str = Field(
         alias="_id",
         default_factory=lambda: str(uuid7()),
-        examples=["019a3b16-4759-767c-bc8c-eb3e094c71b9"],
+        description="Unique identifier of the Memory.",
     )
     content: list[Part] = Field(default_factory=list[Part])
+    created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(default=None)

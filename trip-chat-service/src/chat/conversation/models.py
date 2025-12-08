@@ -12,7 +12,6 @@ class Author(BaseModel):
     name: str | None = Field(
         default=None,
         description="Optional name of the user/agent.",
-        examples=["chat_assistant"],
     )
 
     @classmethod
@@ -28,7 +27,7 @@ class Message(BaseModel):
     message_id: str = Field(
         alias="_id",
         default_factory=lambda: str(uuid7()),
-        examples=["019a3b16-4759-767c-bc8c-eb3e094c71b9"],
+        description="Unique identifier of the Message.",
     )
     conversation_id: str = Field(
         ..., description="ID of the Conversation that this Message belongs to."
@@ -38,12 +37,10 @@ class Message(BaseModel):
         default_factory=list[Part],
         description="Content Parts, which are to be rendered, of the Message.",
     )
-    events: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
     created_at: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] | None = Field(
         default=None,
-        description="Optional key-value metadata. Useful for adding extra information. "
-        "For example, specifying the agent to handle user Message through 'agent' key.",
+        description="Optional key-value metadata. Useful for adding extra information.",
     )
 
     def text_content(self) -> str | None:
@@ -61,7 +58,6 @@ class Message(BaseModel):
             last_part = part
         if not texts:
             return None
-
         return "\n\n".join(texts)
 
 
@@ -69,7 +65,7 @@ class Conversation(BaseModel):
     conversation_id: str = Field(
         alias="_id",
         default_factory=lambda: str(uuid7()),
-        examples=["019a3b16-4759-767c-bc8c-eb3e094c71b9"],
+        description="Unique identifier of the Conversation.",
     )
     title: str | None = Field(default=None, description="Title of the Conversation.")
     user_id: str = Field(..., description="ID of the Conversation's owner.")

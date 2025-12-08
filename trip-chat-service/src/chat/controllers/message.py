@@ -1,5 +1,6 @@
-from typing import Annotated, Any, AsyncGenerator
+from typing import Annotated, Any, AsyncGenerator, cast
 
+from httpx import AsyncClient
 from litestar import Controller, get, post
 from litestar.datastructures import State
 from litestar.di import Provide
@@ -8,6 +9,7 @@ from litestar.response import ServerSentEvent
 from litestar.types import SSEData
 from pydantic import BaseModel, Field
 
+from chat.agent._facade import AgentFacade
 from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
@@ -22,6 +24,7 @@ from chat.common.parts import Part
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Conversation, Message
 from chat.conversation.repositories import ConversationRepository, MessageRepository
+from chat.infra.nacos.naming import NacosNaming
 from chat.utils.pagination import CursorPagination
 
 
@@ -66,8 +69,15 @@ class MessageController(Controller):
     async def send_message(self) -> SendMessageResponse:
         return SendMessageResponse()
 
-    async def _stream_events(self) -> AsyncGenerator[SSEData, None]:
-        yield ""
+    async def _stream_events(
+        self,
+        conversation_manager: ConversationManager,
+        agent_facade: AgentFacade,
+        conversation: Conversation,
+        query: Message,
+    ) -> AsyncGenerator[SSEData, None]:
+        async for event in agent_facade.stream(conversation, query):
+            yield event
 
     @post(":stream")
     async def stream_message(
@@ -82,7 +92,20 @@ class MessageController(Controller):
             conversation_repository, data.conversation_id
         )
         self._check_conversation_access(conversation, user_id)
-        return ServerSentEvent(self._stream_events())
+
+        user_query = await conversation_manager.add_user_query(
+            conversation, data.content, metadata=data.metadata
+        )
+
+        nacos_naming = cast(NacosNaming, state.get("nacos_naming"))
+        httpx_client = cast(AsyncClient, state.get("httpx_client"))
+        agent_facade = await AgentFacade.create_facade(httpx_client, nacos_naming)
+
+        return ServerSentEvent(
+            self._stream_events(
+                conversation_manager, agent_facade, conversation, user_query
+            )
+        )
 
     @get("/{message_id:str}")
     async def get_message(
