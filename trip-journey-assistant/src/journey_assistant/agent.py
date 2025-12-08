@@ -1,6 +1,7 @@
 import logging
 import warnings
 from datetime import datetime
+from importlib.metadata import version
 
 from a2a.types import AgentCapabilities, AgentCard
 from dotenv import load_dotenv
@@ -28,9 +29,18 @@ weather_toolset = McpToolset(
 
 
 INSTRUCTION = """
-Role: You are a helpful agent integrated with weather information tools.
+Role: You are a helpful journey assistant agent.
+
+Capabilities:
+- You are integrated with weather information tools.
 
 Current Datetime (with Timezone): {current_datetime}
+""".strip()
+
+AGENT_NAME = "journey_assistant"
+
+AGENT_DESCRIPTION = """
+An agent that can help users with journey information, such as weather details.
 """.strip()
 
 
@@ -42,15 +52,15 @@ def root_instruction(_: ReadonlyContext) -> str:
 
 root_agent = LlmAgent(
     model=LiteLlm(model="openai/gpt-4o-mini"),
-    name="chat_assistant",
-    description="An agent that can help users with weather information.",
+    name=AGENT_NAME,
+    description=AGENT_DESCRIPTION,
     instruction=root_instruction,
     tools=[weather_toolset],
 )
 agent_card = AgentCard(
-    name="chat_assistant",
-    description="An agent that can help users with weather information.",
-    version="0.1.0",
+    name=AGENT_NAME,
+    description=AGENT_DESCRIPTION,
+    version=version("journey-assistant"),
     url="http://localhost:8000",
     skills=[],
     capabilities=AgentCapabilities(),
