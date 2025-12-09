@@ -25,6 +25,7 @@ def configure_logging() -> LoggingConfig:
             "filename": f"logs/{timestamp}.log",
             "level": "DEBUG",
             "formatter": "standard",
+            "encoding": "utf-8",
         }
         logger_handlers.append("file")
 
