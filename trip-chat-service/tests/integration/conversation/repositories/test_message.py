@@ -72,17 +72,8 @@ async def test_list_by_conversation(
         direction="backward",
     )
     assert len(messages) == 10
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[0])
+    assert next_token is None  # No more results
     for i, message in enumerate(messages):
         assert message.content
         assert isinstance(message.content[0].root, TextPart)
         assert message.content[0].root.text == f"Message content {9 - i}"
-
-    messages, next_token = await message_repository.list_by_conversation(
-        conversation_id=conversation_id,
-        limit=10,
-        token=next_token,
-        direction="backward",
-    )
-    assert len(messages) == 0
-    assert next_token is None

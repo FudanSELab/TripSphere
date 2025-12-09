@@ -88,16 +88,19 @@ class MongoConversationRepository(ConversationRepository):
         cursor = (
             self.collection.find(query)
             .sort("_id", DESCENDING if direction == "backward" else ASCENDING)
-            .limit(limit=limit)
+            .limit(
+                limit=limit + 1
+            )  # Fetch one extra to determine if there's a next page
         )
         documents = await cursor.to_list()
-
-        if len(documents) == 0:
-            return [], None  # No more results
-
         conversations = [Conversation.model_validate(doc) for doc in documents]
-        next_token = encode_uuid_cursor(documents[-1]["_id"])
-        return conversations, next_token
+
+        if len(documents) <= limit:
+            return conversations, None  # No more results
+
+        # Use the ID of the last item being returned (not the extra one)
+        next_token = encode_uuid_cursor(documents[limit - 1]["_id"])
+        return conversations[:limit], next_token
 
 
 class MongoMessageRepository(MessageRepository):
@@ -133,13 +136,16 @@ class MongoMessageRepository(MessageRepository):
         cursor = (
             self.collection.find(query)
             .sort("_id", DESCENDING if direction == "backward" else ASCENDING)
-            .limit(limit=limit)
+            .limit(
+                limit=limit + 1
+            )  # Fetch one extra to determine if there's a next page
         )
         documents = await cursor.to_list()
-
-        if len(documents) == 0:
-            return [], None  # No more results
-
         messages = [Message.model_validate(doc) for doc in documents]
-        next_token = encode_uuid_cursor(documents[-1]["_id"])
-        return messages, next_token
+
+        if len(documents) <= limit:
+            return messages, None  # No more results
+
+        # Use the ID of the last item being returned (not the extra one)
+        next_token = encode_uuid_cursor(documents[limit - 1]["_id"])
+        return messages[:limit], next_token

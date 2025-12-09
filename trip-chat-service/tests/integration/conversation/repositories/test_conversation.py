@@ -70,17 +70,7 @@ async def test_list_by_user(
         direction="backward",
     )
     assert len(conversations) == 10
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[0])
+    assert next_token is None  # No more results
     for i, conversation in enumerate(conversations):
         assert conversation.title == f"Conversation {9 - i}"
         assert conversation.metadata == {"index": 9 - i}
-
-    # Fetch beyond the last page
-    conversations, next_token = await conversation_repository.list_by_user(
-        user_id=user_id,
-        limit=10,
-        token=next_token,
-        direction="backward",
-    )
-    assert len(conversations) == 0
-    assert next_token is None
