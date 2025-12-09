@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Any, AsyncGenerator, Self
+from typing import AsyncGenerator, Self
 
 from a2a.client import A2ACardResolver
 from a2a.client import ClientConfig as A2AClientConfig
@@ -9,9 +9,10 @@ from a2a.client import ClientFactory as A2AClientFactory
 from a2a.types import AgentCard, TransportProtocol
 from google.adk.agents import LlmAgent
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
+from google.adk.events import Event
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from google.adk.sessions.sqlite_session_service import SqliteSessionService
 from google.genai import types
 from httpx import AsyncClient
 
@@ -28,7 +29,12 @@ _openai_settings = get_settings().openai
 os.environ["OPENAI_API_KEY"] = _openai_settings.api_key.get_secret_value()
 os.environ["OPENAI_BASE_URL"] = _openai_settings.base_url
 
-session_service = InMemorySessionService()  # type: ignore
+session_service = SqliteSessionService("chat_service.db")
+root_agent = LlmAgent(
+    name="agent_facade",
+    model=LiteLlm(model="openai/gpt-4o-mini"),
+    instruction=DELEGATOR_INSTRUCTION,
+)
 
 
 class AgentFacade:
@@ -59,11 +65,8 @@ class AgentFacade:
             for base_url in agent_base_urls:
                 group.create_task(self._resolve_base_url(base_url))
 
-        self.root_agent = LlmAgent(
-            model=LiteLlm(model="openai/gpt-4o-mini"),
-            name="agent_facade",
-            instruction=DELEGATOR_INSTRUCTION,
-            sub_agents=list(self.remote_a2a_agents.values()),
+        self.root_agent = root_agent.clone(
+            {"sub_agents": list(self.remote_a2a_agents.values())}
         )
         self.runner = Runner(
             app_name="chat-service",
@@ -93,6 +96,11 @@ class AgentFacade:
         return instance
 
     async def invoke(self, conversation: Conversation, user_query: Message) -> Message:
+        raise NotImplementedError
+
+    async def stream(
+        self, conversation: Conversation, user_query: Message
+    ) -> AsyncGenerator[Event | Message, None]:
         session = await session_service.get_session(
             app_name="chat-service",
             user_id=conversation.user_id,
@@ -111,8 +119,8 @@ class AgentFacade:
         content = types.Content(
             role="user", parts=[types.Part(text=user_query.text_content())]
         )
-        logger.debug(f"--- Running Query: {user_query.text_content()} ---")
-        final_response_text = "No final text response captured."
+        logger.debug(f"==> Running Query: {user_query.text_content()}")
+        final_response_text = "<No Final Text Response Captured>"
         async for event in self.runner.run_async(
             user_id=conversation.user_id,
             session_id=conversation.conversation_id,
@@ -160,17 +168,10 @@ class AgentFacade:
                     logger.debug(
                         "==> Final Agent Response: [No text content in final event]"
                     )
+            yield event
 
-        return Message(
+        yield Message(
             conversation_id=conversation.conversation_id,
             author=Author.agent(),
             content=[Part.from_text(final_response_text)],
         )
-
-    async def stream(
-        self, conversation: Conversation, user_query: Message
-    ) -> AsyncGenerator[Any, None]:  # TODO: Specify a proper type
-        if self.root_agent is None:
-            raise RuntimeError("Root agent is not initialized.")
-
-        yield ""  # TODO

@@ -5,11 +5,11 @@ from litestar import Controller, get, post
 from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.params import Parameter
-from litestar.response import ServerSentEvent
+from litestar.response import ServerSentEvent, ServerSentEventMessage
 from litestar.types import SSEData
 from pydantic import BaseModel, Field
 
-from chat.agent._facade import AgentFacade
+from chat.agent.facade import AgentFacade
 from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
@@ -71,18 +71,28 @@ class MessageController(Controller):
 
     async def _stream_events(
         self,
-        conversation_manager: ConversationManager,
+        message_repository: MessageRepository,
         agent_facade: AgentFacade,
         conversation: Conversation,
         query: Message,
     ) -> AsyncGenerator[SSEData, None]:
         async for event in agent_facade.stream(conversation, query):
-            yield event
+            if isinstance(event, Message):
+                await message_repository.save(event)
+                message = event.model_dump_json()
+                yield ServerSentEventMessage(data=message, comment="final message")
+            else:
+                yield ServerSentEventMessage(
+                    data=event.model_dump_json(),
+                    id=event.id,
+                    comment="google-adk event",
+                )
 
     @post(":stream")
     async def stream_message(
         self,
         conversation_repository: ConversationRepository,
+        message_repository: MessageRepository,
         conversation_manager: ConversationManager,
         data: SendMessageRequest,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
@@ -103,7 +113,7 @@ class MessageController(Controller):
 
         return ServerSentEvent(
             self._stream_events(
-                conversation_manager, agent_facade, conversation, user_query
+                message_repository, agent_facade, conversation, user_query
             )
         )
 
