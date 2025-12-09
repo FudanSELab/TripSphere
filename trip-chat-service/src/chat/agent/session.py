@@ -16,6 +16,31 @@ from chat.utils.uuid import uuid7
 
 
 class MongoSessionService(BaseSessionService):
+    @staticmethod
+    def _serialize_event(event: Event) -> dict[str, Any]:
+        """
+        Serialize Event to MongoDB-compatible dict.
+        """
+        event_dict = event.model_dump()
+        # Convert set to list for MongoDB compatibility
+        if event_dict.get("long_running_tool_ids") is not None:
+            event_dict["long_running_tool_ids"] = list(
+                event_dict["long_running_tool_ids"]
+            )
+        return event_dict
+
+    @staticmethod
+    def _deserialize_event(event_data: dict[str, Any]) -> Event:
+        """
+        Deserialize Event from MongoDB dict.
+        """
+        # Convert list back to set
+        if event_data.get("long_running_tool_ids") is not None:
+            event_data["long_running_tool_ids"] = set(
+                event_data["long_running_tool_ids"]
+            )
+        return Event.model_validate(event_data)
+
     def __init__(self, mongo_client: AsyncMongoClient[dict[str, Any]]) -> None:
         self.client = mongo_client
         self.database = self.client.get_database(get_settings().mongo.database)
@@ -120,7 +145,7 @@ class MongoSessionService(BaseSessionService):
 
         # Reconstruct events
         for event_data in doc.get("events", []):
-            event = Event.model_validate(event_data)
+            event = self._deserialize_event(event_data)
             session.events.append(event)
 
         # Apply config filters
@@ -229,7 +254,7 @@ class MongoSessionService(BaseSessionService):
         session.last_update_time = event.timestamp
 
         # Prepare event data for storage
-        event_dict = event.model_dump()
+        event_dict = self._serialize_event(event)
 
         # Update storage with event and state delta
         update_doc: dict[str, Any] = {
