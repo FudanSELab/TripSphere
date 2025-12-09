@@ -8,6 +8,7 @@ from litestar.params import Parameter
 from litestar.response import ServerSentEvent, ServerSentEventMessage
 from litestar.types import SSEData
 from pydantic import BaseModel, Field
+from pymongo import AsyncMongoClient
 
 from chat.agent.facade import AgentFacade
 from chat.common.deps import (
@@ -109,7 +110,10 @@ class MessageController(Controller):
 
         nacos_naming = cast(NacosNaming, state.get("nacos_naming"))
         httpx_client = cast(AsyncClient, state.get("httpx_client"))
-        agent_facade = await AgentFacade.create_facade(httpx_client, nacos_naming)
+        mongo_client = cast(AsyncMongoClient[dict[str, Any]], state.get("mongo_client"))
+        agent_facade = await AgentFacade.create_facade(
+            httpx_client, nacos_naming, mongo_client
+        )
 
         return ServerSentEvent(
             self._stream_events(

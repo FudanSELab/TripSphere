@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import AsyncGenerator, Self
+from typing import Any, AsyncGenerator, Self
 
 from a2a.client import A2ACardResolver
 from a2a.client import ClientConfig as A2AClientConfig
@@ -12,11 +12,12 @@ from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.events import Event
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
-from google.adk.sessions.sqlite_session_service import SqliteSessionService
 from google.genai import types
 from httpx import AsyncClient
+from pymongo import AsyncMongoClient
 
 from chat.agent._context import ContextProvider
+from chat.agent.session import MongoSessionService
 from chat.common.parts import Part
 from chat.config.settings import get_settings
 from chat.conversation.models import Author, Conversation, Message
@@ -29,8 +30,7 @@ _openai_settings = get_settings().openai
 os.environ["OPENAI_API_KEY"] = _openai_settings.api_key.get_secret_value()
 os.environ["OPENAI_BASE_URL"] = _openai_settings.base_url
 
-session_service = SqliteSessionService("chat_service.db")
-root_agent = LlmAgent(
+_root_agent = LlmAgent(
     name="agent_facade",
     model=LiteLlm(model="openai/gpt-4o-mini"),
     instruction=DELEGATOR_INSTRUCTION,
@@ -57,21 +57,23 @@ class AgentFacade:
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
         self.agent_cards: dict[str, AgentCard] = {}
         self.context_provider = context_provider
-        self.root_agent: LlmAgent | None = None
+        self.session_service: MongoSessionService | None = None
         self.runner: Runner | None = None
 
-    async def _post_init(self, agent_base_urls: list[str]) -> None:
+    async def _post_init(
+        self, agent_base_urls: list[str], mongo_client: AsyncMongoClient[dict[str, Any]]
+    ) -> None:
         async with asyncio.TaskGroup() as group:
             for base_url in agent_base_urls:
                 group.create_task(self._resolve_base_url(base_url))
 
-        self.root_agent = root_agent.clone(
-            {"sub_agents": list(self.remote_a2a_agents.values())}
-        )
+        self.session_service = MongoSessionService(mongo_client)
         self.runner = Runner(
             app_name="chat-service",
-            agent=self.root_agent,
-            session_service=session_service,
+            agent=_root_agent.clone(
+                {"sub_agents": list(self.remote_a2a_agents.values())}
+            ),
+            session_service=self.session_service,
         )
 
     async def _resolve_base_url(self, base_url: str) -> None:
@@ -87,12 +89,12 @@ class AgentFacade:
         cls,
         httpx_client: AsyncClient,
         nacos_naming: NacosNaming,
+        mongo_client: AsyncMongoClient[dict[str, Any]],
         context_provider: ContextProvider | None = None,
     ) -> Self:
         instance = cls(httpx_client, context_provider=context_provider)
         # TODO: Remote agents discovery through Nacos
-        await instance._post_init(["http://localhost:8000"])
-        # await instance._post_init(remote_agent_urls=[])
+        await instance._post_init(["http://localhost:8000"], mongo_client)
         return instance
 
     async def invoke(self, conversation: Conversation, user_query: Message) -> Message:
@@ -101,13 +103,16 @@ class AgentFacade:
     async def stream(
         self, conversation: Conversation, user_query: Message
     ) -> AsyncGenerator[Event | Message, None]:
-        session = await session_service.get_session(
+        if self.session_service is None:
+            raise RuntimeError("Session service is not initialized.")
+
+        session = await self.session_service.get_session(
             app_name="chat-service",
             user_id=conversation.user_id,
             session_id=conversation.conversation_id,
         )
         if session is None:
-            session = await session_service.create_session(
+            session = await self.session_service.create_session(
                 app_name="chat-service",
                 user_id=conversation.user_id,
                 session_id=conversation.conversation_id,

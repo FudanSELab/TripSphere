@@ -8,7 +8,6 @@ from a2a.client import ClientConfig as A2AClientConfig
 from a2a.client import ClientFactory as A2AClientFactory
 from a2a.types import TransportProtocol
 from httpx import AsyncClient
-from pydantic import BaseModel
 from pydantic_ai import Agent, ModelSettings, RunContext, Tool
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -22,9 +21,15 @@ from chat.prompts.agent import DELEGATOR_INSTRUCTION
 
 logger = logging.getLogger(__name__)
 
-
-class AgentFacadeDeps(BaseModel):
-    conversation_id: str
+_openai_settings = get_settings().openai
+_chat_model = OpenAIChatModel(
+    model_name="gpt-4o-mini",
+    provider=OpenAIProvider(
+        _openai_settings.base_url,
+        _openai_settings.api_key.get_secret_value(),
+    ),
+    settings=ModelSettings(temperature=0.0),
+)
 
 
 class AgentFacade:
@@ -46,7 +51,7 @@ class AgentFacade:
         )
         self.a2a_client_factory = A2AClientFactory(a2a_client_config)
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
-        self.root_agent: Agent[AgentFacadeDeps] | None = None
+        self.root_agent: Agent | None = None
 
     async def _resolve_base_url(self, base_url: str) -> None:
         card_resolver = A2ACardResolver(self.httpx_client, base_url)
@@ -59,20 +64,9 @@ class AgentFacade:
             for base_url in remote_agent_urls:
                 group.create_task(self._resolve_base_url(base_url))
 
-        openai_settings = get_settings().openai
-        chat_model = OpenAIChatModel(
-            model_name="gpt-4o-mini",  # TODO: Make configurable
-            provider=OpenAIProvider(
-                base_url=openai_settings.base_url,
-                api_key=openai_settings.api_key.get_secret_value(),
-            ),
-            settings=ModelSettings(temperature=0.0),
-        )
-
-        self.root_agent = Agent[AgentFacadeDeps](
-            model=chat_model,
+        self.root_agent = Agent(
+            model=_chat_model,
             instructions=self._root_instructions,
-            deps_type=AgentFacadeDeps,
             tools=[Tool(self.delegate_to_agent, takes_ctx=True)],
             instrument=True,
         )
@@ -92,7 +86,7 @@ class AgentFacade:
             remote_agents_info.append(agent_info)
         return remote_agents_info
 
-    def _root_instructions(self, ctx: RunContext[AgentFacadeDeps]) -> str:
+    def _root_instructions(self, ctx: RunContext) -> str:
         remote_agents_info = self._remote_agents()
         agents_info = [json.dumps(agent) for agent in remote_agents_info]
         agents = "\n".join(agents_info)
@@ -122,7 +116,7 @@ class AgentFacade:
         yield ""
 
     async def delegate_to_agent(
-        self, ctx: RunContext[AgentFacadeDeps], agent_name: str
+        self, ctx: RunContext, agent_name: str
     ) -> AsyncGenerator[None, None]:
         """
         Delegate the task to another agent.
