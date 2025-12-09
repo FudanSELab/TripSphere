@@ -14,6 +14,6 @@ public class File {
     private String bucket;
     //service name
     private String service;
-    //file path in the file servicce
+    //file path in the file service
     private String path;
 }
