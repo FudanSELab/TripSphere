@@ -5,7 +5,5 @@ Please update changelog as part of any significant pull request. Place short des
 ## Unreleased
 
 - trip-chat-service:
-  - TODO
-- trip-itinerary-planner:
-  - LLM-powered itinerary planning using LangGraph and OpenAI
-  - Human-in-the-Loop functionality for user feedback and adjustments
+  - Universal conversation, message and memory management
+  - Multi-agent collaboration with A2A integration based on Google ADK
