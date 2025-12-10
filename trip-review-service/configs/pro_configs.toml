@@ -1,0 +1,16 @@
+[config]
+    [config.mysql]
+        [mysql.read]
+        addr = "127.0.0.1:3306"
+        user = "read_user"
+        pass = "read_password"
+        name = "app_database_read"
+        [mysql.write]
+        addr = "127.0.0.1:3306"
+        user = "root"
+        pass = "123456"
+        name = "benchmark?parseTime=true"
+        [mysql.base]
+        maxOpenConn = 100
+        maxIdleConn = 10
+        connMaxLifeTime = "1h"
