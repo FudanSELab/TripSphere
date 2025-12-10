@@ -6,3 +6,6 @@ libs/proto/
 
 # Logs
 logs/
+
+# Environment variables
+.env
