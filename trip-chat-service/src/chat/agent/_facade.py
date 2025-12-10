@@ -12,7 +12,6 @@ from pydantic_ai import Agent, ModelSettings, RunContext, Tool
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from chat.agent._context import ContextProvider
 from chat.agent._remote import RemoteA2aAgent
 from chat.config.settings import get_settings
 from chat.conversation.models import Conversation, Message
@@ -37,11 +36,8 @@ class AgentFacade:
     The orchestrator for scheduling agents and delegating tasks.
     """
 
-    def __init__(
-        self, httpx_client: AsyncClient, context_provider: ContextProvider | None = None
-    ) -> None:
+    def __init__(self, httpx_client: AsyncClient) -> None:
         self.httpx_client = httpx_client
-        self.context_provider = context_provider
         a2a_client_config = A2AClientConfig(
             httpx_client=self.httpx_client,
             supported_transports=[
@@ -94,12 +90,9 @@ class AgentFacade:
 
     @classmethod
     async def create_facade(
-        cls,
-        httpx_client: AsyncClient,
-        nacos_naming: NacosNaming,
-        context_provider: ContextProvider | None = None,
+        cls, httpx_client: AsyncClient, nacos_naming: NacosNaming
     ) -> Self:
-        instance = cls(httpx_client, context_provider=context_provider)
+        instance = cls(httpx_client)
         # TODO: Remote A2A agents discovery through Nacos
         await instance._post_init(["http://localhost:8000"])
         # await instance._post_init(remote_agent_urls=[])

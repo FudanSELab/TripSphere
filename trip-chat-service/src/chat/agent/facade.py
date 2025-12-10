@@ -16,7 +16,6 @@ from google.genai import types
 from httpx import AsyncClient
 from pymongo import AsyncMongoClient
 
-from chat.agent._context import ContextProvider
 from chat.agent.session import MongoSessionService
 from chat.common.parts import Part
 from chat.config.settings import get_settings
@@ -42,9 +41,7 @@ class AgentFacade:
     The orchestrator for scheduling agents and delegating tasks.
     """
 
-    def __init__(
-        self, httpx_client: AsyncClient, context_provider: ContextProvider | None = None
-    ) -> None:
+    def __init__(self, httpx_client: AsyncClient) -> None:
         self.httpx_client = httpx_client
         a2a_client_config = A2AClientConfig(
             httpx_client=self.httpx_client,
@@ -56,7 +53,6 @@ class AgentFacade:
         self.a2a_client_factory = A2AClientFactory(a2a_client_config)
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
         self.agent_cards: dict[str, AgentCard] = {}
-        self.context_provider = context_provider
         self.session_service: MongoSessionService | None = None
         self.runner: Runner | None = None
 
@@ -90,9 +86,8 @@ class AgentFacade:
         httpx_client: AsyncClient,
         nacos_naming: NacosNaming,
         mongo_client: AsyncMongoClient[dict[str, Any]],
-        context_provider: ContextProvider | None = None,
     ) -> Self:
-        instance = cls(httpx_client, context_provider=context_provider)
+        instance = cls(httpx_client)
         # TODO: Remote agents discovery through Nacos
         await instance._post_init(["http://localhost:8000"], mongo_client)
         return instance
