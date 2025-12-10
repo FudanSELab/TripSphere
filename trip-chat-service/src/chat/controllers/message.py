@@ -41,7 +41,6 @@ class SendMessageResponse(BaseModel): ...
 
 
 class MessageController(Controller):
-    path = "/messages"
     tags = ["Messages"]
     dependencies = {
         "conversation_repository": Provide(provide_conversation_repository),
@@ -66,7 +65,7 @@ class MessageController(Controller):
             )
         return conversation
 
-    @post(":send")
+    @post("/messages:send")
     async def send_message(self) -> SendMessageResponse:
         return SendMessageResponse()
 
@@ -89,7 +88,7 @@ class MessageController(Controller):
                     comment="google-adk event",
                 )
 
-    @post(":stream")
+    @post("/messages:stream")
     async def stream_message(
         self,
         conversation_repository: ConversationRepository,
@@ -121,7 +120,7 @@ class MessageController(Controller):
             )
         )
 
-    @get("/{message_id:str}")
+    @get("/messages/{message_id:str}")
     async def get_message(
         self,
         message_repository: MessageRepository,
@@ -138,7 +137,7 @@ class MessageController(Controller):
         self._check_conversation_access(conversation, user_id, message_id=message_id)
         return message
 
-    @get()
+    @get("/messages")
     async def list_messages(
         self,
         conversation_repository: ConversationRepository,

@@ -1,6 +1,5 @@
 import logging
 from contextlib import asynccontextmanager
-from importlib.metadata import version
 from typing import Any, AsyncGenerator
 
 from httpx import AsyncClient
@@ -78,7 +77,7 @@ def create_app() -> Litestar:
     )
     openapi_config = OpenAPIConfig(
         title=settings.app.name,
-        version=version("chat"),
+        version="1.0.0",
         render_plugins=[ScalarRenderPlugin()],
     )
     opentelemetry_config = OpenTelemetryConfig()
