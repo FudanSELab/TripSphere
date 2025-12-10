@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import warnings
 from typing import Any, AsyncGenerator, Self
 
 from a2a.client import A2ACardResolver
@@ -22,6 +23,9 @@ from chat.config.settings import get_settings
 from chat.conversation.models import Author, Conversation, Message
 from chat.infra.nacos.naming import NacosNaming
 from chat.prompts.agent import DELEGATOR_INSTRUCTION
+
+# Suppress ADK Experimental Warnings
+warnings.filterwarnings("ignore", module="google.adk")
 
 logger = logging.getLogger(__name__)
 
@@ -116,62 +120,92 @@ class AgentFacade:
         if self.runner is None:
             raise RuntimeError("Runner is not initialized.")
 
-        content = types.Content(
-            role="user", parts=[types.Part(text=user_query.text_content())]
-        )
-        logger.debug(f"==> Running Query: {user_query.text_content()}")
-        final_response_text = "<No Final Text Response Captured>"
+        text_query = user_query.text_content()
+        user_content = types.Content(role="user", parts=[types.Part(text=text_query)])
+
+        logger.debug(f"==> Running Query: {text_query}")
+
+        full_response_text = ""
+        final_text = "No final textual response received."  # Fallback message
         async for event in self.runner.run_async(
             user_id=conversation.user_id,
             session_id=conversation.conversation_id,
-            new_message=content,
+            new_message=user_content,
         ):
-            logger.debug(f"Event ID: {event.id}, Author: {event.author}")
+            # Reference: https://google.github.io/adk-docs/events/
+            logger.debug(f"Event ID: {event.id}, author: {event.author}")
 
-            # --- Check for specific parts FIRST ---
-            has_specific_part = False
             if event.content and event.content.parts:
-                for part in event.content.parts:  # Iterate through all parts
-                    if part.executable_code:
-                        # Access the actual code string via .code
-                        logger.debug(
-                            "    Agent generated code:\n"
-                            f"```python\n{part.executable_code.code}\n```"
-                        )
-                        has_specific_part = True
-                    elif part.code_execution_result:
-                        # Access outcome and output correctly
-                        logger.debug(
-                            "    Code Execution Result: "
-                            f"{part.code_execution_result.outcome}"
-                            f" - Output:\n{part.code_execution_result.output}"
-                        )
-                        has_specific_part = True
-                    # Also print any text parts found in any event for debugging
-                    elif part.text and not part.text.isspace():
-                        logger.debug(f"    Text: '{part.text.strip()}'")
-                        # Do not set has_specific_part=True here,
-                        # as we want the final response logic below
+                if calls := event.get_function_calls():
+                    logger.debug(
+                        "    [Tool Call Request]: "
+                        f"{[call.model_dump() for call in calls]}"
+                    )
+                elif resps := event.get_function_responses():
+                    logger.debug(
+                        f"    [Tool Result]: {[resp.model_dump() for resp in resps]}"
+                    )
+                elif text := event.content.parts[0].text:
+                    if event.partial:
+                        logger.debug(f"    [Streaming Text Chunk]: {text}")
+                        full_response_text += text
+                    else:
+                        logger.debug(f"    [Complete Text Content]: {text}")
+                else:
+                    logger.debug("    [Other Content]: Such as code execution")
 
-            # --- Check for final response AFTER specific parts ---
-            # Only consider it final if it doesn't have the
-            # specific code parts we just handled
-            if not has_specific_part and event.is_final_response():
+            elif event.actions:
+                if event.actions.state_delta:
+                    logger.debug(f"    [State Update]: {event.actions.state_delta}")
+                if event.actions.artifact_delta:
+                    logger.debug(
+                        f"    [Artifact Update]: {event.actions.artifact_delta}"
+                    )
+                if event.actions.transfer_to_agent:
+                    logger.debug(
+                        f"    [Signal]: Transfer to {event.actions.transfer_to_agent}"
+                    )
+                if event.actions.escalate:
+                    logger.debug("    [Signal]: Escalate (terminate loop)")
+                if event.actions.skip_summarization:
+                    logger.debug("    [Signal]: Skip summarization for tool result")
+
+            else:
+                logger.debug("    [Control Signal or Other]")
+
+            # Check if it's a final, displayable event
+            if event.is_final_response():
                 if (
                     event.content
                     and event.content.parts
                     and event.content.parts[0].text
                 ):
-                    final_response_text = event.content.parts[0].text.strip()
-                    logger.debug(f"==> Final Agent Response: {final_response_text}")
-                else:
-                    logger.debug(
-                        "==> Final Agent Response: [No text content in final event]"
+                    final_text = full_response_text + (
+                        event.content.parts[0].text if not event.partial else ""
                     )
+                    logger.debug(f"==> Text Response: {final_text.rstrip()}")
+                    full_response_text = ""  # Reset the accumulator
+                elif (
+                    event.actions
+                    and event.actions.skip_summarization
+                    and event.get_function_responses()
+                ):
+                    response_data = event.get_function_responses()[0].response
+                    logger.debug(f"==> Raw Tool Result: {response_data}")
+                    final_text = str(response_data)
+                elif (
+                    hasattr(event, "long_running_tool_ids")
+                    and event.long_running_tool_ids
+                ):
+                    logger.debug("==> Long Running Tool: Running in background...")
+                    final_text = "Tool is running in background..."
+                else:
+                    logger.debug("==> Non-textual Response: No text to display")
+
             yield event
 
         yield Message(
             conversation_id=conversation.conversation_id,
-            author=Author.agent(),
-            content=[Part.from_text(final_response_text)],
+            author=Author.agent("agent_facade"),
+            content=[Part.from_text(final_text)],
         )
