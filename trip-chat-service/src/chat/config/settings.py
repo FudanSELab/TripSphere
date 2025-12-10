@@ -1,5 +1,4 @@
 import logging
-import sys
 from functools import lru_cache
 from typing import Any, Literal
 
@@ -35,7 +34,7 @@ class OpenAISettings(BaseModel):
     base_url: str = Field(default="https://api.openai.com/v1")
 
 
-class LogsSettings(BaseModel):
+class LogSettings(BaseModel):
     level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO"
     )
@@ -51,22 +50,21 @@ class LogsSettings(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[".env"],
         env_file_encoding="utf-8",
         env_nested_delimiter="_",
         env_nested_max_split=1,
-        cli_parse_args="pytest" not in sys.argv[0],
     )
     app: AppSettings = Field(default_factory=AppSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
-    logs: LogsSettings = Field(default_factory=LogsSettings)
+    log: LogSettings = Field(default_factory=LogSettings)
 
     def model_post_init(self, _: Any) -> None:
         if self.app.debug is True:
-            self.logs.level = "DEBUG"
+            self.log.level = "DEBUG"
 
 
 @lru_cache(maxsize=1, typed=True)

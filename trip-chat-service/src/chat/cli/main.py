@@ -33,7 +33,7 @@ def run_cli() -> NoReturn:
 
         settings = get_settings()
         sys.exit(
-            litestar_group(  # pyright: ignore
+            litestar_group(
                 args=[
                     "run",
                     "--host",
@@ -41,7 +41,7 @@ def run_cli() -> NoReturn:
                     "--port",
                     str(settings.server.port),
                 ],
-            )
+            )  # pyright: ignore[reportUnknownArgumentType]
         )
     except ImportError as exc:
         print(

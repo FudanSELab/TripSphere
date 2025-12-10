@@ -18,7 +18,7 @@ def configure_logging() -> LoggingConfig:
     logger_handlers = ["queue_listener"]
     handlers: dict[str, dict[str, Any]] = {}
 
-    if settings.logs.file or settings.logs.level == "DEBUG":
+    if settings.log.file or settings.log.level == "DEBUG":
         Path("logs").mkdir(parents=True, exist_ok=True)
         handlers["file"] = {
             "class": "logging.FileHandler",
@@ -40,7 +40,7 @@ def configure_logging() -> LoggingConfig:
         handlers=handlers,
         loggers={
             "chat": {
-                "level": settings.logs.level,
+                "level": settings.log.level,
                 "handlers": logger_handlers,
                 "propagate": False,
             }
