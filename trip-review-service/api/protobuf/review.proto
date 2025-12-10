@@ -9,9 +9,22 @@ service trip_review_service {
   rpc UpdateReview(UpdateReviewRequest) returns (UpdateReviewResponse);
   rpc DeleteReview(DeleteReviewRequest) returns (DeleteReviewResponse);
   rpc GetReviewByTargetID(GetReviewByTargetIDRequest) returns (GetReviewByTargetIDResponse);
+  rpc GetReviewByTargetIDWithCursor(GetReviewByTargetIDWithCursorRequest) returns (GetReviewByTargetIDWithCursorResponse);
 }
 
+message GetReviewByTargetIDWithCursorRequest{
+  string target_type =1;
+  string target_id = 2;
+  string cursor =3;
+  int64 limit =4;
+}
 
+message GetReviewByTargetIDWithCursorResponse{
+  repeated Review reviews =1;
+  int64 total_reviews =2;
+  bool status =3;
+  string next_cursor=4;
+}
 message CreateReviewRequest {
   string user_id = 1;
   string target_type =2;

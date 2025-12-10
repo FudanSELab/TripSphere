@@ -3,7 +3,13 @@ package repository
 import (
 	"context"
 	"errors"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+	"trip-review-service/configs"
 	"trip-review-service/internal/domain"
 	"trip-review-service/internal/repository/model"
 )
@@ -13,8 +19,14 @@ type ReviewRepo struct {
 	db *gorm.DB
 }
 
+var reviewRepo *ReviewRepo
+
+func GetReviewRepo() *ReviewRepo {
+	return reviewRepo
+}
+
 // NewReviewRepo 构造函数
-func NewReviewRepo(db *gorm.DB) domain.ReviewRepository {
+func NewReviewRepo(db *gorm.DB) *ReviewRepo {
 	return &ReviewRepo{
 		db: db,
 	}
@@ -23,7 +35,7 @@ func NewReviewRepo(db *gorm.DB) domain.ReviewRepository {
 // Create  - 创建点评
 func (r *ReviewRepo) Create(ctx context.Context, review *domain.Review) error {
 	//  将 Domain 实体转换为 DB Model
-	reviewModel := review.ToModel()
+	reviewModel := model.ToModel(review)
 
 	// 写入数据库
 	if err := r.db.WithContext(ctx).Create(reviewModel).Error; err != nil {
@@ -47,12 +59,12 @@ func (r *ReviewRepo) GetByID(ctx context.Context, id string) (*domain.Review, er
 	}
 
 	// 转回 Domain 对象
-	return m.ToDomain(), nil
+	return model.ToDomain(&m), nil
 }
 
 // FindByTarget  查询列表 (例如：查询某酒店下的所有评论)
 // 带有分页功能
-func (r *ReviewRepo) FindByTarget(ctx context.Context, targetType domain.ReviewTargetType, targetID string, offset, limit int) ([]*domain.Review, error) {
+func (r *ReviewRepo) FindByTarget(ctx context.Context, targetType domain.ReviewTargetType, targetID string, offset, limit int64) ([]domain.Review, error) {
 	var models []model.ReviewModel
 
 	// 构建查询
@@ -60,21 +72,55 @@ func (r *ReviewRepo) FindByTarget(ctx context.Context, targetType domain.ReviewT
 	query := r.db.WithContext(ctx).
 		Where("target_type = ? AND target_id = ?", targetType, targetID).
 		Order("created_at DESC"). // 通常按时间倒序
-		Offset(offset).
-		Limit(limit)
+		Offset(int(offset)).
+		Limit(int(limit))
 
 	if err := query.Find(&models).Error; err != nil {
 		return nil, err
 	}
 
 	// 转换列表
-	reviews := make([]*domain.Review, 0, len(models))
+	reviews := make([]domain.Review, 0, len(models))
 	for _, m := range models {
 		temp := m
-		reviews = append(reviews, temp.ToDomain())
+		reviews = append(reviews, *model.ToDomain(&temp))
 	}
 
 	return reviews, nil
+}
+
+func (r *ReviewRepo) FindByTargetWithCursor(ctx context.Context, targetType domain.ReviewTargetType, targetID string, cursor string, limit int64) ([]domain.Review, string, error) {
+	var models []model.ReviewModel
+
+	query := r.db.WithContext(ctx).
+		Where("target_type = ? AND target_id=?", targetType, targetID)
+
+	if cursor != "" {
+		cursorInt, err := strconv.ParseInt(cursor, 10, 64)
+		cursorTime := time.Unix(cursorInt, 0)
+		if err != nil {
+			return nil, "", err
+		}
+		query = query.Where("created_at < ?", cursorTime)
+	}
+	query = query.Order("created_at DESC").Limit(int(limit))
+
+	if err := query.Find(&models).Error; err != nil {
+		return nil, "", err
+	}
+
+	reviews := make([]domain.Review, 0, len(models))
+	var nextCursor string
+
+	if len(models) > 0 {
+		lastModel := models[len(models)-1]
+		nextCursor = lastModel.CreatedAt.Format(time.RFC3339)
+	}
+	for _, m := range models {
+		reviews = append(reviews, *model.ToDomain(&m))
+	}
+
+	return reviews, nextCursor, nil
 }
 
 // Update 更新点评 (例如：用户修改评分或内容)
@@ -90,7 +136,7 @@ func (r *ReviewRepo) Update(ctx context.Context, review *domain.Review) error {
 
 	result := r.db.WithContext(ctx).
 		Model(&model.ReviewModel{}).
-		Where("id = ? AND uid = ?", review.ID, review.UserID). // 安全起见，带上 uid 校验所有权
+		Where("id = ? ", review.ID). // 安全起见，带上 uid 校验所有权
 		Updates(updates)
 
 	if result.Error != nil {
@@ -103,9 +149,9 @@ func (r *ReviewRepo) Update(ctx context.Context, review *domain.Review) error {
 }
 
 // Delete  删除点评
-func (r *ReviewRepo) Delete(ctx context.Context, id string, uid string) error {
+func (r *ReviewRepo) Delete(ctx context.Context, id string) error {
 	result := r.db.WithContext(ctx).
-		Where("id = ? AND uid = ?", id, uid).
+		Where("id = ? ", id).
 		Delete(&model.ReviewModel{})
 
 	if result.Error != nil {
@@ -115,4 +161,25 @@ func (r *ReviewRepo) Delete(ctx context.Context, id string, uid string) error {
 		return errors.New("review not found")
 	}
 	return nil
+}
+
+func init() {
+
+	config := configs.GetConfig()
+	builder := strings.Builder{}
+	builder.Grow(128)
+	builder.WriteString(config.MySQL.Write.User)
+	builder.WriteString(":")
+	builder.WriteString(config.MySQL.Write.Pass)
+	builder.WriteString("@tcp(")
+	builder.WriteString(config.MySQL.Write.Addr)
+	builder.WriteString(")/")
+	builder.WriteString(config.MySQL.Write.Name)
+
+	db, err := gorm.Open(mysql.Open(builder.String()), &gorm.Config{})
+	if err != nil {
+		log.Println("database connect failed")
+	}
+	log.Println("connect to database successfully")
+	reviewRepo = NewReviewRepo(db)
 }

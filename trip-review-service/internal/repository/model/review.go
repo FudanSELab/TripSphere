@@ -13,7 +13,7 @@ type ReviewModel struct {
 	UserID     string `gorm:"column:uid;type:varchar(64);not null"`
 	TargetType string `gorm:"column:target_type;type:varchar(20);not null"`
 	TargetID   string `gorm:"column:target_id;type:varchar(64);not null"`
-	Rating     int    `gorm:"column:rating;type:tinyint;not null"`
+	Rating     int64  `gorm:"column:rating;type:tinyint;not null"`
 
 	// GORM 默认处理 string 为 utf8，但在建表时需确保 DB 层面是 utf8mb4
 	Text string `gorm:"column:text;type:text"`
@@ -29,18 +29,32 @@ func (reviewModel *ReviewModel) TableName() string {
 	return "reviews"
 }
 
-func (reviewModel *ReviewModel) ToDomain() *domain.Review {
+func ToDomain(reviewModel *ReviewModel) *domain.Review {
 	return &domain.Review{
 		ID:         reviewModel.ID,
 		UserID:     reviewModel.UserID,
-		TargetType: domain.ReviewTargetType(reviewModel.TargetType),
 		TargetID:   reviewModel.TargetID,
+		TargetType: domain.ReviewTargetType(reviewModel.TargetType),
 		Rating:     reviewModel.Rating,
 		Text:       reviewModel.Text,
 		// 强转回 []string
 		Images:    reviewModel.Images,
 		CreatedAt: reviewModel.CreatedAt,
 		UpdatedAt: reviewModel.UpdatedAt,
+	}
+}
+func ToModel(review *domain.Review) *ReviewModel {
+	return &ReviewModel{
+		ID:         review.ID,
+		UserID:     review.UserID,
+		TargetType: string(review.TargetType),
+		TargetID:   review.TargetID,
+		Rating:     review.Rating,
+		Text:       review.Text,
+		// 直接转换类型，因为底层都是 []string
+		Images:    review.Images,
+		CreatedAt: review.CreatedAt,
+		UpdatedAt: review.UpdatedAt,
 	}
 }
 
