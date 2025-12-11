@@ -1,3 +1,0 @@
-from v2.nacos.common.constants import Constants as Constants
-
-def get_config_cache_key(data_id: str, group: str, tenant: str): ...

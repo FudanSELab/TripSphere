@@ -1,12 +1,12 @@
 import socket
 from typing import Self
 
-from v2.nacos import (
+from v2.nacos import (  # type: ignore
     ClientConfigBuilder,
     DeregisterInstanceParam,
     NacosNamingService,
     RegisterInstanceParam,
-)
+)  # pyright: ignore[reportMissingTypeStubs]
 
 
 def get_local_ip() -> str:
