@@ -21,7 +21,9 @@ COPY libs ./libs
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv run --locked --no-sync --with grpcio-tools -m grpc_tools.protoc \
+    # grpcio-tools version must match pyproject.toml
+    uv run --locked --no-sync --with 'grpcio-tools>=1.75.1' \
+    -m grpc_tools.protoc \
         -Ilibs/proto \
         --python_out=libs/tripsphere/src \
         --grpc_python_out=libs/tripsphere/src \
@@ -34,7 +36,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-dev
 
 # Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
+# Installing separately from dependencies allows optimal layer caching
 COPY pyproject.toml uv.lock README.md .
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -42,14 +44,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Install OpenTelemetry auto instrumentation
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv run --locked --no-dev opentelemetry-bootstrap -a requirements | uv pip install --requirements -
+    uv run --locked --no-dev opentelemetry-bootstrap -a requirements \
+    | uv pip install --requirements -
 
 
 # Then, use a final image without uv
 FROM python:3.12-slim-bookworm
-# It is important to use the image that matches the builder, as the path to the
-# Python executable must be the same, e.g., using `python:3.11-slim-bookworm`
-# will fail.
+# It is important to use the image that matches the builder, 
+# as the path to the Python executable must be the same, 
+# e.g., using `python:3.11-slim-bookworm` will fail.
 
 # Setup a non-root user
 RUN groupadd --system --gid 999 nonroot \
@@ -76,6 +79,8 @@ WORKDIR /app
 
 EXPOSE 24210
 
-# Run the ASGI server by default
+# Start the instrumented app with default (Litestar) arguments
 ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "chat"]
+# Do NOT provide '--host' and '--port' options here, 
+# since they are loaded by Pydantic Settings from environment variables
 CMD []
