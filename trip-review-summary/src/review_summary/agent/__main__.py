@@ -4,6 +4,7 @@ import sys
 
 import click
 import httpx
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 import uvicorn
 
 from a2a.server.apps import A2AStarletteApplication
@@ -33,6 +34,8 @@ logger = logging.getLogger(__name__)
 class MissingAPIKeyError(Exception):
     """Exception for missing API key."""
 
+# parser.add_argument("--query_chat_model", default="gpt-4o-2024-08-06", type=str)
+# parser.add_argument("--embedding_model", default="text-embedding-3-large", type=str)
 
 @click.command()
 @click.option('--host', 'host', default='0.0.0.0')
@@ -40,15 +43,6 @@ class MissingAPIKeyError(Exception):
 def main(host, port):
     """Starts the Review Summarizer Agent server."""
     try:
-        if not os.getenv('TOOL_LLM_URL'):
-            raise MissingAPIKeyError(
-                'TOOL_LLM_URL environment variable not set.'
-            )
-        if not os.getenv('TOOL_LLM_NAME'):
-            raise MissingAPIKeyError(
-                'TOOL_LLM_NAME environment not variable not set.'
-            )
-
         capabilities = AgentCapabilities(streaming=True, push_notifications=True)
         skill = AgentSkill(
             id='summarize_reviews',
@@ -74,8 +68,15 @@ def main(host, port):
         push_config_store = InMemoryPushNotificationConfigStore()
         push_sender = BasePushNotificationSender(httpx_client=httpx_client,
                         config_store=push_config_store)
+        query_chat_model = ChatOpenAI(
+            model="gpt-4o-2024-08-06",
+            temperature=0
+        )
+        embedding_llm = OpenAIEmbeddings(
+            model="text-embedding-3-large"
+        )
         request_handler = DefaultRequestHandler(
-            agent_executor=ReviewSummarizerAgentExecutor(),
+            agent_executor=ReviewSummarizerAgentExecutor(query_chat_model, embedding_llm),
             task_store=InMemoryTaskStore(),
             push_config_store=push_config_store,
             push_sender= push_sender
@@ -97,6 +98,5 @@ def main(host, port):
 
 if __name__ == '__main__':
     main()
-
 
 

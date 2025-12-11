@@ -1,3 +1,4 @@
+
 import os
 from collections.abc import AsyncIterable
 from typing import Any, Literal, Dict, List
@@ -8,7 +9,9 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
-
+from prompt import SYSTEM_INSTRUCTION
+from prompt import FORMAT_INSTRUCTION
+from langchain_openai.embeddings import OpenAIEmbeddings
 
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
@@ -59,34 +62,20 @@ def get_reviews(
 class ReviewSummarizerAgent:
     """ReviewSummarizerAgent - a specialized assistant for summarizing business reviews."""
 
-    SYSTEM_INSTRUCTION = (
-        'You are a review summarizer. Your role is to analyze customer reviews retrieved using the get_reviews tool '
-        'and provide concise, accurate summaries that answer the user\'s specific questions about the business. '
-        'First, use the get_attraction_id tool to find the attraction ID based on the name provided by the user. '
-        'Then, use the get_reviews tool to retrieve reviews for that attraction. '
-        'Finally, analyze the reviews and provide a summary that answers the user\'s specific questions. '
-        'You should focus on key themes, sentiment, and specific aspects mentioned in the reviews. '
-        'Always base your responses strictly on the review content you receive from the tool. '
-        'If the reviews don\'t contain information relevant to the user\'s question, acknowledge this limitation. '
-        'Be objective and factual in your summaries, highlighting both positive and negative aspects when present.'
-    )
+    SYSTEM_INSTRUCTION = SYSTEM_INSTRUCTION
 
-    FORMAT_INSTRUCTION = (
-        'Set response status to input_required if the user needs to provide more information to complete the request.'
-        'Set response status to error if there is an error while processing the request.'
-        'Set response status to completed if the request is complete.'
-    )
+    FORMAT_INSTRUCTION = FORMAT_INSTRUCTION
 
-    def __init__(self):
+    def __init__(
+        self,
+        query_chat_model: ChatOpenAI,
+        embedding_llm: OpenAIEmbeddings
+    ):
         # Always use OpenAI model
-        self.model = ChatOpenAI(
-            model="gpt-4o-2024-08-06",
-            openai_api_key=os.getenv('API_KEY', 'EMPTY'),
-            openai_api_base=os.getenv('TOOL_LLM_URL'),
-            temperature=0,
-        )
+        self.model = query_chat_model
         self.tools = [get_attraction_id, get_reviews]
-        
+        self.embedding_llm = embedding_llm 
+
         # Create the graph
         self.graph = self._create_graph()
 
