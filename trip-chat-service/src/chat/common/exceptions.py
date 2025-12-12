@@ -1,32 +1,56 @@
 from typing import Any
 
-from litestar.exceptions import (
-    HTTPException,
-    NotFoundException,
-    PermissionDeniedException,
-)
+from fastapi.exceptions import HTTPException
+
+
+class NotFoundException(HTTPException, ValueError):
+    """
+    Cannot find the requested resource.
+    """
+
+    def __init__(self, message: str = "", extra: dict[str, Any] | None = None):
+        super().__init__(
+            status_code=404,  # 404: Not Found
+            detail={"message": message, "extra": extra},
+        )
+
+
+class PermissionDeniedException(HTTPException):
+    """
+    Request understood, but not authorized.
+    """
+
+    def __init__(self, message: str = "", extra: dict[str, Any] | None = None):
+        super().__init__(
+            status_code=403,  # 403: Forbidden
+            detail={"message": message, "extra": extra},
+        )
 
 
 class MessageNotFoundException(NotFoundException):
+    """
+    Raised when a Message is not found.
+    """
+
     def __init__(self, message_id: str):
-        """
-        Raised when a Message is not found.
-        """
         super().__init__(
             f"Message {message_id} is not found.", extra={"message_id": message_id}
         )
 
 
 class MessageImmutabilityException(HTTPException):
+    """
+    Once a Message reaches a terminal state, it cannot be modified.
+    """
+
     def __init__(self, message_id: str):
-        """
-        Once a Message reaches a terminal state, it cannot be modified.
-        """
         super().__init__(
-            detail=f"Message {message_id} has reached a terminal state,"
-            " and it cannot be modified.",
             status_code=409,  # 409: Conflict with the current state of Message
-            extra={"message_id": message_id},
+            detail={
+                "message": f"Message {message_id} has reached a terminal state,"
+                " and it cannot be modified.",
+                "extra": {"message_id": message_id},
+            },
         )
 
 

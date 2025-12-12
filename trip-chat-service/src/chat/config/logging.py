@@ -1,8 +1,6 @@
 from datetime import datetime
+from logging import config
 from pathlib import Path
-from typing import Any
-
-from litestar.logging import LoggingConfig
 
 from chat.config.settings import get_settings
 
@@ -12,11 +10,17 @@ timestamp = datetime.now().isoformat().replace(":", "-")
 # Compatibility with Windows file naming restrictions
 
 
-def configure_logging() -> LoggingConfig:
+def configure_logging() -> None:
     settings = get_settings()
 
-    logger_handlers = ["queue_listener"]
-    handlers: dict[str, dict[str, Any]] = {}
+    logger_handlers = ["console"]
+    handlers = {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": settings.log.level,
+            "formatter": "standard",
+        }
+    }
 
     if settings.log.file or settings.log.level == "DEBUG":
         Path("logs").mkdir(parents=True, exist_ok=True)
@@ -29,21 +33,21 @@ def configure_logging() -> LoggingConfig:
         }
         logger_handlers.append("file")
 
-    logging_config = LoggingConfig(
-        configure_root_logger=False,
-        formatters={
+    logging_config = {
+        "version": 1,
+        "formatters": {
             "standard": {
                 "format": "%(levelname)s - %(asctime)s - %(name)s "
                 "- %(filename)s:%(lineno)d - %(message)s"
             }
         },
-        handlers=handlers,
-        loggers={
+        "handlers": handlers,
+        "loggers": {
             "chat": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
                 "propagate": False,
             }
         },
-    )
-    return logging_config
+    }
+    config.dictConfig(logging_config)
