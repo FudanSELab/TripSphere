@@ -10,7 +10,7 @@ timestamp = datetime.now().isoformat().replace(":", "-")
 # Compatibility with Windows file naming restrictions
 
 
-def configure_logging() -> None:
+def config_logging() -> None:
     settings = get_settings()
 
     logger_handlers = ["console"]
