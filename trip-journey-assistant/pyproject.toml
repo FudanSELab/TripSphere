@@ -4,9 +4,10 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "google-adk[a2a]>=1.20.0",
+    "google-adk[a2a,otel-gcp]>=1.20.0",
     "litellm>=1.80.7",
     "mcp-weather-server>=0.6.0",
+    "opentelemetry-distro[otlp]>=0.58b0",
     "python-dotenv>=1.2.1",
     "uvicorn>=0.38.0",
 ]
