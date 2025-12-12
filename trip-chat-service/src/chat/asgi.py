@@ -6,11 +6,14 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from pymongo import AsyncMongoClient
 
+from chat.config.logging import setup_logging
 from chat.config.settings import get_settings
 from chat.infra.nacos.naming import NacosNaming
 from chat.routers.conversation import conversations
 from chat.routers.memory import memories
 from chat.routers.message import messages
+
+setup_logging()
 
 logger = logging.getLogger(__name__)
 

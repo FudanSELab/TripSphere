@@ -77,10 +77,13 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 24210
+ENV SERVER_PORT=8000
+ENV SERVER_HOST=0.0.0.0
+
+EXPOSE $SERVER_PORT
 
 # Start the instrumented app with default (Litestar) arguments
-ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "chat"]
-# Do NOT provide '--host' and '--port' options here, 
-# since they are loaded by Pydantic Settings from environment variables
-CMD []
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "chat.asgi:app"]
+# Do NOT directly provide host and port here, so that they can be
+# overridden via environment variables or Docker arguments
+CMD --host $SERVER_HOST --port $SERVER_PORT
