@@ -117,17 +117,37 @@ class AgentFacade:
                 session_id=conversation.conversation_id,
             )
 
-        if self.runner is None:
-            raise RuntimeError("Runner is not initialized.")
-
         text_query = user_query.text_content()
         user_content = types.Content(role="user", parts=[types.Part(text=text_query)])
 
         logger.debug(f"==> Running Query: {text_query}")
 
+        # Check if user specified a target agent
+        target_agent_name = user_query.metadata.get("target_agent") if user_query.metadata else None
+
         full_response_text = ""
         final_text = "No final textual response received."  # Fallback message
-        async for event in self.runner.run_async(
+
+        if target_agent_name and target_agent_name in self.remote_a2a_agents:
+            # Direct routing to specified agent
+            target_agent = self.remote_a2a_agents[target_agent_name]
+            logger.debug(f"==> Direct routing to agent: {target_agent_name}")
+
+            # Create a temporary runner for the specific agent
+            temp_runner = Runner(
+                app_name="chat-service",
+                agent=target_agent,
+                session_service=self.session_service,
+            )
+
+            runner_to_use = temp_runner
+        else:
+            # Normal facade routing through root agent
+            if self.runner is None:
+                raise RuntimeError("Runner is not initialized.")
+            runner_to_use = self.runner
+
+        async for event in runner_to_use.run_async(
             user_id=conversation.user_id,
             session_id=conversation.conversation_id,
             new_message=user_content,
