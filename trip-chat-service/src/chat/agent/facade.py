@@ -58,7 +58,8 @@ class AgentFacade:
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
         self.agent_cards: dict[str, AgentCard] = {}
         self.session_service: MongoSessionService | None = None
-        self.runner: Runner | None = None
+        self.default_runner: Runner | None = None
+        self.app_name = get_settings().app.name
 
     async def _post_init(
         self, agent_base_urls: list[str], mongo_client: AsyncMongoClient[dict[str, Any]]
@@ -68,8 +69,8 @@ class AgentFacade:
                 group.create_task(self._resolve_base_url(base_url))
 
         self.session_service = MongoSessionService(mongo_client)
-        self.runner = Runner(
-            app_name="chat-service",
+        self.default_runner = Runner(
+            app_name=self.app_name,
             agent=_root_agent.clone(
                 {"sub_agents": list(self.remote_a2a_agents.values())}
             ),
@@ -106,13 +107,13 @@ class AgentFacade:
             raise RuntimeError("Session service is not initialized.")
 
         session = await self.session_service.get_session(
-            app_name="chat-service",
+            app_name=self.app_name,
             user_id=conversation.user_id,
             session_id=conversation.conversation_id,
         )
         if session is None:
             session = await self.session_service.create_session(
-                app_name="chat-service",
+                app_name=self.app_name,
                 user_id=conversation.user_id,
                 session_id=conversation.conversation_id,
             )
@@ -123,29 +124,23 @@ class AgentFacade:
         logger.debug(f"==> Running Query: {text_query}")
 
         # Check if user specified a target agent
-        target_agent_name = user_query.metadata.get("target_agent") if user_query.metadata else None
+        agent = user_query.metadata.get("agent") if user_query.metadata else None
+        if agent and isinstance(agent, str) and (agent in self.remote_a2a_agents):
+            # Direct routing to the specified agent
+            logger.debug(f"==> Direct routing to agent: {agent}")
+            runner_to_use = Runner(
+                app_name=self.app_name,
+                agent=self.remote_a2a_agents[agent],
+                session_service=self.session_service,
+            )
+        else:
+            # Normal facade orchestration through root agent
+            if self.default_runner is None:
+                raise RuntimeError("Default runner is not initialized.")
+            runner_to_use = self.default_runner
 
         full_response_text = ""
         final_text = "No final textual response received."  # Fallback message
-
-        if target_agent_name and target_agent_name in self.remote_a2a_agents:
-            # Direct routing to specified agent
-            target_agent = self.remote_a2a_agents[target_agent_name]
-            logger.debug(f"==> Direct routing to agent: {target_agent_name}")
-
-            # Create a temporary runner for the specific agent
-            temp_runner = Runner(
-                app_name="chat-service",
-                agent=target_agent,
-                session_service=self.session_service,
-            )
-
-            runner_to_use = temp_runner
-        else:
-            # Normal facade routing through root agent
-            if self.runner is None:
-                raise RuntimeError("Runner is not initialized.")
-            runner_to_use = self.runner
 
         async for event in runner_to_use.run_async(
             user_id=conversation.user_id,
