@@ -138,7 +138,7 @@ class MessageController(Controller):
         return message
 
     @get("/messages")
-    async def list_messages(
+    async def list_conversation_messages(
         self,
         conversation_repository: ConversationRepository,
         conversation_manager: ConversationManager,
@@ -153,10 +153,7 @@ class MessageController(Controller):
             conversation_repository, conversation_id
         )
         self._check_conversation_access(conversation, user_id, resource="messages")
-        messages, next_cursor = await conversation_manager.list_messages(
-            conversation, results_per_page, cursor=cursor
-        )
-        pagination = CursorPagination[str, Message](
-            items=messages, results_per_page=results_per_page, cursor=next_cursor
+        pagination = await conversation_manager.list_conversation_messages(
+            conversation, results_per_page, direction="backward", cursor=cursor
         )
         return pagination

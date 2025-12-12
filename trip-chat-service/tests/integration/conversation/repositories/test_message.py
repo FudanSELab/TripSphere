@@ -52,28 +52,25 @@ async def test_list_by_conversation(
     documents = [message.model_dump(by_alias=True) for message in messages]
     insert_result = await collection.insert_many(documents)
 
-    messages, next_token = await message_repository.list_by_conversation(
-        conversation_id=conversation_id,
-        limit=10,
-        token=None,
-        direction="backward",
+    pagination = await message_repository.find_by_conversation(
+        conversation_id=conversation_id, limit=10, direction="backward", token=None
     )
-    assert len(messages) == 10
-    assert next_token == encode_uuid_cursor(insert_result.inserted_ids[10])
-    for i, message in enumerate(messages):
+    assert len(pagination.items) == 10
+    assert pagination.cursor == encode_uuid_cursor(insert_result.inserted_ids[10])
+    for i, message in enumerate(pagination.items):
         assert message.content
         assert isinstance(message.content[0].root, TextPart)
         assert message.content[0].root.text == f"Message content {19 - i}"
 
-    messages, next_token = await message_repository.list_by_conversation(
+    pagination = await message_repository.find_by_conversation(
         conversation_id=conversation_id,
         limit=10,
-        token=next_token,
         direction="backward",
+        token=pagination.cursor,
     )
-    assert len(messages) == 10
-    assert next_token is None  # No more results
-    for i, message in enumerate(messages):
+    assert len(pagination.items) == 10
+    assert pagination.cursor is None  # No more results
+    for i, message in enumerate(pagination.items):
         assert message.content
         assert isinstance(message.content[0].root, TextPart)
         assert message.content[0].root.text == f"Message content {9 - i}"

@@ -5,7 +5,11 @@ from pymongo import ASCENDING, DESCENDING
 from pymongo.asynchronous.collection import AsyncCollection
 
 from chat.conversation.models import Conversation, Message
-from chat.utils.pagination import decode_uuid_cursor, encode_uuid_cursor
+from chat.utils.pagination import (
+    CursorPagination,
+    decode_uuid_cursor,
+    encode_uuid_cursor,
+)
 
 
 class ConversationRepository(ABC):
@@ -16,13 +20,16 @@ class ConversationRepository(ABC):
     async def find_by_id(self, conversation_id: str) -> Conversation | None: ...
 
     @abstractmethod
-    async def list_by_user(
+    async def find_by_user(
         self,
         user_id: str,
         limit: int,
+        direction: Literal["forward", "backward"],
         token: str | None = None,
-        direction: Literal["forward", "backward"] = "backward",
-    ) -> tuple[list[Conversation], str | None]: ...
+    ) -> CursorPagination[str, Conversation]: ...
+
+    @abstractmethod
+    async def delete_by_id(self, conversation_id: str) -> None: ...
 
 
 class MessageRepository(ABC):
@@ -33,26 +40,16 @@ class MessageRepository(ABC):
     async def find_by_id(self, message_id: str) -> Message | None: ...
 
     @abstractmethod
-    async def list_by_conversation(
+    async def find_by_conversation(
         self,
         conversation_id: str,
         limit: int,
+        direction: Literal["forward", "backward"],
         token: str | None = None,
-        direction: Literal["forward", "backward"] = "backward",
-    ) -> tuple[list[Message], str | None]:
-        """
-        List Messages of Conversation with cursor-based pagination.
+    ) -> CursorPagination[str, Message]: ...
 
-        Arguments:
-            conversation_id: ID of the Conversation to fetch Messages from.
-            limit: Maximum number of Messages to return.
-            token: Optional pagination token from the previous call.
-            direction: Determines the sort order of Messages.
-
-        Returns:
-            A tuple containing a Message list and an optional next pagination token.
-        """
-        ...
+    @abstractmethod
+    async def delete_by_conversation(self, conversation_id: str) -> None: ...
 
 
 class MongoConversationRepository(ConversationRepository):
@@ -73,13 +70,13 @@ class MongoConversationRepository(ConversationRepository):
             return Conversation.model_validate(document)
         return None
 
-    async def list_by_user(
+    async def find_by_user(
         self,
         user_id: str,
         limit: int,
+        direction: Literal["forward", "backward"],
         token: str | None = None,
-        direction: Literal["forward", "backward"] = "backward",
-    ) -> tuple[list[Conversation], str | None]:
+    ) -> CursorPagination[str, Conversation]:
         query: dict[str, Any] = {"user_id": user_id}
         if last_id := decode_uuid_cursor(token):
             # When direction is "backward", fetch docs with _id < last_id
@@ -96,11 +93,18 @@ class MongoConversationRepository(ConversationRepository):
         conversations = [Conversation.model_validate(doc) for doc in documents]
 
         if len(documents) <= limit:
-            return conversations, None  # No more results
+            return CursorPagination[str, Conversation](
+                items=conversations, results_per_page=limit, cursor=None
+            )  # No more results
 
         # Use the ID of the last item being returned (not the extra one)
         next_token = encode_uuid_cursor(documents[limit - 1]["_id"])
-        return conversations[:limit], next_token
+        return CursorPagination[str, Conversation](
+            items=conversations[:limit], results_per_page=limit, cursor=next_token
+        )
+
+    async def delete_by_id(self, conversation_id: str) -> None:
+        await self.collection.delete_one({"_id": conversation_id})
 
 
 class MongoMessageRepository(MessageRepository):
@@ -121,13 +125,13 @@ class MongoMessageRepository(MessageRepository):
             return Message.model_validate(document)
         return None
 
-    async def list_by_conversation(
+    async def find_by_conversation(
         self,
         conversation_id: str,
         limit: int,
+        direction: Literal["forward", "backward"],
         token: str | None = None,
-        direction: Literal["forward", "backward"] = "backward",
-    ) -> tuple[list[Message], str | None]:
+    ) -> CursorPagination[str, Message]:
         query: dict[str, Any] = {"conversation_id": conversation_id}
         if last_id := decode_uuid_cursor(token):
             # When direction is "backward", fetch docs with _id < last_id
@@ -144,8 +148,15 @@ class MongoMessageRepository(MessageRepository):
         messages = [Message.model_validate(doc) for doc in documents]
 
         if len(documents) <= limit:
-            return messages, None  # No more results
+            return CursorPagination[str, Message](
+                items=messages, results_per_page=limit, cursor=None
+            )  # No more results
 
         # Use the ID of the last item being returned (not the extra one)
         next_token = encode_uuid_cursor(documents[limit - 1]["_id"])
-        return messages[:limit], next_token
+        return CursorPagination[str, Message](
+            items=messages[:limit], results_per_page=limit, cursor=next_token
+        )
+
+    async def delete_by_conversation(self, conversation_id: str) -> None:
+        await self.collection.delete_many({"conversation_id": conversation_id})

@@ -60,11 +60,8 @@ class ConversationController(Controller):
             str | None, Parameter(description="Base64-encoded UUID.")
         ] = None,
     ) -> CursorPagination[str, Conversation]:
-        conversations, next_cursor = await conversation_repository.list_by_user(
-            user_id, limit=results_per_page, token=cursor, direction="backward"
-        )
-        pagination = CursorPagination[str, Conversation](
-            items=conversations, results_per_page=results_per_page, cursor=next_cursor
+        pagination = await conversation_repository.find_by_user(
+            user_id, limit=results_per_page, direction="backward", token=cursor
         )
         return pagination
 
@@ -72,6 +69,7 @@ class ConversationController(Controller):
     async def delete_conversation(
         self,
         conversation_repository: ConversationRepository,
+        conversation_manager: ConversationManager,
         conversation_id: str,
         user_id: Annotated[str, Parameter(header="X-User-Id")],
     ) -> None:
@@ -80,4 +78,4 @@ class ConversationController(Controller):
             raise ConversationNotFoundException(conversation_id)
         if conversation.user_id != user_id:
             raise ConversationAccessDeniedException(conversation_id, user_id)
-        raise NotImplementedError
+        await conversation_manager.delete_conversation(conversation)

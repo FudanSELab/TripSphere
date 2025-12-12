@@ -3,6 +3,7 @@ from typing import Any, Literal
 from chat.common.parts import Part
 from chat.conversation.models import Author, Conversation, Message
 from chat.conversation.repositories import ConversationRepository, MessageRepository
+from chat.utils.pagination import CursorPagination
 
 
 class ConversationManager:
@@ -25,7 +26,12 @@ class ConversationManager:
         return conversation
 
     async def delete_conversation(self, conversation: Conversation) -> None:
-        raise NotImplementedError
+        await self.message_repository.delete_by_conversation(
+            conversation_id=conversation.conversation_id
+        )
+        await self.conversation_repository.delete_by_id(
+            conversation_id=conversation.conversation_id
+        )
 
     async def add_user_query(
         self,
@@ -33,18 +39,6 @@ class ConversationManager:
         content: list[Part],
         metadata: dict[str, Any] | None = None,
     ) -> Message:
-        """
-        Appends a user Message to the Conversation.
-
-        Arguments:
-            conversation: The Conversation to which the query is appended.
-            query: The user's chat query Message.
-            metadata: Optional metadata for the Message.
-                Useful for specifying the agent to handle this query.
-
-        Returns:
-            The newly appended query Message.
-        """
         query_message = Message(
             conversation_id=conversation.conversation_id,
             author=Author.user("default"),
@@ -54,17 +48,17 @@ class ConversationManager:
         await self.message_repository.save(query_message)
         return query_message
 
-    async def list_messages(
+    async def list_conversation_messages(
         self,
         conversation: Conversation,
         results_per_page: int,
-        cursor: str | None = None,
         direction: Literal["forward", "backward"] = "backward",
-    ) -> tuple[list[Message], str | None]:
-        messages, next_cursor = await self.message_repository.list_by_conversation(
+        cursor: str | None = None,
+    ) -> CursorPagination[str, Message]:
+        pagination = await self.message_repository.find_by_conversation(
             conversation_id=conversation.conversation_id,
             limit=results_per_page,
-            token=cursor,
             direction=direction,
+            token=cursor,
         )
-        return messages, next_cursor
+        return pagination
