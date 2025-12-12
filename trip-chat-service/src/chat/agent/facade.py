@@ -4,7 +4,7 @@ import os
 import warnings
 from typing import Any, AsyncGenerator, Self
 
-from a2a.client import A2ACardResolver
+from a2a.client import A2ACardResolver, A2AClientError
 from a2a.client import ClientConfig as A2AClientConfig
 from a2a.client import ClientFactory as A2AClientFactory
 from a2a.types import AgentCard, TransportProtocol
@@ -78,7 +78,11 @@ class AgentFacade:
 
     async def _resolve_base_url(self, base_url: str) -> None:
         card_resolver = A2ACardResolver(self.httpx_client, base_url)
-        agent_card = await card_resolver.get_agent_card()
+        try:
+            agent_card = await card_resolver.get_agent_card()
+        except A2AClientError as e:
+            logger.error(f"Failed to resolve base url {base_url}: {e}")
+            return None
         self.agent_cards[agent_card.name] = agent_card
         self.remote_a2a_agents[agent_card.name] = RemoteA2aAgent(
             name=agent_card.name, agent_card=agent_card
