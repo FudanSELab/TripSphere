@@ -84,7 +84,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
-			<version>2.15.2</version> <!-- 版本号根据实际情况选择 -->
+			<version>2.15.2</version> <!-- Select version according to actual situation -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
