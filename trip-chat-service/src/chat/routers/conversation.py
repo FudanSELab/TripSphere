@@ -29,7 +29,7 @@ class CreateConversationRequest(BaseModel):
 conversations = APIRouter(prefix="/conversations", tags=["Conversations"])
 
 
-@conversations.post("")
+@conversations.post("", response_model_by_alias=False)
 async def create_conversation(
     conversation_manager: Annotated[
         ConversationManager, Depends(provide_conversation_manager)

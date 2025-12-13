@@ -123,7 +123,7 @@ async def stream_message(
     )
 
 
-@messages.get("/{message_id}")
+@messages.get("/{message_id}", response_model_by_alias=False)
 async def get_message(
     message_repository: Annotated[
         MessageRepository, Depends(provide_message_repository)
