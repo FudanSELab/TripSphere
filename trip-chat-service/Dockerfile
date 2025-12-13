@@ -82,7 +82,7 @@ ENV SERVER_HOST=0.0.0.0
 
 EXPOSE $SERVER_PORT
 
-# Start the instrumented app with default (Litestar) arguments
+# Start the instrumented app with default (FastAPI) arguments
 ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "chat.asgi:app"]
 # Do NOT directly provide host and port here, they can be
 # overridden via environment variables or Docker arguments
