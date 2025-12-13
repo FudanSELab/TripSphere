@@ -3,6 +3,7 @@ import { MapPin, Hotel, Calendar, MessageSquare, FileText, User, LogOut, Menu, X
 
 const auth = useAuth()
 const route = useRoute()
+const chatSidebar = useChatSidebar()
 const isMobileMenuOpen = ref(false)
 
 const navLinks = [
@@ -19,6 +20,11 @@ const isActive = (path: string) => {
 const handleLogout = () => {
   auth.logout()
   navigateTo('/')
+}
+
+const openAiAssistant = () => {
+  chatSidebar.openChatSidebar()
+  isMobileMenuOpen.value = false
 }
 </script>
 
@@ -55,13 +61,13 @@ const handleLogout = () => {
         <!-- Right side actions -->
         <div class="flex items-center gap-3">
           <!-- Chat button -->
-          <NuxtLink
-            to="/chat"
+          <button
             class="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg text-sm font-medium hover:shadow-lg hover:scale-105 transition-all duration-200"
+            @click="openAiAssistant"
           >
             <MessageSquare class="w-4 h-4" />
             AI Assistant
-          </NuxtLink>
+          </button>
 
           <!-- User menu -->
           <div v-if="auth.isAuthenticated.value" class="relative group">
@@ -144,14 +150,13 @@ const handleLogout = () => {
             <component :is="link.icon" class="w-5 h-5" />
             {{ link.name }}
           </NuxtLink>
-          <NuxtLink
-            to="/chat"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary-500 to-secondary-500 text-white"
-            @click="isMobileMenuOpen = false"
+          <button
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary-500 to-secondary-500 text-white w-full"
+            @click="openAiAssistant"
           >
             <MessageSquare class="w-5 h-5" />
             AI Assistant
-          </NuxtLink>
+          </button>
         </div>
       </div>
     </Transition>

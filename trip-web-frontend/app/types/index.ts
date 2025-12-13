@@ -56,6 +56,16 @@ export interface ChatResponse {
   taskId?: string
 }
 
+// Chat context for contextual conversations
+export interface ChatContext {
+  type: 'review-summary' | 'attraction' | 'hotel' | 'itinerary' | 'general'
+  targetType?: string
+  targetId?: string
+  attractionName?: string
+  hotelName?: string
+  [key: string]: unknown
+}
+
 // Pagination types
 export interface PaginatedResponse<T> {
   items: T[]
@@ -220,6 +230,51 @@ export interface FileResource {
 export interface UploadSignedUrlResponse {
   signedUrl: string
   file: FileResource
+}
+
+// Review types
+export interface Review {
+  id: string
+  userId: string
+  targetType: 'attraction' | 'hotel'
+  targetId: string
+  rating: number
+  text: string
+  images: string[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface CreateReviewRequest {
+  userId: string
+  targetType: 'attraction' | 'hotel'
+  targetId: string
+  rating: number
+  text: string
+  images: string[]
+}
+
+export interface UpdateReviewRequest {
+  id: string
+  rating: number
+  text: string
+  images: string[]
+}
+
+export interface GetReviewsResponse {
+  reviews: Review[]
+  totalReviews: number
+  status: boolean
+  nextCursor?: string
+}
+
+export interface ReviewStats {
+  goodReviewCount: number
+  middleReviewCount: number
+  badReviewCount: number
+  imageReviewCount: number
+  averageRating: number
+  totalReviews: number
 }
 
 // API Response wrapper

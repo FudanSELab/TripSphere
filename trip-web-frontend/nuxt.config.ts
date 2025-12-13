@@ -40,6 +40,7 @@ export default defineNuxtConfig({
       itineraryServiceUrl: process.env.NUXT_PUBLIC_ITINERARY_SERVICE_URL || 'http://localhost:8003',
       noteServiceUrl: process.env.NUXT_PUBLIC_NOTE_SERVICE_URL || 'http://localhost:8004',
       fileServiceUrl: process.env.NUXT_PUBLIC_FILE_SERVICE_URL || 'http://localhost:8005',
+      reviewServiceUrl: process.env.NUXT_PUBLIC_REVIEW_SERVICE_URL || 'http://localhost:8006',
     },
   },
 
