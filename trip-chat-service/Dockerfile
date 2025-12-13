@@ -77,7 +77,7 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-ENV SERVER_PORT=8000
+ENV SERVER_PORT=24210
 ENV SERVER_HOST=0.0.0.0
 
 EXPOSE $SERVER_PORT
