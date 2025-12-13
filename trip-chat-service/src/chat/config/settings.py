@@ -13,10 +13,10 @@ class AppSettings(BaseModel):
     debug: bool = Field(default=False)
 
 
-class ServerSettings(BaseModel):
+class UvicornSettings(BaseModel):
     """Loaded from environment variables:
-    - SERVER_HOST
-    - SERVER_PORT
+    - UVICORN_HOST
+    - UVICORN_PORT
 
     They are only read for service registration.
     """
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
         env_nested_max_split=1,
     )
     app: AppSettings = Field(default_factory=AppSettings)
-    server: ServerSettings = Field(default_factory=ServerSettings)
+    uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)

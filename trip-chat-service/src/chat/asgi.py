@@ -24,10 +24,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.httpx_client = AsyncClient()
     app.state.mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
     app.state.nacos_naming = await NacosNaming.create_naming(
-        settings.app.name,
-        settings.server.port,
-        settings.nacos.server_address,
-        settings.nacos.namespace_id,
+        service_name=settings.app.name,
+        port=settings.uvicorn.port,
+        server_address=settings.nacos.server_address,
+        namespace_id=settings.nacos.namespace_id,
     )
     try:
         logger.info("Registering service instance...")

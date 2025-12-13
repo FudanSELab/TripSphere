@@ -77,13 +77,14 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-ENV SERVER_PORT=24210
-ENV SERVER_HOST=0.0.0.0
+ENV UVICORN_HOST=0.0.0.0
+ENV UVICORN_PORT=24210
 
-EXPOSE $SERVER_PORT
+EXPOSE $UVICORN_PORT
 
 # Start the instrumented app with default (FastAPI) arguments
 ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "chat.asgi:app"]
-# Do NOT directly provide host and port here, they can be
-# overridden via environment variables or Docker arguments
-CMD --host $SERVER_HOST --port $SERVER_PORT
+# Do NOT directly provide host and port here, they must be
+# overridden via environment variables or Docker arguments.
+# Otherwise, it may register incorrect host/port in service registry.
+CMD []
