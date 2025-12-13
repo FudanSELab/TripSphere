@@ -41,9 +41,7 @@ _root_agent = LlmAgent(
 
 
 class AgentFacade:
-    """
-    The orchestrator for scheduling agents and delegating tasks.
-    """
+    """Orchestrator for scheduling agents and delegating tasks."""
 
     def __init__(self, httpx_client: AsyncClient) -> None:
         self.httpx_client = httpx_client

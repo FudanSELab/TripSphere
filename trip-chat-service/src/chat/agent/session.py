@@ -18,9 +18,7 @@ from chat.utils.uuid import uuid7
 class MongoSessionService(BaseSessionService):
     @staticmethod
     def _serialize_event(event: Event) -> dict[str, Any]:
-        """
-        Serialize Event to MongoDB-compatible dict.
-        """
+        """Serialize Event to MongoDB-compatible dict."""
         event_dict = event.model_dump()
         # Convert set to list for MongoDB compatibility
         if event_dict.get("long_running_tool_ids") is not None:
@@ -31,9 +29,7 @@ class MongoSessionService(BaseSessionService):
 
     @staticmethod
     def _deserialize_event(event_data: dict[str, Any]) -> Event:
-        """
-        Deserialize Event from MongoDB dict.
-        """
+        """Deserialize Event from MongoDB dict."""
         # Convert list back to set
         if event_data.get("long_running_tool_ids") is not None:
             event_data["long_running_tool_ids"] = set(
@@ -125,9 +121,7 @@ class MongoSessionService(BaseSessionService):
         session_id: str,
         config: GetSessionConfig | None = None,
     ) -> Session | None:
-        """
-        Gets a session.
-        """
+        """Gets a session."""
         doc = await self.sessions.find_one(
             {"_id": f"{app_name}:{user_id}:{session_id}"}
         )
@@ -167,9 +161,7 @@ class MongoSessionService(BaseSessionService):
     async def _merge_state(
         self, app_name: str, user_id: str, session: Session
     ) -> Session:
-        """
-        Merges app and user state into session state.
-        """
+        """Merges app and user state into session state."""
         # Merge app state
         app_state_doc = await self.app_state.find_one({"_id": app_name})
         if app_state_doc:
@@ -191,13 +183,12 @@ class MongoSessionService(BaseSessionService):
     async def list_sessions(
         self, *, app_name: str, user_id: str | None = None
     ) -> ListSessionsResponse:
-        """
-        Lists all the sessions for a user.
+        """Lists all the sessions for a user.
 
         Args:
             app_name: The name of the app.
-            user_id: The ID of the user. If not provided, lists all sessions for all
-                users.
+            user_id: The ID of the user. If not provided,
+                lists all sessions for all users.
 
         Returns:
             A ListSessionsResponse containing the sessions.
@@ -226,15 +217,11 @@ class MongoSessionService(BaseSessionService):
     async def delete_session(
         self, *, app_name: str, user_id: str, session_id: str
     ) -> None:
-        """
-        Deletes a session.
-        """
+        """Deletes a session."""
         await self.sessions.delete_one({"_id": f"{app_name}:{user_id}:{session_id}"})
 
     async def append_event(self, session: Session, event: Event) -> Event:
-        """
-        Appends an event to a session.
-        """
+        """Appends an event to a session."""
         if event.partial:
             return event
 

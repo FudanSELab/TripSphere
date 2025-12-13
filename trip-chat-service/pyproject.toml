@@ -4,20 +4,16 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi[standard]>=0.123.10",
     "google-adk[a2a,otel-gcp]>=1.20.0",
     "grpcio>=1.75.1",
     "litellm>=1.80.5",
-    "litestar[opentelemetry,standard]>=2.18.0",
     "nacos-sdk-python>=2.0.9",
     "opentelemetry-distro[otlp]>=0.58b0",
-    "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
     "pymongo>=4.15.3",
     "tripsphere>=0.1.0",
 ]
-
-[project.scripts]
-boot = "chat.cli.main:run_cli"
 
 [build-system]
 requires = ["uv_build>=0.9.1,<0.10.0"]

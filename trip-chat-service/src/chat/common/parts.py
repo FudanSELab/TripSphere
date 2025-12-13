@@ -34,7 +34,8 @@ class FilePart(BaseModel):
         name: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Self:
-        """
+        """Creates a FilePart from a URI.
+
         Arguments:
             uri: The URI pointing to the file.
             mime_type: Optional MIME type of the file.
@@ -55,7 +56,8 @@ class FilePart(BaseModel):
         name: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Self:
-        """
+        """Creates a FilePart from base64-encoded bytes.
+
         Arguments:
             bytes: The base64-encoded file content.
             mime_type: Optional MIME type of the file.
@@ -76,15 +78,14 @@ class DataPart(BaseModel):
 
 
 class Part(RootModel[TextPart | FilePart | DataPart]):
-    """
-    Part can be one of TextPart, FilePart, or DataPart.
-    """
+    """Part can be one of TextPart, FilePart, or DataPart."""
 
     root: TextPart | FilePart | DataPart = Field(discriminator="kind")
 
     @classmethod
     def from_text(cls, text: str, metadata: dict[str, Any] | None = None) -> Self:
-        """
+        """Creates a Part (TextPart) from text content.
+
         Arguments:
             text: The text content of the part.
             metadata: Optional metadata associated with the part.
@@ -98,7 +99,8 @@ class Part(RootModel[TextPart | FilePart | DataPart]):
     def from_data(
         cls, data: dict[str, Any], metadata: dict[str, Any] | None = None
     ) -> Self:
-        """
+        """Creates a Part (DataPart) from structured data.
+
         Arguments:
             data: The structured data content of the part.
             metadata: Optional metadata associated with the part.

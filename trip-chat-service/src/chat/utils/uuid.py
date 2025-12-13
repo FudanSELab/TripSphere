@@ -11,9 +11,7 @@ _RFC_4122_VERSION_7_FLAGS = (7 << 76) | (0x8000 << 48)
 
 
 def _uuid_from_int(value: int) -> UUID:
-    """
-    Create a UUID from an integer *value*. Internal use only.
-    """
+    """Create a UUID from an integer *value*. Internal use only."""
     assert 0 <= value <= _UINT_128_MAX, repr(value)
     instance = object.__new__(UUID)
     object.__setattr__(instance, "int", value)
@@ -35,8 +33,7 @@ def _uuid7_get_counter_and_tail() -> tuple[int, int]:
 
 
 def uuid7() -> UUID:
-    """
-    Generate a UUID from a Unix timestamp in milliseconds and random bits.
+    """Generate a UUID from a Unix timestamp in milliseconds and random bits.
 
     UUIDv7 objects feature monotonicity within a millisecond.
     """

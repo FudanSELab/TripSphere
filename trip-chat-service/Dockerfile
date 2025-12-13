@@ -77,10 +77,14 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 24210
+ENV UVICORN_HOST=0.0.0.0
+ENV UVICORN_PORT=24210
 
-# Start the instrumented app with default (Litestar) arguments
-ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "chat"]
-# Do NOT provide '--host' and '--port' options here, 
-# since they are loaded by Pydantic Settings from environment variables
+EXPOSE $UVICORN_PORT
+
+# Start the instrumented app with default (FastAPI) arguments
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "chat.asgi:app"]
+# Do NOT directly provide host and port here, they must be
+# overridden via environment variables or Docker arguments.
+# Otherwise, it may register incorrect host/port in service registry.
 CMD []

@@ -13,7 +13,14 @@ class AppSettings(BaseModel):
     debug: bool = Field(default=False)
 
 
-class ServerSettings(BaseModel):
+class UvicornSettings(BaseModel):
+    """Loaded from environment variables:
+    - UVICORN_HOST
+    - UVICORN_PORT
+
+    They are only read for service registration.
+    """
+
     host: str = Field(default="127.0.0.1")
     port: int = Field(default=24210)
 
@@ -56,7 +63,7 @@ class Settings(BaseSettings):
         env_nested_max_split=1,
     )
     app: AppSettings = Field(default_factory=AppSettings)
-    server: ServerSettings = Field(default_factory=ServerSettings)
+    uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)

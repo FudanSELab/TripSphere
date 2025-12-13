@@ -1,5 +1,3 @@
 # Application Configurations
 
-"""
-Priority: environment variables > dotenv file > default field values
-"""
+"""Priority: environment variables > dotenv file > default field values"""
