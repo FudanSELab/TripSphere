@@ -9,9 +9,7 @@ C = TypeVar("C", int, str, UUID)
 
 
 class CursorPagination(BaseModel, Generic[C, T]):
-    """
-    Container for data returned using cursor pagination.
-    """
+    """Container for data returned using cursor pagination."""
 
     items: list[T] = Field(
         ..., description="List of data being sent as part of the response."
@@ -26,7 +24,8 @@ UUIDStr = str
 
 
 def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:
-    """
+    """Encodes a UUID string into a base64-encoded string.
+
     Arguments:
         uid: UUID string to encode.
 
@@ -39,7 +38,8 @@ def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:
 
 
 def decode_uuid_cursor(cursor: str | None) -> UUIDStr | None:
-    """
+    """Decodes a base64-encoded string into a UUID string.
+
     Arguments:
         cursor: Base64-encoded UUID string to decode.
 

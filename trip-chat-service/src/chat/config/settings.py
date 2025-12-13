@@ -14,11 +14,11 @@ class AppSettings(BaseModel):
 
 
 class ServerSettings(BaseModel):
-    """
-    Loaded from environment variables:
+    """Loaded from environment variables:
     - SERVER_HOST
     - SERVER_PORT
-    They are only used for service registration.
+
+    They are only read for service registration.
     """
 
     host: str = Field(default="127.0.0.1")
