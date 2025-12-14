@@ -1,8 +1,11 @@
+'use client'
+
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Hotel, Calendar, MessageSquare, FileText, Sparkles, ArrowRight, Star, Users, Globe, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AnimateInView, StaggerContainer, StaggerItem } from "@/components/ui/animate-container";
 
 const features = [
   {
@@ -95,7 +98,7 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left content */}
-            <div className="text-center lg:text-left animate-fade-in-up">
+            <AnimateInView className="text-center lg:text-left">
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mb-6">
                 <Sparkles className="w-4 h-4" />
                 AI-Powered Travel Platform
@@ -121,10 +124,10 @@ export default function Home() {
                   </Button>
                 </Link>
               </div>
-            </div>
+            </AnimateInView>
 
             {/* Right content - Placeholder for chat preview */}
-            <div className="relative animate-fade-in-up hidden lg:block" style={{ animationDelay: '0.2s' }}>
+            <AnimateInView delay={0.2} className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-3xl blur-2xl" />
               <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden h-[600px] flex items-center justify-center border border-gray-100">
                 <div className="text-center p-8">
@@ -134,7 +137,7 @@ export default function Home() {
                   <p className="text-gray-600">Chat with AI Assistant</p>
                 </div>
               </div>
-            </div>
+            </AnimateInView>
           </div>
         </div>
       </section>
@@ -142,31 +145,30 @@ export default function Home() {
       {/* Stats Section */}
       <section className="py-12 bg-white border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => {
+          <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <div
+                <StaggerItem
                   key={stat.label}
-                  className="text-center animate-fade-in-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  className="text-center"
                 >
                   <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-xl mb-3">
                     <Icon className="w-6 h-6" />
                   </div>
                   <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
                   <div className="text-gray-500">{stat.label}</div>
-                </div>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* Features Section */}
       <section id="features" className="py-20 lg:py-32 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 animate-fade-in-up">
+          <AnimateInView className="text-center mb-16">
             <span className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-100 text-secondary-700 rounded-full text-sm font-medium mb-4">
               <Zap className="w-4 h-4" />
               Features
@@ -177,18 +179,14 @@ export default function Home() {
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Our AI-powered platform provides all the tools you need to plan, book, and enjoy your perfect trip.
             </p>
-          </div>
+          </AnimateInView>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
+          <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <Card
-                  key={feature.title}
-                  hover
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
+                <StaggerItem key={feature.title}>
+                  <Card hover>
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
@@ -198,10 +196,11 @@ export default function Home() {
                   <p className="text-gray-600">
                     {feature.description}
                   </p>
-                </Card>
+                  </Card>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
@@ -209,7 +208,7 @@ export default function Home() {
       <section className="py-20 lg:py-32 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-12">
-            <div className="animate-fade-in-up">
+            <AnimateInView>
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-700 rounded-full text-sm font-medium mb-4">
                 <Globe className="w-4 h-4" />
                 Popular Destinations
@@ -217,7 +216,7 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
                 Explore Amazing Places
               </h2>
-            </div>
+            </AnimateInView>
             <Link
               href="/attractions"
               className="hidden sm:inline-flex items-center gap-2 text-primary-600 font-medium hover:text-primary-700 transition-colors"
@@ -227,14 +226,13 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {destinations.map((destination, index) => (
-              <Link
-                key={destination.name}
-                href="/attractions"
-                className="group relative rounded-2xl overflow-hidden aspect-[4/5] animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
+          <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {destinations.map((destination) => (
+              <StaggerItem key={destination.name}>
+                <Link
+                  href="/attractions"
+                  className="group relative rounded-2xl overflow-hidden aspect-[4/5] block"
+                >
                 <Image
                   src={destination.image}
                   alt={destination.name}
@@ -249,9 +247,10 @@ export default function Home() {
                     {destination.attractions} attractions
                   </p>
                 </div>
-              </Link>
+                </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
 
           <div className="sm:hidden mt-8 text-center">
             <Link
@@ -268,13 +267,17 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 lg:py-32 bg-gradient-to-br from-primary-600 to-secondary-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 animate-fade-in-up">
-            Ready to Start Your Adventure?
-          </h2>
-          <p className="text-xl text-white/80 mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Join thousands of travelers who use TripSphere to plan their perfect trips. Our AI assistant is ready to help you discover amazing destinations.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <AnimateInView>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
+              Ready to Start Your Adventure?
+            </h2>
+          </AnimateInView>
+          <AnimateInView delay={0.1}>
+            <p className="text-xl text-white/80 mb-10">
+              Join thousands of travelers who use TripSphere to plan their perfect trips. Our AI assistant is ready to help you discover amazing destinations.
+            </p>
+          </AnimateInView>
+          <AnimateInView delay={0.2} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/chat">
               <Button size="lg" className="gap-2 bg-white text-primary-600 hover:bg-gray-50 border-0">
                 <MessageSquare className="w-5 h-5" />
@@ -286,7 +289,7 @@ export default function Home() {
                 Create Free Account
               </Button>
             </Link>
-          </div>
+          </AnimateInView>
         </div>
       </section>
     </div>

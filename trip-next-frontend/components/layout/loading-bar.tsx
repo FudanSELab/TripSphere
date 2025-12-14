@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -10,8 +10,14 @@ export default function LoadingBar() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
-    const timer = setTimeout(() => setIsLoading(false), 400)
+    startTransition(() => {
+      setIsLoading(true)
+    })
+    const timer = setTimeout(() => {
+      startTransition(() => {
+        setIsLoading(false)
+      })
+    }, 400)
     return () => clearTimeout(timer)
   }, [pathname, searchParams])
 

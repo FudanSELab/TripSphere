@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { MapPin, Hotel, Calendar, MessageSquare, FileText, User, LogOut, Menu, X } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useChatSidebar } from '@/lib/hooks/use-chat-sidebar'
@@ -20,11 +20,6 @@ export function Header() {
   const auth = useAuth()
   const chatSidebar = useChatSidebar()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  useEffect(() => {
-    setIsHydrated(true)
-  }, [])
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(path + '/')
@@ -84,7 +79,7 @@ export function Header() {
             </button>
 
             {/* User menu */}
-            {isHydrated && auth.isAuthenticated ? (
+            {auth.isAuthenticated ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                   <Avatar
@@ -116,7 +111,7 @@ export function Header() {
                   </div>
                 </div>
               </div>
-            ) : isHydrated ? (
+            ) : (
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
@@ -131,8 +126,6 @@ export function Header() {
                   Sign Up
                 </Link>
               </div>
-            ) : (
-              <div className="w-24 h-10" /> // Placeholder to prevent layout shift
             )}
 
             {/* Mobile menu button */}

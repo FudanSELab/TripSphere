@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MapPin, Mail, Twitter, Github, Heart } from 'lucide-react'
+import { Mail, Twitter, Github, Heart } from 'lucide-react'
 
 const currentYear = new Date().getFullYear()
 
