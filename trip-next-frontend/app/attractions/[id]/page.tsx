@@ -168,7 +168,13 @@ export default function AttractionDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-6 animate-pulse">
+            <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <p className="text-gray-600 font-medium">Loading attraction details...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait a moment</p>
+        </div>
       </div>
     )
   }
