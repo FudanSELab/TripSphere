@@ -201,6 +201,23 @@
   transform: scale(0.97);
 }
 
+/* Page transition support */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Link hover transitions */
+a {
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Prevent layout shift during page transitions */
+main {
+  min-height: calc(100vh - 64px);
+}
+
 /* Skeleton loading */
 .skeleton {
   position: relative;

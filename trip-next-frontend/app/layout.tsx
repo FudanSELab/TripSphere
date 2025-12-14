@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import LoadingBar from "@/components/layout/loading-bar";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "TripSphere - AI Travel Assistant",
@@ -16,6 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <Suspense fallback={null}>
+          <LoadingBar />
+        </Suspense>
         <div className="min-h-screen flex flex-col">
           <Header />
           <main className="flex-1 pt-16">
