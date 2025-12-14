@@ -7,13 +7,11 @@ const pageVariants = {
   initial: {
     opacity: 0,
     y: 20,
-    scale: 0.98,
     filter: 'blur(4px)',
   },
   animate: {
     opacity: 1,
     y: 0,
-    scale: 1,
     filter: 'blur(0px)',
     transition: {
       duration: 0.5,
@@ -26,7 +24,6 @@ const pageVariants = {
   exit: {
     opacity: 0,
     y: -20,
-    scale: 0.98,
     filter: 'blur(4px)',
     transition: {
       duration: 0.3,
