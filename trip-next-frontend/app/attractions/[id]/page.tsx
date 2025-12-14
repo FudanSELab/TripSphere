@@ -449,7 +449,7 @@ export default function AttractionDetailPage() {
 
           {/* Right column - Sidebar info */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
+            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-22">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Visit Information</h3>
               
               <div className="space-y-4">

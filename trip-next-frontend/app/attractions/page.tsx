@@ -93,10 +93,10 @@ export default function AttractionsPage() {
       <section className="bg-gradient-to-br from-primary-600 to-secondary-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 animate-fade-in-up">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">
               Discover Amazing Attractions
             </h1>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <p className="text-xl text-white/90 max-w-2xl mx-auto">
               Explore thousands of must-see destinations around the world with personalized recommendations
             </p>
           </div>
@@ -120,8 +120,6 @@ export default function AttractionsPage() {
               <Link
                 key={attraction.id}
                 href={`/attractions/${attraction.id}`}
-                className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <Card hover clickable padding="none" className="h-full overflow-hidden">
                   <div className="relative h-48">
