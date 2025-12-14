@@ -50,7 +50,7 @@ async def test_list_by_user(
     documents = [conv.model_dump(by_alias=True) for conv in conversations]
     insert_result = await collection.insert_many(documents)
 
-    pagination = await conversation_repository.find_by_user(
+    pagination = await conversation_repository.list_by_user(
         user_id=user_id, limit=10, direction="backward", token=None
     )
     assert len(pagination.items) == 10
@@ -60,7 +60,7 @@ async def test_list_by_user(
         assert conversation.metadata == {"index": 19 - i}
 
     # Fetch the next page
-    pagination = await conversation_repository.find_by_user(
+    pagination = await conversation_repository.list_by_user(
         user_id=user_id, limit=10, direction="backward", token=pagination.cursor
     )
     assert len(pagination.items) == 10

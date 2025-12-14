@@ -52,7 +52,7 @@ async def test_list_by_conversation(
     documents = [message.model_dump(by_alias=True) for message in messages]
     insert_result = await collection.insert_many(documents)
 
-    pagination = await message_repository.find_by_conversation(
+    pagination = await message_repository.list_by_conversation(
         conversation_id=conversation_id, limit=10, direction="backward", token=None
     )
     assert len(pagination.items) == 10
@@ -62,7 +62,7 @@ async def test_list_by_conversation(
         assert isinstance(message.content[0].root, TextPart)
         assert message.content[0].root.text == f"Message content {19 - i}"
 
-    pagination = await message_repository.find_by_conversation(
+    pagination = await message_repository.list_by_conversation(
         conversation_id=conversation_id,
         limit=10,
         direction="backward",

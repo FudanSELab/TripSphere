@@ -52,7 +52,7 @@ async def list_user_conversations(
     results_per_page: int,
     cursor: str | None = None,
 ) -> CursorPagination[str, Conversation]:
-    pagination = await conversation_repository.find_by_user(
+    pagination = await conversation_repository.list_by_user(
         x_user_id, limit=results_per_page, direction="backward", token=cursor
     )
     return pagination
