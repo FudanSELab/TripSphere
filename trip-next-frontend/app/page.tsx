@@ -1,65 +1,294 @@
+import Link from "next/link";
 import Image from "next/image";
+import { MapPin, Hotel, Calendar, MessageSquare, FileText, Sparkles, ArrowRight, Star, Users, Globe, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+const features = [
+  {
+    icon: MapPin,
+    title: 'Discover Attractions',
+    description: 'Explore thousands of attractions with AI-powered recommendations tailored to your interests.',
+    color: 'from-rose-500 to-orange-500',
+  },
+  {
+    icon: Hotel,
+    title: 'Find Perfect Hotels',
+    description: 'Get personalized hotel recommendations based on your preferences, budget, and travel style.',
+    color: 'from-blue-500 to-cyan-500',
+  },
+  {
+    icon: Calendar,
+    title: 'Smart Itinerary Planning',
+    description: 'Let our AI create optimized travel itineraries with intelligent route planning.',
+    color: 'from-green-500 to-emerald-500',
+  },
+  {
+    icon: MessageSquare,
+    title: 'AI Travel Assistant',
+    description: 'Chat with our intelligent assistant for travel advice, recommendations, and planning help.',
+    color: 'from-purple-500 to-pink-500',
+  },
+  {
+    icon: FileText,
+    title: 'Travel Notes',
+    description: 'Create and share beautiful travel stories with our integrated note-taking system.',
+    color: 'from-amber-500 to-yellow-500',
+  },
+  {
+    icon: Sparkles,
+    title: 'AI-Powered Reviews',
+    description: 'Get intelligent summaries of reviews to make informed decisions quickly.',
+    color: 'from-indigo-500 to-violet-500',
+  },
+];
+
+const stats = [
+  { icon: Globe, value: '1000+', label: 'Destinations' },
+  { icon: Users, value: '50K+', label: 'Happy Travelers' },
+  { icon: Star, value: '4.9', label: 'Average Rating' },
+  { icon: Zap, value: '99.9%', label: 'Uptime' },
+];
+
+const destinations = [
+  { 
+    name: 'Shanghai', 
+    country: 'China',
+    image: 'https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=400&h=500&fit=crop',
+    attractions: 245,
+  },
+  { 
+    name: 'Beijing', 
+    country: 'China',
+    image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=400&h=500&fit=crop',
+    attractions: 312,
+  },
+  { 
+    name: 'Hangzhou', 
+    country: 'China',
+    image: 'https://images.unsplash.com/photo-1591122947157-26bad3a117d2?w=400&h=500&fit=crop',
+    attractions: 156,
+  },
+  { 
+    name: 'Suzhou', 
+    country: 'China',
+    image: 'https://images.unsplash.com/photo-1528164344705-47542687000d?w=400&h=500&fit=crop',
+    attractions: 128,
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div>
+      {/* Hero Section */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-white">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50" />
+        
+        {/* Animated background shapes */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-float" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-float" style={{ animationDelay: '-1.5s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" style={{ animationDelay: '-3s' }} />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 w-full">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left content */}
+            <div className="text-center lg:text-left animate-fade-in-up">
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mb-6">
+                <Sparkles className="w-4 h-4" />
+                AI-Powered Travel Platform
+              </span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                Your Journey Starts with
+                <span className="gradient-text block">TripSphere</span>
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0">
+                Experience the future of travel planning with our intelligent AI assistant. Discover attractions, find hotels, and create unforgettable memories.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+                <Link href="/chat">
+                  <Button size="lg" className="gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    Start Planning
+                  </Button>
+                </Link>
+                <Link href="/attractions">
+                  <Button size="lg" variant="outline" className="gap-2">
+                    Explore
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right content - Placeholder for chat preview */}
+            <div className="relative animate-fade-in-up hidden lg:block" style={{ animationDelay: '0.2s' }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-3xl blur-2xl" />
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden h-[600px] flex items-center justify-center border border-gray-100">
+                <div className="text-center p-8">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center">
+                    <MessageSquare className="w-10 h-10 text-primary-600" />
+                  </div>
+                  <p className="text-gray-600">Chat with AI Assistant</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-12 bg-white border-y border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className="text-center animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-xl mb-3">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
+                  <div className="text-gray-500">{stat.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 lg:py-32 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-fade-in-up">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-100 text-secondary-700 rounded-full text-sm font-medium mb-4">
+              <Zap className="w-4 h-4" />
+              Features
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Everything You Need for Perfect Travels
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Our AI-powered platform provides all the tools you need to plan, book, and enjoy your perfect trip.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <Card
+                  key={feature.title}
+                  hover
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}>
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600">
+                    {feature.description}
+                  </p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Destinations Section */}
+      <section className="py-20 lg:py-32 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-12">
+            <div className="animate-fade-in-up">
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-700 rounded-full text-sm font-medium mb-4">
+                <Globe className="w-4 h-4" />
+                Popular Destinations
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Explore Amazing Places
+              </h2>
+            </div>
+            <Link
+              href="/attractions"
+              className="hidden sm:inline-flex items-center gap-2 text-primary-600 font-medium hover:text-primary-700 transition-colors"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {destinations.map((destination, index) => (
+              <Link
+                key={destination.name}
+                href="/attractions"
+                className="group relative rounded-2xl overflow-hidden aspect-[4/5] animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <Image
+                  src={destination.image}
+                  alt={destination.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <h3 className="text-xl font-bold mb-1">{destination.name}</h3>
+                  <p className="text-white/80 text-sm">{destination.country}</p>
+                  <p className="text-white/60 text-sm mt-2">
+                    {destination.attractions} attractions
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="sm:hidden mt-8 text-center">
+            <Link
+              href="/attractions"
+              className="inline-flex items-center gap-2 text-primary-600 font-medium"
             >
-              Learning
-            </a>{" "}
-            center.
+              View All Destinations
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 lg:py-32 bg-gradient-to-br from-primary-600 to-secondary-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 animate-fade-in-up">
+            Ready to Start Your Adventure?
+          </h2>
+          <p className="text-xl text-white/80 mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            Join thousands of travelers who use TripSphere to plan their perfect trips. Our AI assistant is ready to help you discover amazing destinations.
           </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <Link href="/chat">
+              <Button size="lg" className="gap-2 bg-white text-primary-600 hover:bg-gray-50 border-0">
+                <MessageSquare className="w-5 h-5" />
+                Chat with AI Assistant
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button size="lg" className="gap-2 bg-white/10 text-white hover:bg-white/20 border border-white/30">
+                Create Free Account
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
     </div>
   );
 }
