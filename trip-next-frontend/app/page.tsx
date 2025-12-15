@@ -6,6 +6,7 @@ import { MapPin, Hotel, Calendar, MessageSquare, FileText, Sparkles, ArrowRight,
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AnimateInView, StaggerContainer, StaggerItem } from "@/components/ui/animate-container";
+import { ChatWindow } from "@/components/chat/chat-window";
 
 const features = [
   {
@@ -129,13 +130,8 @@ export default function Home() {
             {/* Right content - Placeholder for chat preview */}
             <AnimateInView delay={0.2} className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-3xl blur-2xl" />
-              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden h-[600px] flex items-center justify-center border border-gray-100">
-                <div className="text-center p-8">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center">
-                    <MessageSquare className="w-10 h-10 text-primary-600" />
-                  </div>
-                  <p className="text-gray-600">Chat with AI Assistant</p>
-                </div>
+              <div className="relative">
+                <ChatWindow />
               </div>
             </AnimateInView>
           </div>

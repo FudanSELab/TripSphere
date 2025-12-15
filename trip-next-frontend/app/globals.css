@@ -70,6 +70,14 @@
   }
 }
 
+.animate-typing {
+  width: 8px;
+  height: 8px;
+  background-color: #94a3b8;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out both;
+}
+
 /* Shimmer animation for skeleton loading */
 @keyframes shimmer {
   100% {
