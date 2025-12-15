@@ -9,7 +9,9 @@ dependencies = [
     "dotenv>=0.9.9",
     "langchain-openai>=1.1.0",
     "langgraph>=1.0.4",
+    "motor>=3.7.1",
     "pydantic>=2.12.5",
+    "pymongo>=4.15.5",
     "uvicorn>=0.38.0",
 ]
 
