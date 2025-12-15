@@ -76,11 +76,11 @@ const deleteConversation = async (conversation: Conversation) => {
         <!-- Conversation list -->
         <div class="flex-1 overflow-y-auto">
           <div class="p-2 space-y-1">
-            <button
+            <div
               v-for="conversation in conversations"
               :key="conversation.conversationId"
               :class="[
-                'w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors group',
+                'w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors group cursor-pointer',
                 selectedConversation?.conversationId === conversation.conversationId
                   ? 'bg-primary-100 text-primary-900'
                   : 'hover:bg-gray-100'
@@ -103,7 +103,7 @@ const deleteConversation = async (conversation: Conversation) => {
               >
                 <Trash2 class="w-4 h-4" />
               </button>
-            </button>
+            </div>
           </div>
 
           <!-- Empty state -->
@@ -121,7 +121,7 @@ const deleteConversation = async (conversation: Conversation) => {
 
     <!-- Main chat area -->
     <main class="flex-1 flex flex-col bg-white">
-      <ChatChatWindow
+      <ChatWindow
         :conversation="selectedConversation"
         :full-screen="true"
         @conversation-created="handleConversationCreated"
