@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Sparkles } from 'lucide-react'
 import { Message, Conversation } from '@/types/chat'
-import { Button } from '@/components/ui/button'
 import { ChatMessage } from './chat-message'
 
 interface ChatWindowProps {
@@ -239,7 +238,7 @@ export function ChatWindow({
 
       {/* Input area */}
       <div className="flex-shrink-0 p-4 border-t border-gray-100">
-        <div className="flex items-end gap-3">
+        <div className="flex items-start gap-3">
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -247,19 +246,18 @@ export function ChatWindow({
               onChange={handleInput}
               onKeyDown={handleKeyDown}
               placeholder="Ask me anything about travel..."
-              className="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all min-h-[48px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               rows={1}
               disabled={isStreaming}
             />
           </div>
-          <Button
+          <button
             disabled={!inputMessage.trim() || isStreaming}
-            size="icon"
-            className="flex-shrink-0 h-12 w-12"
+            className="flex-shrink-0 h-[48px] w-[48px] bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl flex items-center justify-center transition-colors"
             onClick={sendMessage}
           >
             <Send className="w-5 h-5" />
-          </Button>
+          </button>
         </div>
         <p className="text-xs text-gray-400 mt-2 text-center">
           Press Enter to send, Shift+Enter for new line

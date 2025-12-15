@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Hotel, Calendar, MessageSquare, FileText, Sparkles, ArrowRight, Star, Users, Globe, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AnimateInView, StaggerContainer, StaggerItem } from "@/components/ui/animate-container";
 import { ChatWindow } from "@/components/chat/chat-window";
@@ -112,17 +111,19 @@ export default function Home() {
                 Experience the future of travel planning with our intelligent AI assistant. Discover attractions, find hotels, and create unforgettable memories.
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-                <Link href="/chat">
-                  <Button size="lg" className="gap-2">
-                    <MessageSquare className="w-5 h-5" />
-                    Start Planning
-                  </Button>
+                <Link
+                  href="/chat"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-xl text-lg font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  Start Planning
                 </Link>
-                <Link href="/attractions">
-                  <Button size="lg" variant="outline" className="gap-2">
-                    Explore
-                    <ArrowRight className="w-5 h-5" />
-                  </Button>
+                <Link
+                  href="/attractions"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-700 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border border-gray-200"
+                >
+                  Explore
+                  <ArrowRight className="w-5 h-5" />
                 </Link>
               </div>
             </AnimateInView>
@@ -274,16 +275,18 @@ export default function Home() {
             </p>
           </AnimateInView>
           <AnimateInView delay={0.2} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/chat">
-              <Button size="lg" className="gap-2 bg-white text-primary-600 hover:bg-gray-50 border-0">
-                <MessageSquare className="w-5 h-5" />
-                Chat with AI Assistant
-              </Button>
+            <Link
+              href="/chat"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary-600 rounded-xl text-lg font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <MessageSquare className="w-5 h-5" />
+              Chat with AI Assistant
             </Link>
-            <Link href="/register">
-              <Button size="lg" className="gap-2 bg-white/10 text-white hover:bg-white/20 border border-white/30">
-                Create Free Account
-              </Button>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white rounded-xl text-lg font-semibold hover:bg-white/20 transition-all duration-300 border border-white/30"
+            >
+              Create Free Account
             </Link>
           </AnimateInView>
         </div>

@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 const pageVariants = {
   initial: {
     opacity: 0,
-    y: 20,
+    y: 0,
     filter: 'blur(4px)',
   },
   animate: {
@@ -19,15 +19,6 @@ const pageVariants = {
       filter: {
         duration: 0.3,
       },
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    filter: 'blur(4px)',
-    transition: {
-      duration: 0.3,
-      ease: [0.22, 1, 0.36, 1] as const,
     },
   },
 }
@@ -43,7 +34,6 @@ export default function Template({ children }: { children: React.ReactNode }) {
       variants={pageVariants}
       initial="initial"
       animate="animate"
-      exit="exit"
       style={{ width: '100%', willChange: 'transform, opacity' }}
     >
       {children}
