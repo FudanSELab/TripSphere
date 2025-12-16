@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Plus, MessageSquare, Trash2, Clock } from 'lucide-react'
 import type { Conversation } from '@/lib/types'
 import { formatRelativeTime } from '@/lib/utils'
@@ -16,10 +16,12 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [showSidebar, setShowSidebar] = useState(true)
+  const hasLoadedRef = useRef(false)
 
   // Load conversations on mount
   useEffect(() => {
-    if (auth.user) {
+    if (auth.user && !hasLoadedRef.current) {
+      hasLoadedRef.current = true
       loadConversations()
     }
   }, [auth.user])

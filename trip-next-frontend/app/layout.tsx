@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import LoadingBar from "@/components/layout/loading-bar";
+import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <ChatSidebar />
         </div>
       </body>
     </html>
