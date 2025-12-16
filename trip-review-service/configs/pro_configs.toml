@@ -1,5 +1,5 @@
 [config]
-    [config.mysql]
+    [mysql]
         [mysql.read]
         addr = "127.0.0.1:3306"
         user = "read_user"
@@ -14,3 +14,8 @@
         maxOpenConn = 100
         maxIdleConn = 10
         connMaxLifeTime = "1h"
+    [rocketmq]
+        groupNname = ""
+        endpoint = "127.0.0.1:8081"
+        accessKey = ""
+        secretKey = ""

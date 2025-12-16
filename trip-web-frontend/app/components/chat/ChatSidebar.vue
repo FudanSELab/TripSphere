@@ -159,21 +159,41 @@ const sendMessage = async () => {
   streamingContent.value = ''
   
   try {
-    const response = await chat.sendMessage(auth.userId.value, {
-      conversationId: conversation.conversationId,
+    await chat.streamMessage(
+      auth.userId.value,
+      conversation.conversationId,
       content,
-    })
-    
-    if (response) {
-      const assistantMessage: Message = {
-        id: response.answerId,
-        conversationId: conversation.conversationId,
-        role: 'assistant',
-        content: 'I\'m analyzing the reviews and context to provide you with helpful insights. Based on visitor feedback, this attraction is highly rated for its scenic views and historical significance. Would you like me to elaborate on any specific aspect?',
-        createdAt: new Date().toISOString(),
+      props.initialContext || undefined,
+      // onEvent: handle ADK events (tool calls, etc.)
+      (event) => {
+        console.log('ADK Event:', event)
+      },
+      // onChunk: accumulate streaming text
+      (chunk) => {
+        streamingContent.value += chunk
+      },
+      // onMessage: handle final saved message
+      (message) => {
+        // Replace streaming content with final message
+        streamingContent.value = ''
+        messages.value.push(message)
+      },
+      // onComplete
+      () => {
+        console.log('Stream completed')
+      },
+      // onError
+      (error) => {
+        console.error('Stream error:', error)
+        messages.value.push({
+          id: generateId(),
+          conversationId: conversation.conversationId,
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          createdAt: new Date().toISOString(),
+        })
       }
-      messages.value.push(assistantMessage)
-    }
+    )
   } catch (error) {
     console.error('Failed to send message:', error)
     messages.value.push({
@@ -333,7 +353,7 @@ const useQuickPrompt = (prompt: string) => {
 
       <!-- Input area -->
       <div class="flex-shrink-0 p-4 border-t border-gray-100 bg-white">
-        <div class="flex items-end gap-2">
+        <div class="flex items-start gap-2">
           <div class="flex-1 relative">
             <textarea
               ref="inputRef"

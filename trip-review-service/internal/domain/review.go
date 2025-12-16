@@ -2,6 +2,8 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -24,6 +26,14 @@ type Review struct {
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (r Review) ToString() string {
+	bytes, err := json.Marshal(r)
+	if err != nil {
+		fmt.Println("Error marshalling Review to string:", err)
+	}
+	return string(bytes)
 }
 
 type ReviewRepository interface {

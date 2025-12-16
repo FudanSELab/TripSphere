@@ -74,15 +74,15 @@ async def _stream_events(
     query: Message,
 ) -> AsyncGenerator[str, None]:
     async for event in agent_facade.stream(conversation, query):
+        data = event.model_dump_json()
         if isinstance(event, Message):
             await message_repository.save(event)
-            yield encode(data=event.model_dump_json(), comment="final message")
+            event_id = event.message_id
+            # Yield the final message to be rendered
+            yield encode(data=data, event_id=event_id, comment="final message")
         else:
-            yield encode(
-                data=event.model_dump_json(),
-                event_id=event.id,
-                comment="google-adk event",
-            )
+            # Yield intermediate Google ADK events
+            yield encode(data=data, event_id=event.id, comment="google-adk event")
 
 
 @messages.post(":stream")
@@ -144,7 +144,7 @@ async def get_message(
     return message
 
 
-@messages.get("")
+@messages.get("", response_model_by_alias=False)
 async def list_conversation_messages(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)

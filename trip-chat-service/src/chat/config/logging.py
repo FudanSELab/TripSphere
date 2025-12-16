@@ -17,8 +17,8 @@ def setup_logging() -> None:
     handlers = {
         "console": {
             "class": "logging.StreamHandler",
-            "level": settings.log.level,
             "formatter": "standard",
+            "stream": "ext://sys.stderr",
         }
     }
 
@@ -35,6 +35,7 @@ def setup_logging() -> None:
 
     logging_config = {
         "version": 1,
+        "disable_existing_loggers": False,
         "formatters": {
             "standard": {
                 "format": "%(levelname)s - %(asctime)s - %(name)s "

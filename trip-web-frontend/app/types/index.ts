@@ -24,7 +24,38 @@ export interface AuthResponse {
   user: User
 }
 
-// Chat types
+// Chat types - Part structure for message content
+export interface TextPart {
+  text: string
+  kind: 'text'
+  metadata?: Record<string, unknown>
+}
+
+export interface FilePart {
+  file: {
+    uri?: string
+    bytes?: string
+    mime_type?: string
+    name?: string
+  }
+  kind: 'file'
+  metadata?: Record<string, unknown>
+}
+
+export interface DataPart {
+  data: Record<string, unknown>
+  kind: 'data'
+  metadata?: Record<string, unknown>
+}
+
+export type Part = TextPart | FilePart | DataPart
+
+export interface Author {
+  role: 'user' | 'agent'
+  name?: string
+}
+
+// Frontend message format
 export interface Message {
   id: string
   conversationId: string
@@ -40,20 +71,13 @@ export interface Conversation {
   title?: string
   metadata?: Record<string, unknown>
   createdAt: string
-  updatedAt: string
 }
 
-export interface ChatRequest {
-  conversationId: string
-  taskId?: string
-  content: string
+// Request for /messages:stream endpoint
+export interface SendMessageRequest {
+  conversation_id: string
+  content: Part[]
   metadata?: Record<string, unknown>
-}
-
-export interface ChatResponse {
-  queryId: string
-  answerId: string
-  taskId?: string
 }
 
 // Chat context for contextual conversations
@@ -67,7 +91,7 @@ export interface ChatContext {
 }
 
 // Pagination types
-export interface PaginatedResponse<T> {
+export interface CursorPagination<T> {
   items: T[]
   resultsPerPage: number
   cursor?: string
@@ -275,11 +299,4 @@ export interface ReviewStats {
   imageReviewCount: number
   averageRating: number
   totalReviews: number
-}
-
-// API Response wrapper
-export interface ApiResponse<T> {
-  data: T
-  message?: string
-  code?: number
 }

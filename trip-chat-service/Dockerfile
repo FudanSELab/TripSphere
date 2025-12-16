@@ -84,7 +84,7 @@ EXPOSE $UVICORN_PORT
 
 # Start the instrumented app with default (FastAPI) arguments
 ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "chat.asgi:app"]
-# Do NOT directly provide host and port here, they must be
-# overridden via environment variables or Docker arguments.
-# Otherwise, it may register incorrect host/port in service registry.
+# Do NOT directly provide uvicorn `--port` option here.
+# It must be overridden via environment variable.
+# Otherwise, app may register incorrect port in service registry.
 CMD []

@@ -43,16 +43,26 @@ watch(messages, () => scrollToBottom(), { deep: true })
 watch(streamingContent, () => scrollToBottom())
 
 // Initialize conversation if prop changes
-watch(() => props.conversation, (newConv) => {
-  if (newConv) {
-    currentConversation.value = newConv
-    loadMessages()
+watch(() => props.conversation, (newConv, oldConv) => {
+  // Only load messages if conversation actually changed
+  if (newConv?.conversationId !== oldConv?.conversationId) {
+    if (newConv) {
+      currentConversation.value = newConv
+      loadMessages()
+    } else {
+      // Clear messages when conversation is set to null (new chat)
+      currentConversation.value = null
+      messages.value = []
+    }
   }
-})
+}, { immediate: true })
 
 // Load messages for current conversation
 const loadMessages = async () => {
-  if (!currentConversation.value) return
+  if (!currentConversation.value?.conversationId) {
+    messages.value = []
+    return
+  }
   
   const result = await chat.listMessages(
     auth.userId.value,
@@ -106,27 +116,43 @@ const sendMessage = async () => {
   streamingContent.value = ''
   
   try {
-    // For now, use non-streaming API (can be switched to streaming when ready)
-    const response = await chat.sendMessage(auth.userId.value, {
-      conversationId: conversation.conversationId,
+    await chat.streamMessage(
+      auth.userId.value,
+      conversation.conversationId,
       content,
-    })
-    
-    if (response) {
-      // Simulate the assistant's response
-      // In production, this would come from the actual streaming response
-      const assistantMessage: Message = {
-        id: response.answerId,
-        conversationId: conversation.conversationId,
-        role: 'assistant',
-        content: 'I\'m your AI travel assistant! I can help you discover amazing attractions, find the perfect hotels, plan your itinerary, and much more. What would you like to explore today?',
-        createdAt: new Date().toISOString(),
+      undefined,
+      // onEvent: handle ADK events (tool calls, etc.)
+      (event) => {
+        console.log('ADK Event:', event)
+      },
+      // onChunk: accumulate streaming text
+      (chunk) => {
+        streamingContent.value += chunk
+      },
+      // onMessage: handle final saved message
+      (message) => {
+        // Replace streaming content with final message
+        streamingContent.value = ''
+        messages.value.push(message)
+      },
+      // onComplete
+      () => {
+        console.log('Stream completed')
+      },
+      // onError
+      (error) => {
+        console.error('Stream error:', error)
+        messages.value.push({
+          id: generateId(),
+          conversationId: conversation.conversationId,
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          createdAt: new Date().toISOString(),
+        })
       }
-      messages.value.push(assistantMessage)
-    }
+    )
   } catch (error) {
     console.error('Failed to send message:', error)
-    // Add error message
     messages.value.push({
       id: generateId(),
       conversationId: conversation.conversationId,
@@ -242,13 +268,13 @@ const useSuggestedPrompt = (prompt: string) => {
 
     <!-- Input area -->
     <div class="flex-shrink-0 p-4 border-t border-gray-100">
-      <div class="flex items-end gap-3">
+      <div class="flex items-start gap-3">
         <div class="flex-1 relative">
           <textarea
             ref="inputRef"
             v-model="inputMessage"
             placeholder="Ask me anything about travel..."
-            class="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
             rows="1"
             :disabled="isStreaming"
             @keydown="handleKeydown"
@@ -258,8 +284,8 @@ const useSuggestedPrompt = (prompt: string) => {
         <UiButton
           :disabled="!inputMessage.trim() || isStreaming"
           :loading="isStreaming"
-          size="icon-lg"
-          class="flex-shrink-0"
+          size="sm"
+          class="flex-shrink-0 h-[46px] w-[46px] !p-0"
           @click="sendMessage"
         >
           <Send class="w-5 h-5" />
