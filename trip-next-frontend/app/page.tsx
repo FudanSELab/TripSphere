@@ -124,7 +124,7 @@ export default function Home() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-[450px_1fr] gap-16 items-center">
             {/* Left content */}
             <AnimateInView className="text-center lg:text-left">
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mb-6">
@@ -135,7 +135,7 @@ export default function Home() {
                 Your Journey Starts with
                 <span className="gradient-text block">TripSphere</span>
               </h1>
-              <p className="text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0">
+              <p className="text-xl text-gray-600 mb-8 max-w-md mx-auto lg:mx-0">
                 Experience the future of travel planning with our intelligent AI assistant. Discover attractions, find hotels, and create unforgettable memories.
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
