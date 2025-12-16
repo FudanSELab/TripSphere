@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
 from pymongo import AsyncMongoClient
 
@@ -38,7 +39,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         raise
     finally:
         logger.info("Deregistering service instance...")
-        await app.state.nacos_naming.deregister(ephemeral=True)
+        if isinstance(app.state.nacos_naming, NacosNaming):
+            await app.state.nacos_naming.deregister(ephemeral=True)
         await app.state.mongo_client.close()
         await app.state.httpx_client.aclose()
 
@@ -46,6 +48,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(debug=settings.app.debug, lifespan=lifespan)
+
+    # Configure CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],  # Frontend URL
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     app.include_router(conversations, prefix="/api/v1")
     app.include_router(memories, prefix="/api/v1")
     app.include_router(messages, prefix="/api/v1")

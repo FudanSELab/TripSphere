@@ -29,7 +29,7 @@ class CreateConversationRequest(BaseModel):
 conversations = APIRouter(prefix="/conversations", tags=["Conversations"])
 
 
-@conversations.post("", response_model_by_alias=False)
+@conversations.post("", status_code=201, response_model_by_alias=False)
 async def create_conversation(
     conversation_manager: Annotated[
         ConversationManager, Depends(provide_conversation_manager)
@@ -43,7 +43,7 @@ async def create_conversation(
     return conversation
 
 
-@conversations.get("")
+@conversations.get("", response_model_by_alias=False)
 async def list_user_conversations(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)
@@ -58,7 +58,7 @@ async def list_user_conversations(
     return pagination
 
 
-@conversations.delete("/{conversation_id}")
+@conversations.delete("/{conversation_id}", status_code=204)
 async def delete_conversation(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)

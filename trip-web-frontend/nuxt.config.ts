@@ -34,7 +34,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      chatServiceUrl: process.env.NUXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:8000',
+      chatServiceUrl: process.env.NUXT_PUBLIC_CHAT_SERVICE_URL || 'http://localhost:24210',
       hotelServiceUrl: process.env.NUXT_PUBLIC_HOTEL_SERVICE_URL || 'http://localhost:8001',
       attractionServiceUrl: process.env.NUXT_PUBLIC_ATTRACTION_SERVICE_URL || 'http://localhost:8002',
       itineraryServiceUrl: process.env.NUXT_PUBLIC_ITINERARY_SERVICE_URL || 'http://localhost:8003',
