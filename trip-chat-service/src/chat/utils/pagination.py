@@ -20,10 +20,7 @@ class CursorPagination(BaseModel, Generic[C, T]):
     )
 
 
-UUIDStr = str
-
-
-def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:
+def encode_uuid_cursor(uid: str | None) -> str | None:
     """Encodes a UUID string into a base64-encoded string.
 
     Arguments:
@@ -37,7 +34,7 @@ def encode_uuid_cursor(uid: UUIDStr | None) -> str | None:
     return urlsafe_b64encode(UUID(uid).bytes).decode("utf-8")
 
 
-def decode_uuid_cursor(cursor: str | None) -> UUIDStr | None:
+def decode_uuid_cursor(cursor: str | None) -> str | None:
     """Decodes a base64-encoded string into a UUID string.
 
     Arguments:

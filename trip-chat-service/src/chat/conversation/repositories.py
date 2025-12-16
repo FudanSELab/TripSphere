@@ -20,7 +20,7 @@ class ConversationRepository(ABC):
     async def find_by_id(self, conversation_id: str) -> Conversation | None: ...
 
     @abstractmethod
-    async def find_by_user(
+    async def list_by_user(
         self,
         user_id: str,
         limit: int,
@@ -40,7 +40,7 @@ class MessageRepository(ABC):
     async def find_by_id(self, message_id: str) -> Message | None: ...
 
     @abstractmethod
-    async def find_by_conversation(
+    async def list_by_conversation(
         self,
         conversation_id: str,
         limit: int,
@@ -70,7 +70,7 @@ class MongoConversationRepository(ConversationRepository):
             return Conversation.model_validate(document)
         return None
 
-    async def find_by_user(
+    async def list_by_user(
         self,
         user_id: str,
         limit: int,
@@ -125,7 +125,7 @@ class MongoMessageRepository(MessageRepository):
             return Message.model_validate(document)
         return None
 
-    async def find_by_conversation(
+    async def list_by_conversation(
         self,
         conversation_id: str,
         limit: int,

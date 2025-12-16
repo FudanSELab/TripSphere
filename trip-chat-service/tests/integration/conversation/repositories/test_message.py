@@ -7,6 +7,7 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
 from chat.common.parts import Part, TextPart
+from chat.config.settings import get_settings
 from chat.conversation.models import Author, Message
 from chat.conversation.repositories import MongoMessageRepository
 from chat.utils.pagination import encode_uuid_cursor
@@ -15,7 +16,7 @@ from chat.utils.uuid import uuid7
 
 @pytest_asyncio.fixture
 async def collection() -> AsyncGenerator[AsyncCollection[dict[str, Any]], None]:
-    client = AsyncMongoClient[dict[str, Any]]("mongodb://localhost:27017")
+    client = AsyncMongoClient[dict[str, Any]](get_settings().mongo.uri)
     yield client.get_database("test_db").get_collection(
         MongoMessageRepository.COLLECTION_NAME
     )
@@ -52,7 +53,7 @@ async def test_list_by_conversation(
     documents = [message.model_dump(by_alias=True) for message in messages]
     insert_result = await collection.insert_many(documents)
 
-    pagination = await message_repository.find_by_conversation(
+    pagination = await message_repository.list_by_conversation(
         conversation_id=conversation_id, limit=10, direction="backward", token=None
     )
     assert len(pagination.items) == 10
@@ -62,7 +63,7 @@ async def test_list_by_conversation(
         assert isinstance(message.content[0].root, TextPart)
         assert message.content[0].root.text == f"Message content {19 - i}"
 
-    pagination = await message_repository.find_by_conversation(
+    pagination = await message_repository.list_by_conversation(
         conversation_id=conversation_id,
         limit=10,
         direction="backward",

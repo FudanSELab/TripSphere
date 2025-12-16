@@ -55,7 +55,7 @@ class ConversationManager:
         direction: Literal["forward", "backward"] = "backward",
         cursor: str | None = None,
     ) -> CursorPagination[str, Message]:
-        pagination = await self.message_repository.find_by_conversation(
+        pagination = await self.message_repository.list_by_conversation(
             conversation_id=conversation.conversation_id,
             limit=results_per_page,
             direction=direction,
