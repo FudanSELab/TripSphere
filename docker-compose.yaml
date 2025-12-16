@@ -23,3 +23,12 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: fudanse
+    ports:
+      - "27017:27017"
