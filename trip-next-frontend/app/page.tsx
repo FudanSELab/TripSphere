@@ -183,7 +183,7 @@ export default function Home() {
               const Icon = feature.icon;
               return (
                 <StaggerItem key={feature.title}>
-                  <Card hover>
+                  <Card hover className="h-full">
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
@@ -234,6 +234,7 @@ export default function Home() {
                   src={destination.image}
                   alt={destination.name}
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />

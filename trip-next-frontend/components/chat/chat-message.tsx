@@ -1,23 +1,12 @@
 'use client'
 
 import { User, Bot } from "lucide-react"
-import { Message } from "@/types/chat"
-import { cn } from "@/lib/utils"
+import { Message } from "@/lib/types"
+import { cn, formatRelativeTime } from "@/lib/utils"
 
 interface ChatMessageProps {
   message: Message
   isStreaming?: boolean
-}
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-  if (diffInSeconds < 60) return 'Just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-  return `${Math.floor(diffInSeconds / 86400)}d ago`
 }
 
 export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
@@ -26,7 +15,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
   return (
     <div
       className={cn(
-        'flex gap-3 animate-fade-in-up',
+        'flex gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300',
         isUser ? 'flex-row-reverse' : ''
       )}
     >
@@ -60,10 +49,10 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
           {message.content}
           {/* Typing indicator for streaming */}
           {isStreaming && !message.content && (
-            <span className="typing-indicator inline-flex">
-              <span className="animate-typing"></span>
-              <span className="animate-typing [animation-delay:-0.16s]"></span>
-              <span className="animate-typing [animation-delay:-0.32s]"></span>
+            <span className="typing-indicator inline-flex gap-1">
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.32s]" />
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.16s]" />
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
             </span>
           )}
           {isStreaming && message.content && (

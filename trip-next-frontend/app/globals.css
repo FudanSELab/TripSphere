@@ -199,6 +199,16 @@ main {
   animation: typing 1.4s infinite ease-in-out both;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 .typing-indicator span:nth-child(1) {
   animation-delay: -0.32s;
 }

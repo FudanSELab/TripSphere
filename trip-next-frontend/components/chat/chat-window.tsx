@@ -2,18 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, Sparkles } from 'lucide-react'
-import { Message, Conversation } from '@/types/chat'
+import { Message, Conversation } from '@/lib/types'
 import { ChatMessage } from './chat-message'
+import { Button } from '@/components/ui/button'
+import { useChat } from '@/lib/hooks/use-chat'
+import { useAuth } from '@/lib/hooks/use-auth'
+import { generateId } from '@/lib/utils'
 
 interface ChatWindowProps {
   conversation?: Conversation | null
   fullScreen?: boolean
   onConversationCreated?: (conversation: Conversation) => void
-}
-
-// Generate a simple ID
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
 // Suggested prompts for new conversations
@@ -39,6 +38,9 @@ export function ChatWindow({
   
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  
+  const chat = useChat()
+  const { user } = useAuth()
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -52,39 +54,61 @@ export function ChatWindow({
     scrollToBottom()
   }, [messages, streamingContent])
 
-  // Update conversation when prop changes
+  // Initialize conversation if prop changes
   useEffect(() => {
-    if (conversation) {
-      setCurrentConversation(conversation)
-      // Load messages for this conversation
-      // TODO: Implement loadMessages()
+    // Only load messages if conversation actually changed
+    if (conversation?.conversationId !== currentConversation?.conversationId) {
+      if (conversation) {
+        setCurrentConversation(conversation)
+        loadMessages(conversation)
+      } else {
+        // Clear messages when conversation is set to null (new chat)
+        setCurrentConversation(null)
+        setMessages([])
+      }
     }
   }, [conversation])
+
+  // Load messages for current conversation
+  const loadMessages = async (conv?: Conversation) => {
+    const targetConversation = conv || currentConversation
+    if (!targetConversation?.conversationId || !user) {
+      setMessages([])
+      return
+    }
+    
+    const result = await chat.listMessages(
+      user.id,
+      targetConversation.conversationId
+    )
+    
+    if (result) {
+      setMessages(result.items.reverse())
+    }
+  }
 
   // Create a new conversation if needed
   const ensureConversation = async (): Promise<Conversation | null> => {
     if (currentConversation) return currentConversation
-
-    // TODO: Implement API call to create conversation
-    // For now, create a mock conversation
-    const newConversation: Conversation = {
-      conversationId: generateId(),
-      userId: 'mock-user-id',
-      title: 'New Chat',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    if (!user) return null
+    
+    const newConversation = await chat.createConversation(
+      user.id,
+      'New Chat'
+    )
+    
+    if (newConversation) {
+      setCurrentConversation(newConversation)
+      onConversationCreated?.(newConversation)
     }
-
-    setCurrentConversation(newConversation)
-    onConversationCreated?.(newConversation)
-
+    
     return newConversation
   }
 
   // Send message handler
   const sendMessage = async () => {
     const content = inputMessage.trim()
-    if (!content || isStreaming) return
+    if (!content || isStreaming || !user) return
 
     // Ensure we have a conversation
     const conv = await ensureConversation()
@@ -98,43 +122,58 @@ export function ChatWindow({
       content,
       createdAt: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, userMessage])
+    setMessages(prev => [...prev, userMessage])
     setInputMessage('')
-
-    // Reset textarea height
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto'
-    }
 
     // Start streaming response
     setIsStreaming(true)
     setStreamingContent('')
 
     try {
-      // TODO: Implement actual API call
-      // For now, simulate a response
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const assistantMessage: Message = {
-        id: generateId(),
-        conversationId: conv.conversationId,
-        role: 'assistant',
-        content:
-          "I'm your AI travel assistant! I can help you discover amazing attractions, find the perfect hotels, plan your itinerary, and much more. What would you like to explore today?",
-        createdAt: new Date().toISOString(),
-      }
-      setMessages((prev) => [...prev, assistantMessage])
+      await chat.streamMessage(
+        user.id,
+        conv.conversationId,
+        content,
+        undefined,
+        // onEvent: handle ADK events (tool calls, etc.)
+        (event) => {
+          console.log('ADK Event:', event)
+        },
+        // onChunk: accumulate streaming text
+        (chunk) => {
+          setStreamingContent(prev => prev + chunk)
+        },
+        // onMessage: handle final saved message
+        (message) => {
+          // Replace streaming content with final message
+          setStreamingContent('')
+          setMessages(prev => [...prev, message])
+        },
+        // onComplete
+        () => {
+          console.log('Stream completed')
+        },
+        // onError
+        (error) => {
+          console.error('Stream error:', error)
+          setMessages(prev => [...prev, {
+            id: generateId(),
+            conversationId: conv.conversationId,
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again.',
+            createdAt: new Date().toISOString(),
+          }])
+        }
+      )
     } catch (error) {
       console.error('Failed to send message:', error)
-      // Add error message
-      const errorMessage: Message = {
+      setMessages(prev => [...prev, {
         id: generateId(),
         conversationId: conv.conversationId,
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
         createdAt: new Date().toISOString(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      }])
     } finally {
       setIsStreaming(false)
       setStreamingContent('')
@@ -150,11 +189,10 @@ export function ChatWindow({
   }
 
   // Auto-resize textarea
-  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const autoResize = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const target = event.target
     target.style.height = 'auto'
     target.style.height = Math.min(target.scrollHeight, 200) + 'px'
-    setInputMessage(target.value)
   }
 
   // Use suggested prompt
@@ -165,9 +203,11 @@ export function ChatWindow({
 
   return (
     <div
-      className={`flex flex-col bg-white ${
-        fullScreen ? 'h-screen' : 'h-[600px] rounded-2xl shadow-lg border border-gray-100'
-      }`}
+      className={
+        fullScreen 
+          ? 'flex flex-col bg-white h-screen'
+          : 'flex flex-col bg-white h-[600px] rounded-2xl shadow-lg border border-gray-100'
+      }
     >
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-b border-gray-100">
@@ -195,11 +235,9 @@ export function ChatWindow({
               Welcome to TripSphere AI!
             </h3>
             <p className="text-gray-500 mb-8 max-w-md">
-              I&apos;m your intelligent travel assistant. Ask me anything about
-              destinations, hotels, attractions, or let me help you plan your perfect
-              trip.
+              I&apos;m your intelligent travel assistant. Ask me anything about destinations, hotels, attractions, or let me help you plan your perfect trip.
             </p>
-
+            
             {/* Suggested prompts */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
               {suggestedPrompts.map((prompt) => (
@@ -238,26 +276,28 @@ export function ChatWindow({
 
       {/* Input area */}
       <div className="flex-shrink-0 p-4 border-t border-gray-100">
-        <div className="flex items-start gap-3">
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={inputMessage}
-              onChange={handleInput}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask me anything about travel..."
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all min-h-[48px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-              rows={1}
-              disabled={isStreaming}
-            />
-          </div>
-          <button
+        <div className="flex items-end gap-3">
+          <textarea
+            ref={inputRef}
+            value={inputMessage}
+            onChange={(e) => {
+              setInputMessage(e.target.value)
+              autoResize(e)
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask me anything about travel..."
+            className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all scrollbar-hide overflow-y-auto"
+            rows={1}
+            disabled={isStreaming}
+          />
+          <Button
             disabled={!inputMessage.trim() || isStreaming}
-            className="flex-shrink-0 h-[48px] w-[48px] bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl flex items-center justify-center transition-colors"
+            size="sm"
+            className="flex-shrink-0 h-[48px] w-[48px] !p-0"
             onClick={sendMessage}
           >
             <Send className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <p className="text-xs text-gray-400 mt-2 text-center">
           Press Enter to send, Shift+Enter for new line
