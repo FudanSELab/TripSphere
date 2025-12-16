@@ -36,7 +36,7 @@ const mockNotes: Note[] = [
     userId: 'user2',
     title: 'West Lake: A Photographer\'s Paradise',
     content: 'As a photographer, West Lake in Hangzhou has always been on my bucket list. The misty mornings, traditional pagodas, and serene waters create the perfect backdrop for stunning photos...',
-    coverImage: 'https://images.unsplash.com/photo-1591122947157-26bad3a117d2?w=600&h=400&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=600&h=400&fit=crop',
     tags: ['Hangzhou', 'Photography', 'Nature'],
     likes: 189,
     createdAt: '2024-01-14T15:30:00Z',

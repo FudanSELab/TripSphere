@@ -70,7 +70,7 @@ const mockAttractions: Attraction[] = [
     rating: 4.9,
     openingHours: '24 hours',
     ticketPrice: 'Free',
-    images: ['https://images.unsplash.com/photo-1591122947157-26bad3a117d2?w=600&h=400&fit=crop'],
+    images: ['https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=600&h=400&fit=crop'],
     tags: ['UNESCO', 'Lake', 'Scenic'],
   },
   {

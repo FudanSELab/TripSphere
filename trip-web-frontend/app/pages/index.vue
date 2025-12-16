@@ -79,7 +79,7 @@ const destinations = [
   { 
     name: 'Hangzhou', 
     country: 'China',
-    image: 'https://images.unsplash.com/photo-1591122947157-26bad3a117d2?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=400&h=300&fit=crop',
     attractions: 156,
   },
   { 

@@ -5,7 +5,35 @@ import Image from "next/image";
 import { MapPin, Hotel, Calendar, MessageSquare, FileText, Sparkles, ArrowRight, Star, Users, Globe, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { AnimateInView, StaggerContainer, StaggerItem } from "@/components/ui/animate-container";
-import { ChatWindow } from "@/components/chat/chat-window";
+import { ImageCarousel } from "@/components/ui/image-carousel";
+
+const heroImages = [
+  {
+    src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=900&fit=crop',
+    alt: 'Mountain landscape at sunset',
+    title: 'Discover Natural Wonders',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1200&h=900&fit=crop',
+    alt: 'Paris Eiffel Tower',
+    title: 'Explore Iconic Cities',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&h=900&fit=crop',
+    alt: 'Tropical beach paradise',
+    title: 'Relax on Beautiful Beaches',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1464817739973-0128fe77aaa1?w=1200&h=900&fit=crop',
+    alt: 'Mountain valley with lake',
+    title: 'Experience Adventure',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1513415564515-763d91423bdd?w=1200&h=900&fit=crop',
+    alt: 'Ancient temple architecture',
+    title: 'Immerse in Culture',
+  },
+];
 
 const features = [
   {
@@ -69,7 +97,7 @@ const destinations = [
   { 
     name: 'Hangzhou', 
     country: 'China',
-    image: 'https://images.unsplash.com/photo-1591122947157-26bad3a117d2?w=400&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=400&h=500&fit=crop',
     attractions: 156,
   },
   { 
@@ -132,7 +160,7 @@ export default function Home() {
             <AnimateInView delay={0.2} className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-3xl blur-2xl" />
               <div className="relative">
-                <ChatWindow />
+                <ImageCarousel images={heroImages} autoPlayInterval={4000} />
               </div>
             </AnimateInView>
           </div>
