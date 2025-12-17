@@ -264,7 +264,7 @@ export function ChatSidebar({
         ]
       : ['Tell me more', 'How to get there?', 'Nearby attractions', 'Local tips']
 
-  const useQuickPrompt = (prompt: string) => {
+  const handleQuickPrompt = (prompt: string) => {
     setInputMessage(prompt)
     // Send immediately
     setTimeout(() => sendMessage(), 0)
@@ -328,7 +328,7 @@ export function ChatSidebar({
                   <button
                     key={prompt}
                     className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 transition-colors"
-                    onClick={() => useQuickPrompt(prompt)}
+                    onClick={() => handleQuickPrompt(prompt)}
                   >
                     {prompt}
                   </button>
@@ -365,7 +365,7 @@ export function ChatSidebar({
                 <button
                   key={prompt}
                   className="flex-shrink-0 px-3 py-1 text-xs bg-white border border-gray-200 hover:border-primary-300 hover:bg-primary-50 rounded-full text-gray-600 transition-colors"
-                  onClick={() => useQuickPrompt(prompt)}
+                  onClick={() => handleQuickPrompt(prompt)}
                 >
                   {prompt}
                 </button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Plus, MessageSquare, Trash2, Clock } from 'lucide-react'
 import type { Conversation } from '@/lib/types'
 import { formatRelativeTime } from '@/lib/utils'
@@ -22,18 +22,27 @@ export default function ChatPage() {
   useEffect(() => {
     if (auth.user && !hasLoadedRef.current) {
       hasLoadedRef.current = true
-      loadConversations()
+      
+      const loadData = async () => {
+        if (!auth.user) return
+        const result = await chat.listConversations(auth.user.id)
+        if (result) {
+          setConversations(result.items)
+        }
+      }
+      
+      void loadData()
     }
-  }, [auth.user])
+  }, [auth.user, chat])
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     if (!auth.user) return
     
     const result = await chat.listConversations(auth.user.id)
     if (result) {
       setConversations(result.items)
     }
-  }
+  }, [auth.user, chat])
 
   const createNewChat = () => {
     setSelectedConversation(null)

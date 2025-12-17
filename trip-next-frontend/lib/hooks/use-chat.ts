@@ -36,9 +36,21 @@ export const useChat = () => {
   }
 
   /**
+   * Backend message format from API
+   */
+  interface BackendMessage {
+    message_id: string
+    conversation_id: string
+    author: { role: 'user' | 'agent' }
+    content: Part[]
+    metadata?: Record<string, unknown>
+    created_at: string
+  }
+
+  /**
    * Convert backend message format to frontend message format
    */
-  const convertBackendMessage = (backendMsg: any): Message => {
+  const convertBackendMessage = (backendMsg: BackendMessage): Message => {
     return {
       id: backendMsg.message_id,
       conversationId: backendMsg.conversation_id,
@@ -74,7 +86,13 @@ export const useChat = () => {
         throw new Error(`Failed to create conversation: ${response.statusText}`)
       }
 
-      const result: any = await response.json()
+      const result = await response.json() as {
+        conversation_id: string
+        user_id: string
+        title?: string
+        metadata?: Record<string, unknown>
+        created_at: string
+      }
       
       // Convert snake_case to camelCase
       return {
@@ -126,10 +144,23 @@ export const useChat = () => {
         throw new Error(`Failed to list conversations: ${response.statusText}`)
       }
 
-      const result: any = await response.json()
+      interface BackendConversation {
+        conversation_id: string
+        user_id: string
+        title?: string
+        metadata?: Record<string, unknown>
+        created_at: string
+      }
+
+      const result = await response.json() as {
+        items?: BackendConversation[]
+        results_per_page?: number
+        resultsPerPage?: number
+        cursor?: string
+      }
       
       // Convert backend response to frontend format
-      const items = (result.items || []).map((item: any) => ({
+      const items = (result.items || []).map((item) => ({
         conversationId: item.conversation_id,
         userId: item.user_id,
         title: item.title,
@@ -189,7 +220,7 @@ export const useChat = () => {
     conversationId: string,
     content: string,
     metadata?: Record<string, unknown>,
-    onEvent?: (event: any) => void,
+    onEvent?: (event: Record<string, unknown>) => void,
     onChunk?: (chunk: string) => void,
     onMessage?: (message: Message) => void,
     onComplete?: () => void,
@@ -322,11 +353,16 @@ export const useChat = () => {
         throw new Error(`Failed to list messages: ${response.statusText}`)
       }
 
-      const result: any = await response.json()
+      const result = await response.json() as {
+        items?: BackendMessage[]
+        results_per_page?: number
+        resultsPerPage?: number
+        cursor?: string
+      }
       
       // Convert backend messages to frontend format
       if (result && result.items) {
-        const items = result.items.map((item: any) => convertBackendMessage(item))
+        const items = result.items.map((item) => convertBackendMessage(item))
         return {
           items,
           resultsPerPage: result.results_per_page || result.resultsPerPage || resultsPerPage,

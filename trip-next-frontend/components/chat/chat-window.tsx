@@ -196,7 +196,7 @@ export function ChatWindow({
   }
 
   // Use suggested prompt
-  const useSuggestedPrompt = (prompt: string) => {
+  const handleSuggestedPrompt = (prompt: string) => {
     setInputMessage(prompt)
     inputRef.current?.focus()
   }
@@ -244,7 +244,7 @@ export function ChatWindow({
                 <button
                   key={prompt.text}
                   className="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-colors"
-                  onClick={() => useSuggestedPrompt(prompt.text)}
+                  onClick={() => handleSuggestedPrompt(prompt.text)}
                 >
                   <span className="text-xl">{prompt.icon}</span>
                   <span className="text-sm text-gray-700">{prompt.text}</span>
