@@ -98,17 +98,20 @@ const createContextualConversation = async () => {
   if (conversation) {
     currentConversation.value = conversation
     emit('conversationCreated', conversation)
-    
-    // Add initial assistant message based on context
-    const initialMessage = getInitialMessage()
-    if (initialMessage) {
-      messages.value.push({
-        id: generateId(),
-        conversationId: conversation.conversationId,
-        role: 'assistant',
-        content: initialMessage,
-        createdAt: new Date().toISOString(),
-      })
+
+    // Only add initial assistant message if there's no autoSendQuery
+    // This prevents confusing UX where generic greeting is followed by auto-sent query
+    if (!props.initialContext?.autoSendQuery) {
+      const initialMessage = getInitialMessage()
+      if (initialMessage) {
+        messages.value.push({
+          id: generateId(),
+          conversationId: conversation.conversationId,
+          role: 'assistant',
+          content: initialMessage,
+          createdAt: new Date().toISOString(),
+        })
+      }
     }
   }
 }
