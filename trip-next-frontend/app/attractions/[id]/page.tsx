@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { MapPin, Star, Clock, Ticket, ChevronLeft, Share2, Heart, MessageCircle } from 'lucide-react'
+import { MapPin, Star, Clock, Ticket, ChevronLeft, Share2, Heart, MessageCircle, Cloud } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ReviewForm } from '@/components/reviews/review-form'
 import { useAttractions } from '@/lib/hooks/use-attractions'
+import { useChatSidebar } from '@/lib/hooks/use-chat-sidebar'
 import type { Attraction, Review, ChatContext } from '@/lib/types'
 
 export default function AttractionDetailPage() {
   const params = useParams()
   const attractionId = params.id as string
   const { fetchAttraction } = useAttractions()
+  const chatSidebar = useChatSidebar()
   
   // TODO: Replace with real authentication when user service is integrated
   const currentUser = { id: 'user-1', username: 'Demo User' }
@@ -26,11 +28,6 @@ export default function AttractionDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [userReview, setUserReview] = useState<Review | null>(null)
-
-  // Chat sidebar state (TODO: implement when chat component is ready)
-  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false)
-  const [chatContext, setChatContext] = useState<ChatContext | null>(null)
-  const [chatTitle, setChatTitle] = useState('AI Assistant')
 
   // Fetch attraction data
   useEffect(() => {
@@ -138,19 +135,35 @@ export default function AttractionDetailPage() {
   const handleAskAboutReviews = () => {
     // Open chat sidebar with review context
     if (attraction) {
-      setChatContext({
+      const context: ChatContext = {
         type: 'review-summary',
         targetType: 'attraction',
         targetId: attractionId,
         attractionName: attraction.name,
-      })
-      setChatTitle(`Reviews for ${attraction.name}`)
-      setIsChatSidebarOpen(true)
+      }
+      chatSidebar.open(context, `Reviews for ${attraction.name}`)
     }
   }
 
-  const closeChatSidebar = () => {
-    setIsChatSidebarOpen(false)
+  const handleWeatherAndTips = () => {
+    if (!attraction) return
+    
+    // Prepare the query template with attraction info
+    const query = `Please help me check the weather conditions and travel tips for ${attraction.name} located in ${attraction.address.city}, ${attraction.address.country}.`
+    
+    // Set chat context with auto-send configuration
+    const context: ChatContext = {
+      type: 'attraction',
+      targetType: 'attraction',
+      targetId: attractionId,
+      attractionName: attraction.name,
+      agent: 'journey_assistant', // Route to journey_assistant agent
+      autoSendQuery: query,
+      autoSendMetadata: {
+        agent: 'journey_assistant', // This will route to journey_assistant in facade.py
+      },
+    }
+    chatSidebar.open(context, `Weather & Tips: ${attraction.name}`)
   }
 
   const formatDate = (timestamp: number) => {
@@ -484,6 +497,17 @@ export default function AttractionDetailPage() {
                     </p>
                   </div>
                 </div>
+
+                <div
+                  onClick={handleWeatherAndTips}
+                  className="flex items-start gap-3 cursor-pointer hover:bg-gray-50 -mx-3 px-3 py-2 rounded-lg transition-colors"
+                >
+                  <Cloud className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-gray-900">Weather & Tips</p>
+                    <p className="text-sm text-gray-600">Check weather and travel tips</p>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-6 pt-6 border-t border-gray-100">
@@ -495,14 +519,6 @@ export default function AttractionDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Chat Sidebar - TODO: Implement when chat component is ready */}
-      {/* <ChatSidebar
-        isOpen={isChatSidebarOpen}
-        initialContext={chatContext}
-        title={chatTitle}
-        onClose={closeChatSidebar}
-      /> */}
     </div>
   )
 }

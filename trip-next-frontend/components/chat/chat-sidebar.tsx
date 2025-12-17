@@ -96,18 +96,13 @@ export function ChatSidebar({
       setCurrentConversation(conversation)
       onConversationCreated?.(conversation)
 
-      // Add initial assistant message based on context
-      const initialMessage = getInitialMessage()
-      if (initialMessage) {
-        setMessages([
-          {
-            id: generateId(),
-            conversationId: conversation.conversationId,
-            role: 'assistant',
-            content: initialMessage,
-            createdAt: new Date().toISOString(),
-          },
-        ])
+      // Check if we need to auto-send a query
+      if (initialContext.autoSendQuery) {
+        // Wait a moment for UI to settle
+        await new Promise(resolve => setTimeout(resolve, 100))
+        // Use autoSendMetadata if provided
+        const metadata = initialContext.autoSendMetadata || initialContext
+        await sendMessageWithMetadata(conversation, initialContext.autoSendQuery, metadata)
       }
     }
   }
@@ -144,14 +139,13 @@ export function ChatSidebar({
     return conversation
   }
 
-  // Send message handler
-  const sendMessage = async () => {
-    const content = inputMessage.trim()
-    if (!content || isStreaming || !auth.user) return
-
-    // Ensure we have a conversation
-    const conversation = await ensureConversation()
-    if (!conversation) return
+  // Send message handler with optional custom metadata
+  const sendMessageWithMetadata = async (
+    conversation: Conversation,
+    content: string,
+    customMetadata?: Record<string, unknown>
+  ) => {
+    if (!content.trim() || isStreaming || !auth.user) return
 
     // Add user message locally
     const userMessage: Message = {
@@ -168,12 +162,15 @@ export function ChatSidebar({
     setIsStreaming(true)
     setStreamingContent('')
 
+    // Use custom metadata if provided, otherwise use initialContext
+    const metadata = customMetadata || (initialContext as Record<string, unknown> | undefined)
+
     try {
       await chat.streamMessage(
         auth.user.id,
         conversation.conversationId,
         content,
-        initialContext as Record<string, unknown> | undefined,
+        metadata,
         // onEvent: handle ADK events (tool calls, etc.)
         (event) => {
           console.log('ADK Event:', event)
@@ -223,6 +220,19 @@ export function ChatSidebar({
       setIsStreaming(false)
       setStreamingContent('')
     }
+  }
+
+  // Send message handler (uses default metadata from initialContext)
+  const sendMessage = async () => {
+    const content = inputMessage.trim()
+    if (!content || isStreaming || !auth.user) return
+
+    // Ensure we have a conversation
+    const conversation = await ensureConversation()
+    if (!conversation) return
+
+    // Use the sendMessageWithMetadata function
+    await sendMessageWithMetadata(conversation, content)
   }
 
   // Handle enter key

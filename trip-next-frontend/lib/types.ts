@@ -100,6 +100,9 @@ export interface ChatContext {
   targetId?: string
   attractionName?: string
   hotelName?: string
+  autoSendQuery?: string
+  autoSendMetadata?: Record<string, unknown>
+  agent?: string
   [key: string]: unknown
 }
 
