@@ -87,6 +87,9 @@ export interface ChatContext {
   targetId?: string
   attractionName?: string
   hotelName?: string
+  agent?: string  // For routing to specific agents (e.g., 'journey_assistant')
+  autoSendQuery?: string  // Auto-send this query when chat opens
+  autoSendMetadata?: Record<string, unknown>  // Metadata for auto-sent query
   [key: string]: unknown
 }
 
