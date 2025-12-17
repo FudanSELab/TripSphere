@@ -98,8 +98,6 @@ export function ChatSidebar({
 
       // Check if we need to auto-send a query
       if (initialContext.autoSendQuery) {
-        // Wait a moment for UI to settle
-        await new Promise(resolve => setTimeout(resolve, 100))
         // Use autoSendMetadata if provided
         const metadata = initialContext.autoSendMetadata || initialContext
         await sendMessageWithMetadata(conversation, initialContext.autoSendQuery, metadata)

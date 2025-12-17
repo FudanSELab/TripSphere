@@ -15,7 +15,7 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
   return (
     <div
       className={cn(
-        'flex gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300',
+        'flex gap-3 animate-message-fade-in',
         isUser ? 'flex-row-reverse' : ''
       )}
     >

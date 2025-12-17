@@ -78,6 +78,22 @@
   animation: typing 1.4s infinite ease-in-out both;
 }
 
+/* Message fade-in animation */
+@keyframes message-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message-fade-in {
+  animation: message-fade-in 0.3s ease-out forwards;
+}
+
 /* Shimmer animation for skeleton loading */
 @keyframes shimmer {
   100% {
