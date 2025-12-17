@@ -98,35 +98,6 @@ const createContextualConversation = async () => {
   if (conversation) {
     currentConversation.value = conversation
     emit('conversationCreated', conversation)
-
-    // Only add initial assistant message if there's no autoSendQuery
-    // This prevents confusing UX where generic greeting is followed by auto-sent query
-    if (!props.initialContext?.autoSendQuery) {
-      const initialMessage = getInitialMessage()
-      if (initialMessage) {
-        messages.value.push({
-          id: generateId(),
-          conversationId: conversation.conversationId,
-          role: 'assistant',
-          content: initialMessage,
-          createdAt: new Date().toISOString(),
-        })
-      }
-    }
-  }
-}
-
-// Get initial message based on context type
-const getInitialMessage = (): string => {
-  if (!props.initialContext) return ''
-  
-  switch (props.initialContext.type) {
-    case 'review-summary':
-      return `Hi! I'm here to help you understand the reviews for **${props.initialContext.attractionName}**. I can summarize what visitors are saying, highlight common themes, or answer specific questions about the reviews. What would you like to know?`
-    case 'attraction':
-      return `Hello! I'd be happy to tell you more about **${props.initialContext.attractionName}**. Feel free to ask me anything about this attraction - opening hours, best times to visit, nearby restaurants, or travel tips!`
-    default:
-      return 'Hello! How can I help you today?'
   }
 }
 
