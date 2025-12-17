@@ -148,7 +148,7 @@ const handleAskAboutReviews = () => {
 // Weather & Tips - Auto-send query with journey_assistant agent
 const handleWeatherAndTips = () => {
   // Prepare the query template with attraction info
-  const query = `请帮我查询${attraction.value.name}（位于${attraction.value.address.city}，${attraction.value.address.country}）的天气情况和旅行建议。`
+  const query = `Please help me check the weather conditions and travel tips for ${attraction.value.name} located in ${attraction.value.address.city}, ${attraction.value.address.country}.`
   
   // Set chat context with auto-send configuration
   chatContext.value = {
