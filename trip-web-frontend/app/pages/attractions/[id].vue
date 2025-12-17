@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MapPin, Star, Clock, Ticket, ChevronLeft, Share2, Heart, MessageCircle } from 'lucide-vue-next'
+import { MapPin, Star, Clock, Ticket, ChevronLeft, Share2, Heart, MessageCircle, Cloud } from 'lucide-vue-next'
 import ReviewForm from '~/components/reviews/ReviewForm.vue'
 import ChatSidebar from '~/components/chat/ChatSidebar.vue'
 import type { Attraction, Review, ChatContext } from '~/types'
@@ -145,8 +145,31 @@ const handleAskAboutReviews = () => {
   isChatSidebarOpen.value = true
 }
 
+// Weather & Tips - Auto-send query with journey_assistant agent
+const handleWeatherAndTips = () => {
+  // Prepare the query template with attraction info
+  const query = `Please help me check the weather conditions and travel tips for ${attraction.value.name} located in ${attraction.value.address.city}, ${attraction.value.address.country}.`
+  
+  // Set chat context with auto-send configuration
+  chatContext.value = {
+    type: 'attraction',
+    targetType: 'attraction',
+    targetId: attractionId,
+    attractionName: attraction.value.name,
+    agent: 'journey_assistant', // Route to journey_assistant agent
+    autoSendQuery: query,
+    autoSendMetadata: {
+      agent: 'journey_assistant', // This will route to journey_assistant in facade.py
+    },
+  }
+  chatTitle.value = `Weather & Tips: ${attraction.value.name}`
+  isChatSidebarOpen.value = true
+}
+
 const closeChatSidebar = () => {
   isChatSidebarOpen.value = false
+  // Reset chat context to allow creating a new conversation next time
+  chatContext.value = null
 }
 
 onMounted(() => {
@@ -237,9 +260,20 @@ const getRatingStars = (rating: number) => {
                     </UiBadge>
                   </div>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                  {{ attraction.name }}
-                </h1>
+                <div class="flex items-center gap-3 mb-2">
+                  <h1 class="text-3xl font-bold text-gray-900">
+                    {{ attraction.name }}
+                  </h1>
+                  <UiButton
+                    variant="outline"
+                    size="sm"
+                    @click="handleWeatherAndTips"
+                    class="flex items-center gap-2"
+                  >
+                    <Cloud class="w-4 h-4" />
+                    Weather & Tips
+                  </UiButton>
+                </div>
                 <div class="flex items-center gap-4 text-sm text-gray-600">
                   <div class="flex items-center gap-1">
                     <MapPin class="w-4 h-4" />
