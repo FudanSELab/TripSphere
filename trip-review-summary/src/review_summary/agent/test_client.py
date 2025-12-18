@@ -105,83 +105,83 @@ async def main() -> None:
                 'Failed to fetch the public agent card. Cannot continue.'
             ) from e
 
-        # # --8<-- [start:send_message]
-        # client = A2AClient(
-        #     httpx_client=httpx_client, agent_card=final_agent_card_to_use
-        # )
-        # logger.info('A2AClient initialized.')
+        # --8<-- [start:send_message]
+        client = A2AClient(
+            httpx_client=httpx_client, agent_card=final_agent_card_to_use
+        )
+        logger.info('A2AClient initialized.')
 
-        # send_message_payload: dict[str, Any] = {
-        #     'message': {
-        #         'role': 'user',
-        #         'parts': [
-        #             {'kind': 'text', 'text': 'how much is 10 USD in INR?'}
-        #         ],
-        #         'message_id': uuid4().hex,
-        #     },
-        # }
-        # request = SendMessageRequest(
-        #     id=str(uuid4()), params=MessageSendParams(**send_message_payload)
-        # )
+        send_message_payload: dict[str, Any] = {
+            'message': {
+                'role': 'user',
+                'parts': [
+                    {'kind': 'text', 'text': 'how much is 10 USD in INR?'}
+                ],
+                'message_id': uuid4().hex,
+            },
+        }
+        request = SendMessageRequest(
+            id=str(uuid4()), params=MessageSendParams(**send_message_payload)
+        )
 
-        # response = await client.send_message(request)
-        # print(response.model_dump(mode='json', exclude_none=True))
-        # # --8<-- [end:send_message]
+        response = await client.send_message(request)
+        print(response.model_dump(mode='json', exclude_none=True))
+        # --8<-- [end:send_message]
 
-        # # --8<-- [start:Multiturn]
-        # send_message_payload_multiturn: dict[str, Any] = {
-        #     'message': {
-        #         'role': 'user',
-        #         'parts': [
-        #             {
-        #                 'kind': 'text',
-        #                 'text': 'How much is the exchange rate for 1 USD?',
-        #             }
-        #         ],
-        #         'message_id': uuid4().hex,
-        #     },
-        # }
-        # request = SendMessageRequest(
-        #     id=str(uuid4()),
-        #     params=MessageSendParams(**send_message_payload_multiturn),
-        # )
+        # --8<-- [start:Multiturn]
+        send_message_payload_multiturn: dict[str, Any] = {
+            'message': {
+                'role': 'user',
+                'parts': [
+                    {
+                        'kind': 'text',
+                        'text': 'How much is the exchange rate for 1 USD?',
+                    }
+                ],
+                'message_id': uuid4().hex,
+            },
+        }
+        request = SendMessageRequest(
+            id=str(uuid4()),
+            params=MessageSendParams(**send_message_payload_multiturn),
+        )
 
-        # response = await client.send_message(request)
-        # print(response.model_dump(mode='json', exclude_none=True))
+        response = await client.send_message(request)
+        print(response.model_dump(mode='json', exclude_none=True))
 
-        # task_id = response.root.result.id
-        # context_id = response.root.result.context_id
+        task_id = response.root.result.id
+        context_id = response.root.result.context_id
 
-        # second_send_message_payload_multiturn: dict[str, Any] = {
-        #     'message': {
-        #         'role': 'user',
-        #         'parts': [{'kind': 'text', 'text': 'CAD'}],
-        #         'message_id': uuid4().hex,
-        #         'task_id': task_id,
-        #         'context_id': context_id,
-        #     },
-        # }
+        second_send_message_payload_multiturn: dict[str, Any] = {
+            'message': {
+                'role': 'user',
+                'parts': [{'kind': 'text', 'text': 'CAD'}],
+                'message_id': uuid4().hex,
+                'task_id': task_id,
+                'context_id': context_id,
+            },
+        }
 
-        # second_request = SendMessageRequest(
-        #     id=str(uuid4()),
-        #     params=MessageSendParams(**second_send_message_payload_multiturn),
-        # )
+        second_request = SendMessageRequest(
+            id=str(uuid4()),
+            params=MessageSendParams(**second_send_message_payload_multiturn),
+        )
 
-        # second_response = await client.send_message(second_request)
-        # print(second_response.model_dump(mode='json', exclude_none=True))
-        # # --8<-- [end:Multiturn]
+        second_response = await client.send_message(second_request)
+        print(second_response.model_dump(mode='json', exclude_none=True))
+        # --8<-- [end:Multiturn]
 
-        # # --8<-- [start:send_message_streaming]
+        # --8<-- [start:send_message_streaming]
 
-        # streaming_request = SendStreamingMessageRequest(
-        #     id=str(uuid4()), params=MessageSendParams(**send_message_payload)
-        # )
+        streaming_request = SendStreamingMessageRequest(
+            id=str(uuid4()), params=MessageSendParams(**send_message_payload)
+        )
 
-        # stream_response = client.send_message_streaming(streaming_request)
+        stream_response = client.send_message_streaming(streaming_request)
 
-        # async for chunk in stream_response:
-        #     print(chunk.model_dump(mode='json', exclude_none=True))
-        # # --8<-- [end:send_message_streaming]
+        async for chunk in stream_response:
+            print(chunk.model_dump(mode='json', exclude_none=True))
+        # --8<-- [end:send_message_streaming]
 
 
 if __name__ == '__main__':

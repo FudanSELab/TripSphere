@@ -2,29 +2,48 @@
 import os
 from collections.abc import AsyncIterable
 from typing import Any, Literal, Dict, List
-from langchain_core.messages import AIMessage, ToolMessage, BaseMessage
+from langchain_core.messages import AIMessage, ToolMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
-from prompt import SYSTEM_INSTRUCTION
-from prompt import FORMAT_INSTRUCTION
+from .prompt import SYSTEM_INSTRUCTION
+from .prompt import FORMAT_INSTRUCTION
 from langchain_openai.embeddings import OpenAIEmbeddings
+from motor.motor_asyncio import AsyncIOMotorClient
+from review_summary.respositry.mongo import ReviewEmbeddingRepository
+from review_summary.index.embedding import text_to_embedding_async
+from review_summary.respositry.mongo import ReviewEmbedding
+from langchain_core.messages import HumanMessage
+from langgraph.graph import END
+from typing import TypedDict, Annotated, Optional
+from langchain_core.messages import AnyMessage
+from langgraph.graph.message import add_messages
+
+# Initialize MongoDB client and repository
+client = AsyncIOMotorClient("mongodb+srv://LJC:asasdd@cluster0.gif9hs8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+db = client["review_summary_db"]
+repo = ReviewEmbeddingRepository(db)
 
 class ResponseFormat(BaseModel):
-    """Respond to the user in this format."""
+    """Generate a structured response based on retrieved reviews.
+    - Use status='completed' when you can answer the user's question (even if reviews are empty).
+    - Use status='input_required' only if the user didn't specify an attraction name or query clearly.
+    - Use status='error' only for tool failures.
+    - The 'message' field must always contain a user-facing response in Chinese.
+    """
     status: Literal['input_required', 'completed', 'error'] = 'input_required'
     message: str
 
-class AgentState(BaseModel):
-    messages: List[BaseMessage]
-    structured_response: ResponseFormat = None
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+    structured_response: Optional[ResponseFormat]
 
 
 @tool
-def get_attraction_id(
+async def get_attraction_id(
     attraction_name: str,
 ):
     """Use this to get the ID of an attraction based on its name.
@@ -37,26 +56,58 @@ def get_attraction_id(
         the request fails.
     """
     # Tool implementation would go here
-    pass
+    return "review_23456"
 
 
 @tool
-def get_reviews(
-    business_id: str,
-    max_reviews: int = 10,
+async def get_reviews(
+    attraction_id: str,
+    max_reviews: int = 20,
+    query: str = "",
 ):
     """Use this to get reviews for a business.
 
     Args:
-        business_id: The ID of the business to get reviews for.
-        max_reviews: Maximum number of reviews to retrieve. Defaults to 10.
+        attraction_id: The ID of the attraction to get reviews for.
+        max_reviews: Maximum number of reviews to retrieve. Defaults to 20.
+        query: The query text to find similar reviews.
 
     Returns:
         A dictionary containing the reviews data, or an error message if
         the request fails.
     """
-    # Tool implementation would go here
-    pass
+    # Get the embedding vector for the query
+    query_embedding = await text_to_embedding_async(query)
+
+    # Retrieve all review embeddings for the attraction from the database
+    result = await repo.find_by_attraction_id(attraction_id=attraction_id)
+
+    # If no embeddings are found, return an empty list
+    if not result:
+        return {"reviews": []}
+
+    # Compute cosine similarity between each review embedding and the query embedding
+    similarities = []
+    for record in result:
+        stored_embedding = record.embedding
+        # Compute dot product
+        dot_product = sum(q * s for q, s in zip(query_embedding, stored_embedding))
+        # Compute vector norms
+        query_norm = sum(q * q for q in query_embedding) ** 0.5
+        stored_norm = sum(s * s for s in stored_embedding) ** 0.5
+        # Compute cosine similarity
+        if query_norm == 0 or stored_norm == 0:
+            similarity = 0
+        else:
+            similarity = dot_product / (query_norm * stored_norm)
+        # Append to similarities list, using review_content
+        similarities.append((similarity, record.review_content))
+    
+    # Sort by cosine similarity and take top max_reviews
+    similarities.sort(reverse=True, key=lambda x: x[0])
+    top_reviews = [review for _, review in similarities[:max_reviews]]
+    
+    return {"reviews": top_reviews}
 
 
 class ReviewSummarizerAgent:
@@ -96,7 +147,7 @@ class ReviewSummarizerAgent:
             self._should_call_tool,
             {
                 "continue": "tools",
-                "end": "agent"
+                "end": END
             }
         )
         workflow.add_edge("tools", "agent")
@@ -107,10 +158,22 @@ class ReviewSummarizerAgent:
         return workflow.compile(checkpointer=MemorySaver())
 
     def _call_model(self, state: AgentState):
-        # Prepare messages for the model
-        messages = [AIMessage(content=self.SYSTEM_INSTRUCTION, type="system")] + state.messages
-        response = self.model.invoke(messages, {"response_format": ResponseFormat})
-        return {"messages": [response]}
+        messages = state["messages"]
+        print( f"Model called with messages: {messages}" )
+        last_msg = state["messages"][-1]
+        if (isinstance(last_msg, ToolMessage) and len(state["messages"]) == 4) or (
+            len(state["messages"]) == 2 and isinstance(last_msg, HumanMessage)
+        ):
+            model_runnable = self.model.bind_tools(self.tools)
+            response = model_runnable.invoke(messages)
+            return {"messages": [response]}
+        else:
+            full_messages = messages + [SystemMessage(content=self.FORMAT_INSTRUCTION)]
+            model_runnable = self.model.with_structured_output(ResponseFormat)
+            structured_response = model_runnable.invoke(full_messages)
+            return {"structured_response": structured_response}
+    
+
 
     def _should_call_tool(self, state: AgentState):
         # Check if the last message has tool calls
@@ -120,10 +183,16 @@ class ReviewSummarizerAgent:
         return "end"
 
     async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
-        inputs = {"messages": [("user", query)]}
+        inputs = {
+            "messages": [
+                SystemMessage(content=self.SYSTEM_INSTRUCTION),
+                HumanMessage(content=query)
+            ]
+        }
         config = {"configurable": {"thread_id": context_id}}
         
         # Stream the execution
+        final_state = None
         async for event in self.graph.astream(inputs, config, stream_mode="values"):
             if "messages" in event and event["messages"]:
                 last_message = event["messages"][-1]
@@ -143,20 +212,29 @@ class ReviewSummarizerAgent:
                             'require_user_input': False,
                             'content': 'Retrieving reviews for analysis...',
                         }
-                    else:
-                        yield {
-                            'is_task_complete': False,
-                            'require_user_input': False,
-                            'content': 'Processing with tools...',
-                        }
                 elif isinstance(last_message, ToolMessage):
                     yield {
                         'is_task_complete': False,
                         'require_user_input': False,
                         'content': 'Analyzing the reviews..',
                     }
+            final_state = event
 
-        yield self.get_agent_response(config)
+        # Get response from final state
+        if final_state and "structured_response" in final_state:
+            sr = final_state["structured_response"]
+            if sr.status == "completed":
+                yield {'content': sr.message, 'is_task_complete': True, 'require_user_input': False}
+            elif sr.status == "input_required":
+                yield {'content': sr.message, 'is_task_complete': False, 'require_user_input': True}
+            else:  # error
+                yield {'content': sr.message, 'is_task_complete': False, 'require_user_input': False}
+        else:
+            yield {
+                'content': 'We are unable to process your request at the moment. Please try again.',
+                'is_task_complete': False,
+                'require_user_input': False
+            }
 
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)

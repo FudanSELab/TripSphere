@@ -21,8 +21,8 @@ from a2a.types import (
 )
 from dotenv import load_dotenv
 
-from agent import ReviewSummarizerAgent
-from agent_executor import ReviewSummarizerAgentExecutor
+from .agent.agent import ReviewSummarizerAgent
+from .agent.agent_executor import ReviewSummarizerAgentExecutor
 
 
 load_dotenv()
