@@ -36,6 +36,7 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
 
         attraction.setIntroduction(request.getAttraction().getIntroduction());
         attraction.setTags(request.getAttraction().getTagsList());
+        attraction.setName(request.getAttraction().getName());
 
         GeoJsonPoint location = new GeoJsonPoint(request.getAttraction().getLocation().getLng(), request.getAttraction().getLocation().getLat());
         attraction.setLocation(location);

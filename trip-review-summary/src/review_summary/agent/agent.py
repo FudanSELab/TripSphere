@@ -9,8 +9,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
-from .prompt import SYSTEM_INSTRUCTION
-from .prompt import FORMAT_INSTRUCTION
+from review_summary.prompt.prompt import SYSTEM_INSTRUCTION
+from review_summary.prompt.prompt import FORMAT_INSTRUCTION
 from langchain_openai.embeddings import OpenAIEmbeddings
 from motor.motor_asyncio import AsyncIOMotorClient
 from review_summary.respositry.mongo import ReviewEmbeddingRepository
@@ -21,10 +21,17 @@ from langgraph.graph import END
 from typing import TypedDict, Annotated, Optional
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
+import review_summary.grpc.attraction as attraction_grpc
+
+# Load environment variables
+ATTRACTION_GRPC_SERVICE_HOST = os.getenv("ATTRACTION_GRPC_SERVICE_HOST", "127.0.0.1")
+ATTRACTION_GRPC_SERVICE_PORT = int(os.getenv("ATTRACTION_GRPC_SERVICE_PORT", "9007"))
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://LJC:asasdd@cluster0.gif9hs8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "review_summary_db")
 
 # Initialize MongoDB client and repository
-client = AsyncIOMotorClient("mongodb+srv://LJC:asasdd@cluster0.gif9hs8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = client["review_summary_db"]
+client = AsyncIOMotorClient(MONGODB_URI)
+db = client[DATABASE_NAME]
 repo = ReviewEmbeddingRepository(db)
 
 class ResponseFormat(BaseModel):
@@ -56,7 +63,12 @@ async def get_attraction_id(
         the request fails.
     """
     # Tool implementation would go here
-    return "review_23456"
+    return await attraction_grpc.find_attraction_id_by_name(
+        name=attraction_name,
+        host=ATTRACTION_GRPC_SERVICE_HOST,
+        port=ATTRACTION_GRPC_SERVICE_PORT
+    )
+    # return "review_23456"
 
 
 @tool
