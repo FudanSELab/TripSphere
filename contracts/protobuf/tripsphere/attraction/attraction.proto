@@ -71,8 +71,17 @@ message ChangeAttractionResponse {
   bool success = 1;
 }
 
+message FindIdByNameRequest {
+  string name = 1;
+}
+
+message FindIdByNameResponse {
+  string attraction_id = 1;
+}
+
 service AttractionService{
   rpc AddAttraction(AddAttractionRequest) returns (AddAttractionResponse);
   rpc DeleteAttraction(DeleteAttractionRequest) returns (DeleteAttractionResponse);
   rpc ChangeAttraction(ChangeAttractionRequest) returns (ChangeAttractionResponse);
+  rpc FindIdByName(FindIdByNameRequest) returns (FindIdByNameResponse);
 }

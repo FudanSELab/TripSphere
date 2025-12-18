@@ -119,5 +119,14 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
+    public void findIdByName(org.tripsphere.attraction.FindIdByNameRequest request,
+                             io.grpc.stub.StreamObserver<org.tripsphere.attraction.FindIdByNameResponse> responseObserver) {
+        String name = request.getName();
+        String attraction_id = attractionService.findAttractionIdByName(name);
+        FindIdByNameResponse response = FindIdByNameResponse.newBuilder().setAttractionId(attraction_id).build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
 }
 

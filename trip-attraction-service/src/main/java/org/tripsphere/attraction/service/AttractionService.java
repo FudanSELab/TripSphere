@@ -81,5 +81,21 @@ public class AttractionService {
             return null;
     }
 
-
+    /**
+     * find attraction id by name
+     *
+     * @param name attraction name
+     * @return if found, return attraction id, else return null
+     */
+    public String findAttractionIdByName(String name) {
+        Attraction probe = new Attraction();
+        probe.setName(name);
+        Example<Attraction> example = Example.of(probe);
+        Optional<Attraction> attractionOptional = attractionRepository.findOne(example);
+        if (attractionOptional.isPresent()) {
+            Attraction attraction = attractionOptional.get();
+            return attraction.getId();
+        } else
+            return null;
+    }
 }
