@@ -58,6 +58,16 @@ watch(() => props.conversation, (newConv) => {
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen && props.initialContext && !currentConversation.value) {
     await createContextualConversation()
+    
+    // After creating conversation, check if we need to auto-send a query
+    if (props.initialContext.autoSendQuery && currentConversation.value) {
+      // Wait a moment for UI to settle
+      await nextTick()
+      inputMessage.value = props.initialContext.autoSendQuery
+      // Use autoSendMetadata if provided
+      const metadata = props.initialContext.autoSendMetadata || props.initialContext
+      await sendMessageWithMetadata(metadata)
+    }
   }
 })
 
@@ -88,32 +98,6 @@ const createContextualConversation = async () => {
   if (conversation) {
     currentConversation.value = conversation
     emit('conversationCreated', conversation)
-    
-    // Add initial assistant message based on context
-    const initialMessage = getInitialMessage()
-    if (initialMessage) {
-      messages.value.push({
-        id: generateId(),
-        conversationId: conversation.conversationId,
-        role: 'assistant',
-        content: initialMessage,
-        createdAt: new Date().toISOString(),
-      })
-    }
-  }
-}
-
-// Get initial message based on context type
-const getInitialMessage = (): string => {
-  if (!props.initialContext) return ''
-  
-  switch (props.initialContext.type) {
-    case 'review-summary':
-      return `Hi! I'm here to help you understand the reviews for **${props.initialContext.attractionName}**. I can summarize what visitors are saying, highlight common themes, or answer specific questions about the reviews. What would you like to know?`
-    case 'attraction':
-      return `Hello! I'd be happy to tell you more about **${props.initialContext.attractionName}**. Feel free to ask me anything about this attraction - opening hours, best times to visit, nearby restaurants, or travel tips!`
-    default:
-      return 'Hello! How can I help you today?'
   }
 }
 
@@ -134,8 +118,8 @@ const ensureConversation = async (): Promise<Conversation | null> => {
   return conversation
 }
 
-// Send message handler
-const sendMessage = async () => {
+// Send message handler with optional custom metadata
+const sendMessageWithMetadata = async (customMetadata?: Record<string, unknown>) => {
   const content = inputMessage.value.trim()
   if (!content || isStreaming.value) return
   
@@ -158,22 +142,45 @@ const sendMessage = async () => {
   isStreaming.value = true
   streamingContent.value = ''
   
+  // Use custom metadata if provided, otherwise use initialContext
+  const metadata = customMetadata || props.initialContext || undefined
+  
   try {
-    const response = await chat.sendMessage(auth.userId.value, {
-      conversationId: conversation.conversationId,
+    await chat.streamMessage(
+      auth.userId.value,
+      conversation.conversationId,
       content,
-    })
-    
-    if (response) {
-      const assistantMessage: Message = {
-        id: response.answerId,
-        conversationId: conversation.conversationId,
-        role: 'assistant',
-        content: 'I\'m analyzing the reviews and context to provide you with helpful insights. Based on visitor feedback, this attraction is highly rated for its scenic views and historical significance. Would you like me to elaborate on any specific aspect?',
-        createdAt: new Date().toISOString(),
+      metadata,
+      // onEvent: handle ADK events (tool calls, etc.)
+      (event) => {
+        console.log('ADK Event:', event)
+      },
+      // onChunk: accumulate streaming text
+      (chunk) => {
+        streamingContent.value += chunk
+      },
+      // onMessage: handle final saved message
+      (message) => {
+        // Replace streaming content with final message
+        streamingContent.value = ''
+        messages.value.push(message)
+      },
+      // onComplete
+      () => {
+        console.log('Stream completed')
+      },
+      // onError
+      (error) => {
+        console.error('Stream error:', error)
+        messages.value.push({
+          id: generateId(),
+          conversationId: conversation.conversationId,
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          createdAt: new Date().toISOString(),
+        })
       }
-      messages.value.push(assistantMessage)
-    }
+    )
   } catch (error) {
     console.error('Failed to send message:', error)
     messages.value.push({
@@ -187,6 +194,11 @@ const sendMessage = async () => {
     isStreaming.value = false
     streamingContent.value = ''
   }
+}
+
+// Send message handler (uses default metadata from initialContext)
+const sendMessage = async () => {
+  await sendMessageWithMetadata()
 }
 
 // Handle enter key
@@ -206,6 +218,11 @@ const autoResize = (event: Event) => {
 
 // Reset state when closing
 const handleClose = () => {
+  // Reset conversation state to allow creating a new one next time
+  currentConversation.value = null
+  messages.value = []
+  inputMessage.value = ''
+  streamingContent.value = ''
   emit('close')
 }
 
@@ -333,7 +350,7 @@ const useQuickPrompt = (prompt: string) => {
 
       <!-- Input area -->
       <div class="flex-shrink-0 p-4 border-t border-gray-100 bg-white">
-        <div class="flex items-end gap-2">
+        <div class="flex items-start gap-2">
           <div class="flex-1 relative">
             <textarea
               ref="inputRef"

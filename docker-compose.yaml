@@ -23,3 +23,12 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+
+  mongodb:
+    image: mongodb/mongodb-community-server:8.0-ubi8
+    container_name: mongodb
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: root
+      MONGODB_INITDB_ROOT_PASSWORD: fudanse
+    ports:
+      - "27017:27017"

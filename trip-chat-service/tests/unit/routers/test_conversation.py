@@ -217,7 +217,7 @@ class TestListUserConversations:
             results_per_page=10,
             cursor=None,
         )
-        mock_find_by_user: AsyncMockType = mock_conversation_repository.find_by_user
+        mock_find_by_user: AsyncMockType = mock_conversation_repository.list_by_user
         mock_find_by_user.return_value = pagination
 
         # Act
@@ -250,7 +250,7 @@ class TestListUserConversations:
             results_per_page=2,
             cursor="another-cursor",
         )
-        mock_find_by_user: AsyncMockType = mock_conversation_repository.find_by_user
+        mock_find_by_user: AsyncMockType = mock_conversation_repository.list_by_user
         mock_find_by_user.return_value = pagination
 
         # Act
@@ -277,7 +277,7 @@ class TestListUserConversations:
         pagination = CursorPagination[str, Conversation](
             items=[], results_per_page=10, cursor=None
         )
-        mock_find_by_user: AsyncMockType = mock_conversation_repository.find_by_user
+        mock_find_by_user: AsyncMockType = mock_conversation_repository.list_by_user
         mock_find_by_user.return_value = pagination
 
         # Act

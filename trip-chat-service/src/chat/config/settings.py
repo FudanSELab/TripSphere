@@ -17,12 +17,10 @@ class UvicornSettings(BaseModel):
     """Loaded from environment variables:
     - UVICORN_HOST
     - UVICORN_PORT
-
-    They are only read for service registration.
     """
 
-    host: str = Field(default="127.0.0.1")
-    port: int = Field(default=24210)
+    host: str = Field(default="0.0.0.0", frozen=True)
+    port: int = Field(default=24210, frozen=True)
 
 
 class NacosSettings(BaseModel):

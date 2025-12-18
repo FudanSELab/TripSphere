@@ -76,9 +76,10 @@ const deleteConversation = async (conversation: Conversation) => {
         <!-- Conversation list -->
         <div class="flex-1 overflow-y-auto">
           <div class="p-2 space-y-1">
-            <div
+            <button
               v-for="conversation in conversations"
               :key="conversation.conversationId"
+              type="button"
               :class="[
                 'w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors group cursor-pointer',
                 selectedConversation?.conversationId === conversation.conversationId
@@ -94,16 +95,16 @@ const deleteConversation = async (conversation: Conversation) => {
                 </p>
                 <p class="text-xs text-gray-500 flex items-center gap-1 mt-1">
                   <Clock class="w-3 h-3" />
-                  {{ formatRelativeTime(conversation.updatedAt || conversation.createdAt) }}
+                  {{ formatRelativeTime(conversation.createdAt) }}
                 </p>
               </div>
-              <button
+              <span
                 class="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
                 @click.stop="deleteConversation(conversation)"
               >
                 <Trash2 class="w-4 h-4" />
-              </button>
-            </div>
+              </span>
+            </button>
           </div>
 
           <!-- Empty state -->

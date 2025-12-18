@@ -61,7 +61,7 @@ export const useAuth = () => {
       
       // Mock response
       const mockUser: User = {
-        id: 'user-' + Math.random().toString(36).slice(2, 11),
+        id: 'user-001',
         username: sanitizedUsername,
         email: `${sanitizedUsername}@example.com`,
         createdAt: new Date().toISOString(),
@@ -183,7 +183,7 @@ export const useAuth = () => {
   /**
    * Get user ID (with fallback for demo purposes)
    */
-  const userId = computed(() => state.value.user?.id || 'demo-user')
+  const userId = computed(() => state.value.user?.id || 'user-001')
 
   return {
     isLoading: readonly(isLoading),

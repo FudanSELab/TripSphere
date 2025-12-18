@@ -3,13 +3,9 @@ package repository
 import (
 	"context"
 	"errors"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
 	"strconv"
-	"strings"
 	"time"
-	"trip-review-service/configs"
 	"trip-review-service/internal/domain"
 	"trip-review-service/internal/repository/model"
 )
@@ -161,25 +157,4 @@ func (r *ReviewRepo) Delete(ctx context.Context, id string) error {
 		return errors.New("review not found")
 	}
 	return nil
-}
-
-func init() {
-
-	config := configs.GetConfig()
-	builder := strings.Builder{}
-	builder.Grow(128)
-	builder.WriteString(config.MySQL.Write.User)
-	builder.WriteString(":")
-	builder.WriteString(config.MySQL.Write.Pass)
-	builder.WriteString("@tcp(")
-	builder.WriteString(config.MySQL.Write.Addr)
-	builder.WriteString(")/")
-	builder.WriteString(config.MySQL.Write.Name)
-
-	db, err := gorm.Open(mysql.Open(builder.String()), &gorm.Config{})
-	if err != nil {
-		log.Println("database connect failed")
-	}
-	log.Println("connect to database successfully")
-	reviewRepo = NewReviewRepo(db)
 }
