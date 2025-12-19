@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
+    logger.info(f"Loaded settings: {settings}")
     app.state.httpx_client = AsyncClient()
     app.state.mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
     try:
