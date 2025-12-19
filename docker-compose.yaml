@@ -26,39 +26,50 @@ services:
       - "4318:4318"
 
   # RocketMQ
-  namesrv:
+  rmq-namesrv:
     image: apache/rocketmq:5.3.2
-    container_name: rmqnamesrv
+    container_name: rmq-namesrv
     ports:
-      - 9876:9876
+      - "9876:9876"
     command: sh mqnamesrv
 
-  broker:
+  rmq-broker:
     image: apache/rocketmq:5.3.2
-    container_name: rmqbroker
+    container_name: rmq-broker
     ports:
-      - 10909:10909
-      - 10911:10911
-      - 10912:10912
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
     environment:
-      - NAMESRV_ADDR=rmqnamesrv:9876
+      - NAMESRV_ADDR=rmq-namesrv:9876
     depends_on:
-      - namesrv
+      - rmq-namesrv
     command: sh mqbroker
 
-  proxy:
+  rmq-proxy:
     image: apache/rocketmq:5.3.2
-    container_name: rmqproxy
+    container_name: rmq-proxy
     depends_on:
-      - broker
-      - namesrv
+      - rmq-broker
+      - rmq-namesrv
     ports:
-      - 8080:8080
-      - 8081:8081
+      - "8080:8080"
+      - "8081:8081"
     restart: on-failure
     environment:
-      - NAMESRV_ADDR=rmqnamesrv:9876
+      - NAMESRV_ADDR=rmq-namesrv:9876
     command: sh mqproxy
+
+  # RocketMQ Dashboard
+  rmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmq-dashboard
+    ports:
+      - "8082:8082"
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
+    depends_on:
+      - rmq-namesrv
 
   # MongoDB
   mongodb:
@@ -77,5 +88,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: fudanse
       TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
