@@ -31,16 +31,14 @@ export OTEL_PYTHON_LOG_LEVEL="info"
 export OTEL_PYTHON_LOG_CORRELATION="true"
 ```
 
-Start the MongoDB community server container:
+Set the uvicorn environment variables:
 
 ```bash
-docker run -d -p 27017:27017 \
-    --network tripsphere \
-    --name mongodb \
-    mongodb/mongodb-community-server:latest
+export UVICORN_HOST="0.0.0.0"
+export UVICORN_PORT="24210"
 ```
 
-Finally, start the server:
+Finally, make sure MongoDB and Nacos are running and start the server:
 
 ```bash
 uv run opentelemetry-instrument \
@@ -49,5 +47,7 @@ uv run opentelemetry-instrument \
     --logs_exporter otlp \
     --service_name trip-chat-service \
     --exporter_otlp_endpoint http://127.0.0.1:4317 \
-    uvicorn chat.asgi:app --host 0.0.0.0 --port 24210
+    uvicorn chat.asgi:app
 ```
+
+Note: As the app reads port from environment variable `UVICORN_PORT` to register with service discovery, do not run uvicorn with `--port` option directly. Otherwise, app may register with an incorrect port.

@@ -4,12 +4,15 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "a2a-sdk[http-server]>=0.3.20",
+    "a2a-sdk[all,http-server]>=0.3.20",
     "click>=8.3.1",
     "dotenv>=0.9.9",
+    "grpcio>=1.76.0",
+    "grpcio-tools>=1.76.0",
     "langchain-openai>=1.1.0",
     "langgraph>=1.0.4",
     "motor>=3.7.1",
+    "protobuf>=6.33.2",
     "pydantic>=2.12.5",
     "pymongo>=4.15.5",
     "uvicorn>=0.38.0",

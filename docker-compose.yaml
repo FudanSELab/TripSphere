@@ -4,16 +4,17 @@ networks:
     driver: bridge
 
 services:
+  # Nacos
   nacos:
     image: nacos/nacos-server:v2.5.1
     container_name: nacos
     environment:
       - MODE=standalone
     ports:
-      - "8080:8080"
       - "8848:8848"
       - "9848:9848"
 
+  # OpenTelemetry Collector
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.86.0
     container_name: otel-collector
@@ -24,6 +25,53 @@ services:
       - "4317:4317"
       - "4318:4318"
 
+  # RocketMQ
+  rmq-namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-namesrv
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+
+  rmq-broker:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - NAMESRV_ADDR=rmq-namesrv:9876
+    depends_on:
+      - rmq-namesrv
+    command: sh mqbroker
+
+  rmq-proxy:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-proxy
+    depends_on:
+      - rmq-broker
+      - rmq-namesrv
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    restart: on-failure
+    environment:
+      - NAMESRV_ADDR=rmq-namesrv:9876
+    command: sh mqproxy
+
+  # RocketMQ Dashboard
+  rmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmq-dashboard
+    ports:
+      - "8082:8082"
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
+    depends_on:
+      - rmq-namesrv
+
+  # MongoDB
   mongodb:
     image: mongodb/mongodb-community-server:8.0-ubi8
     container_name: mongodb
@@ -32,3 +80,16 @@ services:
       MONGODB_INITDB_ROOT_PASSWORD: fudanse
     ports:
       - "27017:27017"
+
+  # MySQL
+  mysql:
+    image: mysql:8.4.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: fudanse
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"

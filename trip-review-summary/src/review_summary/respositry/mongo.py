@@ -14,12 +14,14 @@ class ReviewEmbedding(BaseModel):
     - attraction_id: Attraction ID
     - review_id: Review ID
     - embedding: List of float numbers representing the embedding vector
+    - review_content: The content of the review
     """
     
     embedding_id: ObjectId = Field(default=None,alias="_id")
     attraction_id: str = Field(..., description="attraction ID")
     review_id: str = Field(..., description="review ID")
     embedding: List[float] = Field(..., description="embedding vector")
+    review_content:str = Field(..., description="review content")
     class Config:
         avalidate_by_name = True
         arbitrary_types_allowed = True
@@ -32,12 +34,13 @@ class ReviewEmbeddingRepository:
     def __init__(self, database: AsyncIOMotorDatabase, collection_name: str = "review_embeddings"):
         self.collection: AsyncIOMotorCollection = database[collection_name]
 
-    async def create_embedding(self, review_id:str, attraction_id: str, embedding: List[float]) -> str:
+    async def create_embedding(self, review_id:str, attraction_id: str, embedding: List[float], review_content: str) -> str:
         """Create a new attraction embedding record and return id(not attraction_id)."""
         embedding_doc = ReviewEmbedding(
             attraction_id=attraction_id,
             review_id=review_id,
-            embedding=embedding
+            embedding=embedding,
+            review_content=review_content
         )
         embedding_dict = embedding_doc.model_dump(by_alias=True, exclude_unset=True,exclude={"embedding_id"})
         result = await self.collection.insert_one(document=embedding_dict)
@@ -57,12 +60,14 @@ class ReviewEmbeddingRepository:
             return ReviewEmbedding(**embedding_data)
         return None
 
-    async def update_embedding(self, embedding_id: str, 
+    async def update_embedding(self, embedding_id: str, review_content: str,
                               embedding: Optional[List[float]] = None) -> bool:
         """update embedding record by its MongoDB ObjectId"""
         update_data = {}
         if embedding is not None:
             update_data["embedding"] = embedding
+        if review_content is not None:
+            update_data["review_content"] = review_content
 
         result = await self.collection.update_one(
             {"_id": ObjectId(embedding_id)}, 
@@ -76,7 +81,8 @@ class ReviewEmbeddingRepository:
     async def update_embedding_by_review_id(
         self,
         review_id: str,
-        embedding: List[float]
+        embedding: List[float],
+        review_content: str
     ) ->bool:
         """update embedding by attraction_id"""
         embedding_record = await self.find_by_review_id(review_id)
@@ -85,7 +91,8 @@ class ReviewEmbeddingRepository:
         
         return await self.update_embedding(
             embedding_id=str(embedding_record.embedding_id),
-            embedding=embedding
+            embedding=embedding,
+            review_content=review_content
         )
     
     async def delete_embedding(self, embedding_id: str) -> bool:

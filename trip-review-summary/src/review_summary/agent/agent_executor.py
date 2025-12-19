@@ -18,7 +18,7 @@ from a2a.utils import (
 from a2a.utils.errors import ServerError
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-from agent import ReviewSummarizerAgent
+from review_summary.agent.agent import ReviewSummarizerAgent
 
 
 logging.basicConfig(level=logging.INFO)
