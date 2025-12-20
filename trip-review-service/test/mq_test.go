@@ -1,35 +1,39 @@
 package test
 
 import (
-	"context"
-	"fmt"
-	"github.com/apache/rocketmq-clients/golang"
-	"github.com/apache/rocketmq-clients/golang/credentials"
-	"log"
 	"testing"
 	"time"
+	"trip-review-service/internal/domain"
+	mq "trip-review-service/internal/handler/middleware"
 )
 
-//func TestMQ(t *testing.T) {
-//
-//	review := domain.Review{
-//		ID:         "2328",
-//		UserID:     "12",
-//		TargetType: "hotel",
-//		TargetID:   "12",
-//		Rating:     1,
-//		Text:       "哈基米南北绿豆",
-//		Images:     nil,
-//		CreatedAt:  time.Time{},
-//		UpdatedAt:  time.Time{},
-//	}
-//	producer := mq.GetMQ()
-//	err := producer.SendMessage("TestTopic", review.ToString(), "TestTag")
-//	if err != nil {
-//		return
-//	}
-//
-//}
+func TestMQ(t *testing.T) {
+
+	review := domain.Review{
+		ID:         "2328",
+		UserID:     "12",
+		TargetType: "hotel",
+		TargetID:   "1569",
+		Rating:     1,
+		Text:       "px love ai ,llm is his favorite",
+		Images:     nil,
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	}
+	mq.GetMQ().AddMessage("ReviewTopic", review.ToString(), "CreateReview")
+
+	select {}
+	//msg := &golang.Message{Topic: "ReviewTopic", Body: []byte(review.ToString())}
+	//msg.SetTag("CreateReview")
+	//resp, err := mq.GetMQ().Producer.Send(context.TODO(), msg)
+	//if err != nil {
+	//	log.Println("failed to send message:", err)
+	//}
+	//
+	//for i := 0; i < len(resp); i++ {
+	//	fmt.Printf("%#v\n", resp[i])
+	//}
+}
 
 const (
 	Topic     = "TestTopic"
@@ -49,48 +53,48 @@ var (
 	// receive messages in a loop
 )
 
-func TestConsumer(t *testing.T) {
-	simpleConsumer, err := golang.NewSimpleConsumer(&golang.Config{
-		Endpoint:      Endpoint,
-		ConsumerGroup: "tripsphere",
-		Credentials: &credentials.SessionCredentials{
-			AccessKey:    AccessKey,
-			AccessSecret: SecretKey,
-		},
-	},
-		golang.WithAwaitDuration(awaitDuration),
-		golang.WithSubscriptionExpressions(map[string]*golang.FilterExpression{
-			Topic: golang.SUB_ALL,
-		}),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// start simpleConsumer
-	err = simpleConsumer.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// gracefule stop simpleConsumer
-	defer simpleConsumer.GracefulStop()
-
-	go func() {
-		for {
-			fmt.Println("start recevie message")
-			mvs, err := simpleConsumer.Receive(context.TODO(), maxMessageNum, invisibleDuration)
-			if err != nil {
-				fmt.Println(err)
-			}
-			// ack message
-			for _, mv := range mvs {
-				simpleConsumer.Ack(context.TODO(), mv)
-				fmt.Println(string(mv.GetBody()))
-			}
-			fmt.Println("wait a moment")
-			fmt.Println()
-			time.Sleep(time.Second * 3)
-		}
-	}()
-	// run for a while
-	time.Sleep(time.Minute)
-}
+//func TestConsumer(t *testing.T) {
+//	simpleConsumer, err := golang.NewSimpleConsumer(&golang.Config{
+//		Endpoint:      Endpoint,
+//		ConsumerGroup: "tripsphere",
+//		Credentials: &credentials.SessionCredentials{
+//			AccessKey:    AccessKey,
+//			AccessSecret: SecretKey,
+//		},
+//	},
+//		golang.WithAwaitDuration(awaitDuration),
+//		golang.WithSubscriptionExpressions(map[string]*golang.FilterExpression{
+//			Topic: golang.SUB_ALL,
+//		}),
+//	)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	// start simpleConsumer
+//	err = simpleConsumer.Start()
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	// gracefule stop simpleConsumer
+//	defer simpleConsumer.GracefulStop()
+//
+//	go func() {
+//		for {
+//			fmt.Println("start recevie message")
+//			mvs, err := simpleConsumer.Receive(context.TODO(), maxMessageNum, invisibleDuration)
+//			if err != nil {
+//				fmt.Println(err)
+//			}
+//			// ack message
+//			for _, mv := range mvs {
+//				simpleConsumer.Ack(context.TODO(), mv)
+//				fmt.Println(string(mv.GetBody()))
+//			}
+//			fmt.Println("wait a moment")
+//			fmt.Println()
+//			time.Sleep(time.Second * 3)
+//		}
+//	}()
+//	// run for a while
+//	time.Sleep(time.Minute)
+//}

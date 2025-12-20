@@ -46,12 +46,7 @@ func (r *ReviewService) CreateReview(ctx context.Context, request *pd.CreateRevi
 		return &pd.CreateReviewResponse{Status: false, Id: ""}, status.Error(codes.Internal, fmt.Sprintf("failed to create "))
 	}
 
-	go func(msg string) {
-		err = r.mq.SendMessage("ReviewTopic", msg, "CreateReview")
-		if err != nil {
-			log.Printf("failed to send message to MQ: %v, review_id: %s. \n", err, review.ID)
-		}
-	}(review.ToString())
+	r.mq.AddMessage("ReviewTopic", review.ToString(), "CreateReview")
 
 	return &pd.CreateReviewResponse{
 		Id:     id,
@@ -73,12 +68,7 @@ func (r *ReviewService) UpdateReview(ctx context.Context, request *pd.UpdateRevi
 		return &pd.UpdateReviewResponse{Status: false}, status.Error(codes.Internal, fmt.Sprintf("failed to update "))
 	}
 
-	go func(msg string) {
-		err = r.mq.SendMessage("ReviewTopic", msg, "UpdateReview")
-		if err != nil {
-			log.Printf("failed to send message to MQ: %v, review_id: %s. \n", err, review.ID)
-		}
-	}(review.ToString())
+	r.mq.AddMessage("ReviewTopic", review.ToString(), "UpdateReview")
 
 	return &pd.UpdateReviewResponse{Status: true}, nil
 
@@ -91,12 +81,7 @@ func (r *ReviewService) DeleteReview(ctx context.Context, request *pd.DeleteRevi
 		return &pd.DeleteReviewResponse{Status: false}, status.Error(codes.Internal, fmt.Sprintf("failed to delete"))
 	}
 
-	go func(id string) {
-		err = r.mq.SendMessage("ReviewTopic", id, "DeleteReview")
-		if err != nil {
-			log.Printf("failed to send message to MQ: %v, review_id: %s. \n", err, id)
-		}
-	}(id)
+	r.mq.AddMessage("ReviewTopic", id, "DeleteReview")
 
 	return &pd.DeleteReviewResponse{Status: true}, nil
 }

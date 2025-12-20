@@ -42,7 +42,7 @@ var configPath string
 
 func init() {
 	config = new(Config)
-	configPath = "./configs/pro_configs.toml"
+	configPath = "../configs/pro_configs.toml"
 	err := LoadConfig(configPath)
 	if err != nil {
 		log.Println("fail to read config files while initializing:", err)
