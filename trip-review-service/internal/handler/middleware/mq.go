@@ -14,16 +14,6 @@ type MQ struct {
 }
 
 func (m *MQ) SendMessage(topic string, body string, tag string) error {
-	err := m.producer.Start()
-	if err != nil {
-		log.Println("failed to start rocketmq producer:", err)
-	}
-	defer func(producer golang.Producer) {
-		err := producer.GracefulStop()
-		if err != nil {
-			log.Println("failed to stop rocketmq producer:", err)
-		}
-	}(m.producer)
 
 	if topic == "" {
 		log.Println("missing topic in msg: ", body)
@@ -79,5 +69,10 @@ func init() {
 	}
 	log.Println("success to create rocketmq producer")
 	mq = &MQ{producer: producer}
+
+	err = mq.producer.Start()
+	if err != nil {
+		log.Println("failed to start rocketmq producer:", err)
+	}
 
 }

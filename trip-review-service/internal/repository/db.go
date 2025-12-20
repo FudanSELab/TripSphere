@@ -30,6 +30,10 @@ func init() {
 	if err != nil {
 		log.Println("database connect failed", err)
 	}
+	//err := db.AutoMigrate(&model.ReviewModel{})
+	//if err != nil {
+	//	log.Println("gorm database migrate failed", err)
+	//}
 	log.Println("connect to database successfully")
 
 	reviewRepo = NewReviewRepo(db)

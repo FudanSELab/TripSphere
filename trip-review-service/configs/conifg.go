@@ -29,13 +29,6 @@ type Config struct {
 		} `toml:"base"`
 	} `toml:"mysql"`
 
-	RabbitMQ struct {
-		Connection string `toml:"connection"`
-		User       string `toml:"user"`
-		Pass       string `toml:"pass"`
-		Addr       string `toml:"addr"`
-	} `toml:"rabbitmq"`
-
 	RocketMQ struct {
 		GroupName string `toml:"groupName"`
 		Endpoint  string `toml:"endpoint"`
