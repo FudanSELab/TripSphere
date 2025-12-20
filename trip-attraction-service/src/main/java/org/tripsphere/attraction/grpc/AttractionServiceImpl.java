@@ -36,6 +36,7 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
 
         attraction.setIntroduction(request.getAttraction().getIntroduction());
         attraction.setTags(request.getAttraction().getTagsList());
+        attraction.setName(request.getAttraction().getName());
 
         GeoJsonPoint location = new GeoJsonPoint(request.getAttraction().getLocation().getLng(), request.getAttraction().getLocation().getLat());
         attraction.setLocation(location);
@@ -116,6 +117,15 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
 
         boolean success = attractionService.changAttraction(attraction);
         ChangeAttractionResponse response = ChangeAttractionResponse.newBuilder().setSuccess(success).build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    public void findIdByName(org.tripsphere.attraction.FindIdByNameRequest request,
+                             io.grpc.stub.StreamObserver<org.tripsphere.attraction.FindIdByNameResponse> responseObserver) {
+        String name = request.getName();
+        String attraction_id = attractionService.findAttractionIdByName(name);
+        FindIdByNameResponse response = FindIdByNameResponse.newBuilder().setAttractionId(attraction_id).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

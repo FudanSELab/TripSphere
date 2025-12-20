@@ -9,7 +9,7 @@ async def test_create_embedding():
     repo = ReviewEmbeddingRepository(db)
     
     embedding_data = [0.1, 0.2, 0.3, 0.4, 0.5]
-    embedding_id = await repo.create_embedding(attraction_id="eiffel_tower_123", embedding=embedding_data, review_id="review_789")
+    embedding_id = await repo.create_embedding(attraction_id="eiffel_tower_123", embedding=embedding_data, review_id="review_23456",review_content="Great place to visit! ")
     print(f"Embedding ID: {embedding_id}")
     
     client.close()
@@ -66,4 +66,4 @@ async def test_find_by_attraction_id(attraction_id : str):
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(test_find_by_attraction_id("eiffel_tower_123"))
+    asyncio.run(test_create_embedding())

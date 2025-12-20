@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
+    logger.info(f"Loaded settings: {settings}")
     app.state.httpx_client = AsyncClient()
     app.state.mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
     try:
@@ -46,18 +47,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
-    app = FastAPI(debug=settings.app.debug, lifespan=lifespan)
+    app_settings = get_settings().app
+    app = FastAPI(debug=app_settings.debug, lifespan=lifespan)
 
     # Configure CORS
     app.add_middleware(
-        CORSMiddleware,
+        CORSMiddleware,  # ty: ignore[invalid-argument-type]
         allow_origins=["http://localhost:3000"],  # Frontend URL
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
+    # Include routers
     app.include_router(conversations, prefix="/api/v1")
     app.include_router(memories, prefix="/api/v1")
     app.include_router(messages, prefix="/api/v1")

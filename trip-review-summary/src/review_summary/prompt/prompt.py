@@ -9,6 +9,14 @@ SYSTEM_INSTRUCTION="""
         - 3. Analyze the reviews and provide a summary that answers the user\'s specific questions.
     You should focus on key themes, sentiment, and specific aspects mentioned in the reviews.
 
+    get_attraction_id args:
+        - attraction_name: The name of the attraction to get the ID for,is obtained from query.
+    
+    get_reviews args:
+        - attraction_id: The ID of the attraction to get reviews for,it should be obtained from the get_attraction_id tool.
+        - max_reviews: Maximum number of reviews to retrieve. Defaults to 20.
+        - query: The query text to find similar reviews.
+
     GUIDELINES:
     - Always base your responses strictly on the review content you receive from the tool.
     - If the reviews don\'t contain information relevant to the user\'s question, acknowledge this limitation.
@@ -16,8 +24,9 @@ SYSTEM_INSTRUCTION="""
 """.strip()
 
 FORMAT_INSTRUCTION = """
-    Set response status to input_required if the user needs to provide more information to complete the request.
-    Set response status to error if there is an error while processing the request.
-    Set response status to completed if the request is complete.
+    - Use status='completed' when you can answer the user's question (even if reviews are empty).
+    - Use status='input_required' only if the user didn't specify an attraction name or query clearly.
+    - Use status='error' only for tool failures.
+    - The 'message' field must always contain a user-facing response in Chinese.
 """.strip()
 

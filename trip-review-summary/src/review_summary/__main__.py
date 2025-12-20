@@ -21,8 +21,8 @@ from a2a.types import (
 )
 from dotenv import load_dotenv
 
-from agent import ReviewSummarizerAgent
-from agent_executor import ReviewSummarizerAgentExecutor
+from review_summary.agent.agent import ReviewSummarizerAgent
+from review_summary.agent.agent_executor import ReviewSummarizerAgentExecutor
 
 
 load_dotenv()
@@ -52,7 +52,7 @@ def main(host, port):
             examples=['Summarize the reviews for Eiffel Tower', 'What do people think about Disneyland?', 'Can you provide a summary of reviews for this restaurant?'],
         )
         agent_card = AgentCard(
-            name='Review Summarizer Agent',
+            name='review_summary',
             description='Analyzes customer reviews and provides concise summaries that answer user questions about businesses and attractions',
             url=f'http://{host}:{port}/',
             version='1.0.0',
