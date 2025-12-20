@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package tripsphere.common;
+
+option go_package = "tripsphere/common";
+
+// Reason enum
+enum Reason {
+    ERROR = 0;
+}
+
+// gRPC details structure
+message Details {
+  Reason reason = 1;
+  string msg = 2;
+}

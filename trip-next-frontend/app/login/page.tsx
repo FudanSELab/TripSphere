@@ -15,10 +15,58 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+
+  // Username validation: allows letters, numbers, and underscores
+  const validateUsername = (value: string): string => {
+    if (!value || value.trim() === '') {
+      return 'Please input username.'
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      return 'Usernames can only contain letters, numbers, and underscores.'
+    }
+    return ''
+  }
+
+  // Password validation: at least 6 characters, only letters and numbers
+  const validatePassword = (value: string): string => {
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters long.'
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(value)) {
+      return 'Password can only contain letters and numbers.'
+    }
+    return ''
+  }
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setUsername(value)
+    setUsernameError(validateUsername(value))
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setPassword(value)
+    setPasswordError(validatePassword(value))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    // Validate username and password
+    const usernameErr = validateUsername(username)
+    const passwordErr = validatePassword(password)
+
+    setUsernameError(usernameErr)
+    setPasswordError(passwordErr)
+
+    // If validation errors exist, do not proceed with login
+    if (usernameErr || passwordErr) {
+      return
+    }
 
     const success = await auth.login({ username, password })
     if (success) {
@@ -53,9 +101,10 @@ export default function LoginPage() {
             label="Username"
             type="text"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={handleUsernameChange}
             placeholder="Enter your username"
             prepend={<Mail className="w-5 h-5" />}
+            error={usernameError}
             required
           />
 
@@ -63,27 +112,12 @@ export default function LoginPage() {
             label="Password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
             placeholder="Enter your password"
             prepend={<Lock className="w-5 h-5" />}
+            error={passwordError}
             required
           />
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-              />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Forgot password?
-            </Link>
-          </div>
 
           <Button
             type="submit"

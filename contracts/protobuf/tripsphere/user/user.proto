@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package tripsphere.user;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "tripsphere/user";
+
+// User
+message User {
+  int64 id = 1;
+  string username = 2;
+  repeated string roles = 3;
+}
+
+// User service
+service UserService {
+  // User registration
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  // User login
+  rpc Login(LoginRequest) returns (LoginResponse);
+  // Change password
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  // Get current user
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+}
+
+// Register request
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message RegisterResponse { }
+
+// Login request
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Login response
+message LoginResponse {
+  User user = 1;
+  string token = 2;
+}
+
+// Change password request
+message ChangePasswordRequest {
+  string username = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordResponse { }
+
+message GetCurrentUserRequest { }
+
+// Get current user response
+message GetCurrentUserResponse {
+  User user = 1;
+}

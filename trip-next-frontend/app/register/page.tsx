@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, User, AlertCircle } from 'lucide-react'
+import { Lock, User, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -13,28 +13,74 @@ export default function RegisterPage() {
   const router = useRouter()
   const auth = useAuth()
   const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+
+  // Username validation: allows letters, numbers, and underscores
+  const validateUsername = (value: string): string => {
+    if (!value || value.trim() === '') {
+      return 'Please input username.'
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      return 'Usernames can only contain letters, numbers, and underscores.'
+    }
+    return ''
+  }
+
+  // Password validation: at least 6 characters, only letters and numbers
+  const validatePassword = (value: string): string => {
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters long.'
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(value)) {
+      return 'Password can only contain letters and numbers.'
+    }
+    return ''
+  }
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setUsername(value)
+    setUsernameError(validateUsername(value))
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setPassword(value)
+    setPasswordError(validatePassword(value))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setUsernameError('')
+    setPasswordError('')
+
+    // Validate username
+    const usernameErr = validateUsername(username)
+    if (usernameErr) {
+      setUsernameError(usernameErr)
+      return
+    }
+
+    // Validate password
+    const passwordErr = validatePassword(password)
+    if (passwordErr) {
+      setPasswordError(passwordErr)
+      return
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
-
-    const success = await auth.register({ username, email, password })
+    const success = await auth.register({ username, password })
     if (success) {
-      router.push('/')
+      router.push('/login')
     } else {
       setError(auth.error || 'Registration failed. Please try again.')
     }
@@ -65,19 +111,10 @@ export default function RegisterPage() {
             label="Username"
             type="text"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={handleUsernameChange}
             placeholder="Choose a username"
             prepend={<User className="w-5 h-5" />}
-            required
-          />
-
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            prepend={<Mail className="w-5 h-5" />}
+            error={usernameError}
             required
           />
 
@@ -85,10 +122,11 @@ export default function RegisterPage() {
             label="Password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
             placeholder="Create a password"
             prepend={<Lock className="w-5 h-5" />}
-            hint="Must be at least 6 characters"
+            error={passwordError}
+            hint={!passwordError ? "Must be at least 6 characters" : undefined}
             required
           />
 

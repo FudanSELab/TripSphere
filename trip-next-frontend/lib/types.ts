@@ -2,7 +2,6 @@
 export interface User {
   id: string
   username: string
-  email: string
   avatar?: string
   createdAt: string
 }
@@ -13,9 +12,13 @@ export interface LoginRequest {
   password: string
 }
 
+export interface LoginResponse {
+  user: User
+}
+
 export interface RegisterRequest {
   username: string
-  email: string
+  email?: string
   password: string
 }
 
