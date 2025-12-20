@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { MapPin, Hotel, Calendar, MessageSquare, FileText, User, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar } from '@/components/ui/avatar'
@@ -17,6 +17,7 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname()
+  const router = useRouter()
   const auth = useAuth()
   const chatSidebar = useChatSidebar()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -25,8 +26,9 @@ export function Header() {
     return pathname === path || pathname.startsWith(path + '/')
   }
 
-  const handleLogout = () => {
-    auth.logout()
+  const handleLogout = async () => {
+    await auth.logout()
+    router.push('/login')
   }
 
   const openAiAssistant = () => {
