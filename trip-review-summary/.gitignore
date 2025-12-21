@@ -1,0 +1,13 @@
+# Byte-compiled
+__pycache__/
+
+# Protobuf
+libs/proto/
+
+# Logs
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.development

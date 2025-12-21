@@ -7,15 +7,3 @@ Thumbs.db
 
 # JetBrains
 .idea/
-trip-review-summary/src/review_summary/__pycache__/__init__.cpython-312.pyc
-.gitignore
-trip-review-summary/src/review_summary/agent/__pycache__/__init__.cpython-312.pyc
-trip-review-summary/src/review_summary/agent/__pycache__/agent_executor.cpython-312.pyc
-trip-review-summary/src/review_summary/agent/__pycache__/agent.cpython-312.pyc
-trip-review-summary/src/review_summary/grpc/__pycache__/attraction.cpython-312.pyc
-trip-review-summary/src/review_summary/index/__pycache__/__init__.cpython-312.pyc
-trip-review-summary/src/review_summary/index/__pycache__/embedding.cpython-312.pyc
-trip-review-summary/src/review_summary/prompt/__pycache__/__init__.cpython-312.pyc
-trip-review-summary/src/review_summary/prompt/__pycache__/prompt.cpython-312.pyc
-trip-review-summary/src/review_summary/respositry/__pycache__/__init__.cpython-312.pyc
-trip-review-summary/src/review_summary/respositry/__pycache__/mongo.cpython-312.pyc
