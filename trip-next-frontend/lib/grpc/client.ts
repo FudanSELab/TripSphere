@@ -40,15 +40,19 @@ export class GrpcClient {
     this.attraction = new AttractionServiceClient(AtractionAddress, creds);
     this.hotel = new HotelServiceClient(HotelAddress, creds);
     this.hotelMetadata = new HotelMetadataServiceClient(HotelAddress, creds);
-    this.itineraryPlanner = new ItineraryPlannerServiceClient(ItineraryAddress, creds);
-    this.itineraryMetadata = new ItineraryMetadataServiceClient(ItineraryAddress, creds);
+    this.itineraryPlanner = new ItineraryPlannerServiceClient(
+      ItineraryAddress,
+      creds,
+    );
+    this.itineraryMetadata = new ItineraryMetadataServiceClient(
+      ItineraryAddress,
+      creds,
+    );
     this.noteMetadata = new NoteMetadataServiceClient(NoteAddress, creds);
     this.user = new UserServiceClient(UserAddress, creds);
   }
 
-  public static getInstance(
-    credentials?: grpc.ChannelCredentials
-  ): GrpcClient {
+  public static getInstance(credentials?: grpc.ChannelCredentials): GrpcClient {
     if (!GrpcClient.instance) {
       GrpcClient.instance = new GrpcClient(credentials);
     }
@@ -57,4 +61,3 @@ export class GrpcClient {
 }
 
 export const grpcClient = GrpcClient.getInstance();
-

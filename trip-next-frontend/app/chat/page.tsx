@@ -1,134 +1,147 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { Plus, MessageSquare, Trash2, Clock } from 'lucide-react'
-import type { Conversation } from '@/lib/types'
-import { formatRelativeTime } from '@/lib/utils'
-import { useAuth } from '@/lib/hooks/use-auth'
-import { useChat } from '@/lib/hooks/use-chat'
-import { ChatWindow } from '@/components/chat/chat-window'
-import { Button } from '@/components/ui/button'
+import { ChatWindow } from "@/components/chat/chat-window";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useChat } from "@/lib/hooks/use-chat";
+import type { Conversation } from "@/lib/types";
+import { formatRelativeTime } from "@/lib/utils";
+import { Clock, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function ChatPage() {
-  const auth = useAuth()
-  const chat = useChat()
+  const auth = useAuth();
+  const chat = useChat();
 
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
-  const [showSidebar, setShowSidebar] = useState(true)
-  const hasLoadedRef = useRef(false)
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   // Load conversations on mount
   useEffect(() => {
     if (auth.user && !hasLoadedRef.current) {
-      hasLoadedRef.current = true
-      
+      hasLoadedRef.current = true;
+
       const loadData = async () => {
-        if (!auth.user) return
-        const result = await chat.listConversations(auth.user.id)
+        if (!auth.user) return;
+        const result = await chat.listConversations(auth.user.id);
         if (result) {
-          setConversations(result.items)
+          setConversations(result.items);
         }
-      }
-      
-      void loadData()
+      };
+
+      void loadData();
     }
-  }, [auth.user, chat])
+  }, [auth.user, chat]);
 
   const loadConversations = useCallback(async () => {
-    if (!auth.user) return
-    
-    const result = await chat.listConversations(auth.user.id)
+    if (!auth.user) return;
+
+    const result = await chat.listConversations(auth.user.id);
     if (result) {
-      setConversations(result.items)
+      setConversations(result.items);
     }
-  }, [auth.user, chat])
+  }, [auth.user, chat]);
 
   const createNewChat = () => {
-    setSelectedConversation(null)
-  }
+    setSelectedConversation(null);
+  };
 
   const selectConversation = (conversation: Conversation) => {
-    setSelectedConversation(conversation)
-  }
+    setSelectedConversation(conversation);
+  };
 
   const handleConversationCreated = (conversation: Conversation) => {
-    setConversations([conversation, ...conversations])
-    setSelectedConversation(conversation)
-  }
+    setConversations([conversation, ...conversations]);
+    setSelectedConversation(conversation);
+  };
 
-  const deleteConversation = async (conversation: Conversation, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!auth.user) return
-    
-    const success = await chat.deleteConversation(auth.user.id, conversation.conversationId)
+  const deleteConversation = async (
+    conversation: Conversation,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    if (!auth.user) return;
+
+    const success = await chat.deleteConversation(
+      auth.user.id,
+      conversation.conversationId,
+    );
     if (success) {
-      const updatedConversations = conversations.filter(c => c.conversationId !== conversation.conversationId)
-      setConversations(updatedConversations)
-      if (selectedConversation?.conversationId === conversation.conversationId) {
+      const updatedConversations = conversations.filter(
+        (c) => c.conversationId !== conversation.conversationId,
+      );
+      setConversations(updatedConversations);
+      if (
+        selectedConversation?.conversationId === conversation.conversationId
+      ) {
         // Clear the selected conversation to show the initial state
-        setSelectedConversation(null)
+        setSelectedConversation(null);
       }
     }
-  }
+  };
 
   if (!auth.user) {
     return (
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center">
         <div className="text-center">
-          <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Please log in</h2>
-          <p className="text-gray-500">You need to be logged in to access the chat</p>
+          <MessageSquare className="mx-auto mb-4 h-16 w-16 text-gray-400" />
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">
+            Please log in
+          </h2>
+          <p className="text-gray-500">
+            You need to be logged in to access the chat
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex">
+    <div className="flex h-[calc(100vh-64px)]">
       {/* Sidebar */}
       {showSidebar && (
-        <aside className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col transition-all duration-300">
+        <aside className="flex w-80 flex-col border-r border-gray-200 bg-gray-50 transition-all duration-300">
           {/* New chat button */}
-          <div className="p-4 border-b border-gray-200">
-            <Button
-              className="w-full justify-center"
-              onClick={createNewChat}
-            >
-              <Plus className="w-4 h-4 mr-2" />
+          <div className="border-b border-gray-200 p-4">
+            <Button className="w-full justify-center" onClick={createNewChat}>
+              <Plus className="mr-2 h-4 w-4" />
               New Chat
             </Button>
           </div>
 
           {/* Conversation list */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-2 space-y-1">
+            <div className="space-y-1 p-2">
               {conversations.map((conversation) => (
                 <button
                   key={conversation.conversationId}
                   type="button"
-                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors group cursor-pointer ${
-                    selectedConversation?.conversationId === conversation.conversationId
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'hover:bg-gray-100'
+                  className={`group flex w-full cursor-pointer items-start gap-3 rounded-lg p-3 text-left transition-colors ${
+                    selectedConversation?.conversationId ===
+                    conversation.conversationId
+                      ? "bg-primary-100 text-primary-900"
+                      : "hover:bg-gray-100"
                   }`}
                   onClick={() => selectConversation(conversation)}
                 >
-                  <MessageSquare className="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-500" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {conversation.title || 'New Chat'}
+                  <MessageSquare className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {conversation.title || "New Chat"}
                     </p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3" />
+                    <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                      <Clock className="h-3 w-3" />
                       {formatRelativeTime(conversation.createdAt)}
                     </p>
                   </div>
                   <span
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
+                    className="rounded-lg p-1.5 text-gray-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-100 hover:text-red-600"
                     onClick={(e) => deleteConversation(conversation, e)}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </span>
                 </button>
               ))}
@@ -137,9 +150,11 @@ export default function ChatPage() {
             {/* Empty state */}
             {conversations.length === 0 && (
               <div className="p-6 text-center">
-                <MessageSquare className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500 text-sm">No conversations yet</p>
-                <p className="text-gray-400 text-xs mt-1">Start a new chat to begin</p>
+                <MessageSquare className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+                <p className="text-sm text-gray-500">No conversations yet</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Start a new chat to begin
+                </p>
               </div>
             )}
           </div>
@@ -147,7 +162,7 @@ export default function ChatPage() {
       )}
 
       {/* Main chat area */}
-      <main className="flex-1 flex flex-col bg-white">
+      <main className="flex flex-1 flex-col bg-white">
         <ChatWindow
           conversation={selectedConversation}
           fullScreen={true}
@@ -155,5 +170,5 @@ export default function ChatPage() {
         />
       </main>
     </div>
-  )
+  );
 }

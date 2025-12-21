@@ -1,12 +1,12 @@
 export {
-  request,
+  del,
   get,
+  patch,
   post,
   put,
-  patch,
-  del,
+  request,
   type RequestOptions,
   type ResponseWrap as ResponseData,
-} from './base/request'
+} from "./base/request";
 
-export * from './user/user'
+export * from "./user/user";

@@ -1,71 +1,83 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { MapPin, Hotel, Calendar, MessageSquare, FileText, User, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
-import { Avatar } from '@/components/ui/avatar'
-import { useAuth } from '@/lib/hooks/use-auth'
-import { useChatSidebar } from '@/lib/hooks/use-chat-sidebar'
+import { Avatar } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
+import {
+  Calendar,
+  FileText,
+  Hotel,
+  LogOut,
+  MapPin,
+  Menu,
+  MessageSquare,
+  User,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 const navLinks = [
-  { name: 'Attractions', path: '/attractions', icon: MapPin },
-  { name: 'Hotels', path: '/hotels', icon: Hotel },
-  { name: 'Itinerary', path: '/itinerary', icon: Calendar },
-  { name: 'Notes', path: '/notes', icon: FileText },
-]
+  { name: "Attractions", path: "/attractions", icon: MapPin },
+  { name: "Hotels", path: "/hotels", icon: Hotel },
+  { name: "Itinerary", path: "/itinerary", icon: Calendar },
+  { name: "Notes", path: "/notes", icon: FileText },
+];
 
 export function Header() {
-  const pathname = usePathname()
-  const router = useRouter()
-  const auth = useAuth()
-  const chatSidebar = useChatSidebar()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  const chatSidebar = useChatSidebar();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
-    return pathname === path || pathname.startsWith(path + '/')
-  }
+    return pathname === path || pathname.startsWith(path + "/");
+  };
 
   const handleLogout = async () => {
-    await auth.logout()
-    router.push('/login')
-  }
+    await auth.logout();
+    router.push("/login");
+  };
 
   const openAiAssistant = () => {
-    chatSidebar.open()
-    setIsMobileMenuOpen(false)
-  }
+    chatSidebar.open();
+    setIsMobileMenuOpen(false);
+  };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 glass">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="glass fixed top-0 right-0 left-0 z-40">
+      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">
+          <Link href="/" className="group flex items-center gap-2">
+            <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-xl font-bold text-white shadow-lg transition-transform group-hover:scale-105">
               T
             </div>
-            <span className="text-xl font-bold gradient-text hidden sm:inline">TripSphere</span>
+            <span className="gradient-text hidden text-xl font-bold sm:inline">
+              TripSphere
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden items-center gap-1 md:flex">
             {navLinks.map((link) => {
-              const Icon = link.icon
+              const Icon = link.icon;
               return (
                 <Link
                   key={link.path}
                   href={link.path}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
                     isActive(link.path)
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? "bg-primary-100 text-primary-700"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="h-4 w-4" />
                   {link.name}
                 </Link>
-              )
+              );
             })}
           </div>
 
@@ -73,41 +85,38 @@ export function Header() {
           <div className="flex items-center gap-3">
             {/* Chat button */}
             <button
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg text-sm font-medium hover:shadow-lg hover:scale-105 transition-all duration-200"
+              className="from-primary-500 to-secondary-500 hidden items-center gap-2 rounded-lg bg-gradient-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg sm:flex"
               onClick={openAiAssistant}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="h-4 w-4" />
               AI Assistant
             </button>
 
             {/* User menu */}
             {auth.isAuthenticated ? (
-              <div className="relative group">
-                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                  <Avatar
-                    name={auth.user?.username}
-                    size="sm"
-                  />
-                  <span className="hidden sm:inline text-sm font-medium text-gray-700">
+              <div className="group relative">
+                <button className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-gray-100">
+                  <Avatar name={auth.user?.username} size="sm" />
+                  <span className="hidden text-sm font-medium text-gray-700 sm:inline">
                     {auth.user?.username}
                   </span>
                 </button>
-                
+
                 {/* Dropdown */}
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="invisible absolute top-full right-0 mt-2 w-48 rounded-xl border border-gray-100 bg-white opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100">
                   <div className="p-2">
                     <Link
                       href="/profile"
-                      className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
                     >
-                      <User className="w-4 h-4" />
+                      <User className="h-4 w-4" />
                       Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="h-4 w-4" />
                       Logout
                     </button>
                   </div>
@@ -117,13 +126,13 @@ export function Header() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:text-gray-900"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                  className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
                 >
                   Sign Up
                 </Link>
@@ -132,13 +141,13 @@ export function Header() {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="rounded-lg p-2 transition-colors hover:bg-gray-100 md:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {!isMobileMenuOpen ? (
-                <Menu className="w-5 h-5 text-gray-700" />
+                <Menu className="h-5 w-5 text-gray-700" />
               ) : (
-                <X className="w-5 h-5 text-gray-700" />
+                <X className="h-5 w-5 text-gray-700" />
               )}
             </button>
           </div>
@@ -147,36 +156,36 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 animate-slide-down">
-          <div className="px-4 py-3 space-y-1">
+        <div className="animate-slide-down border-t border-gray-100 bg-white md:hidden">
+          <div className="space-y-1 px-4 py-3">
             {navLinks.map((link) => {
-              const Icon = link.icon
+              const Icon = link.icon;
               return (
                 <Link
                   key={link.path}
                   href={link.path}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     isActive(link.path)
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? "bg-primary-100 text-primary-700"
+                      : "text-gray-600 hover:bg-gray-100"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="h-5 w-5" />
                   {link.name}
                 </Link>
-              )
+              );
             })}
             <button
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary-500 to-secondary-500 text-white w-full"
+              className="from-primary-500 to-secondary-500 flex w-full items-center gap-3 rounded-lg bg-gradient-to-r px-3 py-2 text-sm font-medium text-white"
               onClick={openAiAssistant}
             >
-              <MessageSquare className="w-5 h-5" />
+              <MessageSquare className="h-5 w-5" />
               AI Assistant
             </button>
           </div>
         </div>
       )}
     </header>
-  )
+  );
 }

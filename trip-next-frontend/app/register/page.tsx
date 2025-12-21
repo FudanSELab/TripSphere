@@ -1,96 +1,96 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Lock, User, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
-import { useAuth } from '@/lib/hooks/use-auth'
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { AlertCircle, Lock, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const auth = useAuth()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
-  const [usernameError, setUsernameError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
+  const router = useRouter();
+  const auth = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   // Username validation: allows letters, numbers, and underscores
   const validateUsername = (value: string): string => {
-    if (!value || value.trim() === '') {
-      return 'Please input username.'
+    if (!value || value.trim() === "") {
+      return "Please input username.";
     }
     if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      return 'Usernames can only contain letters, numbers, and underscores.'
+      return "Usernames can only contain letters, numbers, and underscores.";
     }
-    return ''
-  }
+    return "";
+  };
 
   // Password validation: at least 6 characters, only letters and numbers
   const validatePassword = (value: string): string => {
     if (value.length < 6) {
-      return 'Password must be at least 6 characters long.'
+      return "Password must be at least 6 characters long.";
     }
     if (!/^[a-zA-Z0-9]+$/.test(value)) {
-      return 'Password can only contain letters and numbers.'
+      return "Password can only contain letters and numbers.";
     }
-    return ''
-  }
+    return "";
+  };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setUsername(value)
-    setUsernameError(validateUsername(value))
-  }
+    const value = e.target.value;
+    setUsername(value);
+    setUsernameError(validateUsername(value));
+  };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setPassword(value)
-    setPasswordError(validatePassword(value))
-  }
+    const value = e.target.value;
+    setPassword(value);
+    setPasswordError(validatePassword(value));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setUsernameError('')
-    setPasswordError('')
+    e.preventDefault();
+    setError("");
+    setUsernameError("");
+    setPasswordError("");
 
     // Validate username
-    const usernameErr = validateUsername(username)
+    const usernameErr = validateUsername(username);
     if (usernameErr) {
-      setUsernameError(usernameErr)
-      return
+      setUsernameError(usernameErr);
+      return;
     }
 
     // Validate password
-    const passwordErr = validatePassword(password)
+    const passwordErr = validatePassword(password);
     if (passwordErr) {
-      setPasswordError(passwordErr)
-      return
+      setPasswordError(passwordErr);
+      return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
+      setError("Passwords do not match");
+      return;
     }
 
-    const success = await auth.register({ username, password })
+    const success = await auth.register({ username, password });
     if (success) {
-      router.push('/login')
+      router.push("/login");
     } else {
-      setError(auth.error || 'Registration failed. Please try again.')
+      setError(auth.error || "Registration failed. Please try again.");
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="from-primary-50 to-secondary-50 flex min-h-screen items-center justify-center bg-gradient-to-br via-white px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md" padding="lg">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-2xl">
+        <div className="mb-8 text-center">
+          <div className="from-primary-500 to-secondary-500 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl font-bold text-white">
             T
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
@@ -101,8 +101,8 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -113,7 +113,7 @@ export default function RegisterPage() {
             value={username}
             onChange={handleUsernameChange}
             placeholder="Choose a username"
-            prepend={<User className="w-5 h-5" />}
+            prepend={<User className="h-5 w-5" />}
             error={usernameError}
             required
           />
@@ -124,7 +124,7 @@ export default function RegisterPage() {
             value={password}
             onChange={handlePasswordChange}
             placeholder="Create a password"
-            prepend={<Lock className="w-5 h-5" />}
+            prepend={<Lock className="h-5 w-5" />}
             error={passwordError}
             hint={!passwordError ? "Must be at least 6 characters" : undefined}
             required
@@ -136,23 +136,29 @@ export default function RegisterPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm your password"
-            prepend={<Lock className="w-5 h-5" />}
+            prepend={<Lock className="h-5 w-5" />}
             required
           />
 
           <div className="flex items-start">
             <input
               type="checkbox"
-              className="w-4 h-4 mt-1 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              className="text-primary-600 focus:ring-primary-500 mt-1 h-4 w-4 rounded border-gray-300"
               required
             />
             <label className="ml-2 text-sm text-gray-600">
-              I agree to the{' '}
-              <Link href="/terms" className="text-primary-600 hover:text-primary-700">
+              I agree to the{" "}
+              <Link
+                href="/terms"
+                className="text-primary-600 hover:text-primary-700"
+              >
                 Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" className="text-primary-600 hover:text-primary-700">
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="text-primary-600 hover:text-primary-700"
+              >
                 Privacy Policy
               </Link>
             </label>
@@ -170,10 +176,10 @@ export default function RegisterPage() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link
               href="/login"
-              className="font-medium text-primary-600 hover:text-primary-700"
+              className="text-primary-600 hover:text-primary-700 font-medium"
             >
               Sign in
             </Link>
@@ -181,5 +187,5 @@ export default function RegisterPage() {
         </div>
       </Card>
     </div>
-  )
+  );
 }
