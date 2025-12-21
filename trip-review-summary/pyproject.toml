@@ -15,9 +15,18 @@ dependencies = [
     "protobuf>=6.33.2",
     "pydantic>=2.12.5",
     "pymongo>=4.15.5",
+    "rocketmq>=5.0.0",
+    "tripsphere>=0.1.0",
     "uvicorn>=0.38.0",
 ]
 
 [build-system]
 requires = ["uv_build>=0.9.14,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+tripsphere = { workspace = true }
+rocketmq = { workspace = true }
+
+[tool.uv.workspace]
+members = ["libs/tripsphere", "libs/rocketmq"]
