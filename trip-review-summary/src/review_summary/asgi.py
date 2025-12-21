@@ -58,6 +58,8 @@ async def lifespan(app: A2AStarletteApplication):
 
 def _create_a2a_app()-> A2AStarletteApplication:
     """Starts the Review Summarizer Agent server."""
+    UVICORN_HOST=os.getenv("UVICORN_HOST","0.0.0.0" )
+    UVICORN_PORT=int(os.getenv("UVICORN_PORT","9933" ))
     capabilities = AgentCapabilities(streaming=True, push_notifications=True)
     skill = AgentSkill(
         id='summarize_reviews',
@@ -69,7 +71,7 @@ def _create_a2a_app()-> A2AStarletteApplication:
     agent_card = AgentCard(
         name='review_summary',
         description='Analyzes customer reviews and provides concise summaries that answer user questions about businesses and attractions',
-        url=f'',
+        url=f'http://{UVICORN_HOST}:{UVICORN_PORT}',
         version='1.0.0',
         default_input_modes=ReviewSummarizerAgent.SUPPORTED_CONTENT_TYPES,
         default_output_modes=ReviewSummarizerAgent.SUPPORTED_CONTENT_TYPES,
