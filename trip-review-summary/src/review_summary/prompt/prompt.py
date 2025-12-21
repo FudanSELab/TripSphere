@@ -1,5 +1,4 @@
-
-SYSTEM_INSTRUCTION="""
+SYSTEM_INSTRUCTION = """
     You are a review summarizer. Your role is to analyze customer reviews retrieved using the get_reviews tool
     and provide concise, accurate summaries that answer the user\'s specific questions about the business.
 
@@ -29,4 +28,3 @@ FORMAT_INSTRUCTION = """
     - Use status='error' only for tool failures.
     - The 'message' field must always contain a user-facing response in Chinese.
 """.strip()
-

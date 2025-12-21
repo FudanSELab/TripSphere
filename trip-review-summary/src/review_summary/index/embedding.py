@@ -1,5 +1,6 @@
 import asyncio
-from typing import List, Optional
+from typing import List
+
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 
@@ -17,18 +18,20 @@ def text_to_embedding(text: str, model: str = "text-embedding-3-large") -> List[
     """
     if not text or not isinstance(text, str):
         raise ValueError("Text must be a non-empty string")
-    
+
     # Create embedding instance
     embedding_llm = OpenAIEmbeddings(model=model)
-    
+
     # Generate embedding vectors
     embeddings = embedding_llm.embed_documents([text])
-    
+
     # Return the first (and only) embedding vector
     return embeddings[0]
 
 
-async def text_to_embedding_async(text: str, model: str = "text-embedding-3-large") -> List[float]:
+async def text_to_embedding_async(
+    text: str, model: str = "text-embedding-3-large"
+) -> List[float]:
     """
     Utility function to convert text into embedding vectors (asynchronous).
 
@@ -42,10 +45,10 @@ async def text_to_embedding_async(text: str, model: str = "text-embedding-3-larg
     """
     if not text or not isinstance(text, str):
         raise ValueError("Text must be a non-empty string")
-    
+
     # Create embedding instance
     embedding_llm = OpenAIEmbeddings(model=model)
-    
+
     # Asynchronously generate embedding vectors
     embeddings = await embedding_llm.aembed_documents([text])
 
@@ -64,7 +67,7 @@ if __name__ == "__main__":
         print(f"Top five value: {embedding[:5]}")
     except Exception as e:
         print(f"Error: {e}")
-    
+
     # Asynchronous example
     async def async_test():
         try:
@@ -77,6 +80,3 @@ if __name__ == "__main__":
 
     # Run async example
     asyncio.run(async_test())
-    
-
-

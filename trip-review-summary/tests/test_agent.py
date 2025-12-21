@@ -1,14 +1,14 @@
 # test_agent_like_executor.py
 import asyncio
-import os
 from uuid import uuid4
-
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Directly import your implemented Agent (no mocking required)
 from agent import ReviewSummarizerAgent
 from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
 load_dotenv()
+
 
 async def test_agent_like_executor():
     """
@@ -18,18 +18,12 @@ async def test_agent_like_executor():
     print("🧪 启动 Agent 测试（模拟 Executor 调用方式）\n")
 
     # === 1. Initialize models (same as executor) ===
-    query_chat_model = ChatOpenAI(
-        model="gpt-4o-2024-08-06",  
-        temperature=0
-    )
-    embedding_llm = OpenAIEmbeddings(
-        model="text-embedding-3-large"
-    )
+    query_chat_model = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0)
+    embedding_llm = OpenAIEmbeddings(model="text-embedding-3-large")
 
     # === 2. Create Agent instance (identical to executor) ===
     agent = ReviewSummarizerAgent(
-        query_chat_model=query_chat_model,
-        embedding_llm=embedding_llm
+        query_chat_model=query_chat_model, embedding_llm=embedding_llm
     )
 
     # === 3. Simulate user input (equivalent to RequestContext.get_user_input()) ===

@@ -30,3 +30,18 @@ rocketmq = { workspace = true }
 
 [tool.uv.workspace]
 members = ["libs/tripsphere", "libs/rocketmq"]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["libs/tripsphere", "libs/rocketmq"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src", "tests"]

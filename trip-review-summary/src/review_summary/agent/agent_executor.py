@@ -20,7 +20,6 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from review_summary.agent.agent import ReviewSummarizerAgent
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -28,12 +27,8 @@ logger = logging.getLogger(__name__)
 class ReviewSummarizerAgentExecutor(AgentExecutor):
     """Review Summarizer AgentExecutor - executes the review summarization agent."""
 
-    def __init__(
-        self,
-        query_chat_model: ChatOpenAI,
-        embedding_llm: OpenAIEmbeddings
-    ):
-        self.agent = ReviewSummarizerAgent(query_chat_model,embedding_llm)
+    def __init__(self, query_chat_model: ChatOpenAI, embedding_llm: OpenAIEmbeddings):
+        self.agent = ReviewSummarizerAgent(query_chat_model, embedding_llm)
 
     async def execute(
         self,
@@ -52,14 +47,14 @@ class ReviewSummarizerAgentExecutor(AgentExecutor):
         updater = TaskUpdater(event_queue, task.id, task.context_id)
         try:
             async for item in self.agent.stream(query, task.context_id):
-                is_task_complete = item['is_task_complete']
-                require_user_input = item['require_user_input']
+                is_task_complete = item["is_task_complete"]
+                require_user_input = item["require_user_input"]
 
                 if not is_task_complete and not require_user_input:
                     await updater.update_status(
                         TaskState.working,
                         new_agent_text_message(
-                            item['content'],
+                            item["content"],
                             task.context_id,
                             task.id,
                         ),
@@ -68,7 +63,7 @@ class ReviewSummarizerAgentExecutor(AgentExecutor):
                     await updater.update_status(
                         TaskState.input_required,
                         new_agent_text_message(
-                            item['content'],
+                            item["content"],
                             task.context_id,
                             task.id,
                         ),
@@ -77,14 +72,14 @@ class ReviewSummarizerAgentExecutor(AgentExecutor):
                     break
                 else:
                     await updater.add_artifact(
-                        [Part(root=TextPart(text=item['content']))],
-                        name='review_summary_result',
+                        [Part(root=TextPart(text=item["content"]))],
+                        name="review_summary_result",
                     )
                     await updater.complete()
                     break
 
         except Exception as e:
-            logger.error(f'An error occurred while streaming the response: {e}')
+            logger.error(f"An error occurred while streaming the response: {e}")
             raise ServerError(error=InternalError()) from e
 
     def _validate_request(self, context: RequestContext) -> bool:
@@ -95,10 +90,5 @@ class ReviewSummarizerAgentExecutor(AgentExecutor):
             return True  # Error condition
         return False  # No error
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())
-
-
-
