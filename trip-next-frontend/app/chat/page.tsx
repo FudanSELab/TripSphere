@@ -127,7 +127,7 @@ export default function ChatPage() {
                   }`}
                   onClick={() => selectConversation(conversation)}
                 >
-                  <MessageSquare className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-500" />
+                  <MessageSquare className="mt-0.5 h-5 w-5 shrink-0 text-gray-500" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">
                       {conversation.title || "New Chat"}

@@ -61,7 +61,7 @@ export function ImageCarousel({
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
       {/* Images */}
-      <div className="relative aspect-[4/3] w-full">
+      <div className="relative aspect-4/3 w-full">
         {images.map((image, index) => (
           <div
             key={index}
@@ -79,7 +79,7 @@ export function ImageCarousel({
               priority={index === 0}
             />
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
 
             {/* Title overlay */}
             {image.title && (

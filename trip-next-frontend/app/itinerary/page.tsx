@@ -220,7 +220,7 @@ export default function ItineraryPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
-      <div className="bg-gradient-to-br from-green-600 to-emerald-600 py-16 text-white">
+      <div className="bg-linear-to-br from-green-600 to-emerald-600 py-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium">
@@ -555,7 +555,7 @@ export default function ItineraryPage() {
                                 className="group flex gap-4 rounded-xl bg-gray-50 p-4 transition-colors hover:bg-gray-100"
                               >
                                 {/* Time */}
-                                <div className="flex-shrink-0 text-center">
+                                <div className="shrink-0 text-center">
                                   <div className="text-sm font-medium text-gray-900">
                                     {activity.startTime}
                                   </div>
@@ -599,7 +599,7 @@ export default function ItineraryPage() {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                                <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                                   <button className="rounded-lg p-2 text-gray-400 hover:bg-white hover:text-gray-600">
                                     <GripVertical className="h-4 w-4" />
                                   </button>

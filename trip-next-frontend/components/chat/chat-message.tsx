@@ -25,10 +25,10 @@ export function ChatMessage({
       {/* Avatar */}
       <div
         className={cn(
-          "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl",
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
           isUser
             ? "bg-primary-600"
-            : "from-secondary-500 to-accent-500 bg-gradient-to-br",
+            : "from-secondary-500 to-accent-500 bg-linear-to-br",
         )}
       >
         {isUser ? (

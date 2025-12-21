@@ -52,7 +52,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="group flex items-center gap-2">
-            <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-xl font-bold text-white shadow-lg transition-transform group-hover:scale-105">
+            <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br text-xl font-bold text-white shadow-lg transition-transform group-hover:scale-105">
               T
             </div>
             <span className="gradient-text hidden text-xl font-bold sm:inline">
@@ -85,7 +85,7 @@ export function Header() {
           <div className="flex items-center gap-3">
             {/* Chat button */}
             <button
-              className="from-primary-500 to-secondary-500 hidden items-center gap-2 rounded-lg bg-gradient-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg sm:flex"
+              className="from-primary-500 to-secondary-500 hidden items-center gap-2 rounded-lg bg-linear-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg sm:flex"
               onClick={openAiAssistant}
             >
               <MessageSquare className="h-4 w-4" />
@@ -177,7 +177,7 @@ export function Header() {
               );
             })}
             <button
-              className="from-primary-500 to-secondary-500 flex w-full items-center gap-3 rounded-lg bg-gradient-to-r px-3 py-2 text-sm font-medium text-white"
+              className="from-primary-500 to-secondary-500 flex w-full items-center gap-3 rounded-lg bg-linear-to-r px-3 py-2 text-sm font-medium text-white"
               onClick={openAiAssistant}
             >
               <MessageSquare className="h-5 w-5" />

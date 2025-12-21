@@ -140,7 +140,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative flex min-h-[90vh] items-center overflow-hidden bg-white">
         {/* Background gradient */}
-        <div className="from-primary-50 to-secondary-50 absolute inset-0 bg-gradient-to-br via-white" />
+        <div className="from-primary-50 to-secondary-50 absolute inset-0 bg-linear-to-br via-white" />
 
         {/* Animated background shapes */}
         <div className="absolute inset-0 overflow-hidden">
@@ -175,7 +175,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
                 <Link
                   href="/chat"
-                  className="from-primary-600 to-secondary-600 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r px-8 py-4 text-lg font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  className="from-primary-600 to-secondary-600 inline-flex items-center gap-2 rounded-xl bg-linear-to-r px-8 py-4 text-lg font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 >
                   <MessageSquare className="h-5 w-5" />
                   Start Planning
@@ -192,7 +192,7 @@ export default function Home() {
 
             {/* Right content - Placeholder for chat preview */}
             <AnimateInView delay={0.2} className="relative hidden lg:block">
-              <div className="from-primary-500/20 to-secondary-500/20 absolute inset-0 rounded-3xl bg-gradient-to-br blur-2xl" />
+              <div className="from-primary-500/20 to-secondary-500/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-2xl" />
               <div className="relative">
                 <ImageCarousel images={heroImages} autoPlayInterval={4000} />
               </div>
@@ -247,7 +247,7 @@ export default function Home() {
                 <StaggerItem key={feature.title}>
                   <Card hover className="h-full">
                     <div
-                      className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${feature.color} mb-4 flex items-center justify-center`}
+                      className={`h-14 w-14 rounded-2xl bg-linear-to-br ${feature.color} mb-4 flex items-center justify-center`}
                     >
                       <Icon className="h-7 w-7 text-white" />
                     </div>
@@ -290,7 +290,7 @@ export default function Home() {
               <StaggerItem key={destination.name}>
                 <Link
                   href="/attractions"
-                  className="group relative block aspect-[4/5] overflow-hidden rounded-2xl"
+                  className="group relative block aspect-4/5 overflow-hidden rounded-2xl"
                 >
                   <Image
                     src={destination.image}
@@ -299,7 +299,7 @@ export default function Home() {
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
                   <div className="absolute right-0 bottom-0 left-0 p-6 text-white">
                     <h3 className="mb-1 text-xl font-bold">
                       {destination.name}
@@ -329,7 +329,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="from-primary-600 to-secondary-600 bg-gradient-to-br py-20 text-white lg:py-32">
+      <section className="from-primary-600 to-secondary-600 bg-linear-to-br py-20 text-white lg:py-32">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <AnimateInView>
             <h2 className="mb-6 text-3xl font-bold sm:text-4xl lg:text-5xl">

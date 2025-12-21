@@ -245,7 +245,7 @@ export default function AttractionDetailPage() {
           <div className="space-y-6 lg:col-span-2">
             {/* Image gallery */}
             <div className="overflow-hidden rounded-xl bg-white shadow-sm">
-              <div className="relative aspect-[16/9]">
+              <div className="relative aspect-video">
                 <img
                   src={attraction.images?.[selectedImageIndex]}
                   alt={attraction.name}
@@ -258,7 +258,7 @@ export default function AttractionDetailPage() {
                     {attraction.images.map((image, index) => (
                       <button
                         key={index}
-                        className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                        className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                           selectedImageIndex === index
                             ? "border-primary-600 ring-primary-600/20 ring-2"
                             : "border-gray-200 hover:border-gray-300"

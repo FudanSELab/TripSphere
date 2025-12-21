@@ -147,7 +147,7 @@ export default function NotesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
-      <div className="bg-gradient-to-br from-amber-500 to-orange-500 py-16 text-white">
+      <div className="bg-linear-to-br from-amber-500 to-orange-500 py-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
@@ -293,14 +293,14 @@ export default function NotesPage() {
             <Link key={note.id} href={`/notes/${note.id}`} className="group">
               <Card padding="none" hover clickable>
                 {/* Cover image */}
-                <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
+                <div className="relative aspect-4/3 overflow-hidden rounded-t-xl">
                   <img
                     src={note.coverImage}
                     alt={note.title}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
                   {/* Tags */}
                   <div className="absolute bottom-3 left-3 flex gap-2">
                     {note.tags?.slice(0, 2).map((tag) => (

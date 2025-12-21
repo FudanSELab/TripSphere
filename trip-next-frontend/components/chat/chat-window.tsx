@@ -209,12 +209,12 @@ export function ChatWindow({
       className={
         fullScreen
           ? "flex h-screen flex-col bg-white"
-          : "flex h-[600px] flex-col rounded-2xl border border-gray-100 bg-white shadow-lg"
+          : "flex h-150 flex-col rounded-2xl border border-gray-100 bg-white shadow-lg"
       }
     >
       {/* Header */}
-      <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-100 px-6 py-4">
-        <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br">
+      <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-6 py-4">
+        <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br">
           <Sparkles className="h-5 w-5 text-white" />
         </div>
         <div>
@@ -231,7 +231,7 @@ export function ChatWindow({
         {/* Empty state with suggestions */}
         {messages.length === 0 && !isStreaming && (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="from-primary-100 to-secondary-100 animate-float mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br">
+            <div className="from-primary-100 to-secondary-100 animate-float mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br">
               <Sparkles className="text-primary-600 h-10 w-10" />
             </div>
             <h3 className="mb-2 text-xl font-semibold text-gray-900">
@@ -280,7 +280,7 @@ export function ChatWindow({
       </div>
 
       {/* Input area */}
-      <div className="flex-shrink-0 border-t border-gray-100 p-4">
+      <div className="shrink-0 border-t border-gray-100 p-4">
         <div className="flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -298,7 +298,7 @@ export function ChatWindow({
           <Button
             disabled={!inputMessage.trim() || isStreaming}
             size="sm"
-            className="h-[48px] w-[48px] flex-shrink-0 !p-0"
+            className="h-12 w-12 shrink-0 p-0!"
             onClick={sendMessage}
           >
             <Send className="h-5 w-5" />

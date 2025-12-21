@@ -284,7 +284,7 @@ export default function HotelsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
-      <div className="from-secondary-600 to-accent-600 bg-gradient-to-br py-16 text-white">
+      <div className="from-secondary-600 to-accent-600 bg-linear-to-br py-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
@@ -358,7 +358,7 @@ export default function HotelsPage() {
             <Link key={hotel.id} href={`/hotels/${hotel.id}`} className="group">
               <Card padding="none" hover clickable>
                 {/* Image */}
-                <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
+                <div className="relative aspect-4/3 overflow-hidden rounded-t-xl">
                   <img
                     src={hotel.images?.[0]}
                     alt={hotel.name}

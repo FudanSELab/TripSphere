@@ -297,14 +297,14 @@ export function ChatSidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-16 right-0 bottom-0 z-40 flex w-full flex-col border-l border-gray-200 bg-white shadow-2xl transition-transform duration-300 ease-out sm:w-[400px] lg:w-[420px]",
+          "fixed top-16 right-0 bottom-0 z-40 flex w-full flex-col border-l border-gray-200 bg-white shadow-2xl transition-transform duration-300 ease-out sm:w-100 lg:w-105",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
-        <div className="from-primary-50 to-secondary-50 flex flex-shrink-0 items-center justify-between border-b border-gray-100 bg-gradient-to-r px-4 py-3">
+        <div className="from-primary-50 to-secondary-50 flex shrink-0 items-center justify-between border-b border-gray-100 bg-linear-to-r px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="from-primary-500 to-secondary-500 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br">
+            <div className="from-primary-500 to-secondary-500 flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div>
@@ -328,7 +328,7 @@ export function ChatSidebar({
           {/* Empty state */}
           {messages.length === 0 && !isStreaming && (
             <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-              <div className="from-primary-100 to-secondary-100 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br">
+              <div className="from-primary-100 to-secondary-100 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br">
                 <Sparkles className="text-primary-600 h-8 w-8" />
               </div>
               <p className="mb-4 text-sm text-gray-500">
@@ -372,12 +372,12 @@ export function ChatSidebar({
 
         {/* Quick prompts when conversation is active */}
         {messages.length > 0 && (
-          <div className="flex-shrink-0 border-t border-gray-100 bg-gray-50 px-4 py-2">
+          <div className="shrink-0 border-t border-gray-100 bg-gray-50 px-4 py-2">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {quickPrompts.map((prompt) => (
                 <button
                   key={prompt}
-                  className="hover:border-primary-300 hover:bg-primary-50 flex-shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 transition-colors"
+                  className="hover:border-primary-300 hover:bg-primary-50 shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 transition-colors"
                   onClick={() => handleQuickPrompt(prompt)}
                 >
                   {prompt}
@@ -388,7 +388,7 @@ export function ChatSidebar({
         )}
 
         {/* Input area */}
-        <div className="flex-shrink-0 border-t border-gray-100 bg-white p-4">
+        <div className="shrink-0 border-t border-gray-100 bg-white p-4">
           <div className="flex items-end gap-3">
             <textarea
               ref={inputRef}
@@ -406,7 +406,7 @@ export function ChatSidebar({
             <Button
               disabled={!inputMessage.trim() || isStreaming}
               loading={isStreaming}
-              className="h-[46px] w-[46px] flex-shrink-0 !p-0"
+              className="h-11.5 w-11.5 shrink-0 p-0!"
               onClick={sendMessage}
             >
               <Send className="h-4 w-4" />

@@ -1,14 +1,14 @@
-import { createRequestFromObject } from "@/lib/grpc/utils";
-import { ResponseData } from "@/lib/requests";
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import { grpcClient } from "../../../lib/grpc/client";
+import { grpcClient } from "@/lib/grpc/client";
 import {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
-} from "../../../lib/grpc/gen/user/user_pb";
+} from "@/lib/grpc/gen/user/user_pb";
+import { createRequestFromObject } from "@/lib/grpc/utils";
+import { ResponseData } from "@/lib/requests";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export type HttpResponseHook<HttpResponseType = any> = (ctx: {
   req: NextRequest;

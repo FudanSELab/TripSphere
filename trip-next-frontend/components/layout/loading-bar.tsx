@@ -29,7 +29,7 @@ export default function LoadingBar() {
           animate={{ scaleX: 1, opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="from-primary-500 via-secondary-500 to-accent-500 fixed top-0 right-0 left-0 z-50 h-1 origin-left bg-gradient-to-r"
+          className="from-primary-500 via-secondary-500 to-accent-500 fixed top-0 right-0 left-0 z-50 h-1 origin-left bg-linear-to-r"
         />
       )}
     </AnimatePresence>

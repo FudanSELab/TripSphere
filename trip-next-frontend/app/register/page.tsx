@@ -87,10 +87,10 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="from-primary-50 to-secondary-50 flex min-h-screen items-center justify-center bg-gradient-to-br via-white px-4 py-12 sm:px-6 lg:px-8">
+    <div className="from-primary-50 to-secondary-50 flex min-h-screen items-center justify-center bg-linear-to-br via-white px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md" padding="lg">
         <div className="mb-8 text-center">
-          <div className="from-primary-500 to-secondary-500 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl font-bold text-white">
+          <div className="from-primary-500 to-secondary-500 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br text-2xl font-bold text-white">
             T
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
@@ -102,7 +102,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
