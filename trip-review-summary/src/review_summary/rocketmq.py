@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import threading
-from typing import Any
+from typing import Any, cast
 
 from pymongo import AsyncMongoClient
 from rocketmq import (  # type: ignore
@@ -57,10 +57,13 @@ def get_or_create_event_loop() -> asyncio.AbstractEventLoop:
     return _loop
 
 
-async def handle_create_review(msg_content: dict[str, Any]) -> None:
-    review_id = msg_content.get("ID")
-    review_text = msg_content.get("Text")
-    attraction_id = msg_content.get("TargetID")
+async def handle_create_review(msg_body: dict[str, Any]) -> None:
+    review_id = msg_body.get("ID")
+    review_text = msg_body.get("Text")
+    attraction_id = msg_body.get("TargetID")
+    if review_id is None or review_text is None or attraction_id is None:
+        logger.warning(f"CreateReview message missing fields: {msg_body}")
+        return
     embedding = await text_to_embedding_async(review_text)
     await repo.create_embedding(
         review_id=review_id,
@@ -70,57 +73,66 @@ async def handle_create_review(msg_content: dict[str, Any]) -> None:
     )
 
 
-async def handle_update_review(msg_content: dict[str, Any]) -> None:
-    review_id = msg_content.get("ID")
-    review_text = msg_content.get("Text")
-    _ = msg_content.get("TargetID")
+async def handle_update_review(msg_body: dict[str, Any]) -> None:
+    review_id = msg_body.get("ID")
+    review_text = msg_body.get("Text")
+    _ = msg_body.get("TargetID")
+    if review_id is None or review_text is None:
+        logger.warning(f"UpdateReview message missing fields: {msg_body}")
+        return
     embedding = await text_to_embedding_async(review_text)
     await repo.update_embedding_by_review_id(
         review_id=review_id, embedding=embedding, review_content=review_text
     )
 
 
-async def handle_delete_review(msg_content: dict[str, Any]) -> None:
-    review_id = msg_content.get("ID")
-    await repo.delete_embedding_by_review_id(review_id=review_id)
+async def handle_delete_review(msg_body: dict[str, Any]) -> None:
+    review_id = msg_body.get("ID")
+    if review_id is not None:
+        await repo.delete_embedding_by_review_id(review_id=review_id)
+    else:
+        logger.warning(f"DeleteReview message missing ID: {msg_body}")
 
 
-class ReviewMessageListener(MessageListener):
+class ReviewMessageListener(MessageListener):  # type: ignore
     def consume(self, message: Message) -> ConsumeResult:
         try:
-            body_str = message.body.decode("utf-8")
-            message_content = json.loads(body_str)
-            message_tag = message.tag
+            message_body = cast(bytes | None, message.body)  # pyright: ignore[reportUnknownMemberType]
+            if message_body is None:
+                logger.warning("Received message with empty body")
+                return ConsumeResult.SUCCESS
+            body_str = message_body.decode("utf-8")
+            msg_body = json.loads(body_str)
+            msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
 
             logger.info(
-                f"Received message with tag: {message_tag}, ID: {message_content.get('ID')}"
+                f"Received message with tag: {msg_tag}, ID: {msg_body.get('ID')}"
             )
 
             # Obtain the background event loop and submit async tasks
             loop = get_or_create_event_loop()
-            if message_tag == "CreateReview":
+            if msg_tag == "CreateReview":
                 future = asyncio.run_coroutine_threadsafe(
-                    handle_create_review(message_content), loop
+                    handle_create_review(msg_body), loop
                 )
-            elif message_tag == "UpdateReview":
+            elif msg_tag == "UpdateReview":
                 future = asyncio.run_coroutine_threadsafe(
-                    handle_update_review(message_content), loop
+                    handle_update_review(msg_body), loop
                 )
-            elif message_tag == "DeleteReview":
+            elif msg_tag == "DeleteReview":
                 future = asyncio.run_coroutine_threadsafe(
-                    handle_delete_review(message_content), loop
+                    handle_delete_review(msg_body), loop
                 )
             else:
-                logger.warning(f"Unknown tag: {message_tag}")
+                logger.warning(f"Unknown tag: {msg_tag}")
                 return ConsumeResult.SUCCESS
             # Wait for the task to complete with a timeout
             future.result(timeout=30)
             return ConsumeResult.SUCCESS
 
         except Exception as e:
-            logger.error(
-                f"Error processing message (Tag: {message.tag}): {e}", exc_info=True
-            )
+            msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
+            logger.error(f"Error processing message (Tag {msg_tag}): {e}")
             return ConsumeResult.FAILURE
 
 

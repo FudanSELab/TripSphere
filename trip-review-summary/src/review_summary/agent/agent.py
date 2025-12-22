@@ -133,13 +133,15 @@ class ReviewSummarizerAgent:
         # Create the graph
         self.graph = self._create_graph()
 
-    def _create_graph(self) -> CompiledStateGraph:
+    def _create_graph(
+        self,
+    ) -> CompiledStateGraph[AgentState, None, AgentState, AgentState]:
         # Create state graph
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph[AgentState, None, AgentState, AgentState](AgentState)
 
         # Add nodes
-        workflow.add_node("agent", self._call_model)
-        workflow.add_node("tools", ToolNode(self.tools))
+        workflow.add_node("agent", self._call_model)  # pyright: ignore[reportUnknownMemberType]
+        workflow.add_node("tools", ToolNode(self.tools))  # pyright: ignore[reportUnknownMemberType]
 
         # Set entry point
         workflow.set_entry_point("agent")
@@ -153,7 +155,7 @@ class ReviewSummarizerAgent:
         # Set finish point
         workflow.set_finish_point("agent")
 
-        return workflow.compile(checkpointer=MemorySaver())
+        return workflow.compile(checkpointer=MemorySaver())  # pyright: ignore[reportUnknownMemberType]
 
     def _call_model(self, state: AgentState) -> dict[str, Any]:
         messages = state["messages"]
@@ -162,19 +164,19 @@ class ReviewSummarizerAgent:
         if (isinstance(last_msg, ToolMessage) and len(state["messages"]) == 4) or (
             len(state["messages"]) == 2 and isinstance(last_msg, HumanMessage)
         ):
-            model_runnable = self.model.bind_tools(self.tools)
+            model_runnable = self.model.bind_tools(self.tools)  # pyright: ignore[reportUnknownMemberType]
             response = model_runnable.invoke(messages)
             return {"messages": [response]}
         else:
             full_messages = messages + [SystemMessage(content=FORMAT_INSTRUCTION)]
-            model_runnable = self.model.with_structured_output(ResponseFormat)
-            structured_response = model_runnable.invoke(full_messages)
+            model_runnable = self.model.with_structured_output(ResponseFormat)  # type: ignore
+            structured_response = model_runnable.invoke(full_messages)  # pyright: ignore[reportUnknownVariableType]
             return {"structured_response": structured_response}
 
     def _should_call_tool(self, state: AgentState) -> str:
         # Check if the last message has tool calls
         last_message = state["messages"][-1]
-        if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+        if hasattr(last_message, "tool_calls") and last_message.tool_calls:  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             return "continue"
         return "end"
 
@@ -191,7 +193,7 @@ class ReviewSummarizerAgent:
 
         # Stream the execution
         final_state = None
-        async for event in self.graph.astream(inputs, config, stream_mode="values"):
+        async for event in self.graph.astream(inputs, config, stream_mode="values"):  # type: ignore
             if "messages" in event and event["messages"]:
                 last_message = event["messages"][-1]
 

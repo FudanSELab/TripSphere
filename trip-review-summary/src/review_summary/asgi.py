@@ -13,7 +13,9 @@ from a2a.server.tasks import (
 )
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from rocketmq.v5.consumer import PushConsumer  # pyright: ignore[reportMissingTypeStubs]
+from rocketmq.v5.consumer import (  # type: ignore[import-untyped]
+    PushConsumer,
+)  # pyright: ignore[reportMissingTypeStubs]
 from starlette.applications import Starlette
 
 from review_summary.agent.agent import ReviewSummarizerAgent
