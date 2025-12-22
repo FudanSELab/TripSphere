@@ -16,7 +16,7 @@ def text_to_embedding(text: str, model: str = "text-embedding-3-large") -> List[
     Returns:
         Embedding vector (list of floats)
     """
-    if not text or not isinstance(text, str):
+    if len(text) == 0:
         raise ValueError("Text must be a non-empty string")
 
     # Create embedding instance
@@ -43,7 +43,7 @@ async def text_to_embedding_async(
     Returns:
         Embedding vector (list of floats)
     """
-    if not text or not isinstance(text, str):
+    if len(text) == 0:
         raise ValueError("Text must be a non-empty string")
 
     # Create embedding instance

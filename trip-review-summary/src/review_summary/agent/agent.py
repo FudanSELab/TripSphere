@@ -80,10 +80,8 @@ async def get_attraction_id(
 
 @tool
 async def get_reviews(
-    attraction_id: str,
-    max_reviews: int = 20,
-    query: str = "",
-):
+    attraction_id: str, max_reviews: int = 20, query: str = ""
+) -> dict[str, Any]:
     """Use this to get reviews for a business.
 
     Args:
@@ -106,7 +104,7 @@ async def get_reviews(
         return {"reviews": []}
 
     # Compute cosine similarity between each review embedding and the query embedding
-    similarities = []
+    similarities: list[tuple[float, str]] = []
     for record in result:
         stored_embedding = record.embedding
         # Compute dot product
@@ -167,7 +165,7 @@ class ReviewSummarizerAgent:
 
         return workflow.compile(checkpointer=MemorySaver())
 
-    def _call_model(self, state: AgentState):
+    def _call_model(self, state: AgentState) -> dict[str, Any]:
         messages = state["messages"]
         print(f"Model called with messages: {messages}")
         last_msg = state["messages"][-1]
@@ -190,7 +188,9 @@ class ReviewSummarizerAgent:
             return "continue"
         return "end"
 
-    async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
+    async def stream(
+        self, query: str, context_id: str
+    ) -> AsyncIterable[dict[str, Any]]:
         inputs = {
             "messages": [
                 SystemMessage(content=self.SYSTEM_INSTRUCTION),
@@ -255,47 +255,5 @@ class ReviewSummarizerAgent:
                 "is_task_complete": False,
                 "require_user_input": False,
             }
-
-    def get_agent_response(self, config):
-        current_state = self.graph.get_state(config)
-        if hasattr(current_state.values, "messages") and current_state.values.messages:
-            last_message = current_state.values.messages[-1]
-            if (
-                hasattr(last_message, "additional_kwargs")
-                and "response_format" in last_message.additional_kwargs
-            ):
-                structured_response = last_message.additional_kwargs["response_format"]
-            else:
-                structured_response = None
-        else:
-            structured_response = None
-
-        if structured_response and isinstance(structured_response, ResponseFormat):
-            if structured_response.status == "input_required":
-                return {
-                    "is_task_complete": False,
-                    "require_user_input": True,
-                    "content": structured_response.message,
-                }
-            if structured_response.status == "error":
-                return {
-                    "is_task_complete": False,
-                    "require_user_input": True,
-                    "content": structured_response.message,
-                }
-            if structured_response.status == "completed":
-                return {
-                    "is_task_complete": True,
-                    "require_user_input": False,
-                    "content": structured_response.message,
-                }
-
-        return {
-            "is_task_complete": False,
-            "require_user_input": True,
-            "content": (
-                "We are unable to process your request at the moment. Please try again."
-            ),
-        }
 
     SUPPORTED_CONTENT_TYPES = ["text", "text/plain"]
