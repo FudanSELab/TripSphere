@@ -18,6 +18,7 @@ from starlette.routing import Mount
 
 from review_summary.agent.agent import ReviewSummarizerAgent
 from review_summary.agent.executor import ReviewSummarizerAgentExecutor
+from review_summary.config.settings import get_settings
 from review_summary.rocketmq import run_rocketmq_consumer
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ async def lifespan(app: A2AStarletteApplication):
     logger.info("MQ consumer shutdown complete")
 
 
-def _create_a2a_app() -> A2AStarletteApplication:
+def create_a2a_app() -> A2AStarletteApplication:
     """Starts the Review Summarizer Agent server."""
     UVICORN_HOST = os.getenv("UVICORN_HOST", "0.0.0.0")
     UVICORN_PORT = int(os.getenv("UVICORN_PORT", "9933"))
@@ -80,8 +81,18 @@ def _create_a2a_app() -> A2AStarletteApplication:
     push_sender = BasePushNotificationSender(
         httpx_client=httpx_client, config_store=push_config_store
     )
-    query_chat_model = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0)
-    embedding_llm = OpenAIEmbeddings(model="text-embedding-3-large")
+    openai_settings = get_settings().openai
+    query_chat_model = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+        temperature=0,
+        api_key=openai_settings.api_key,
+        base_url=openai_settings.base_url,
+    )
+    embedding_llm = OpenAIEmbeddings(
+        model="text-embedding-3-large",
+        api_key=openai_settings.api_key,
+        base_url=openai_settings.base_url,
+    )
     request_handler = DefaultRequestHandler(
         agent_executor=ReviewSummarizerAgentExecutor(query_chat_model, embedding_llm),
         task_store=InMemoryTaskStore(),
@@ -96,10 +107,7 @@ def _create_a2a_app() -> A2AStarletteApplication:
 
 
 def create_app() -> Starlette:
-    inner_app: A2AStarletteApplication = _create_a2a_app()
-
-    app = Starlette(lifespan=lifespan, routes=[Mount("/", app=inner_app)])
-    return app
+    return Starlette(lifespan=lifespan, routes=[Mount("/", app=create_a2a_app())])
 
 
 app = create_app()
