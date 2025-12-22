@@ -4,6 +4,16 @@ from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class UvicornSettings(BaseModel):
+    """Loaded from environment variables:
+    - UVICORN_HOST
+    - UVICORN_PORT
+    """
+
+    host: str = Field(default="0.0.0.0", frozen=True)
+    port: int = Field(default=24210, frozen=True)
+
+
 class MongoSettings(BaseModel):
     uri: str = Field(default="mongodb://localhost:27017")
     database: str = Field(default="review_summary_db")
@@ -25,6 +35,7 @@ class Settings(BaseSettings):
         env_nested_delimiter="_",
         env_nested_max_split=1,
     )
+    uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     rocketmq: RocketmqSettings = Field(default_factory=RocketmqSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)

@@ -23,14 +23,10 @@ logger = logging.getLogger(__name__)
 class ReviewSummarizerAgentExecutor(AgentExecutor):
     """Review Summarizer AgentExecutor - executes the review summarization agent."""
 
-    def __init__(self, query_chat_model: ChatOpenAI, embedding_llm: OpenAIEmbeddings):
-        self.agent = ReviewSummarizerAgent(query_chat_model, embedding_llm)
+    def __init__(self, chat_model: ChatOpenAI, embedding_model: OpenAIEmbeddings):
+        self.agent = ReviewSummarizerAgent(chat_model, embedding_model)
 
-    async def execute(
-        self,
-        context: RequestContext,
-        event_queue: EventQueue,
-    ) -> None:
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         error = self._validate_request(context)
         if error:
             raise ServerError(error=InvalidParamsError())

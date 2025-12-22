@@ -1,6 +1,6 @@
 import os
 from collections.abc import AsyncIterable
-from typing import Annotated, Any, Literal, Optional, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
 from langchain_core.messages import (
     AIMessage,
@@ -9,12 +9,18 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.tools import tool  # type: ignore
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import tool  # pyright: ignore[reportUnknownVariableType]
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, StateGraph  # type: ignore
-from langgraph.graph.message import add_messages  # type: ignore
+from langgraph.graph import END, StateGraph  # pyright: ignore[reportMissingTypeStubs]
+from langgraph.graph.message import (  # pyright: ignore[reportMissingTypeStubs]
+    add_messages,
+)
+from langgraph.graph.state import (  # pyright: ignore[reportMissingTypeStubs]
+    CompiledStateGraph,
+)
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
 from pymongo import AsyncMongoClient
@@ -23,7 +29,7 @@ import review_summary.agent.grpc.attraction as attraction_grpc
 from review_summary.config.settings import get_settings
 from review_summary.index.embedding import text_to_embedding_async
 from review_summary.index.repository import ReviewEmbeddingRepository
-from review_summary.prompt.prompt import FORMAT_INSTRUCTION, SYSTEM_INSTRUCTION
+from review_summary.prompt.agent import FORMAT_INSTRUCTION, SYSTEM_INSTRUCTION
 
 # Load environment variables
 ATTRACTION_GRPC_SERVICE_HOST = os.getenv("ATTRACTION_GRPC_SERVICE_HOST", "127.0.0.1")
@@ -50,11 +56,11 @@ class ResponseFormat(BaseModel):
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
-    structured_response: Optional[ResponseFormat]
+    structured_response: ResponseFormat | None
 
 
 @tool
-async def get_attraction_id(attraction_name: str):
+async def get_attraction_id(attraction_name: str) -> str:
     """Get the ID of an attraction based on its name.
 
     Args:
@@ -119,20 +125,15 @@ async def get_reviews(
 class ReviewSummarizerAgent:
     """ReviewSummarizerAgent - a specialized assistant for summarizing business reviews."""
 
-    SYSTEM_INSTRUCTION = SYSTEM_INSTRUCTION
-
-    FORMAT_INSTRUCTION = FORMAT_INSTRUCTION
-
-    def __init__(self, query_chat_model: ChatOpenAI, embedding_llm: OpenAIEmbeddings):
-        # Always use OpenAI model
-        self.model = query_chat_model
+    def __init__(self, chat_model: ChatOpenAI, embedding_model: OpenAIEmbeddings):
+        self.model = chat_model
         self.tools = [get_attraction_id, get_reviews]
-        self.embedding_llm = embedding_llm
+        self.embedding_model = embedding_model
 
         # Create the graph
         self.graph = self._create_graph()
 
-    def _create_graph(self):
+    def _create_graph(self) -> CompiledStateGraph:
         # Create state graph
         workflow = StateGraph(AgentState)
 
@@ -165,12 +166,12 @@ class ReviewSummarizerAgent:
             response = model_runnable.invoke(messages)
             return {"messages": [response]}
         else:
-            full_messages = messages + [SystemMessage(content=self.FORMAT_INSTRUCTION)]
+            full_messages = messages + [SystemMessage(content=FORMAT_INSTRUCTION)]
             model_runnable = self.model.with_structured_output(ResponseFormat)
             structured_response = model_runnable.invoke(full_messages)
             return {"structured_response": structured_response}
 
-    def _should_call_tool(self, state: AgentState):
+    def _should_call_tool(self, state: AgentState) -> str:
         # Check if the last message has tool calls
         last_message = state["messages"][-1]
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
@@ -182,11 +183,11 @@ class ReviewSummarizerAgent:
     ) -> AsyncIterable[dict[str, Any]]:
         inputs = {
             "messages": [
-                SystemMessage(content=self.SYSTEM_INSTRUCTION),
+                SystemMessage(content=SYSTEM_INSTRUCTION),
                 HumanMessage(content=query),
             ]
         }
-        config = {"configurable": {"thread_id": context_id}}
+        config = RunnableConfig({"configurable": {"thread_id": context_id}})
 
         # Stream the execution
         final_state = None
@@ -219,22 +220,22 @@ class ReviewSummarizerAgent:
 
         # Get response from final state
         if final_state and "structured_response" in final_state:
-            sr = final_state["structured_response"]
-            if sr.status == "completed":
+            response = final_state["structured_response"]
+            if response.status == "completed":
                 yield {
-                    "content": sr.message,
+                    "content": response.message,
                     "is_task_complete": True,
                     "require_user_input": False,
                 }
-            elif sr.status == "input_required":
+            elif response.status == "input_required":
                 yield {
-                    "content": sr.message,
+                    "content": response.message,
                     "is_task_complete": False,
                     "require_user_input": True,
                 }
             else:  # error
                 yield {
-                    "content": sr.message,
+                    "content": response.message,
                     "is_task_complete": False,
                     "require_user_input": False,
                 }

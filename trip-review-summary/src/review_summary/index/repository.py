@@ -69,7 +69,7 @@ class ReviewEmbeddingRepository:
         embedding: list[float] | None = None,
     ) -> bool:
         """update embedding record by its MongoDB ObjectId"""
-        update_data = {}
+        update_data: dict[str, Any] = {}
         if embedding is not None:
             update_data["embedding"] = embedding
         update_data["review_content"] = review_content

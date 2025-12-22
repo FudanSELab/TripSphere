@@ -23,7 +23,9 @@ build-backend = "uv_build"
 dev = [
     "grpcio-tools>=1.76.0",
     "mypy>=1.19.1",
+    "mypy-protobuf>=4.0.0",
     "pyright>=1.1.407",
+    "types-grpcio>=1.0.0.20251009",
 ]
 
 [tool.uv.sources]
