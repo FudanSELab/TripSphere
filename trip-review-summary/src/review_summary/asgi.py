@@ -22,7 +22,7 @@ from starlette.applications import Starlette
 from starlette.routing import Mount
 
 from review_summary.agent.agent import ReviewSummarizerAgent
-from review_summary.agent.agent_executor import ReviewSummarizerAgentExecutor
+from review_summary.agent.executor import ReviewSummarizerAgentExecutor
 from review_summary.mq.mq import run_mq_consumer
 
 load_dotenv()
@@ -103,12 +103,7 @@ def _create_a2a_app() -> A2AStarletteApplication:
 def create_app() -> Starlette:
     inner_app: A2AStarletteApplication = _create_a2a_app()
 
-    app = Starlette(
-        lifespan=lifespan,
-        routes=[
-            Mount("/", app=inner_app),
-        ],
-    )
+    app = Starlette(lifespan=lifespan, routes=[Mount("/", app=inner_app)])
     return app
 
 

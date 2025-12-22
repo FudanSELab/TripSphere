@@ -1,28 +1,25 @@
 import asyncio
 import json
 import logging
-import os
 from typing import Any, Dict
 
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 from rocketmq import ClientConfiguration, Credentials, FilterExpression, Message
 from rocketmq.v5.consumer import PushConsumer
 from rocketmq.v5.consumer.message_listener import ConsumeResult, MessageListener
 
+from review_summary.config.settings import get_settings
 from review_summary.index.embedding import text_to_embedding_async
-from review_summary.respositry.mongo import ReviewEmbeddingRepository
+from review_summary.index.repository import ReviewEmbeddingRepository
 
-MONGODB_URI = os.getenv(
-    "MONGODB_URI",
-    "mongodb+srv://LJC:asasdd@cluster0.gif9hs8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-)
-DATABASE_NAME = os.getenv("DATABASE_NAME", "review_summary_db")
-ROCK_MQ_NAMESRV_ADDR = os.getenv(
-    "ROCK_MQ_NAMESRV_ADDR", "47.120.37.103:8081"
-)  # gRPC 地址
-client = AsyncIOMotorClient(MONGODB_URI)
-db = client[DATABASE_NAME]
-repo = ReviewEmbeddingRepository(db)
+settings = get_settings()
+
+ROCK_MQ_NAMESRV_ADDR = settings.rocketmq.namesrv_addr
+
+
+client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
+db = client[settings.mongo.database]
+repo = ReviewEmbeddingRepository(db[ReviewEmbeddingRepository.COLLECTION_NAME])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

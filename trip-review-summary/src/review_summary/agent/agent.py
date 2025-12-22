@@ -16,27 +16,24 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
+from pymongo import AsyncMongoClient
 
-import review_summary.grpc.attraction as attraction_grpc
+import review_summary.agent.grpc.attraction as attraction_grpc
+from review_summary.config.settings import get_settings
 from review_summary.index.embedding import text_to_embedding_async
 from review_summary.prompt.prompt import FORMAT_INSTRUCTION, SYSTEM_INSTRUCTION
-from review_summary.respositry.mongo import ReviewEmbeddingRepository
+from review_summary.index.repository import ReviewEmbeddingRepository
 
 # Load environment variables
 ATTRACTION_GRPC_SERVICE_HOST = os.getenv("ATTRACTION_GRPC_SERVICE_HOST", "127.0.0.1")
 ATTRACTION_GRPC_SERVICE_PORT = int(os.getenv("ATTRACTION_GRPC_SERVICE_PORT", "9007"))
-MONGODB_URI = os.getenv(
-    "MONGODB_URI",
-    "mongodb+srv://LJC:asasdd@cluster0.gif9hs8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-)
-DATABASE_NAME = os.getenv("DATABASE_NAME", "review_summary_db")
 
 # Initialize MongoDB client and repository
-client = AsyncIOMotorClient(MONGODB_URI)
-db = client[DATABASE_NAME]
-repo = ReviewEmbeddingRepository(db)
+settings = get_settings()
+client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
+db = client[settings.mongo.database]
+repo = ReviewEmbeddingRepository(db[ReviewEmbeddingRepository.COLLECTION_NAME])
 
 
 class ResponseFormat(BaseModel):

@@ -11,16 +11,12 @@ from a2a.types import (
     TextPart,
     UnsupportedOperationError,
 )
-from a2a.utils import (
-    new_agent_text_message,
-    new_task,
-)
+from a2a.utils import new_agent_text_message, new_task
 from a2a.utils.errors import ServerError
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from review_summary.agent.agent import ReviewSummarizerAgent
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -54,18 +50,14 @@ class ReviewSummarizerAgentExecutor(AgentExecutor):
                     await updater.update_status(
                         TaskState.working,
                         new_agent_text_message(
-                            item["content"],
-                            task.context_id,
-                            task.id,
+                            item["content"], task.context_id, task.id
                         ),
                     )
                 elif require_user_input:
                     await updater.update_status(
                         TaskState.input_required,
                         new_agent_text_message(
-                            item["content"],
-                            task.context_id,
-                            task.id,
+                            item["content"], task.context_id, task.id
                         ),
                         final=True,
                     )
