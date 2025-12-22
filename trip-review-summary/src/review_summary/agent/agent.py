@@ -9,12 +9,12 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.tools import tool
+from langchain_core.tools import tool  # type: ignore
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, StateGraph
-from langgraph.graph.message import add_messages
+from langgraph.graph import END, StateGraph  # type: ignore
+from langgraph.graph.message import add_messages  # type: ignore
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
 from pymongo import AsyncMongoClient
@@ -22,8 +22,8 @@ from pymongo import AsyncMongoClient
 import review_summary.agent.grpc.attraction as attraction_grpc
 from review_summary.config.settings import get_settings
 from review_summary.index.embedding import text_to_embedding_async
-from review_summary.prompt.prompt import FORMAT_INSTRUCTION, SYSTEM_INSTRUCTION
 from review_summary.index.repository import ReviewEmbeddingRepository
+from review_summary.prompt.prompt import FORMAT_INSTRUCTION, SYSTEM_INSTRUCTION
 
 # Load environment variables
 ATTRACTION_GRPC_SERVICE_HOST = os.getenv("ATTRACTION_GRPC_SERVICE_HOST", "127.0.0.1")
@@ -54,25 +54,17 @@ class AgentState(TypedDict):
 
 
 @tool
-async def get_attraction_id(
-    attraction_name: str,
-):
-    """Use this to get the ID of an attraction based on its name.
+async def get_attraction_id(attraction_name: str):
+    """Get the ID of an attraction based on its name.
 
     Args:
-        attraction_name: The name of the attraction to get the ID for.
+        attraction_name: Name of the attraction to get the ID for.
 
     Returns:
         A dictionary containing the attraction ID, or an error message if
         the request fails.
     """
-    # Tool implementation would go here
-    return await attraction_grpc.find_attraction_id_by_name(
-        name=attraction_name,
-        host=ATTRACTION_GRPC_SERVICE_HOST,
-        port=ATTRACTION_GRPC_SERVICE_PORT,
-    )
-    # return "review_23456"
+    return await attraction_grpc.find_attraction_id_by_name(attraction_name)
 
 
 @tool

@@ -8,10 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 async def find_attraction_id_by_name(
-    name: str, host: str = "127.0.0.1", port: int = 9007
+    name: str, service_name: str = "trip-attraction-service"
 ) -> str:
     # Nacos service discovery would go here (omitted for brevity)
     # TODO
+    host = ""
+    port = ""
 
     # Create an insecure channel (development)
     with grpc.insecure_channel(f"{host}:{port}") as channel:

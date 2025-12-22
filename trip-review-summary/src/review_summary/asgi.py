@@ -11,21 +11,16 @@ from a2a.server.tasks import (
     InMemoryPushNotificationConfigStore,
     InMemoryTaskStore,
 )
-from a2a.types import (
-    AgentCapabilities,
-    AgentCard,
-    AgentSkill,
-)
-from dotenv import load_dotenv
+from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from starlette.applications import Starlette
 from starlette.routing import Mount
 
 from review_summary.agent.agent import ReviewSummarizerAgent
 from review_summary.agent.executor import ReviewSummarizerAgentExecutor
-from review_summary.mq.mq import run_mq_consumer
+from review_summary.rocketmq import run_rocketmq_consumer
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
 # Global variables for MQ task management
 mq_task: asyncio.Task | None = None
@@ -35,21 +30,21 @@ stop_event = asyncio.Event()
 @asynccontextmanager
 async def lifespan(app: A2AStarletteApplication):
     global mq_task
-    logging.info("Starting MQ consumer in background...")
+    logger.info("Starting MQ consumer in background...")
 
     # Start MQ consumer as a background task
-    mq_task = asyncio.create_task(run_mq_consumer(stop_event))
+    mq_task = asyncio.create_task(run_rocketmq_consumer(stop_event))
 
     yield  # while the ASGI app is running
 
     # Shutdown phase
-    logging.info("Shutting down MQ consumer...")
+    logger.info("Shutting down MQ consumer...")
     stop_event.set()  # notify the consumer to exit
     try:
         await asyncio.wait_for(mq_task, timeout=30.0)  # wait up to 10 seconds
     except asyncio.TimeoutError:
-        logging.warning("MQ consumer did not shut down gracefully in time")
-    logging.info("MQ consumer shutdown complete")
+        logger.warning("MQ consumer did not shut down gracefully in time")
+    logger.info("MQ consumer shutdown complete")
 
 
 def _create_a2a_app() -> A2AStarletteApplication:

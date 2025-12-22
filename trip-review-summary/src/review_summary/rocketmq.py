@@ -12,17 +12,12 @@ from review_summary.config.settings import get_settings
 from review_summary.index.embedding import text_to_embedding_async
 from review_summary.index.repository import ReviewEmbeddingRepository
 
+logger = logging.getLogger(__name__)
+
 settings = get_settings()
-
-ROCK_MQ_NAMESRV_ADDR = settings.rocketmq.namesrv_addr
-
-
 client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
 db = client[settings.mongo.database]
 repo = ReviewEmbeddingRepository(db[ReviewEmbeddingRepository.COLLECTION_NAME])
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 async def handle_create_review(msg_content: Dict[str, Any]):
@@ -82,12 +77,12 @@ class ReviewMessageListener(MessageListener):
             return ConsumeResult.FAILURE
 
 
-async def run_mq_consumer(stop_event: asyncio.Event):
+async def run_rocketmq_consumer(stop_event: asyncio.Event):
     consumer_group = "ReviewSummaryConsumerGroup"
     topic = "ReviewTopic"
     credentials = Credentials()
 
-    config = ClientConfiguration(ROCK_MQ_NAMESRV_ADDR, credentials)
+    config = ClientConfiguration(settings.rocketmq.namesrv_addr, credentials)
 
     consumer = PushConsumer(
         config, consumer_group, ReviewMessageListener(), {topic: FilterExpression()}
@@ -101,16 +96,3 @@ async def run_mq_consumer(stop_event: asyncio.Event):
         logger.info("Shutting down MQ consumer...")
         consumer.shutdown()
         logger.info("MQ consumer shut down")
-
-
-# if __name__ == "__main__":
-#     async def _main():
-#         stop = asyncio.Event()
-#         task = asyncio.create_task(run_mq_consumer(stop))
-#         try:
-#             await asyncio.sleep(3600)  # run for 1 hour or until Ctrl+C
-#         except KeyboardInterrupt:
-#             stop.set()
-#         await task
-
-#     asyncio.run(_main())
