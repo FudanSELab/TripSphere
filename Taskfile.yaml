@@ -24,3 +24,8 @@ tasks:
         platforms: [linux, darwin]
       - cmd: powershell -File scripts/copy-protos.ps1 {{.SERVICES}}
         platforms: [windows]
+
+  start:
+    desc: Start all the services using Docker Compose
+    cmds:
+      - echo Not Implemented Yet
