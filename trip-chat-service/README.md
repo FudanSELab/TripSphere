@@ -1,27 +1,6 @@
-First, synchronize the dependencies:
+Make sure you have installed [uv](https://docs.astral.sh/uv/) and [Task](https://taskfile.dev/).
 
-```bash
-uv sync  # Install dependencies and dev-dependencies
-```
-
-Second, generate the gRPC code:
-
-```bash
-uv run -m grpc_tools.protoc \
-    -Ilibs/proto \
-    --python_out=libs/tripsphere/src \
-    --grpc_python_out=libs/tripsphere/src \
-    --mypy_out=libs/tripsphere/src \
-    --mypy_grpc_out=libs/tripsphere/src \
-    libs/proto/tripsphere/**/*.proto
-```
-
-Third, install the auto instrumentation:
-
-```bash
-uv run opentelemetry-bootstrap -a requirements \
-    | uv pip install --requirements -
-```
+Run `task install` to set up the development environment.
 
 Set the OpenTelemetry environment variables:
 
@@ -38,7 +17,7 @@ export UVICORN_HOST="0.0.0.0"
 export UVICORN_PORT="24210"
 ```
 
-Finally, make sure MongoDB and Nacos are running and start the server:
+Finally, make sure MongoDB, Nacos, and Otel-collector are running. Start the server:
 
 ```bash
 uv run opentelemetry-instrument \
