@@ -14,15 +14,16 @@ from chat.routers.conversation import conversations
 from chat.routers.memory import memories
 from chat.routers.message import messages
 
-setup_logging()
-
 logger = logging.getLogger(__name__)
+
+setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Loaded settings: {settings}")
+
     app.state.httpx_client = AsyncClient()
     app.state.mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
     try:
@@ -35,9 +36,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
         yield
+
     except Exception as e:
         logger.error(f"Exception during lifespan startup: {e}")
         raise
+
     finally:
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):

@@ -1,38 +1,70 @@
 import logging
+from functools import lru_cache
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from itinerary.config.defaults import defaults
 
 logger = logging.getLogger(__name__)
 
 
-class Service(BaseModel):
-    name: str = Field(default=defaults.service.name)
-    namespace: str = Field(default=defaults.service.namespace)
+class AppSettings(BaseModel):
+    name: str = Field(default="trip-itinerary-service")
+    debug: bool = Field(default=False)
 
 
-class Grpc(BaseModel):
-    port: int = Field(default=defaults.grpc.port)
+class GrpcSettings(BaseModel):
+    port: int = Field(default=50051)
 
 
-class Nacos(BaseModel):
-    server_address: str = Field(default=defaults.nacos.server_address)
-    namespace_id: str = Field(default=defaults.nacos.namespace_id)
-    group_name: str = Field(default=defaults.nacos.group_name)
+class NacosSettings(BaseModel):
+    server_address: str = Field(default="localhost:8848")
+    namespace_id: str = Field(default="public")
+    group_name: str = Field(default="DEFAULT_GROUP")
+
+
+class MongoSettings(BaseModel):
+    uri: str = Field(default="mongodb://localhost:27017")
+    database: str = Field(default="itinerary_db")
+
+
+class LogSettings(BaseModel):
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        default="INFO"
+    )
+    file: bool = Field(default=False)
+
+    @field_validator("level", mode="before")
+    @classmethod
+    def normalize_level(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.upper()
+        return value
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_nested_delimiter="__", cli_parse_args=True)
-    service: Service = Field(default_factory=Service)
-    grpc: Grpc = Field(default_factory=Grpc)
-    nacos: Nacos = Field(default_factory=Nacos)
+    model_config = SettingsConfigDict(
+        env_file=[".env.local", ".env.development", ".env"],
+        env_file_encoding="utf-8",
+        env_nested_delimiter="_",
+        env_nested_max_split=1,
+    )
+    app: AppSettings = Field(default_factory=AppSettings)
+    grpc: GrpcSettings = Field(default_factory=GrpcSettings)
+    nacos: NacosSettings = Field(default_factory=NacosSettings)
+    mongo: MongoSettings = Field(default_factory=MongoSettings)
+    log: LogSettings = Field(default_factory=LogSettings)
+
+    def model_post_init(self, _: Any) -> None:
+        if self.app.debug is True:
+            self.log.level = "DEBUG"
 
 
-settings = Settings()
+@lru_cache(maxsize=1, typed=True)
+def get_settings() -> Settings:
+    return Settings()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logger.debug(f"{settings}")
+    logger.debug(f"{get_settings()}")
