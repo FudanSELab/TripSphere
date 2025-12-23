@@ -1,0 +1,38 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  install:
+    desc: Set up project development environment
+    cmds:
+      - uv sync  # Install dependencies and dev-dependencies
+      - task gen-protos
+      - task otel-instr
+
+  otel-instr:
+    desc: Install OpenTelemetry instrumentation packages
+    cmd: |
+      uv run opentelemetry-bootstrap -a requirements \
+        | uv pip install --requirements -
+
+  gen-protos:
+    desc: Compile .proto files in libs/proto/
+    sources: ['libs/proto/**/*.proto']
+    cmds:
+      - for: sources
+        cmd: |
+          uv run -m grpc_tools.protoc \
+            -Ilibs/proto \
+            --python_out=libs/tripsphere/src \
+            --grpc_python_out=libs/tripsphere/src \
+            --mypy_out=libs/tripsphere/src \
+            --mypy_grpc_out=libs/tripsphere/src \
+            "{{.ITEM}}"
+    silent: true
