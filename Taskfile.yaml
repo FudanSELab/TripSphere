@@ -22,5 +22,5 @@ tasks:
     cmds:
       - cmd: bash scripts/copy-protos.sh {{.SERVICES}}
         platforms: [linux, darwin]
-      - cmd: pwsh -File scripts/copy-protos.ps1 {{.SERVICES}}
+      - cmd: powershell -File scripts/copy-protos.ps1 {{.SERVICES}}
         platforms: [windows]
