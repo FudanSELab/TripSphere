@@ -1,53 +1,45 @@
 import logging
+from functools import lru_cache
 
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from itinerary_planner.config.defaults import defaults
-
 logger = logging.getLogger(__name__)
 
 
-class Service(BaseModel):
-    name: str = Field(default=defaults.service.name)
-    namespace: str = Field(default=defaults.service.namespace)
+class AppSettings(BaseModel):
+    name: str = Field(default="trip-itinerary-planner")
 
 
-class Grpc(BaseModel):
-    port: int = Field(default=defaults.grpc.port)
+class NacosSettings(BaseModel):
+    enabled: bool = Field(default=True)
+    server_address: str = Field(default="localhost:8848")
+    namespace_id: str = Field(default="public")
+    group_name: str = Field(default="DEFAULT_GROUP")
 
 
-class Nacos(BaseModel):
-    enabled: bool = Field(default=defaults.nacos.enabled)
-    server_address: str = Field(default=defaults.nacos.server_address)
-    namespace_id: str = Field(default=defaults.nacos.namespace_id)
-    group_name: str = Field(default=defaults.nacos.group_name)
-
-
-class LLM(BaseModel):
-    model: str = Field(default=defaults.llm.model)
-    temperature: float = Field(default=defaults.llm.temperature)
-    max_tokens: int = Field(default=defaults.llm.max_tokens)
-    api_key: SecretStr = Field(default=SecretStr(""))
-    base_url: str | None = Field(default=defaults.llm.base_url)
+class OpenAISettings(BaseModel):
+    api_key: SecretStr = Field(default=SecretStr("api-key"))
+    base_url: str = Field(default="https://api.openai.com/v1")
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_nested_delimiter="__",
-        cli_parse_args=True,
-        env_file=".env",
+        env_file=[".env.local", ".env.development", ".env"],
         env_file_encoding="utf-8",
+        env_nested_delimiter="_",
+        env_nested_max_split=1,
     )
-    service: Service = Field(default_factory=Service)
-    grpc: Grpc = Field(default_factory=Grpc)
-    nacos: Nacos = Field(default_factory=Nacos)
-    llm: LLM = Field(default_factory=LLM)
+    app: AppSettings = Field(default_factory=AppSettings)
+    nacos: NacosSettings = Field(default_factory=NacosSettings)
+    openai: OpenAISettings = Field(default_factory=OpenAISettings)
 
 
-settings = Settings()
+@lru_cache(maxsize=1, typed=True)
+def get_settings() -> Settings:
+    return Settings()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logger.debug(f"{settings}")
+    logger.debug(f"{get_settings()}")

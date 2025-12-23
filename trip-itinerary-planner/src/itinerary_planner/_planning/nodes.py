@@ -9,24 +9,25 @@ from typing import Any
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from itinerary_planner.config.settings import settings
-from itinerary_planner.planning.state import ItineraryState, Question
+from itinerary_planner.config.settings import get_settings
+from itinerary_planner._planning.state import ItineraryState, Question
 
 logger = logging.getLogger(__name__)
 
 
+settings = get_settings()
+
 def get_llm() -> ChatOpenAI:
     """Get configured LLM instance."""
     llm_kwargs: dict[str, Any] = {
-        "model": settings.llm.model,
-        "temperature": settings.llm.temperature,
-        "max_tokens": settings.llm.max_tokens,
-        "api_key": settings.llm.api_key.get_secret_value(),
+        "model": "gpt-4o-mini",
+        "temperature": 0.3,
+        "api_key": settings.openai.api_key.get_secret_value(),
     }
 
     # Add base_url if configured
-    if settings.llm.base_url:
-        llm_kwargs["base_url"] = settings.llm.base_url
+    if settings.openai.base_url:
+        llm_kwargs["base_url"] = settings.openai.base_url
 
     return ChatOpenAI(**llm_kwargs)
 
