@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package tripsphere.itinerary;
+
+option java_multiple_files = true;
+option java_package = "org.tripsphere.itinerary";
+option java_outer_classname = "ItineraryProto";
+
+service ItineraryService {
+  // Create a new itinerary.
+  rpc CreateItinerary(CreateItineraryRequest) returns (CreateItineraryResponse) {}
+
+  // Get an existing itinerary by ID.
+  rpc GetItinerary(GetItineraryRequest) returns (GetItineraryResponse) {}
+}
