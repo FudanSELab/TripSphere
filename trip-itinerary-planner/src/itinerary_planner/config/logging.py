@@ -44,7 +44,7 @@ def setup_logging() -> None:
         },
         "handlers": handlers,
         "loggers": {
-            "chat": {
+            "itinerary_planner": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
                 "propagate": False,
