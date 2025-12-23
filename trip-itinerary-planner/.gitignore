@@ -1,38 +1,15 @@
-# Python
+# Byte-compiled
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
 
-# UV
-.uv/
-uv.lock
+# Protobuf
+libs/proto/
 
-# Generated protobuf
-libs/tripsphere/src/tripsphere/**/*_pb2.py
-libs/tripsphere/src/tripsphere/**/*_pb2.pyi
-libs/tripsphere/src/tripsphere/**/*_pb2_grpc.py
-libs/tripsphere/src/tripsphere/**/*_pb2_grpc.pyi
+# Logs
+logs/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Type checking
-.mypy_cache/
-.pytype/
-
-# Environment
-.env
+# Environment variables
 .env.local
+.env.development
 
+# Taskfile
+.task/

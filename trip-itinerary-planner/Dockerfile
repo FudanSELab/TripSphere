@@ -76,7 +76,7 @@ WORKDIR /app
 
 EXPOSE 50059
 
-# Run the gRPC server by default
-ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "itinerary_planner.server"]
+# TODO: Run the agent server
+ENTRYPOINT ["opentelemetry-instrument"]
 CMD []
 
