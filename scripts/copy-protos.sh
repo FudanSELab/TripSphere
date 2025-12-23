@@ -4,14 +4,12 @@
 
 set -eu
 
-readonly SRC_DIR="contracts/protobuf"
+readonly PROTO_SRC_DIR="contracts/protobuf"
 
-refresh_local_proto() {
+copy_protos() {
     local service_dir=$1
     local service_lang=""
     local dest_dir=""
-
-    echo "====== Refresh $service_dir protos ======"
 
     if [[ -f "$service_dir/pom.xml" ]]; then
         service_lang="Java"
@@ -25,30 +23,35 @@ refresh_local_proto() {
         service_lang="Go"
         dest_dir="$service_dir/proto"
 
+    elif [[ -f "$service_dir/package.json" ]]; then
+        service_lang="Node.js"
+        dest_dir="$service_dir/lib/proto"
+
     else
         echo "[WARN] Skip $service_dir (language not recognized)"
         return
     fi
 
-    echo "Detected $service_lang service, refreshing protos in $dest_dir"
+    echo "Detected $service_lang service, copying protos to $dest_dir"
 
     rm -rf "$dest_dir"
     mkdir -p "$dest_dir"
-    cp -r "$SRC_DIR/"* "$dest_dir/"
+    cp -r "$PROTO_SRC_DIR/"* "$dest_dir/"
 
-    echo "[OK] Protos refreshed for $service_dir"
+    echo "Protos are copied to $service_dir"
 }
 
 if [[ $# -eq 0 ]]; then
-    SERVICE_DIRS=(trip-*-service)
+    echo "Usage: copy-protos.sh <service-dir> [service-dir...]"
+    exit 1
 else
     SERVICE_DIRS=("$@")
 fi
 
 for dir in "${SERVICE_DIRS[@]}"; do
     if [[ -d "$dir" ]]; then
-        refresh_local_proto "$dir"
+        copy_protos "$dir"
     else
-        echo "[WARN] Directory $dir not found"
+        echo "[WARN] Directory not found: $dir"
     fi
 done

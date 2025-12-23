@@ -1,0 +1,26 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  PROTO_SRC_DIR: contracts/protobuf
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  copy-protos:
+    desc: Copy .proto files to service directories
+    summary: |
+      Copy .proto files from contracts/protobuf to service directories.
+      If `SERVICES` is not specified, all trip-* directories will be processed.
+    vars:
+      SERVICES: '{{.SERVICES | default "trip-*"}}'
+    cmds:
+      - cmd: bash scripts/copy-protos.sh {{.SERVICES}}
+        platforms: [linux, darwin]
+      - cmd: pwsh -File scripts/copy-protos.ps1 {{.SERVICES}}
+        platforms: [windows]
