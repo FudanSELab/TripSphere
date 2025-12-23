@@ -6,10 +6,9 @@ requires-python = ">=3.12"
 dependencies = [
     "grpcio>=1.75.0",
     "nacos-sdk-python>=2.0.9",
-    "opentelemetry-distro>=0.58b0",
-    "opentelemetry-exporter-otlp>=1.37.0",
+    "opentelemetry-distro[otlp]>=0.58b0",
     "pydantic-settings>=2.11.0",
-    "tripsphere",
+    "tripsphere>=0.1.0",
 ]
 
 [build-system]
@@ -20,19 +19,16 @@ build-backend = "uv_build"
 dev = [
     "grpcio-tools>=1.75.0",
     "mypy>=1.18.2",
-    "mypy-protobuf",
+    "mypy-protobuf>=4.0.0",
     "pyright>=1.1.405",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
     "pytest-mock>=3.15.1",
     "types-grpcio>=1.0.0.20250914",
-    "v2-stubs>=2.0.9",
 ]
 
 [tool.uv.sources]
 tripsphere = { workspace = true }
-v2-stubs = { path = "../libs/v2-stubs", editable = true }
-mypy-protobuf = { git = "https://github.com/nipunn1313/mypy-protobuf", branch = "main" }
 
 [tool.uv.workspace]
 members = ["libs/tripsphere"]

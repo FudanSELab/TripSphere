@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package tripsphere.user;
 
-import "google/protobuf/empty.proto";
-
 option go_package = "tripsphere/user";
 
 // User

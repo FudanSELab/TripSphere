@@ -3,3 +3,13 @@ __pycache__/
 
 # Protobuf
 libs/proto/
+
+# Logs
+logs/
+
+# Environment variables
+.env.local
+.env.development
+
+# Taskfile
+.task/

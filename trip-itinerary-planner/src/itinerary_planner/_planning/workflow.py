@@ -6,7 +6,7 @@ from typing import Any, Literal, cast
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from itinerary_planner.planning.nodes import (
+from itinerary_planner._planning.nodes import (
     check_need_clarification,
     create_daily_schedule,
     finalize_itinerary,
@@ -14,7 +14,7 @@ from itinerary_planner.planning.nodes import (
     research_destination,
     suggest_activities,
 )
-from itinerary_planner.planning.state import ItineraryState
+from itinerary_planner._planning.state import ItineraryState
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +101,7 @@ class ItineraryPlanner:
         num_travelers: int,
         preferences: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Plan a complete itinerary.
+        """Plan a complete itinerary.
 
         Args:
             user_id: Unique identifier for the user

@@ -9,13 +9,14 @@ from typing import Any
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from itinerary_planner.config.settings import get_settings
 from itinerary_planner._planning.state import ItineraryState, Question
+from itinerary_planner.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
 
 settings = get_settings()
+
 
 def get_llm() -> ChatOpenAI:
     """Get configured LLM instance."""
