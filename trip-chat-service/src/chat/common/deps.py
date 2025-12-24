@@ -6,7 +6,7 @@ from pymongo import AsyncMongoClient
 
 from chat.config.settings import get_settings
 from chat.conversation.manager import ConversationManager
-from chat.conversation.repositories import (
+from chat.conversation.repository import (
     ConversationRepository,
     MessageRepository,
     MongoConversationRepository,

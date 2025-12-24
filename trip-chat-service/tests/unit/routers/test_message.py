@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pytest_mock import AsyncMockType, MockerFixture
 
-from chat.common.dependencies import (
+from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
     provide_httpx_client,
@@ -16,7 +16,7 @@ from chat.common.dependencies import (
 from chat.common.parts import Part, TextPart
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Author, Conversation, Message
-from chat.conversation.repositories import ConversationRepository, MessageRepository
+from chat.conversation.repository import ConversationRepository, MessageRepository
 from chat.routers.message import messages
 from chat.utils.pagination import CursorPagination
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from pymongo import AsyncMongoClient
 
 from chat.agent.facade import AgentFacade
-from chat.common.dependencies import (
+from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
     provide_httpx_client,
@@ -23,7 +23,7 @@ from chat.common.exceptions import (
 from chat.common.parts import Part
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Conversation, Message
-from chat.conversation.repositories import ConversationRepository, MessageRepository
+from chat.conversation.repository import ConversationRepository, MessageRepository
 from chat.infra.nacos.naming import NacosNaming
 from chat.utils.pagination import CursorPagination
 from chat.utils.sse import encode
