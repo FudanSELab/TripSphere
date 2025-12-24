@@ -11,10 +11,9 @@ from rocketmq import (  # type: ignore
     FilterExpression,
     Message,
 )
-from rocketmq.v5.consumer import PushConsumer  # type: ignore
+from rocketmq.v5.consumer import SimpleConsumer  # type: ignore
 from rocketmq.v5.consumer.message_listener import (  # type: ignore
     ConsumeResult,
-    MessageListener,
 )
 
 from review_summary.config.settings import get_settings
@@ -94,58 +93,80 @@ async def handle_delete_review(msg_body: dict[str, Any]) -> None:
         logger.warning(f"DeleteReview message missing ID: {msg_body}")
 
 
-class ReviewMessageListener(MessageListener):  # type: ignore
-    def consume(self, message: Message) -> ConsumeResult:
-        try:
-            message_body = cast(bytes | None, message.body)  # pyright: ignore[reportUnknownMemberType]
-            if message_body is None:
-                logger.warning("Received message with empty body")
-                return ConsumeResult.SUCCESS
-            body_str = message_body.decode("utf-8")
-            msg_body = json.loads(body_str)
-            msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
-
-            logger.info(
-                f"Received message with tag: {msg_tag}, ID: {msg_body.get('ID')}"
-            )
-
-            # Obtain the background event loop and submit async tasks
-            loop = get_or_create_event_loop()
-            if msg_tag == "CreateReview":
-                future = asyncio.run_coroutine_threadsafe(
-                    handle_create_review(msg_body), loop
-                )
-            elif msg_tag == "UpdateReview":
-                future = asyncio.run_coroutine_threadsafe(
-                    handle_update_review(msg_body), loop
-                )
-            elif msg_tag == "DeleteReview":
-                future = asyncio.run_coroutine_threadsafe(
-                    handle_delete_review(msg_body), loop
-                )
-            else:
-                logger.warning(f"Unknown tag: {msg_tag}")
-                return ConsumeResult.SUCCESS
-            # Wait for the task to complete with a timeout
-            future.result(timeout=30)
+def consume(message: Message) -> ConsumeResult:
+    try:
+        message_body = cast(bytes | None, message.body)  # pyright: ignore[reportUnknownMemberType]
+        if message_body is None:
+            logger.warning("Received message with empty body")
             return ConsumeResult.SUCCESS
+        body_str = message_body.decode("utf-8")
+        msg_body = json.loads(body_str)
+        msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
 
-        except Exception as e:
-            msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
-            logger.error(f"Error processing message (Tag {msg_tag}): {e}")
-            return ConsumeResult.FAILURE
+        logger.info(f"Received message with tag: {msg_tag}, ID: {msg_body.get('ID')}")
+
+        # Obtain the background event loop and submit async tasks
+        loop = get_or_create_event_loop()
+        if msg_tag == "CreateReview":
+            future = asyncio.run_coroutine_threadsafe(
+                handle_create_review(msg_body), loop
+            )
+        elif msg_tag == "UpdateReview":
+            future = asyncio.run_coroutine_threadsafe(
+                handle_update_review(msg_body), loop
+            )
+        elif msg_tag == "DeleteReview":
+            future = asyncio.run_coroutine_threadsafe(
+                handle_delete_review(msg_body), loop
+            )
+        else:
+            logger.warning(f"Unknown tag: {msg_tag}")
+            return ConsumeResult.SUCCESS
+        # Wait for the task to complete with a timeout
+        future.result(timeout=30)
+        return ConsumeResult.SUCCESS
+
+    except Exception as e:
+        msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
+        logger.error(f"Error processing message (Tag {msg_tag}): {e}")
+        return ConsumeResult.FAILURE
 
 
-def create_push_consumer() -> PushConsumer:
+def create_simple_consumer() -> SimpleConsumer:
     consumer_group = "ReviewSummaryConsumerGroup"
     topic = "ReviewTopic"
     credentials = Credentials()
     config = ClientConfiguration(settings.rocketmq.namesrv_addr, credentials)
-    consumer = PushConsumer(
+    consumer = SimpleConsumer(
         client_configuration=config,
         consumer_group=consumer_group,
-        message_listener=ReviewMessageListener(),
         subscription={topic: FilterExpression()},
     )
     logger.info(f"Created consumer [{consumer_group}] for topic [{topic}]")
     return consumer
+
+
+def run_simple_consumer(consumer: SimpleConsumer, stop_event: threading.Event) -> None:
+    consumer.startup()
+    logger.info("SimpleConsumer started and ready to receive messages.")
+    try:
+        while not stop_event.is_set():
+            try:
+                messages = consumer.receive(32, 15)  # type: ignore
+                if messages is not None:  # type: ignore
+                    for msg in messages:  # type: ignore
+                        result = consume(msg)  # type: ignore
+                        if result == ConsumeResult.SUCCESS:
+                            consumer.ack(msg)  # type: ignore
+                        else:
+                            # Do not acknowledge failed messages to allow retry or other handling
+                            logger.error("Message processing failed; skipping ACK.")
+            except Exception as e:
+                if not stop_event.is_set():
+                    logger.error(f"Error receiving messages: {e}")
+    except Exception as e:
+        if not stop_event.is_set():
+            logger.error(f"Error in consumer loop: {e}")
+    finally:
+        logger.info("Shutting down SimpleConsumer...")
+        consumer.shutdown()

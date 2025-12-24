@@ -11,3 +11,6 @@ logs/
 .env
 .env.local
 .env.development
+
+# Taskfile
+.task/

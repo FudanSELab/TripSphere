@@ -1,4 +1,5 @@
 import logging
+import threading
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from typing import AsyncGenerator
@@ -14,32 +15,45 @@ from a2a.server.tasks import (
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from rocketmq.v5.consumer import (  # type: ignore[import-untyped]
-    PushConsumer,
+    SimpleConsumer,
 )  # pyright: ignore[reportMissingTypeStubs]
 from starlette.applications import Starlette
 
 from review_summary.agent.agent import ReviewSummarizerAgent
 from review_summary.agent.executor import ReviewSummarizerAgentExecutor
 from review_summary.config.settings import get_settings
-from review_summary.rocketmq import create_push_consumer
+from review_summary.rocketmq import create_simple_consumer, run_simple_consumer
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
-    consumer: PushConsumer | None = None
+    stop_event = threading.Event()
+    consumer: SimpleConsumer | None = None
+    consumer_thread: threading.Thread | None = None
     try:
         logger.info("Starting RocketMQ consumer in background...")
-        consumer = create_push_consumer()
-        consumer.startup()
+        consumer = create_simple_consumer()
+        consumer_thread = threading.Thread(
+            target=lambda: run_simple_consumer(consumer, stop_event),
+            daemon=False,
+        )
+        consumer_thread.start()
+        logger.info("SimpleConsumer background thread started.")
         yield
     except Exception as e:
         logger.error(f"Error during RocketMQ consumer operation: {e}")
     finally:
+        stop_event.set()
         logger.info("Shutting down background RocketMQ consumer...")
-        if isinstance(consumer, PushConsumer):
-            consumer.shutdown()
+        if consumer_thread and consumer_thread.is_alive():
+            logger.info("Waiting for consumer thread to finish...")
+            consumer_thread.join(timeout=20)
+            if consumer_thread.is_alive():
+                logger.warning("Consumer thread did not exit gracefully!")
+            else:
+                logger.info("Consumer thread exited successfully.")
 
 
 def create_a2a_app() -> A2AStarletteApplication:

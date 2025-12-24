@@ -148,7 +148,11 @@ async def create_daily_schedule(state: ItineraryState) -> dict[str, Any]:
     messages = [
         SystemMessage(
             content=(
-                "You are an expert at creating optimal daily travel itineraries.\nCreate a balanced schedule that considers timing, location proximity, and traveler energy levels.\nReturn your response as a JSON object mapping day numbers to activity lists."
+                "You are an expert at creating optimal daily travel itineraries.\n"
+                "Create a balanced schedule that considers timing, location proximity, "
+                "and traveler energy levels.\n"
+                "Return your response as a JSON object "
+                "mapping day numbers to activity lists."
             )
         ),
         HumanMessage(
