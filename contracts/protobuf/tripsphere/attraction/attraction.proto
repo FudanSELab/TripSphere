@@ -5,6 +5,8 @@ option java_multiple_files = true;
 option java_package = "org.tripsphere.attraction";
 option java_outer_classname = "AttractionServiceProto";
 
+option go_package = "tripsphere/attraction";
+
 // address info
 message Address {
   string country = 1;

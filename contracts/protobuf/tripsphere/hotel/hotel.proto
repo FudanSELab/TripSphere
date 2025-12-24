@@ -6,6 +6,8 @@ option java_multiple_files = true;
 option java_package = "org.tripsphere.hotel";
 option java_outer_classname = "HotelServiceProto";
 
+option go_package = "tripsphere/hotel";
+
 // room info
 message Room {
   string name = 1;

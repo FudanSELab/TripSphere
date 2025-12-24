@@ -6,6 +6,8 @@ option java_multiple_files = true;
 option java_package = "org.tripsphere.itinerary";
 option java_outer_classname = "MetadataProto";
 
+option go_package = "tripsphere/itinerary";
+
 service MetadataService {
   // Get the version of itinerary service.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
