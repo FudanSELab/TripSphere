@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Then, add the rest of the project source code and install it
 # Installing separately from dependencies allows optimal layer caching
-COPY pyproject.toml uv.lock README.md .
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev

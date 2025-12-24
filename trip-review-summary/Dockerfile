@@ -21,7 +21,9 @@ COPY libs ./libs
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv run --locked --no-sync --with grpcio-tools -m grpc_tools.protoc \
+    # grpcio-tools version must match pyproject.toml
+    uv run --locked --no-sync --with 'grpcio-tools>=1.75.1' \
+    -m grpc_tools.protoc \
         -Ilibs/proto \
         --python_out=libs/tripsphere/src \
         --grpc_python_out=libs/tripsphere/src \
@@ -34,7 +36,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-dev
 
 # Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
+# Installing separately from dependencies allows optimal layer caching
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -48,13 +50,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Then, use a final image without uv
 FROM python:3.12-slim-bookworm
-# It is important to use the image that matches the builder, as the path to the
-# Python executable must be the same, e.g., using `python:3.11-slim-bookworm`
-# will fail.
+# It is important to use the image that matches the builder, 
+# as the path to the Python executable must be the same, 
+# e.g., using `python:3.11-slim-bookworm` will fail.
 
 # Setup a non-root user
 RUN groupadd --system --gid 999 nonroot \
- && useradd --system --gid 999 --uid 999 --create-home nonroot
+    && useradd --system --gid 999 --uid 999 --create-home nonroot
 
 # Copy the application from the builder
 COPY --from=builder --chown=nonroot:nonroot /app /app
@@ -63,7 +65,7 @@ COPY --from=builder --chown=nonroot:nonroot /app /app
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Set the OpenTelemetry environment variables
-ENV OTEL_SERVICE_NAME="trip-itinerary-planner" \
+ENV OTEL_SERVICE_NAME="trip-review-summary" \
     OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317" \
     OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
     OTEL_PYTHON_LOG_LEVEL="info" \
@@ -75,9 +77,14 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 50059
+ENV UVICORN_HOST=0.0.0.0
+ENV UVICORN_PORT=24212
 
-# TODO: Run the agent server
-ENTRYPOINT ["opentelemetry-instrument"]
+EXPOSE $UVICORN_PORT
+
+# Start the instrumented app with default (FastAPI) arguments
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "review_summary.asgi:app"]
+# Do NOT directly provide uvicorn `--port` option here.
+# It must be overridden via environment variable.
+# Otherwise, app may register incorrect port in service registry.
 CMD []
-
