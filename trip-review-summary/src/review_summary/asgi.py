@@ -19,8 +19,8 @@ from rocketmq.v5.consumer import (  # type: ignore[import-untyped]
 )  # pyright: ignore[reportMissingTypeStubs]
 from starlette.applications import Starlette
 
-from review_summary.agent.agent import ReviewSummarizerAgent
-from review_summary.agent.executor import ReviewSummarizerAgentExecutor
+from review_summary.agent.agent import ReviewSummaryAgent
+from review_summary.agent.executor import ReviewSummaryAgentExecutor
 from review_summary.config.settings import get_settings
 from review_summary.rocketmq import create_simple_consumer, run_simple_consumer
 
@@ -57,15 +57,15 @@ async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
 
 
 def create_a2a_app() -> A2AStarletteApplication:
-    """Starts the Review Summarizer Agent server."""
+    """Starts the Review Summary Agent server."""
 
     settings = get_settings()
     capabilities = AgentCapabilities(streaming=True, push_notifications=True)
-    skill = AgentSkill(
+    agent_skill = AgentSkill(
         id="summarize_reviews",
-        name="Review Summarization Tool",
+        name="Review Summary Tool",
         description="Helps with summarizing reviews of attractions and hotels.",
-        tags=["review summarization", "hotel reviews", "attraction reviews"],
+        tags=["review summary", "hotel reviews", "attraction reviews"],
         examples=[
             "Summarize the reviews for Eiffel Tower",
             "What do people think about Disneyland?",
@@ -78,10 +78,10 @@ def create_a2a_app() -> A2AStarletteApplication:
         " answer user questions about hotels and attractions",
         url=f"http://{settings.uvicorn.host}:{settings.uvicorn.port}",
         version=version("review_summary"),
-        default_input_modes=ReviewSummarizerAgent.SUPPORTED_CONTENT_TYPES,
-        default_output_modes=ReviewSummarizerAgent.SUPPORTED_CONTENT_TYPES,
+        default_input_modes=ReviewSummaryAgent.SUPPORTED_CONTENT_TYPES,
+        default_output_modes=ReviewSummaryAgent.SUPPORTED_CONTENT_TYPES,
         capabilities=capabilities,
-        skills=[skill],
+        skills=[agent_skill],
     )
 
     httpx_client = httpx.AsyncClient()
@@ -100,14 +100,14 @@ def create_a2a_app() -> A2AStarletteApplication:
         api_key=settings.openai.api_key,
         base_url=settings.openai.base_url,
     )
-    request_handler = DefaultRequestHandler(
-        agent_executor=ReviewSummarizerAgentExecutor(chat_model, embedding_model),
+    http_handler = DefaultRequestHandler(
+        agent_executor=ReviewSummaryAgentExecutor(chat_model, embedding_model),
         task_store=InMemoryTaskStore(),
         push_config_store=push_config_store,
         push_sender=push_sender,
     )
-    server = A2AStarletteApplication(agent_card, request_handler)
-    return server
+    a2a_app = A2AStarletteApplication(agent_card, http_handler)
+    return a2a_app
 
 
 app = create_a2a_app().build(lifespan=lifespan)

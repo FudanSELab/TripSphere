@@ -121,7 +121,7 @@ services:
 
   # Qdrant
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.16
     restart: always
     container_name: qdrant
     ports:
