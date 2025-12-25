@@ -100,18 +100,28 @@ class RocketMQConsumer:
 
     def run_consumer(self) -> None:
         logger.info("RocketMQ consumer start running")
+        app_settings = get_settings().app
         while self._running:
             try:
                 messages = self.consumer.receive(
                     self.MAX_MESSAGE_NUM, self.INVISIBLE_DURATION
                 )
                 if messages is not None and len(messages) > 0:
+                    # Process messages sequentially to maintain order
                     for message in messages:
-                        asyncio.run_coroutine_threadsafe(
-                            self._consume(message), self.loop
-                        )
+                        try:
+                            future = asyncio.run_coroutine_threadsafe(
+                                self._consume(message), self.loop
+                            )
+                            future.result(timeout=self.WAIT_TIMEOUT_SECONDS)
+                        except Exception as e:
+                            logger.error(f"Message processing failed: {e}")
+                            # Ack on error to prevent blocking the queue
+                            self.consumer.ack(message)
             except Exception as e:
-                logger.error(f"Error in consumer loop: {e}", exc_info=True)
+                logger.error(
+                    f"Error in consumer loop: {e}", exc_info=app_settings.debug
+                )
         logger.info("RocketMQ consumer stopped")
 
     async def handle_create_review(self, message_body: dict[str, Any]) -> None:
