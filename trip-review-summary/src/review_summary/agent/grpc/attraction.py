@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 async def find_attraction_id_by_name(
     name: str, service_name: str = "trip-attraction-service"
 ) -> str:
-    # Nacos service discovery would go here (omitted for brevity)
-    # TODO
+    # TODO: Nacos service discovery would go here (omitted for brevity)
     host = ""
     port = ""
 

@@ -2,171 +2,149 @@ import asyncio
 import json
 import logging
 import threading
-from typing import Any, cast
+from asyncio import AbstractEventLoop
+from typing import Any
 
-from pymongo import AsyncMongoClient
-from rocketmq import (  # type: ignore
+from rocketmq import (  # pyright: ignore[reportMissingTypeStubs]
     ClientConfiguration,
     Credentials,
     FilterExpression,
     Message,
-)
-from rocketmq.v5.consumer import SimpleConsumer  # type: ignore
-from rocketmq.v5.consumer.message_listener import (  # type: ignore
-    ConsumeResult,
+    SimpleConsumer,
 )
 
 from review_summary.config.settings import get_settings
-from review_summary.index.embedding import text_to_embedding_async
-from review_summary.index.repository import ReviewEmbeddingRepository
+from review_summary.index.embedding import text_to_embedding
+from review_summary.index.repository import ReviewEmbedding, ReviewEmbeddingRepository
 
 logger = logging.getLogger(__name__)
 
-settings = get_settings()
-client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
-db = client[settings.mongo.database]
-repo = ReviewEmbeddingRepository(db[ReviewEmbeddingRepository.COLLECTION_NAME])
 
+class RocketMQConsumer:
+    CONSUMER_GROUP = "ReviewSummaryConsumerGroup"
+    TOPIC = "ReviewTopic"
+    MAX_MESSAGE_NUM = 32
+    INVISIBLE_DURATION = 10
+    WAIT_TIMEOUT_SECONDS = 32
 
-# Dedicated background event loop for running async message handlers
-_loop: asyncio.AbstractEventLoop | None = None
-_loop_thread: threading.Thread | None = None
-
-
-def _start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
-    """Run the given event loop in a background thread."""
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
-def get_or_create_event_loop() -> asyncio.AbstractEventLoop:
-    """Get or create the event loop used for message processing.
-
-    This function ensures we have a single long-running event loop
-    running in a dedicated daemon thread so coroutines can be submitted from
-    synchronous callbacks using `asyncio.run_coroutine_threadsafe`.
-    """
-    global _loop, _loop_thread
-    if _loop is None or not _loop.is_running():
-        _loop = asyncio.new_event_loop()
-        _loop_thread = threading.Thread(
-            target=_start_background_loop, args=(_loop,), daemon=True
+    def __init__(self, repository: ReviewEmbeddingRepository) -> None:
+        # Initialize RocketMQ SimpleConsumer
+        credentials = Credentials()
+        rocketmq_settings = get_settings().rocketmq
+        config = ClientConfiguration(rocketmq_settings.endpoints, credentials)
+        self.consumer = SimpleConsumer(
+            client_configuration=config,
+            consumer_group=self.CONSUMER_GROUP,
+            subscription={self.TOPIC: FilterExpression()},
         )
-        _loop_thread.start()
-    return _loop
+        self.consumer.startup()
 
+        # Initialize background event loop for async processing
+        def _start_event_loop(loop: AbstractEventLoop) -> None:
+            asyncio.set_event_loop(loop)
+            loop.run_forever()
 
-async def handle_create_review(msg_body: dict[str, Any]) -> None:
-    review_id = msg_body.get("ID")
-    review_text = msg_body.get("Text")
-    attraction_id = msg_body.get("TargetID")
-    if review_id is None or review_text is None or attraction_id is None:
-        logger.warning(f"CreateReview message missing fields: {msg_body}")
-        return
-    embedding = await text_to_embedding_async(review_text)
-    await repo.create_embedding(
-        review_id=review_id,
-        attraction_id=attraction_id,
-        embedding=embedding,
-        review_content=review_text,
-    )
+        self.loop = asyncio.new_event_loop()
+        self.loop_thread = threading.Thread(
+            target=_start_event_loop, args=(self.loop,), daemon=True
+        )
+        self.loop_thread.start()
 
+        self.repository = repository
 
-async def handle_update_review(msg_body: dict[str, Any]) -> None:
-    review_id = msg_body.get("ID")
-    review_text = msg_body.get("Text")
-    _ = msg_body.get("TargetID")
-    if review_id is None or review_text is None:
-        logger.warning(f"UpdateReview message missing fields: {msg_body}")
-        return
-    embedding = await text_to_embedding_async(review_text)
-    await repo.update_embedding_by_review_id(
-        review_id=review_id, embedding=embedding, review_content=review_text
-    )
+        # Start consumer in a separate thread
+        self._running = True
+        self._run_consumer_task = asyncio.create_task(
+            asyncio.to_thread(self.run_consumer)
+        )
 
+    async def _consume(self, message: Message) -> None:
+        try:
+            message_tag = message.tag if message.tag else "unknown"
+            message_id = message.message_id if message.message_id else "unknown"
+            message_body = json.loads(message.body.decode("utf-8"))
+            logger.info(f"Processing message ID: {message_id}, tag: {message_tag}")
 
-async def handle_delete_review(msg_body: dict[str, Any]) -> None:
-    review_id = msg_body.get("ID")
-    if review_id is not None:
-        await repo.delete_embedding_by_review_id(review_id=review_id)
-    else:
-        logger.warning(f"DeleteReview message missing ID: {msg_body}")
+            match message_tag:
+                case "CreateReview":
+                    await self.handle_create_review(message_body)
+                case "UpdateReview":
+                    await self.handle_update_review(message_body)
+                case "DeleteReview":
+                    await self.handle_delete_review(message_body)
+                case _:
+                    logger.warning(f"Unknown message tag: {message_tag}")
 
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            logger.error(f"Invalid message format: {e}", exc_info=True)
 
-def consume(message: Message) -> ConsumeResult:
-    try:
-        message_body = cast(bytes | None, message.body)  # pyright: ignore[reportUnknownMemberType]
-        if message_body is None:
-            logger.warning("Received message with empty body")
-            return ConsumeResult.SUCCESS
-        body_str = message_body.decode("utf-8")
-        msg_body = json.loads(body_str)
-        msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
+        except Exception as e:
+            logger.error(f"Error processing message: {e}", exc_info=True)
 
-        logger.info(f"Received message with tag: {msg_tag}, ID: {msg_body.get('ID')}")
+        self.consumer.ack(message)  # Acknowledge message after processing
 
-        # Obtain the background event loop and submit async tasks
-        loop = get_or_create_event_loop()
-        if msg_tag == "CreateReview":
-            future = asyncio.run_coroutine_threadsafe(
-                handle_create_review(msg_body), loop
-            )
-        elif msg_tag == "UpdateReview":
-            future = asyncio.run_coroutine_threadsafe(
-                handle_update_review(msg_body), loop
-            )
-        elif msg_tag == "DeleteReview":
-            future = asyncio.run_coroutine_threadsafe(
-                handle_delete_review(msg_body), loop
-            )
-        else:
-            logger.warning(f"Unknown tag: {msg_tag}")
-            return ConsumeResult.SUCCESS
-        # Wait for the task to complete with a timeout
-        future.result(timeout=30)
-        return ConsumeResult.SUCCESS
-
-    except Exception as e:
-        msg_tag = cast(str, message.tag)  # pyright: ignore[reportUnknownMemberType]
-        logger.error(f"Error processing message (Tag {msg_tag}): {e}")
-        return ConsumeResult.FAILURE
-
-
-def create_simple_consumer() -> SimpleConsumer:
-    consumer_group = "ReviewSummaryConsumerGroup"
-    topic = "ReviewTopic"
-    credentials = Credentials()
-    config = ClientConfiguration(settings.rocketmq.namesrv_addr, credentials)
-    consumer = SimpleConsumer(
-        client_configuration=config,
-        consumer_group=consumer_group,
-        subscription={topic: FilterExpression()},
-    )
-    logger.info(f"Created consumer [{consumer_group}] for topic [{topic}]")
-    return consumer
-
-
-def run_simple_consumer(consumer: SimpleConsumer, stop_event: threading.Event) -> None:
-    consumer.startup()
-    logger.info("SimpleConsumer started and ready to receive messages.")
-    try:
-        while not stop_event.is_set():
+    async def shutdown(self) -> None:
+        self._running = False
+        # Wait for consumer task to finish
+        if self._run_consumer_task:
             try:
-                messages = consumer.receive(32, 15)  # type: ignore
-                if messages is not None:  # type: ignore
-                    for msg in messages:  # type: ignore
-                        result = consume(msg)  # type: ignore
-                        if result == ConsumeResult.SUCCESS:
-                            consumer.ack(msg)  # type: ignore
-                        else:
-                            # Do not acknowledge failed messages to allow retry or other handling
-                            logger.error("Message processing failed; skipping ACK.")
+                await asyncio.wait_for(self._run_consumer_task, timeout=10.0)
+            except asyncio.TimeoutError:
+                logger.warning("Consumer task did not finish in time")
+        self.consumer.shutdown()
+        # Stop background event loop
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.loop_thread.join(timeout=5.0)
+        if not self.loop.is_closed():
+            self.loop.close()
+
+    def run_consumer(self) -> None:
+        logger.info("RocketMQ consumer start running")
+        while self._running:
+            try:
+                messages = self.consumer.receive(
+                    self.MAX_MESSAGE_NUM, self.INVISIBLE_DURATION
+                )
+                if messages is not None and len(messages) > 0:
+                    for message in messages:
+                        asyncio.run_coroutine_threadsafe(
+                            self._consume(message), self.loop
+                        )
             except Exception as e:
-                if not stop_event.is_set():
-                    logger.error(f"Error receiving messages: {e}")
-    except Exception as e:
-        if not stop_event.is_set():
-            logger.error(f"Error in consumer loop: {e}")
-    finally:
-        logger.info("Shutting down SimpleConsumer...")
-        consumer.shutdown()
+                logger.error(f"Error in consumer loop: {e}", exc_info=True)
+        logger.info("RocketMQ consumer stopped")
+
+    async def handle_create_review(self, message_body: dict[str, Any]) -> None:
+        review_id = message_body.get("ID")
+        review_text = message_body.get("Text")
+        target_id = message_body.get("TargetID")
+        if review_id is None or review_text is None or target_id is None:
+            logger.warning(f"CreateReview message missing fields: {message_body}")
+            return
+        embedding = await text_to_embedding(review_text)
+        review_embedding = ReviewEmbedding(
+            target_id=target_id,
+            review_id=review_id,
+            embedding=embedding,
+            content=review_text,
+        )
+        await self.repository.save(review_embedding)
+
+    async def handle_update_review(self, message_body: dict[str, Any]) -> None:
+        review_id = message_body.get("ID")
+        review_text = message_body.get("Text")
+        _ = message_body.get("TargetID")
+        if review_id is None or review_text is None:
+            logger.warning(f"UpdateReview message missing fields: {message_body}")
+            return
+        embedding = await text_to_embedding(review_text)
+        await self.repository.update_embedding_review(
+            review_id=review_id, embedding=embedding, review_content=review_text
+        )
+
+    async def handle_delete_review(self, message_body: dict[str, Any]) -> None:
+        review_id = message_body.get("ID")
+        if review_id is not None:
+            await self.repository.delete_by_id(document_id=review_id)
+        else:
+            logger.warning(f"DeleteReview message missing ID: {message_body}")

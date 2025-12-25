@@ -1,8 +1,7 @@
 import logging
-import threading
 from contextlib import asynccontextmanager
 from importlib.metadata import version
-from typing import AsyncGenerator
+from typing import AsyncGenerator, cast
 
 import httpx
 from a2a.server.apps import A2AStarletteApplication
@@ -14,51 +13,49 @@ from a2a.server.tasks import (
 )
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from rocketmq.v5.consumer import (  # type: ignore[import-untyped]
-    SimpleConsumer,
-)  # pyright: ignore[reportMissingTypeStubs]
+from qdrant_client import AsyncQdrantClient
 from starlette.applications import Starlette
 
 from review_summary.agent.agent import ReviewSummaryAgent
 from review_summary.agent.executor import ReviewSummaryAgentExecutor
+from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
-from review_summary.rocketmq import create_simple_consumer, run_simple_consumer
+from review_summary.index.repository import ReviewEmbeddingRepository
+from review_summary.rocketmq import RocketMQConsumer
 
 logger = logging.getLogger(__name__)
+
+setup_logging()
+
+qdrant_client = AsyncQdrantClient(url=get_settings().qdrant.url)
+repository: ReviewEmbeddingRepository | None = None
 
 
 @asynccontextmanager
 async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
-    stop_event = threading.Event()
-    consumer: SimpleConsumer | None = None
-    consumer_thread: threading.Thread | None = None
+    settings = get_settings()
+    logger.info(f"Loaded settings: {settings}")
+
+    consumer: RocketMQConsumer | None = None
+    global qdrant_client, repository
     try:
-        logger.info("Starting RocketMQ consumer in background...")
-        consumer = create_simple_consumer()
-        consumer_thread = threading.Thread(
-            target=lambda: run_simple_consumer(consumer, stop_event),
-            daemon=False,
-        )
-        consumer_thread.start()
-        logger.info("SimpleConsumer background thread started.")
+        repository = await ReviewEmbeddingRepository.create_repository(qdrant_client)
+        logger.info("Starting up RocketMQConsumer...")
+        consumer = RocketMQConsumer(repository)
         yield
+
     except Exception as e:
-        logger.error(f"Error during RocketMQ consumer operation: {e}")
+        logger.error(f"Error during lifespan startup: {e}", exc_info=True)
+        raise  # Re-raise to prevent app from starting with failed consumer
+
     finally:
-        stop_event.set()
-        logger.info("Shutting down background RocketMQ consumer...")
-        if consumer_thread and consumer_thread.is_alive():
-            logger.info("Waiting for consumer thread to finish...")
-            consumer_thread.join(timeout=20)
-            if consumer_thread.is_alive():
-                logger.warning("Consumer thread did not exit gracefully!")
-            else:
-                logger.info("Consumer thread exited successfully.")
+        logger.info("Shutting down RocketMQConsumer...")
+        if isinstance(consumer, RocketMQConsumer):
+            await consumer.shutdown()
+        await qdrant_client.close()
 
 
 def create_a2a_app() -> A2AStarletteApplication:
-    """Starts the Review Summary Agent server."""
-
     settings = get_settings()
     capabilities = AgentCapabilities(streaming=True, push_notifications=True)
     agent_skill = AgentSkill(
@@ -74,8 +71,10 @@ def create_a2a_app() -> A2AStarletteApplication:
     )
     agent_card = AgentCard(
         name="review_summary",
-        description="Analyzes customer reviews and provides concise summaries that"
-        " answer user questions about hotels and attractions",
+        description=(
+            "Analyzes customer reviews and provides concise summaries that"
+            " answer user questions about hotels and attractions"
+        ),
         url=f"http://{settings.uvicorn.host}:{settings.uvicorn.port}",
         version=version("review_summary"),
         default_input_modes=ReviewSummaryAgent.SUPPORTED_CONTENT_TYPES,
@@ -83,15 +82,12 @@ def create_a2a_app() -> A2AStarletteApplication:
         capabilities=capabilities,
         skills=[agent_skill],
     )
-
     httpx_client = httpx.AsyncClient()
     push_config_store = InMemoryPushNotificationConfigStore()
-    push_sender = BasePushNotificationSender(
-        httpx_client=httpx_client, config_store=push_config_store
-    )
+    push_sender = BasePushNotificationSender(httpx_client, push_config_store)
     chat_model = ChatOpenAI(
-        model="gpt-4o-2024-08-06",
-        temperature=0,
+        model="gpt-4o-mini",
+        temperature=0.3,
         api_key=settings.openai.api_key,
         base_url=settings.openai.base_url,
     )
@@ -100,8 +96,11 @@ def create_a2a_app() -> A2AStarletteApplication:
         api_key=settings.openai.api_key,
         base_url=settings.openai.base_url,
     )
+    global repository
+    _repository = cast(ReviewEmbeddingRepository, repository)
+    agent = ReviewSummaryAgent(chat_model, embedding_model, _repository)
     http_handler = DefaultRequestHandler(
-        agent_executor=ReviewSummaryAgentExecutor(chat_model, embedding_model),
+        agent_executor=ReviewSummaryAgentExecutor(agent),
         task_store=InMemoryTaskStore(),
         push_config_store=push_config_store,
         push_sender=push_sender,
