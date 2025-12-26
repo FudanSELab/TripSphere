@@ -76,11 +76,14 @@ services:
   mongodb:
     image: mongodb/mongodb-community-server:8.0-ubi8
     container_name: mongodb
+    user: root  # r/w permissions to the mounted directory
     environment:
       MONGODB_INITDB_ROOT_USERNAME: root
       MONGODB_INITDB_ROOT_PASSWORD: fudanse
     ports:
       - "27017:27017"
+    volumes:
+      - ./volumes/mongodb:/data/db
 
   # MySQL
   mysql:
@@ -94,6 +97,8 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
     healthcheck:
       test: mysql --user=root --password=fudanse --execute="SHOW DATABASES;"
       interval: 30s
@@ -140,12 +145,12 @@ services:
   neo4j:
     image: neo4j:5.26.19
     volumes:
-        - .volumes/neo4j/logs:/logs
-        - .volumes/neo4j/config:/config
-        - .volumes/neo4j/data:/data
-        - .volumes/neo4j/plugins:/plugins
+      - ./volumes/neo4j/logs:/logs
+      - ./volumes/neo4j/config:/config
+      - ./volumes/neo4j/data:/data
+      - ./volumes/neo4j/plugins:/plugins
     environment:
-        - NEO4J_AUTH=neo4j/fudanse
+      - NEO4J_AUTH=neo4j/fudanse@fudan.edu.cn
     ports:
       - "7474:7474"
       - "7687:7687"
