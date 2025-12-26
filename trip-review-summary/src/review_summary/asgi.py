@@ -21,7 +21,8 @@ from review_summary.agent.executor import ReviewSummaryAgentExecutor
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
 from review_summary.index.repository import ReviewEmbeddingRepository
-from review_summary.rocketmq import RocketMQConsumer
+from review_summary.infra.nacos.naming import NacosNaming
+from review_summary.infra.rocketmq.consumer import RocketMQConsumer
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ setup_logging()
 
 qdrant_client = AsyncQdrantClient(url=get_settings().qdrant.url)
 repository: ReviewEmbeddingRepository | None = None
+nacos_naming: NacosNaming | None = None
 
 
 @asynccontextmanager
@@ -37,11 +39,19 @@ async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
     logger.info(f"Loaded settings: {settings}")
 
     consumer: RocketMQConsumer | None = None
-    global qdrant_client, repository
+    global qdrant_client, repository, nacos_naming
     try:
         repository = await ReviewEmbeddingRepository.create_repository(qdrant_client)
         logger.info("Starting up RocketMQConsumer...")
         consumer = RocketMQConsumer(repository)
+        nacos_naming = await NacosNaming.create_naming(
+            service_name=settings.app.name,
+            port=settings.uvicorn.port,
+            server_address=settings.nacos.server_address,
+            namespace_id=settings.nacos.namespace_id,
+        )
+        logger.info("Registering service instance...")
+        await app.state.nacos_naming.register(ephemeral=True)
         yield
 
     except Exception as e:
@@ -49,6 +59,9 @@ async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
         raise  # Re-raise to prevent app from starting with failed consumer
 
     finally:
+        logger.info("Deregistering service instance...")
+        if isinstance(app.state.nacos_naming, NacosNaming):
+            await app.state.nacos_naming.deregister(ephemeral=True)
         logger.info("Shutting down RocketMQConsumer...")
         if isinstance(consumer, RocketMQConsumer):
             await consumer.shutdown()

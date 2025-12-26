@@ -20,9 +20,21 @@ class UvicornSettings(BaseModel):
     port: int = Field(default=24210, frozen=True)
 
 
+class NacosSettings(BaseModel):
+    server_address: str = Field(default="localhost:8848")
+    namespace_id: str = Field(default="public")
+    group_name: str = Field(default="DEFAULT_GROUP")
+
+
 class QdrantSettings(BaseModel):
     url: str = Field(default="http://localhost:6333")
     database: str = Field(default="review_summary_db")
+
+
+class Neo4jSettings(BaseModel):
+    uri: str = Field(default="neo4j://localhost:7687")
+    username: str = Field(default="neo4j")
+    password: SecretStr = Field(default=SecretStr("password"))
 
 
 class RocketmqSettings(BaseModel):
@@ -57,7 +69,9 @@ class Settings(BaseSettings):
     )
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
+    nacos: NacosSettings = Field(default_factory=NacosSettings)
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
+    neo4j: Neo4jSettings = Field(default_factory=Neo4jSettings)
     rocketmq: RocketmqSettings = Field(default_factory=RocketmqSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)

@@ -1,13 +1,7 @@
-import os
-
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 
 from review_summary.index.repository import ReviewEmbedding, ReviewEmbeddingRepository
-
-# Load environment variables
-ATTRACTION_GRPC_SERVICE_HOST = os.getenv("ATTRACTION_GRPC_SERVICE_HOST", "127.0.0.1")
-ATTRACTION_GRPC_SERVICE_PORT = int(os.getenv("ATTRACTION_GRPC_SERVICE_PORT", "9007"))
 
 
 class ReviewSummaryAgent:
