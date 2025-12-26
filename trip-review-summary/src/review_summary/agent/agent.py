@@ -25,4 +25,5 @@ class ReviewSummaryAgent:
 
     async def retrieve_reviews(
         self, target_id: str, query: str, top_k: int = 20
-    ) -> list[ReviewEmbedding]: ...
+    ) -> list[ReviewEmbedding]:
+        raise NotImplementedError

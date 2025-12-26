@@ -5,13 +5,13 @@ import threading
 from asyncio import AbstractEventLoop
 from typing import Any
 
-from rocketmq import (  # pyright: ignore[reportMissingTypeStubs]
+from rocketmq import (  # type: ignore
     ClientConfiguration,
     Credentials,
     FilterExpression,
     Message,
     SimpleConsumer,
-)
+)  # pyright: ignore[reportMissingTypeStubs]
 
 from review_summary.config.settings import get_settings
 from review_summary.index.embedding import text_to_embedding
@@ -24,10 +24,12 @@ class RocketMQConsumer:
     CONSUMER_GROUP = "ReviewSummaryConsumerGroup"
     TOPIC = "ReviewTopic"
     MAX_MESSAGE_NUM = 32
-    INVISIBLE_DURATION = 10
+    INVISIBLE_DURATION = 15
     WAIT_TIMEOUT_SECONDS = 32
 
     def __init__(self, repository: ReviewEmbeddingRepository) -> None:
+        self.repository = repository
+
         # Initialize RocketMQ SimpleConsumer
         credentials = Credentials()
         rocketmq_settings = get_settings().rocketmq
@@ -39,18 +41,16 @@ class RocketMQConsumer:
         )
         self.consumer.startup()
 
-        # Initialize background event loop for async processing
         def _start_event_loop(loop: AbstractEventLoop) -> None:
             asyncio.set_event_loop(loop)
             loop.run_forever()
 
+        # Initialize background event loop for async processing
         self.loop = asyncio.new_event_loop()
         self.loop_thread = threading.Thread(
             target=_start_event_loop, args=(self.loop,), daemon=True
         )
         self.loop_thread.start()
-
-        self.repository = repository
 
         # Start consumer in a separate thread
         self._running = True
@@ -60,35 +60,35 @@ class RocketMQConsumer:
 
     async def _consume(self, message: Message) -> None:
         try:
-            message_tag = message.tag if message.tag else "unknown"
-            message_id = message.message_id if message.message_id else "unknown"
+            message_id = message.message_id
+            if not message.body:
+                logger.warning(f"Empty message body for message ID: {message_id}")
             message_body = json.loads(message.body.decode("utf-8"))
-            logger.info(f"Processing message ID: {message_id}, tag: {message_tag}")
+            logger.info(f"Processing message ID: {message_id}, tag: {message.tag}")
 
-            match message_tag:
+            match message.tag:
                 case "CreateReview":
-                    await self.handle_create_review(message_body)
+                    await self._handle_create_review(message_body)
                 case "UpdateReview":
-                    await self.handle_update_review(message_body)
+                    await self._handle_update_review(message_body)
                 case "DeleteReview":
-                    await self.handle_delete_review(message_body)
+                    await self._handle_delete_review(message_body)
                 case _:
-                    logger.warning(f"Unknown message tag: {message_tag}")
+                    logger.warning(f"Unknown message tag: {message.tag}")
 
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
-            logger.error(f"Invalid message format: {e}", exc_info=True)
+            logger.error(f"Invalid message format: {e}")
 
         except Exception as e:
-            logger.error(f"Error processing message: {e}", exc_info=True)
-
-        self.consumer.ack(message)  # Acknowledge message after processing
+            # Business logic errors
+            logger.error(f"Error processing message: {e}")
 
     async def shutdown(self) -> None:
         self._running = False
         # Wait for consumer task to finish
         if self._run_consumer_task:
             try:
-                await asyncio.wait_for(self._run_consumer_task, timeout=10.0)
+                await asyncio.wait_for(self._run_consumer_task, timeout=20)
             except asyncio.TimeoutError:
                 logger.warning("Consumer task did not finish in time")
         self.consumer.shutdown()
@@ -100,13 +100,12 @@ class RocketMQConsumer:
 
     def run_consumer(self) -> None:
         logger.info("RocketMQ consumer start running")
-        app_settings = get_settings().app
         while self._running:
             try:
                 messages = self.consumer.receive(
                     self.MAX_MESSAGE_NUM, self.INVISIBLE_DURATION
                 )
-                if messages is not None and len(messages) > 0:
+                if messages and isinstance(messages, list):
                     # Process messages sequentially to maintain order
                     for message in messages:
                         try:
@@ -114,17 +113,22 @@ class RocketMQConsumer:
                                 self._consume(message), self.loop
                             )
                             future.result(timeout=self.WAIT_TIMEOUT_SECONDS)
+
+                        except asyncio.TimeoutError as e:
+                            logger.error(f"Message processing timed out: {e}")
+
                         except Exception as e:
                             logger.error(f"Message processing failed: {e}")
-                            # Ack on error to prevent blocking the queue
+
+                        finally:
+                            # Acknowledge message after processing
                             self.consumer.ack(message)
+
             except Exception as e:
-                logger.error(
-                    f"Error in consumer loop: {e}", exc_info=app_settings.debug
-                )
+                logger.error(f"Error in consumer loop: {e}")
         logger.info("RocketMQ consumer stopped")
 
-    async def handle_create_review(self, message_body: dict[str, Any]) -> None:
+    async def _handle_create_review(self, message_body: dict[str, Any]) -> None:
         review_id = message_body.get("ID")
         review_text = message_body.get("Text")
         target_id = message_body.get("TargetID")
@@ -140,7 +144,7 @@ class RocketMQConsumer:
         )
         await self.repository.save(review_embedding)
 
-    async def handle_update_review(self, message_body: dict[str, Any]) -> None:
+    async def _handle_update_review(self, message_body: dict[str, Any]) -> None:
         review_id = message_body.get("ID")
         review_text = message_body.get("Text")
         _ = message_body.get("TargetID")
@@ -152,7 +156,7 @@ class RocketMQConsumer:
             review_id=review_id, embedding=embedding, review_content=review_text
         )
 
-    async def handle_delete_review(self, message_body: dict[str, Any]) -> None:
+    async def _handle_delete_review(self, message_body: dict[str, Any]) -> None:
         review_id = message_body.get("ID")
         if review_id is not None:
             await self.repository.delete_by_id(document_id=review_id)
