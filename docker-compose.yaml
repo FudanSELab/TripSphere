@@ -137,6 +137,20 @@ services:
     volumes:
       - ./volumes/qdrant:/qdrant/storage
 
+  neo4j:
+    image: neo4j:5.26.19
+    volumes:
+        - .volumes/neo4j/logs:/logs
+        - .volumes/neo4j/config:/config
+        - .volumes/neo4j/data:/data
+        - .volumes/neo4j/plugins:/plugins
+    environment:
+        - NEO4J_AUTH=neo4j/fudanse
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: always
+
 configs:
   qdrant_config:
     content: |
