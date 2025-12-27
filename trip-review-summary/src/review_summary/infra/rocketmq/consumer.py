@@ -66,7 +66,7 @@ class RocketMQConsumer:
                 logger.warning(f"Empty message body for message ID: {message_id}")
                 return  # For now, just skip empty messages
             message_body = json.loads(message.body.decode("utf-8"))
-            logger.info(f"Processing message ID: {message_id}, tag: {message.tag}")
+            logger.info(f"Process message ID: {message_id}, tag: {message.tag}")
 
             match message.tag:
                 case "CreateReview":

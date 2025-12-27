@@ -15,13 +15,12 @@ from review_summary.utils.uuid import uuid7
 
 
 class ReviewEmbedding(BaseModel):
-    document_id: str = Field(
+    review_id: str = Field(
         alias="_id",
         default_factory=lambda: str(uuid7()),
-        description="Unique identifier of the ReviewEmbedding.",
+        description="Unique identifier of the Review.",
     )
     target_id: str = Field(..., description="Target ID")
-    review_id: str = Field(..., description="Review ID")
     embedding: list[float] = Field(..., description="Embedding vector")
     content: str = Field(..., description="Review content")
     metadata: dict[str, Any] | None = Field(default=None)
@@ -46,22 +45,22 @@ class ReviewEmbeddingRepository:
     def _convert_to_point(self, embedding: ReviewEmbedding) -> PointStruct:
         payload = embedding.model_dump()
         payload.pop("embedding")
-        payload.pop("document_id")
+        payload.pop("review_id")
         return PointStruct(
-            id=embedding.document_id,
+            id=embedding.review_id,
             vector=embedding.embedding,
             payload=payload,
         )
 
     def _convert_from_record(self, record: Record) -> ReviewEmbedding:
         payload = record.payload if record.payload else {}
-        payload["document_id"] = record.id
+        payload["review_id"] = record.id
         payload["embedding"] = record.vector
         return ReviewEmbedding.model_validate(payload)
 
     def _convert_from_scored_point(self, scored_point: ScoredPoint) -> ReviewEmbedding:
         payload = scored_point.payload if scored_point.payload else {}
-        payload["document_id"] = scored_point.id
+        payload["review_id"] = scored_point.id
         payload["embedding"] = scored_point.vector
         review_embedding = ReviewEmbedding.model_validate(payload)
         review_embedding.metadata = {"score": scored_point.score}

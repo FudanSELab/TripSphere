@@ -51,7 +51,7 @@ async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
             namespace_id=settings.nacos.namespace_id,
         )
         logger.info("Registering service instance...")
-        await app.state.nacos_naming.register(ephemeral=True)
+        await nacos_naming.register(ephemeral=True)
         yield
 
     except Exception as e:
@@ -60,8 +60,8 @@ async def lifespan(_: Starlette) -> AsyncGenerator[None, None]:
 
     finally:
         logger.info("Deregistering service instance...")
-        if isinstance(app.state.nacos_naming, NacosNaming):
-            await app.state.nacos_naming.deregister(ephemeral=True)
+        if isinstance(nacos_naming, NacosNaming):
+            await nacos_naming.deregister(ephemeral=True)
         logger.info("Shutting down RocketMQConsumer...")
         if isinstance(consumer, RocketMQConsumer):
             await consumer.shutdown()
