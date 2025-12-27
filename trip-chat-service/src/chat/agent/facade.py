@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 _openai_settings = get_settings().openai
 os.environ["OPENAI_API_KEY"] = _openai_settings.api_key.get_secret_value()
 os.environ["OPENAI_BASE_URL"] = _openai_settings.base_url
-
 _root_agent = LlmAgent(
     name="agent_facade",
     model=LiteLlm(model="openai/gpt-4o-mini"),
@@ -100,14 +99,19 @@ class AgentFacade:
         return instance
 
     async def invoke(self, conversation: Conversation, user_query: Message) -> Message:
-        raise NotImplementedError
+        message: Message | None = None
+        async for event in self.stream(conversation, user_query):
+            if isinstance(event, Message):
+                message = event
+        if message is None:
+            raise RuntimeError("No message returned from stream.")
+        return message
 
     async def stream(
         self, conversation: Conversation, user_query: Message
     ) -> AsyncGenerator[Event | Message, None]:
         if self.session_service is None:
             raise RuntimeError("Session service is not initialized.")
-
         session = await self.session_service.get_session(
             app_name=self.app_name,
             user_id=conversation.user_id,
