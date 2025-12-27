@@ -23,9 +23,11 @@ logger = logging.getLogger(__name__)
 class RocketMQConsumer:
     CONSUMER_GROUP = "ReviewSummaryConsumerGroup"
     TOPIC = "ReviewTopic"
-    MAX_MESSAGE_NUM = 32
+    MAX_MESSAGE_NUM = 16
     INVISIBLE_DURATION = 15
-    WAIT_TIMEOUT_SECONDS = 32
+    MESSAGE_TIMEOUT_SECONDS = 10
+    # MESSAGE_TIMEOUT + buffer for graceful shutdown
+    SHUTDOWN_TIMEOUT_SECONDS = 15
 
     def __init__(self, repository: ReviewEmbeddingRepository) -> None:
         self.repository = repository
@@ -52,17 +54,17 @@ class RocketMQConsumer:
         )
         self.loop_thread.start()
 
-        # Start consumer in a separate thread
+        # Start consumer in a dedicated thread
         self._running = True
-        self._run_consumer_task = asyncio.create_task(
-            asyncio.to_thread(self.run_consumer)
-        )
+        self._consumer_thread = threading.Thread(target=self.run_consumer, daemon=True)
+        self._consumer_thread.start()
 
     async def _consume(self, message: Message) -> None:
         try:
             message_id = message.message_id
             if not message.body:
                 logger.warning(f"Empty message body for message ID: {message_id}")
+                return  # For now, just skip empty messages
             message_body = json.loads(message.body.decode("utf-8"))
             logger.info(f"Processing message ID: {message_id}, tag: {message.tag}")
 
@@ -84,21 +86,31 @@ class RocketMQConsumer:
             logger.error(f"Error processing message: {e}")
 
     async def shutdown(self) -> None:
+        """Gracefully shutdown the consumer and background event loop."""
         self._running = False
-        # Wait for consumer task to finish
-        if self._run_consumer_task:
-            try:
-                await asyncio.wait_for(self._run_consumer_task, timeout=20)
-            except asyncio.TimeoutError:
-                logger.warning("Consumer task did not finish in time")
-        self.consumer.shutdown()
-        # Stop background event loop
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.loop_thread.join(timeout=5.0)
-        if not self.loop.is_closed():
+
+        # Wait for consumer thread to finish first
+        if hasattr(self, "_consumer_thread") and self._consumer_thread.is_alive():
+            self._consumer_thread.join(timeout=self.SHUTDOWN_TIMEOUT_SECONDS)
+            if self._consumer_thread.is_alive():
+                logger.warning("Consumer thread did not finish in time")
+
+        # Stop background event loop before closing consumer
+        if hasattr(self, "loop") and not self.loop.is_closed():
+            self.loop.call_soon_threadsafe(self.loop.stop)
+        if hasattr(self, "loop_thread") and self.loop_thread.is_alive():
+            self.loop_thread.join(timeout=5.0)
+        if hasattr(self, "loop") and not self.loop.is_closed():
             self.loop.close()
 
+        # Shutdown consumer after all async processing is complete
+        if hasattr(self, "consumer"):
+            self.consumer.shutdown()
+
+        logger.info("RocketMQ consumer shutdown complete")
+
     def run_consumer(self) -> None:
+        """Main loop running in a dedicated thread to receive and process messages."""
         logger.info("RocketMQ consumer start running")
         while self._running:
             try:
@@ -108,11 +120,13 @@ class RocketMQConsumer:
                 if messages and isinstance(messages, list):
                     # Process messages sequentially to maintain order
                     for message in messages:
+                        if not self._running:
+                            break  # Exit if shutdown initiated
                         try:
                             future = asyncio.run_coroutine_threadsafe(
                                 self._consume(message), self.loop
                             )
-                            future.result(timeout=self.WAIT_TIMEOUT_SECONDS)
+                            future.result(timeout=self.MESSAGE_TIMEOUT_SECONDS)
 
                         except asyncio.TimeoutError as e:
                             logger.error(f"Message processing timed out: {e}")
@@ -125,7 +139,8 @@ class RocketMQConsumer:
                             self.consumer.ack(message)
 
             except Exception as e:
-                logger.error(f"Error in consumer loop: {e}")
+                logger.error(f"Error in consumer looping: {e}")
+
         logger.info("RocketMQ consumer stopped")
 
     async def _handle_create_review(self, message_body: dict[str, Any]) -> None:
