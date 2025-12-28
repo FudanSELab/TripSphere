@@ -57,7 +57,7 @@ root_agent = LlmAgent(
     instruction=root_instruction,
     tools=[weather_toolset],
 )
-agent_skill = AgentSkill(
+weather_info = AgentSkill(
     id="weather_information",
     name="Weather Information",
     description="Provides weather information for travel destinations.",
@@ -69,7 +69,7 @@ agent_card = AgentCard(
     description=AGENT_DESCRIPTION,
     version=version("journey-assistant"),
     url="http://localhost:8000",
-    skills=[agent_skill],
+    skills=[weather_info],
     capabilities=AgentCapabilities(),
     default_input_modes=["text"],
     default_output_modes=["text"],
