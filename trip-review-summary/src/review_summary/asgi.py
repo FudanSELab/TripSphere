@@ -81,6 +81,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await consumer.shutdown()
         await app.state.qdrant_client.close()
         await app.state.neo4j_driver.close()
+        await app.state.httpx_client.aclose()
 
 
 def create_a2a_app(
