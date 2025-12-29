@@ -38,15 +38,26 @@ if ($PROTO_FILES.Count -eq 0) {
     exit 1
 }
 
-# Run protoc command
-npx grpc_tools_node_protoc `
-  --plugin="protoc-gen-ts=$TS_PLUGIN" `
-  --js_out="import_style=commonjs,binary:$OUT_DIR" `
-  --ts_out="service=grpc-node,mode=grpc-js:$OUT_DIR" `
-  --grpc_out="grpc_js:$OUT_DIR" `
-  -I "$PROTO_DIR" `
-  $PROTO_FILES.FullName
+Write-Host "Found $($PROTO_FILES.Count) proto files"
 
-Write-Host "Proto files generated: $OUT_DIR"
+# Process each proto file individually
+foreach ($PROTO_FILE in $PROTO_FILES) {
+    Write-Host "Processing: $($PROTO_FILE.Name)"
+    
+    npx grpc_tools_node_protoc `
+      --plugin="protoc-gen-ts=$TS_PLUGIN" `
+      --js_out="import_style=commonjs,binary:$OUT_DIR" `
+      --ts_out="service=grpc-node,mode=grpc-js:$OUT_DIR" `
+      --grpc_out="grpc_js:$OUT_DIR" `
+      -I "$PROTO_DIR" `
+      $PROTO_FILE.FullName
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to process: $($PROTO_FILE.Name)"
+        exit 1
+    }
+}
+
+Write-Host "All proto files generated successfully: $OUT_DIR"
 
 
