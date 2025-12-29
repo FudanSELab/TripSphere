@@ -12,12 +12,15 @@ from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools.mcp_tool import McpToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from mcp import StdioServerParameters
+from journey_assistant.config.settings import get_settings
 
 warnings.filterwarnings("ignore")  # Suppress ADK Experimental Warnings
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+settings = get_settings()
 
 weather_toolset = McpToolset(
     connection_params=StdioConnectionParams(
@@ -68,7 +71,7 @@ agent_card = AgentCard(
     name=AGENT_NAME,
     description=AGENT_DESCRIPTION,
     version=version("journey-assistant"),
-    url="http://localhost:8000",
+    url=f"http://{settings.uvicorn.host}:{settings.uvicorn.port}",
     skills=[weather_info],
     capabilities=AgentCapabilities(),
     default_input_modes=["text"],

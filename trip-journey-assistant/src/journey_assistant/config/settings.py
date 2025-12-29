@@ -1,12 +1,15 @@
+import logging
 from functools import lru_cache
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+logger = logging.getLogger(__name__)
+
 
 class AppSettings(BaseModel):
-    name: str = Field(default="trip-review-summary")
+    name: str = Field(default="trip-journey-assistant")
     debug: bool = Field(default=False)
 
 
@@ -17,28 +20,13 @@ class UvicornSettings(BaseModel):
     """
 
     host: str = Field(default="0.0.0.0", frozen=True)
-    port: int = Field(default=24212, frozen=True)
+    port: int = Field(default=24211, frozen=True)
 
 
 class NacosSettings(BaseModel):
     server_address: str = Field(default="localhost:8848")
     namespace_id: str = Field(default="public")
     group_name: str = Field(default="DEFAULT_GROUP")
-
-
-class QdrantSettings(BaseModel):
-    url: str = Field(default="http://localhost:6333")
-    database: str = Field(default="review_summary_db")
-
-
-class Neo4jSettings(BaseModel):
-    uri: str = Field(default="neo4j://localhost:7687")
-    username: str = Field(default="neo4j")
-    password: SecretStr = Field(default=SecretStr("password"))
-
-
-class RocketmqSettings(BaseModel):
-    endpoints: str = Field(default="localhost:8081")
 
 
 class OpenAISettings(BaseModel):
@@ -70,9 +58,6 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
-    qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
-    neo4j: Neo4jSettings = Field(default_factory=Neo4jSettings)
-    rocketmq: RocketmqSettings = Field(default_factory=RocketmqSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)
 
@@ -84,3 +69,8 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
     return Settings()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    logger.debug(f"{get_settings()}")
