@@ -6,7 +6,7 @@ option go_package = "tripsphere/common";
 
 // Reason enum
 enum Reason {
-    ERROR = 0;
+  ERROR = 0;
 }
 
 // gRPC details structure

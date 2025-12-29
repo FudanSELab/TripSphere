@@ -3,20 +3,26 @@ import json
 import logging
 import threading
 from asyncio import AbstractEventLoop
-from typing import cast
+from typing import Any, cast
 
+from qdrant_client import AsyncQdrantClient
+from qdrant_client.models import PointStruct
 from rocketmq import (  # type: ignore
     ClientConfiguration,
     Credentials,
     FilterExpression,
     SimpleConsumer,
 )  # pyright: ignore[reportMissingTypeStubs]
-from rocketmq import (  # type: ignore
+from rocketmq import (  # pyright: ignore[reportMissingTypeStubs]
     Message as RocketmqMessage,
-)  # pyright: ignore[reportMissingTypeStubs]
+)
 
 from review_summary.config.settings import get_settings
-from review_summary.infra.rocketmq.typing import Message
+from review_summary.index.operations.chunk_text.chunk_text import chunk_text
+from review_summary.models import TextUnit
+from review_summary.rocketmq.typing import CreateReview, Message
+from review_summary.utils.hashing import gen_sha512_hash
+from review_summary.vector_stores.reviews import ReviewVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +36,11 @@ class RocketMQConsumer:
     # MESSAGE_TIMEOUT + buffer for graceful shutdown
     SHUTDOWN_TIMEOUT_SECONDS = 15
 
-    def __init__(self) -> None:
+    def __init__(self, qdrant_client: AsyncQdrantClient) -> None:
+        # Store singleton Qdrant client for message processing
+        self.qdrant_client = qdrant_client
+        self.vector_store = ReviewVectorStore(client=qdrant_client)
+
         # Initialize RocketMQ SimpleConsumer
         credentials = Credentials()
         rocketmq_settings = get_settings().rocketmq
@@ -54,38 +64,42 @@ class RocketMQConsumer:
         self.loop_thread.start()
 
         # Start consumer in a dedicated thread
-        self._running = True
-        self._consumer_thread = threading.Thread(target=self.run_consumer, daemon=True)
-        self._consumer_thread.start()
+        self.running = True
+        self.consumer_thread = threading.Thread(target=self._run_consumer, daemon=True)
+        self.consumer_thread.start()
 
     async def _consume(self, message: Message) -> None:
         try:
             message_id = message.message_id
-            if not message.body:
+            if message.body is None:
                 logger.warning(f"Empty message body for message ID: {message_id}")
                 return  # For now, just skip empty messages
-            _ = json.loads(message.body.decode("utf-8"))
+            message_body = cast(
+                dict[str, Any], json.loads(message.body.decode("utf-8"))
+            )
             logger.info(f"Process message ID: {message_id}, tag: {message.tag}")
 
             match message.tag:
-                # TODO: Implement actual processing logic
+                case "CreateReview":
+                    await self._handle_create_review(message_body)
+                case "UpdateReview":
+                    await self._handle_update_review(message_body)
+                case "DeleteReview":
+                    await self._handle_delete_review(message_body)
                 case _:
                     logger.warning(f"Unknown message tag: {message.tag}")
-
-        except (UnicodeDecodeError, json.JSONDecodeError) as e:
-            logger.error(f"Invalid message format: {e}")
 
         except Exception as e:
             logger.error(f"Error processing message: {e}")
 
     async def shutdown(self) -> None:
         """Gracefully shutdown the consumer and background event loop."""
-        self._running = False
+        self.running = False
 
         # Wait for consumer thread to finish first
-        if hasattr(self, "_consumer_thread") and self._consumer_thread.is_alive():
-            self._consumer_thread.join(timeout=self.SHUTDOWN_TIMEOUT_SECONDS)
-            if self._consumer_thread.is_alive():
+        if hasattr(self, "consumer_thread") and self.consumer_thread.is_alive():
+            self.consumer_thread.join(timeout=self.SHUTDOWN_TIMEOUT_SECONDS)
+            if self.consumer_thread.is_alive():
                 logger.warning("Consumer thread did not finish in time")
 
         # Stop background event loop before closing consumer
@@ -102,41 +116,73 @@ class RocketMQConsumer:
 
         logger.info("RocketMQ consumer shutdown complete")
 
-    def run_consumer(self) -> None:
-        """Main loop running in a dedicated thread to receive and process messages."""
+    def _run_consumer(self) -> None:
+        """Main loop running in a dedicated thread to receive messages."""
         logger.info("RocketMQ consumer start running")
-        while self._running:
+        while self.running is True:
             try:
-                messages = cast(
+                rmq_messages = cast(
                     list[RocketmqMessage],
                     self.consumer.receive(  # pyright: ignore[reportUnknownMemberType]
                         self.MAX_MESSAGE_NUM, self.INVISIBLE_DURATION
                     ),
                 )
-                if len(messages) == 0:
+                if len(rmq_messages) == 0:
                     continue
                 # Process messages sequentially to maintain order
-                for message in messages:
-                    if not self._running:
+                for rmq_message in rmq_messages:
+                    if not self.running:
                         break  # Exit if shutdown initiated
                     try:
                         future = asyncio.run_coroutine_threadsafe(
-                            self._consume(Message.from_rmq_message(message)),
+                            self._consume(Message.from_rmq_message(rmq_message)),
                             self.loop,
                         )
                         future.result(timeout=self.MESSAGE_TIMEOUT_SECONDS)
 
-                    except asyncio.TimeoutError as e:
-                        logger.error(f"Message processing timed out: {e}")
-
                     except Exception as e:
-                        logger.error(f"Message processing failed: {e}")
+                        logger.error(f"Message processing error: {e}")
 
                     finally:
                         # Acknowledge message after processing
-                        self.consumer.ack(message)
+                        self.consumer.ack(rmq_message)
 
             except Exception as e:
                 logger.error(f"Error in receiving messages: {e}")
 
         logger.info("RocketMQ consumer stopped")
+
+    async def _handle_create_review(self, message_body: dict[str, Any]) -> None:
+        """Handle the CreateReview event."""
+        create_review = CreateReview.model_validate(message_body, by_alias=True)
+        text_chunks = chunk_text([create_review.text])
+        text_units: list[TextUnit] = []
+        for idx, text_chunk in enumerate(text_chunks):
+            text_unit_id = gen_sha512_hash({"chunk": text_chunk.text_chunk}, ["chunk"])
+            short_id = f"/reviews/{create_review.id}/text-units/{idx}"
+            text_unit = TextUnit(
+                id=text_unit_id,
+                short_id=short_id,
+                text=text_chunk.text_chunk,
+                n_tokens=text_chunk.n_tokens,
+                document_id=create_review.id,
+                attributes={"target_id": create_review.target_id},
+            )
+            text_units.append(text_unit)
+
+        # Text embeddings
+
+        # Save to vector store
+        points: list[PointStruct] = []
+        for text_unit in text_units:
+            payload = text_unit.model_dump()
+            text_unit_id = payload.pop("id")
+            point = PointStruct(id=text_unit_id, vector=[], payload=payload)
+            points.append(point)
+        await self.vector_store.save(points)
+
+    async def _handle_delete_review(self, message_body: dict[str, Any]) -> None:
+        """Handle the DeleteReview event."""
+
+    async def _handle_update_review(self, message_body: dict[str, Any]) -> None:
+        """Handle the UpdateReview event."""
