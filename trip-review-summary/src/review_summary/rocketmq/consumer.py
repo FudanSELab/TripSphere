@@ -19,6 +19,7 @@ from rocketmq import (  # pyright: ignore[reportMissingTypeStubs]
 
 from review_summary.config.settings import get_settings
 from review_summary.index.operations.chunk_text.chunk_text import chunk_text
+from review_summary.index.operations.embed_text import embed_text
 from review_summary.models import TextUnit
 from review_summary.rocketmq.typing import CreateReview, Message
 from review_summary.utils.hashing import gen_sha512_hash
@@ -155,6 +156,8 @@ class RocketMQConsumer:
     async def _handle_create_review(self, message_body: dict[str, Any]) -> None:
         """Handle the CreateReview event."""
         create_review = CreateReview.model_validate(message_body, by_alias=True)
+
+        # Create basic text units
         text_chunks = chunk_text([create_review.text])
         text_units: list[TextUnit] = []
         for idx, text_chunk in enumerate(text_chunks):
@@ -170,14 +173,26 @@ class RocketMQConsumer:
             )
             text_units.append(text_unit)
 
-        # Text embeddings
+        # Generate text embeddings
+        embeddings = await embed_text(
+            texts=[text_unit.text for text_unit in text_units],
+            model_config={
+                "model_name": "text-embedding-3-large",
+                "encoding_name": "cl100k_base",
+            },
+        )
 
         # Save to vector store
         points: list[PointStruct] = []
-        for text_unit in text_units:
+        for text_unit, embedding in zip(text_units, embeddings, strict=True):
+            if embedding is None:
+                logger.warning(
+                    f"Skipping text unit {text_unit.short_id} due to empty embedding"
+                )
+                continue
             payload = text_unit.model_dump()
             text_unit_id = payload.pop("id")
-            point = PointStruct(id=text_unit_id, vector=[], payload=payload)
+            point = PointStruct(id=text_unit_id, vector=embedding, payload=payload)
             points.append(point)
         await self.vector_store.save(points)
 

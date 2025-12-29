@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from review_summary.index.operations.chunk_text.typing import TextChunk
-from review_summary.tokenizer.factory import get_tokenizer
+from review_summary.tokenizer.tiktoken import TiktokenTokenizer
 from review_summary.tokenizer.tokenizer import Tokenizer
 
 EncodedText = list[int]
@@ -81,7 +81,7 @@ class TokenTextSplitter(TextSplitter):
     def __init__(self, tokenizer: Tokenizer | None = None, **kwargs: Any):
         """Init method definition."""
         super().__init__(**kwargs)
-        self._tokenizer = tokenizer or get_tokenizer()
+        self._tokenizer = tokenizer or TiktokenTokenizer("cl100k_base")
 
     def num_tokens(self, text: str) -> int:
         """Return the number of tokens in a string."""
@@ -89,10 +89,10 @@ class TokenTextSplitter(TextSplitter):
 
     def split_text(self, text: str | list[str]) -> list[str]:
         """Split text method."""
+        if not text:  # Empty string or list
+            return []
         if isinstance(text, list):
             text = " ".join(text)
-        if len(text) == 0:
-            return []
 
         token_chunker_options = TokenChunkerOptions(
             chunk_overlap=self._chunk_overlap,
@@ -101,7 +101,7 @@ class TokenTextSplitter(TextSplitter):
             encode=self._tokenizer.encode,
         )
 
-        return split_single_text_on_tokens(text=text, tokenizer=token_chunker_options)
+        return split_single_text_on_tokens(text, token_chunker_options)
 
 
 def split_single_text_on_tokens(text: str, tokenizer: TokenChunkerOptions) -> list[str]:
