@@ -1,7 +1,7 @@
 # PowerShell script to generate gRPC proto files
 
 $SCRIPT_DIR = $PSScriptRoot
-$PROTO_DIR = Join-Path $SCRIPT_DIR "..\..\contracts\protobuf\tripsphere"
+$PROTO_DIR = Join-Path $SCRIPT_DIR "..\lib\proto\tripsphere"
 $OUT_DIR = Join-Path $SCRIPT_DIR "..\lib\grpc\gen"
 
 # Create output directory if it doesn't exist

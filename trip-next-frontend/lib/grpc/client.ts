@@ -8,7 +8,7 @@ import { HotelServiceClient } from "./gen/hotel/hotel_grpc_pb";
 import { MetadataServiceClient as HotelMetadataServiceClient } from "./gen/hotel/metadata_grpc_pb";
 
 // Itinerary
-import { ItineraryPlannerServiceClient } from "./gen/itinerary/itinerary_grpc_pb";
+// import { ItineraryPlannerServiceClient } from "./gen/itinerary/itinerary_grpc_pb";
 import { MetadataServiceClient as ItineraryMetadataServiceClient } from "./gen/itinerary/metadata_grpc_pb";
 
 // Note
@@ -29,7 +29,7 @@ export class GrpcClient {
   public attraction: AttractionServiceClient;
   public hotel: HotelServiceClient;
   public hotelMetadata: HotelMetadataServiceClient;
-  public itineraryPlanner: ItineraryPlannerServiceClient;
+  // public itineraryPlanner: ItineraryPlannerServiceClient;
   public itineraryMetadata: ItineraryMetadataServiceClient;
   public noteMetadata: NoteMetadataServiceClient;
   public user: UserServiceClient;
@@ -40,10 +40,10 @@ export class GrpcClient {
     this.attraction = new AttractionServiceClient(AtractionAddress, creds);
     this.hotel = new HotelServiceClient(HotelAddress, creds);
     this.hotelMetadata = new HotelMetadataServiceClient(HotelAddress, creds);
-    this.itineraryPlanner = new ItineraryPlannerServiceClient(
-      ItineraryAddress,
-      creds,
-    );
+    // this.itineraryPlanner = new ItineraryPlannerServiceClient(
+    //   ItineraryAddress,
+    //   creds,
+    // );
     this.itineraryMetadata = new ItineraryMetadataServiceClient(
       ItineraryAddress,
       creds,

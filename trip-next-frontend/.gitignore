@@ -43,3 +43,6 @@ next-env.d.ts
 # protobuf & gRPC
 lib/grpc/gen/
 lib/proto/
+
+# Taskfile
+.task/
