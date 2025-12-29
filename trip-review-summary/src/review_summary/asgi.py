@@ -14,10 +14,9 @@ from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
-from neo4j import AsyncGraphDatabase
+from neo4j import AsyncDriver, AsyncGraphDatabase
 from qdrant_client import AsyncQdrantClient
 
-from review_summary.agent.agent import ReviewSummaryAgent
 from review_summary.agent.executor import ReviewSummaryAgentExecutor
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
@@ -37,13 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Loaded settings: {settings}")
 
     consumer: RocketMQConsumer | None = None
+    app.state.httpx_client = AsyncClient()
     app.state.neo4j_driver = (  # noqa
         AsyncGraphDatabase.driver(  # pyright: ignore[reportUnknownMemberType]
             settings.neo4j.uri,
             auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
         )
     )
-    app.state.qdrant_client = AsyncQdrantClient(url=get_settings().qdrant.url)
+    app.state.qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
     await bootstrap(app.state.qdrant_client)
     try:
         logger.info("Starting up RocketMQConsumer...")
@@ -56,6 +56,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
+
+        # Finally, create the A2A application and mount it
+        app.mount(
+            "/",
+            create_a2a_app(
+                httpx_client=app.state.httpx_client,
+                neo4j_driver=app.state.neo4j_driver,
+                qdrant_client=app.state.qdrant_client,
+            ).build(),
+        )
         yield
 
     except Exception as e:
@@ -73,7 +83,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await app.state.neo4j_driver.close()
 
 
-def create_a2a_app() -> A2AStarletteApplication:
+def create_a2a_app(
+    httpx_client: AsyncClient,
+    neo4j_driver: AsyncDriver,
+    qdrant_client: AsyncQdrantClient,
+) -> A2AStarletteApplication:
+    """Create the A2A Starlette application.
+    It'll be called during FastAPI lifespan startup, so that mounting A2A app to 
+    FastAPI app can be deferred until all dependencies are ready 
+    to be injected to AgentExecutor.
+    """
     uvicorn_settings = get_settings().uvicorn
     capabilities = AgentCapabilities(streaming=True)
     summarize_reviews = AgentSkill(
@@ -99,12 +118,10 @@ def create_a2a_app() -> A2AStarletteApplication:
         capabilities=capabilities,
         skills=[summarize_reviews],
     )
-    httpx_client = AsyncClient()
     push_config_store = InMemoryPushNotificationConfigStore()
     push_sender = BasePushNotificationSender(httpx_client, push_config_store)
-    agent = ReviewSummaryAgent()
     http_handler = DefaultRequestHandler(
-        agent_executor=ReviewSummaryAgentExecutor(agent),
+        agent_executor=ReviewSummaryAgentExecutor(neo4j_driver, qdrant_client),
         task_store=InMemoryTaskStore(),
         push_config_store=push_config_store,
         push_sender=push_sender,
@@ -125,9 +142,8 @@ def create_fastapi_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Include routers and mount a2a app
+    # Include routers
     app.include_router(reviews_summary, prefix="/api/v1")
-    app.mount("/", create_a2a_app().build())
     return app
 
 
