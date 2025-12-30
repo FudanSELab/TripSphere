@@ -22,7 +22,6 @@ from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.qdrant.bootstrap import bootstrap
-from review_summary.rocketmq.consumer import RocketMQConsumer
 from review_summary.routers.indices import indices
 from review_summary.routers.summaries import summaries
 from review_summary.routers.tasks import tasks
@@ -37,7 +36,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Loaded settings: {settings}")
 
-    consumer: RocketMQConsumer | None = None
     app.state.httpx_client = AsyncClient()
     app.state.neo4j_driver = (  # noqa
         AsyncGraphDatabase.driver(  # pyright: ignore[reportUnknownMemberType]
@@ -48,8 +46,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
     await bootstrap(app.state.qdrant_client)
     try:
-        logger.info("Starting up RocketMQConsumer...")
-        consumer = RocketMQConsumer(qdrant_client=app.state.qdrant_client)
         app.state.nacos_naming = await NacosNaming.create_naming(
             service_name=settings.app.name,
             port=settings.uvicorn.port,
@@ -59,7 +55,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
 
-        # Finally, create the A2A application and mount it
+        # Defer mounting A2A app until dependencies are ready
         app.mount(
             "/",
             create_a2a_app(
@@ -78,9 +74,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)
-        logger.info("Shutting down RocketMQConsumer...")
-        if isinstance(consumer, RocketMQConsumer):
-            await consumer.shutdown()
         await app.state.qdrant_client.close()
         await app.state.neo4j_driver.close()
         await app.state.httpx_client.aclose()
@@ -91,11 +84,7 @@ def create_a2a_app(
     neo4j_driver: AsyncDriver,
     qdrant_client: AsyncQdrantClient,
 ) -> A2AStarletteApplication:
-    """Create the A2A Starlette application.
-    It'll be called during FastAPI lifespan startup, so that mounting A2A app to
-    FastAPI app can be deferred until all dependencies are ready
-    to be injected to AgentExecutor.
-    """
+    """Create the A2A Starlette application."""
     uvicorn_settings = get_settings().uvicorn
     capabilities = AgentCapabilities(streaming=True)
     summarize_reviews = AgentSkill(
