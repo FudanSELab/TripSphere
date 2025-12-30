@@ -145,6 +145,7 @@ services:
   # Neo4j
   neo4j:
     image: neo4j:5.26.19
+    container_name: neo4j
     volumes:
       - ./volumes/neo4j/logs:/logs
       - ./volumes/neo4j/config:/config
@@ -156,6 +157,14 @@ services:
       - "7474:7474"
       - "7687:7687"
     restart: always
+
+  # Redis
+  redis:
+    image: redis:8.4
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: "always"
 
 configs:
   qdrant_config:
