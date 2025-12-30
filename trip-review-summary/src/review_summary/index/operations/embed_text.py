@@ -38,8 +38,7 @@ async def embed_text(
 
     # Embed each chunk of snippets
     embeddings = await _execute(model, text_batches, semaphore)
-    embeddings = _reconstitute_embeddings(embeddings, input_sizes)
-    return embeddings
+    return _reconstitute_embeddings(embeddings, input_sizes)
 
 
 async def _execute(

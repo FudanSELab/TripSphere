@@ -6,7 +6,6 @@ from asyncio import AbstractEventLoop
 from typing import Any, cast
 
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import PointStruct
 from rocketmq import (  # type: ignore
     ClientConfiguration,
     Credentials,
@@ -18,12 +17,9 @@ from rocketmq import (  # pyright: ignore[reportMissingTypeStubs]
 )
 
 from review_summary.config.settings import get_settings
-from review_summary.index.operations.chunk_text.chunk_text import chunk_text
-from review_summary.index.operations.embed_text import embed_text
-from review_summary.models import TextUnit
-from review_summary.rocketmq.typing import CreateReview, Message
-from review_summary.utils.hashing import gen_sha512_hash
-from review_summary.vector_stores.reviews import ReviewVectorStore
+from review_summary.rocketmq.handlers import handle_create_review
+from review_summary.rocketmq.typing import Message
+from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +36,7 @@ class RocketMQConsumer:
     def __init__(self, qdrant_client: AsyncQdrantClient) -> None:
         # Store singleton Qdrant client for message processing
         self.qdrant_client = qdrant_client
-        self.vector_store = ReviewVectorStore(client=qdrant_client)
+        self.text_unit_vector_store = TextUnitVectorStore(client=qdrant_client)
 
         # Initialize RocketMQ SimpleConsumer
         credentials = Credentials()
@@ -82,11 +78,13 @@ class RocketMQConsumer:
 
             match message.tag:
                 case "CreateReview":
-                    await self._handle_create_review(message_body)
+                    await handle_create_review(
+                        self.text_unit_vector_store, message_body
+                    )
                 case "UpdateReview":
-                    await self._handle_update_review(message_body)
+                    raise NotImplementedError
                 case "DeleteReview":
-                    await self._handle_delete_review(message_body)
+                    raise NotImplementedError
                 case _:
                     logger.warning(f"Unknown message tag: {message.tag}")
 
@@ -152,52 +150,3 @@ class RocketMQConsumer:
                 logger.error(f"Error in receiving messages: {e}")
 
         logger.info("RocketMQ consumer stopped")
-
-    async def _handle_create_review(self, message_body: dict[str, Any]) -> None:
-        """Handle the CreateReview event."""
-        create_review = CreateReview.model_validate(message_body, by_alias=True)
-
-        # Create basic text units
-        text_chunks = chunk_text([create_review.text])
-        text_units: list[TextUnit] = []
-        for idx, text_chunk in enumerate(text_chunks):
-            text_unit_id = gen_sha512_hash({"chunk": text_chunk.text_chunk}, ["chunk"])
-            short_id = f"/reviews/{create_review.id}/text-units/{idx}"
-            text_unit = TextUnit(
-                id=text_unit_id,
-                short_id=short_id,
-                text=text_chunk.text_chunk,
-                n_tokens=text_chunk.n_tokens,
-                document_id=create_review.id,
-                attributes={"target_id": create_review.target_id},
-            )
-            text_units.append(text_unit)
-
-        # Generate text embeddings
-        embeddings = await embed_text(
-            texts=[text_unit.text for text_unit in text_units],
-            model_config={
-                "model_name": "text-embedding-3-large",
-                "encoding_name": "cl100k_base",
-            },
-        )
-
-        # Save to vector store
-        points: list[PointStruct] = []
-        for text_unit, embedding in zip(text_units, embeddings, strict=True):
-            if embedding is None:
-                logger.warning(
-                    f"Skipping text unit {text_unit.short_id} due to empty embedding"
-                )
-                continue
-            payload = text_unit.model_dump()
-            text_unit_id = payload.pop("id")
-            point = PointStruct(id=text_unit_id, vector=embedding, payload=payload)
-            points.append(point)
-        await self.vector_store.save(points)
-
-    async def _handle_delete_review(self, message_body: dict[str, Any]) -> None:
-        """Handle the DeleteReview event."""
-
-    async def _handle_update_review(self, message_body: dict[str, Any]) -> None:
-        """Handle the UpdateReview event."""

@@ -31,6 +31,9 @@ class Document(Named):
 
 class TextUnit(Identified):
     text: str = Field(..., description="The text of the unit.")
+    embedding: list[float] | None = Field(
+        default=None, description="The semantic (i.e. text) embedding of the text unit."
+    )
     entity_ids: list[str] | None = Field(
         default=None, description="List of entity IDs related to the text unit."
     )

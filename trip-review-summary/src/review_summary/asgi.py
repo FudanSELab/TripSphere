@@ -23,7 +23,9 @@ from review_summary.config.settings import get_settings
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.qdrant.bootstrap import bootstrap
 from review_summary.rocketmq.consumer import RocketMQConsumer
-from review_summary.routers.summary import reviews_summary
+from review_summary.routers.indices import indices
+from review_summary.routers.summaries import summaries
+from review_summary.routers.tasks import tasks
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +92,8 @@ def create_a2a_app(
     qdrant_client: AsyncQdrantClient,
 ) -> A2AStarletteApplication:
     """Create the A2A Starlette application.
-    It'll be called during FastAPI lifespan startup, so that mounting A2A app to 
-    FastAPI app can be deferred until all dependencies are ready 
+    It'll be called during FastAPI lifespan startup, so that mounting A2A app to
+    FastAPI app can be deferred until all dependencies are ready
     to be injected to AgentExecutor.
     """
     uvicorn_settings = get_settings().uvicorn
@@ -144,7 +146,9 @@ def create_fastapi_app() -> FastAPI:
     )
 
     # Include routers
-    app.include_router(reviews_summary, prefix="/api/v1")
+    app.include_router(indices, prefix="/api/v1")
+    app.include_router(summaries, prefix="/api/v1")
+    app.include_router(tasks, prefix="/api/v1")
     return app
 
 
