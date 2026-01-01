@@ -27,8 +27,8 @@ async def embed_text(
     openai_settings = get_settings().openai
     model = OpenAIEmbeddings(
         model=model_config.get("model_name", "text-embedding-3-large"),
-        api_key=openai_settings.api_key,
-        base_url=openai_settings.base_url,
+        api_key=openai_settings.api_key,  # ty: ignore[unknown-argument]
+        base_url=openai_settings.base_url,  # ty: ignore[unknown-argument]
     )
     semaphore = asyncio.Semaphore(num_threads)
     # Break up the input texts. The sizes here indicate

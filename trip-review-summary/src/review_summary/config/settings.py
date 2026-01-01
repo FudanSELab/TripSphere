@@ -60,6 +60,17 @@ class LogSettings(BaseModel):
         return value
 
 
+class CelerySettings(BaseModel):
+    broker_url: str = Field(default="redis://localhost:6379/0")
+    result_backend: str = Field(default="redis://localhost:6379/0")
+
+
+class MinioSettings(BaseModel):
+    endpoint: str = Field(default="localhost:9000")
+    access_key: str = Field(default="access_key")
+    secret_key: SecretStr = Field(default=SecretStr("secret_key"))
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=[".env.local", ".env.development", ".env"],
@@ -75,6 +86,8 @@ class Settings(BaseSettings):
     rocketmq: RocketmqSettings = Field(default_factory=RocketmqSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)
+    celery: CelerySettings = Field(default_factory=CelerySettings)
+    minio: MinioSettings = Field(default_factory=MinioSettings)
 
     def model_post_init(self, _: Any) -> None:
         if self.app.debug is True:
