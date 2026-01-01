@@ -5,7 +5,6 @@ from review_summary.index.operations.chunk_text.chunk_text import chunk_text
 from review_summary.index.operations.embed_text import embed_text
 from review_summary.models import TextUnit
 from review_summary.rocketmq.typing import CreateReview
-from review_summary.utils.hashing import gen_sha512_hash
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
 logger = logging.getLogger(__name__)
@@ -17,10 +16,12 @@ async def handle_create_review(
     """Handle the CreateReview event."""
     create_review = CreateReview.model_validate(message_body, by_alias=True)
 
-    text_chunks = chunk_text([create_review.text])
+    logger.debug(f"Chunking for review {create_review.id}")
+    text_chunks = chunk_text([create_review.text], encoding_name="cl100k_base")
     text_units: list[TextUnit] = []
 
     # Generate text embeddings
+    logger.debug(f"Generating embeddings for review {create_review.id}")
     embeddings = await embed_text(
         texts=[text_chunk.text_chunk for text_chunk in text_chunks],
         model_config={
@@ -34,12 +35,10 @@ async def handle_create_review(
         zip(text_chunks, embeddings, strict=True)
     ):
         if embedding is None:
-            logger.warning(f"Skipping text unit {idx} due to empty embedding")
+            logger.warning(f"Skip text unit {idx} due to empty embedding")
             continue
-        text_unit_id = gen_sha512_hash({"chunk": text_chunk.text_chunk}, ["chunk"])
         short_id = f"/reviews/{create_review.id}/text-units/{idx}"
         text_unit = TextUnit(
-            id=text_unit_id,
             short_id=short_id,
             text=text_chunk.text_chunk,
             embedding=embedding,
@@ -53,6 +52,7 @@ async def handle_create_review(
         text_units.append(text_unit)
 
     # Save to text unit vector store
+    logger.debug(f"Saving {len(text_units)} text units for review {create_review.id}")
     await text_unit_vector_store.save_multiple(text_units)
 
 

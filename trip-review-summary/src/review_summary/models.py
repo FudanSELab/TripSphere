@@ -2,9 +2,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from review_summary.utils.uuid import uuid7
+
 
 class Identified(BaseModel):
-    id: str = Field(..., description="Unique identifier of the item.")
+    id: str = Field(
+        default_factory=lambda: str(uuid7()),
+        description="Unique identifier of the item.",
+    )
     short_id: str | None = Field(
         default=None,
         description="A shorter, human-friendly identifier for the item."
@@ -58,7 +63,9 @@ class TextUnit(Identified):
 
 class Entity(Named):
     type: str | None = Field(default=None)
-    description: str | None = Field(default=None)
+    description: str | list[str] | None = Field(
+        default=None, description="The description(s) of the entity."
+    )
     description_embedding: list[float] | None = Field(
         default=None,
         description="The semantic (i.e. text) embedding of the description.",
@@ -90,8 +97,8 @@ class Relationship(Identified):
     source: str = Field(..., description="The source entity name.")
     target: str = Field(..., description="The target entity name.")
     weight: float | None = Field(default=1.0, description="The edge weight.")
-    description: str | None = Field(
-        default=None, description="A description of the relationship."
+    description: str | list[str] | None = Field(
+        default=None, description="The description(s) of the relationship."
     )
     description_embedding: list[float] | None = Field(
         default=None,

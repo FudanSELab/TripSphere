@@ -3,8 +3,8 @@ import logging
 from qdrant_client import AsyncQdrantClient
 
 from review_summary.config.settings import get_settings
-from review_summary.infra.qdrant.bootstrap import bootstrap
 from review_summary.rocketmq.consumer import RocketMQConsumer
+from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +16,14 @@ async def main() -> None:
 
     # Initialize dependencies
     qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
-    await bootstrap(qdrant_client)
-
-    consumer = RocketMQConsumer(qdrant_client=qdrant_client)
+    vector_store = await TextUnitVectorStore.create_vector_store(
+        client=qdrant_client, vector_dim=3072
+    )
+    consumer = RocketMQConsumer(text_unit_vector_store=vector_store)
 
     try:
         await consumer.startup()
-        # Run consumer loop (will run until stopped)
+        # Run the SimpleConsumer loop (will run until stopped)
         await consumer.run()
     finally:
         await consumer.shutdown()

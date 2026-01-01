@@ -3,7 +3,6 @@ import json
 import logging
 from typing import Any, cast
 
-from qdrant_client import AsyncQdrantClient
 from rocketmq import (  # type: ignore
     ClientConfiguration,
     Credentials,
@@ -28,9 +27,8 @@ class RocketMQConsumer:
     CONSUMER_GROUP = "ReviewSummaryConsumerGroup"
     TOPIC = "ReviewTopic"
 
-    def __init__(self, qdrant_client: AsyncQdrantClient) -> None:
-        self.qdrant_client = qdrant_client
-        self.text_unit_vector_store = TextUnitVectorStore(client=qdrant_client)
+    def __init__(self, text_unit_vector_store: TextUnitVectorStore) -> None:
+        self.text_unit_vector_store = text_unit_vector_store
         self._running = False
         self._consumer: SimpleConsumer | None = None
 
