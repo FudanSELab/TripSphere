@@ -20,7 +20,7 @@ def mock_vector_store(mocker: MockerFixture) -> MockType:
 @pytest.fixture
 def reviews_data() -> list[dict[str, Any]]:
     """Load reviews from fixtures file."""
-    fixtures_path = Path(__file__).parent.parent.parent / "fixtures" / "reviews.json"
+    fixtures_path = Path("tests") / "fixtures" / "reviews.json"
     with open(fixtures_path, "r", encoding="utf-8") as f:
         return cast(list[dict[str, Any]], json.load(f))
 

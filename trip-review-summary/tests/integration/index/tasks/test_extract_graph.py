@@ -13,8 +13,18 @@ _ = celery_monkey_patch  # Make pyright happy
 
 @pytest.mark.asyncio
 async def test_extract_graph(
-    mock_task: MockType, text_units_parquet_uuid: str, mocker: MockerFixture
+    mock_task: MockType,
+    text_units_parquet_uuid: str,
+    entities_parquet_uuid: str,
+    relationships_parquet_uuid: str,
+    mocker: MockerFixture,
 ) -> None:
+    # Mock uuid7 to return fixed UUIDs
+    mocker.patch(
+        "review_summary.index.tasks.extract_graph.uuid7",
+        side_effect=[entities_parquet_uuid, relationships_parquet_uuid],
+    )
+
     # Mock pl.scan_parquet to read from local fixtures instead of S3
     original_scan_parquet = pl.scan_parquet
 

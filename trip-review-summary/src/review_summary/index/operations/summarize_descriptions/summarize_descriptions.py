@@ -25,18 +25,26 @@ async def summarize_descriptions(
     """Summarize entity and relationship descriptions using a llm."""
     semaphore = asyncio.Semaphore(num_concurrency)
 
-    async def do_summarize_descriptions(
+    # Initialize ChatOpenAI model with provided config
+    openai_settings = get_settings().openai
+    if "api_key" not in chat_model_config:
+        chat_model_config["api_key"] = openai_settings.api_key
+    if "base_url" not in chat_model_config:
+        chat_model_config["base_url"] = openai_settings.base_url
+    chat_model = ChatOpenAI(**chat_model_config)
+
+    async def _summarize_descriptions(
         id: str | tuple[str, str],
         descriptions: list[str],
     ) -> SummarizationResult:
         async with semaphore:
             return await _run_summary_extraction(
-                id,
-                descriptions,
-                chat_model_config,
-                max_input_tokens,
-                max_summary_length,
-                summarization_prompt,
+                id=id,
+                descriptions=descriptions,
+                chat_model=chat_model,
+                max_input_tokens=max_input_tokens,
+                max_summary_length=max_summary_length,
+                summarization_prompt=summarization_prompt,
             )
 
     # Collect once and iterate
@@ -45,7 +53,7 @@ async def summarize_descriptions(
 
     # Process entities
     entity_futures = [
-        do_summarize_descriptions(
+        _summarize_descriptions(
             row["title"],
             sorted(set(row["description"]))  # pyright: ignore
             if isinstance(row["description"], list)
@@ -57,7 +65,7 @@ async def summarize_descriptions(
 
     # Process relationships
     relationship_futures = [
-        do_summarize_descriptions(
+        _summarize_descriptions(
             (str(row["source"]), str(row["target"])),
             sorted(set(row["description"]))  # pyright: ignore
             if isinstance(row["description"], list)
@@ -88,18 +96,11 @@ async def summarize_descriptions(
 async def _run_summary_extraction(
     id: str | tuple[str, str],
     descriptions: list[str],
-    chat_model_config: dict[str, Any],
+    chat_model: ChatOpenAI,
     max_input_tokens: int,
     max_summary_length: int,
     summarization_prompt: str | None = None,
 ) -> SummarizationResult:
-    openai_settings = get_settings().openai
-    if "api_key" not in chat_model_config:
-        chat_model_config["api_key"] = openai_settings.api_key
-    if "base_url" not in chat_model_config:
-        chat_model_config["base_url"] = openai_settings.base_url
-    chat_model = ChatOpenAI(**chat_model_config)
-
     extractor = SummaryExtractor(
         chat_model=chat_model,
         summarization_prompt=summarization_prompt,
