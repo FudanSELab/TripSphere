@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pytest_mock import MockerFixture, MockType
@@ -12,7 +12,7 @@ from review_summary.rocketmq.handlers import handle_create_review
 @pytest.fixture
 def mock_vector_store(mocker: MockerFixture) -> MockType:
     """Mock TextUnitVectorStore."""
-    mock_store = mocker.AsyncMock()
+    mock_store: MockType = mocker.AsyncMock()
     mock_store.save_multiple = mocker.AsyncMock()
     return mock_store
 
@@ -22,7 +22,7 @@ def reviews_data() -> list[dict[str, Any]]:
     """Load reviews from fixtures file."""
     fixtures_path = Path(__file__).parent.parent.parent / "fixtures" / "reviews.json"
     with open(fixtures_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        return cast(list[dict[str, Any]], json.load(f))
 
 
 @pytest.mark.asyncio
@@ -57,16 +57,16 @@ async def test_handle_create_review(
     # Verify text units structure
     for text_unit in all_text_units:
         # Find which review this text unit belongs to
-        review_data = next(
+        matching_review: dict[str, Any] | None = next(
             (r for r in reviews_data if r["review_id"] == text_unit.document_id),
             None,
         )
 
-        assert review_data is not None
-        assert text_unit.document_id == review_data["review_id"]
+        assert matching_review is not None
+        assert text_unit.document_id == matching_review["review_id"]
 
         assert text_unit.attributes is not None
-        assert text_unit.attributes["target_id"] == review_data["target_id"]
+        assert text_unit.attributes["target_id"] == matching_review["target_id"]
         assert text_unit.attributes["target_type"] == "attraction"
 
         assert text_unit.embedding is not None
@@ -77,7 +77,7 @@ async def test_handle_create_review(
 
         assert text_unit.short_id is not None
         assert text_unit.short_id.startswith(
-            f"/reviews/{review_data['review_id']}/text-units/"
+            f"/reviews/{matching_review['review_id']}/text-units/"
         )
 
     # Save all text units to a single JSON file

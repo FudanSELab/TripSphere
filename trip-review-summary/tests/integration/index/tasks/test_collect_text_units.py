@@ -14,8 +14,8 @@ _ = celery_monkey_patch  # Make pyright happy
 
 
 @pytest.fixture
-def mock_vector_store(mocker: MockerFixture):
-    mock_vector_store = mocker.AsyncMock()
+def mock_vector_store(mocker: MockerFixture) -> MockType:
+    mock_vector_store: MockType = mocker.AsyncMock()
     mocker.patch(
         (
             "review_summary.index.tasks.collect_text_units"
@@ -28,7 +28,7 @@ def mock_vector_store(mocker: MockerFixture):
 
 @pytest.fixture(autouse=True)
 def mock_qdrant_client(mocker: MockerFixture) -> MockType:
-    mock_qdrant_client = mocker.AsyncMock()
+    mock_qdrant_client: MockType = mocker.AsyncMock()
     mocker.patch(
         "review_summary.index.tasks.collect_text_units.AsyncQdrantClient",
         return_value=mock_qdrant_client,
