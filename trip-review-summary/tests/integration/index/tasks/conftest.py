@@ -10,7 +10,7 @@ from review_summary.models import TextUnit
 
 @pytest.fixture
 def mock_task(mocker: MockerFixture) -> MockType:
-    mock_task = mocker.MagicMock(spec=Task)
+    mock_task: MockType = mocker.MagicMock(spec=Task)
     return mock_task
 
 
@@ -28,3 +28,13 @@ def text_units() -> list[TextUnit]:
     with open(fixtures_path, "r", encoding="utf-8") as f:
         text_units_data = json.load(f)
     return [TextUnit.model_validate(unit) for unit in text_units_data]
+
+
+@pytest.fixture
+def entities_parquet_uuid() -> str:
+    return "019b7ecb-616b-70ce-af4a-755199b8064b"
+
+
+@pytest.fixture
+def relationships_parquet_uuid() -> str:
+    return "019b7ecb-6176-77cf-a766-e18ae7c0c832"
