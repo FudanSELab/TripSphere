@@ -4,7 +4,8 @@ import logging
 
 from celery import Celery
 
-# Monkey patch celery classes so generic params can be provided
+# Monkey patch celery classes to ensure that
+# type annotations work correctly at runtime
 import review_summary.infra.celery.monkey_patch as celery_monkey_patch
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
@@ -24,6 +25,7 @@ def create_celery_app() -> Celery:
         broker=settings.celery.broker_url,
         backend=settings.celery.result_backend,
     )
+    celery_app.set_default()
     # Autodiscover tasks from review_summary.index.tasks module
     celery_app.autodiscover_tasks(["review_summary.index.tasks"])
     celery_app.conf.update(task_track_started=True)

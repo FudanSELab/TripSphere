@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class GraphExtractionResult:
     """Unipartite graph extraction result class definition."""
 
-    output: nx.Graph[Any]
+    output: nx.Graph[str]
     source_docs: dict[Any, Any]
 
 
@@ -149,7 +149,7 @@ class GraphExtractor:
         results: dict[int, str],
         tuple_delimiter: str,
         record_delimiter: str,
-    ) -> nx.Graph[Any]:
+    ) -> nx.Graph[str]:
         """Parse the result string to create an undirected unipartite graph.
 
         Arguments:
@@ -161,7 +161,7 @@ class GraphExtractor:
         Returns:
             unipartite graph in graphML format
         """
-        graph = nx.Graph[Any]()
+        graph: nx.Graph[str] = nx.Graph()
         for source_doc_id, extracted_data in results.items():
             records = [r.strip() for r in extracted_data.split(record_delimiter)]
 

@@ -56,13 +56,3 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
     finally:
         if qdrant_client is not None:
             await qdrant_client.close()
-
-
-if __name__ == "__main__":
-    # For local testing
-    test_context = {
-        "target_id": "attraction_12345",
-        "target_type": "attraction",
-    }
-    result = run_workflow.apply(args=(test_context,))
-    print("Final context:", result.result)

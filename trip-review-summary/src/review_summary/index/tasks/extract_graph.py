@@ -56,6 +56,11 @@ async def _extract_graph(
         raise ValueError(error_msg)
     logger.info(f"Extracted {len(extracted_relationships)} raw relationships.")
 
+    logger.info(
+        f"Graph extraction completed. "
+        f"Extracted {len(extracted_entities)} entities, "
+        f"{len(extracted_relationships)} relationships."
+    )
     task.update_state(
         state="PROGRESS",
         meta={
