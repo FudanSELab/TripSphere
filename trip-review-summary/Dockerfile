@@ -77,14 +77,26 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
+# Default environment variables for uvicorn
+# These can be overridden in docker-compose or at runtime
 ENV UVICORN_HOST=0.0.0.0
 ENV UVICORN_PORT=24212
 
-EXPOSE $UVICORN_PORT
-
-# Start the instrumented app with default (FastAPI) arguments
-ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "review_summary.asgi:app"]
-# Do NOT directly provide uvicorn `--port` option here.
-# It must be overridden via environment variable.
-# Otherwise, app may register incorrect port in service registry.
+# Start the instrumented app with default arguments
+ENTRYPOINT ["opentelemetry-instrument"]
+# No default CMD - must be specified in docker-compose or at runtime
 CMD []
+# Usage Examples:
+
+# 1. API: ["uvicorn", "review_summary.asgi:app"]
+#    Do NOT directly provide uvicorn `--port` option here.
+#    It must be overridden via environment variable `UVICORN_PORT`.
+#    Otherwise, it may register incorrect port in service registry.
+
+# 2. Consumer: ["python", "-m", "review_summary.rocketmq"]
+
+# 3. Worker: ["celery", "-A", "review_summary.celery.app", "worker"]
+
+
+
+
