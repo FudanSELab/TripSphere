@@ -4,6 +4,8 @@ from celery import chain
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+from review_summary.config.index.extract_graph_config import ExtractGraphConfig
+from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
 from review_summary.index.tasks.collect_text_units import (
     run_workflow as collect_text_units,
 )
@@ -45,10 +47,17 @@ async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
         "target_id": request.target_id,
         "target_type": request.target_type,
     }
+    extract_graph_config = ExtractGraphConfig(
+        # For extract_graph operation
+        graph_llm_config={"name": "gpt-4o", "temperature": 0.3},
+        # For summarize_descriptions operation
+        summary_llm_config={"name": "gpt-4o", "temperature": 0.3},
+    )
+    finalize_graph_config = FinalizeGraphConfig()
     pipeline = chain(
         collect_text_units.s(pipeline_context),
-        extract_graph.s(),
-        finalize_graph.s(),
+        extract_graph.s(extract_graph_config.model_dump()),
+        finalize_graph.s(finalize_graph_config.model_dump()),
         create_communities.s(),
         create_final_text_units.s(),
         create_community_reports.s(),

@@ -33,6 +33,7 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
             client=qdrant_client, vector_dim=3072
         )
         text_units = await text_unit_vector_store.find_by_target(target_id, target_type)
+
         msg = f"Collected {len(text_units)} text units for {target_type} {target_id}."
         logger.info(msg)
         task.update_state(
@@ -44,13 +45,14 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
                 "collected_text_units": len(text_units),
             },
         )
+
         df = pl.DataFrame([text_unit.model_dump() for text_unit in text_units])
         filename = f"text_units_{uuid7()}.parquet"
         df.write_parquet(
             f"s3://review-summary/{filename}", storage_options=get_storage_options()
         )
         context["text_units"] = filename
-        logger.info(f"Saved collected text units to 's3://review-summary/{filename}'.")
+        logger.info(f"Saved text units to 's3://review-summary/{filename}'.")
     finally:
         if qdrant_client is not None:
             await qdrant_client.close()

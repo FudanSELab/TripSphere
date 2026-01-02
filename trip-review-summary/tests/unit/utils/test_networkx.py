@@ -212,7 +212,7 @@ class TestToPolarsEdgelist:
 
     def test_large_graph(self) -> None:
         """Test with a larger graph to ensure scalability."""
-        G = nx.complete_graph(100)  # pyright: ignore
+        G = nx.complete_graph(100)  # ty: ignore  # pyright: ignore
 
         for u, v in G.edges():  # pyright: ignore
             G[u][v]["weight"] = u + v
