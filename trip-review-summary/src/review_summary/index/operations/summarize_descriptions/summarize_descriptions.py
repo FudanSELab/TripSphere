@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any
 
 import polars as pl
@@ -11,6 +12,8 @@ from review_summary.index.operations.summarize_descriptions.summary_extractor im
 from review_summary.index.operations.summarize_descriptions.typing import (
     SummarizationResult,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def summarize_descriptions(
@@ -32,6 +35,7 @@ async def summarize_descriptions(
     if "base_url" not in chat_model_config:
         chat_model_config["base_url"] = openai_settings.base_url
     chat_model = ChatOpenAI(**chat_model_config)
+    logger.info("Initialized ChatOpenAI model for description summarization.")
 
     async def _summarize_descriptions(
         id: str | tuple[str, str],
@@ -61,6 +65,7 @@ async def summarize_descriptions(
         )
         for row in entities_df.iter_rows(named=True)
     ]
+    logger.info("Starting summarization of entity descriptions.")
     entity_results = await asyncio.gather(*entity_futures)
 
     # Process relationships
@@ -73,6 +78,7 @@ async def summarize_descriptions(
         )
         for row in relationships_df.iter_rows(named=True)
     ]
+    logger.info("Starting summarization of relationship descriptions.")
     relationship_results = await asyncio.gather(*relationship_futures)
 
     # Build DataFrames using Polars-native construction

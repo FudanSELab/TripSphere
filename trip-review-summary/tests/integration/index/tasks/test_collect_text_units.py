@@ -13,6 +13,16 @@ from review_summary.models import TextUnit
 _ = celery_monkey_patch  # Make pyright happy
 
 
+@pytest.fixture(autouse=True)
+def mock_qdrant_client(mocker: MockerFixture) -> MockType:
+    mock_qdrant_client: MockType = mocker.AsyncMock()
+    mocker.patch(
+        "review_summary.index.tasks.collect_text_units.AsyncQdrantClient",
+        return_value=mock_qdrant_client,
+    )
+    return mock_qdrant_client
+
+
 @pytest.fixture
 def mock_vector_store(mocker: MockerFixture) -> MockType:
     mock_vector_store: MockType = mocker.AsyncMock()
@@ -24,16 +34,6 @@ def mock_vector_store(mocker: MockerFixture) -> MockType:
         return_value=mock_vector_store,
     )
     return mock_vector_store
-
-
-@pytest.fixture(autouse=True)
-def mock_qdrant_client(mocker: MockerFixture) -> MockType:
-    mock_qdrant_client: MockType = mocker.AsyncMock()
-    mocker.patch(
-        "review_summary.index.tasks.collect_text_units.AsyncQdrantClient",
-        return_value=mock_qdrant_client,
-    )
-    return mock_qdrant_client
 
 
 @pytest.mark.asyncio

@@ -70,3 +70,8 @@ async def test_extract_graph(
     await _extract_graph(mock_task, context, config)
 
     # Add assertions as needed to verify the behavior
+    assert context["entities"] == f"entities_{entities_parquet_uuid}.parquet"
+    assert (
+        context["relationships"]
+        == f"relationships_{relationships_parquet_uuid}.parquet"
+    )

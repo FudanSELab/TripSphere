@@ -62,6 +62,8 @@ async def extract_graph(
         entity_lfs.append(result.entities)
         relationship_lfs.append(result.relationships)
 
+    # Merge all raw entity and raw relationship LazyFrames
+    logger.info("Merging extracted entities and relationships.")
     entities = _merge_entities(entity_lfs)
     relationships = _merge_relationships(relationship_lfs)
 
@@ -121,6 +123,7 @@ async def _run_graph_extraction(
 
     graph = results.output
     # Map the "source_id" back to the "id" field
+    logger.info("Mapping the 'source_id' back to the 'id' field")
     for _, node in graph.nodes(data=True):
         if node:
             node["source_id"] = ",".join(
