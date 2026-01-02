@@ -47,6 +47,7 @@ class TextUnitVectorStore:
     async def find_by_target(
         self, target_id: str, target_type: str, limit: int = 1024
     ) -> list[TextUnit]:
+        """Find text units (without embedding) by target ID and target type."""
         filter = models.Filter(
             must=[
                 models.FieldCondition(
