@@ -37,7 +37,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.httpx_client = AsyncClient()
     app.state.neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
         uri=settings.neo4j.uri,
-        auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
+        auth=(
+            settings.neo4j.username,
+            settings.neo4j.password.get_secret_value(),
+        ),
     )
     app.state.qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
     try:

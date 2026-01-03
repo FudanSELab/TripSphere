@@ -6,6 +6,39 @@ networks:
     driver: bridge
 
 services:
+  # Review Summary
+  trip-review-summary:
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary
+    command:
+      - uvicorn
+      - review_summary.asgi:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "24212"
+
+  # Review Summary RocketMQ Consumer
+  trip-review-summary-consumer:
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary-consumer
+    command:
+      - python
+      - -m
+      - review_summary.rocketmq
+
+  # Review Summary Celery Worker
+  trip-review-summary-worker:
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary-worker
+    command:
+      - celery
+      - -A
+      - review_summary.celery.app
+      - worker
+      - --loglevel=info
+      - --concurrency=4
+
   # Nacos
   nacos:
     image: nacos/nacos-server:v2.5.1

@@ -35,7 +35,7 @@ async def _extract_graph(
         f"s3://review-summary/{text_units_filename}",
         storage_options=get_storage_options(),
     )
-    logger.debug(f"Loaded text units from {text_units_filename}.")
+    logger.info(f"Loaded text units from {text_units_filename}.")
 
     extracted_entities, extracted_relationships = await extract_graph(
         text_units=text_units,

@@ -50,7 +50,7 @@ async def test_collect_text_units(
     def save_parquet_locally(self: pl.DataFrame, path: str, **kwargs: Any) -> None:
         filename = f"text_units_{text_units_parquet_uuid}.parquet"
         # Call the original method with local path
-        original_write_parquet(self, f"tests/fixtures/{filename}")
+        original_write_parquet(self, f"tests/fixtures/output/{filename}")
 
     mocker.patch(
         "review_summary.index.tasks.collect_text_units.uuid7",

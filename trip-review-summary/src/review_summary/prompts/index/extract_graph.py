@@ -116,7 +116,8 @@ Output:
 -Real Data-
 ######################
 Entity_types: {entity_types}
-Text: {input_text}
+Text:
+{input_text}
 ######################
 Output:
 """.lstrip()  # noqa: E501
