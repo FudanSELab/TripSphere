@@ -45,6 +45,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: trip-file-service:latest
     container_name: trip-file-service
     ports:
       - "50051:50051"
@@ -84,18 +85,3 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "curl -X POST 'http://nacos:8848/nacos/v1/ns/instance?serviceName=minio&ip=minio&port=9000&ephemeral=false' && echo 'MinIO registered successfully!'"
-
-  # Register TripFileService to Nacos
-  nacos-register-trip-file-service:
-    image: curlimages/curl:latest
-    container_name: nacos-register-trip-file-service
-    depends_on:
-      nacos:
-        condition: service_healthy
-      trip-file-service:
-        condition: service_healthy
-    restart: "no"
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "curl -X POST 'http://nacos:8848/nacos/v1/ns/instance?serviceName=trip-file-service&ip=trip-file-service&port=50051&ephemeral=true' && echo 'TripFileService registered successfully!'"
-

@@ -25,14 +25,20 @@ const (
 // FileServer implements the gRPC server for FileService
 type FileServer struct {
 	pb.UnimplementedFileServiceServer
-	minioClient *minio.Client
 }
 
 // NewFileServer creates a new FileServer instance
 func NewFileServer() *FileServer {
-	return &FileServer{
-		minioClient: minio.MinIO,
+	return &FileServer{}
+}
+
+// getMinioClient gets the current MinIO client dynamically
+func (s *FileServer) getMinioClient() (*minio.Client, error) {
+	client := minio.GetClient()
+	if client == nil {
+		return nil, status.Error(codes.Internal, "minio client is not available")
 	}
+	return client, nil
 }
 
 // getObjectName constructs the object name from service and path
@@ -50,14 +56,20 @@ func (s *FileServer) GetUploadSignedUrl(ctx context.Context, req *pb.GetUploadSi
 		return nil, status.Error(codes.InvalidArgument, "service and path fields are required")
 	}
 
+	// Get MinIO client
+	minioClient, err := s.getMinioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	// Ensure bucket exists
 	objectName := s.getObjectName(req.File.Service, req.File.Path)
-	if err := s.minioClient.EnsureBucket(ctx, bucketPermanent, ""); err != nil {
+	if err := minioClient.EnsureBucket(ctx, bucketPermanent, ""); err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to ensure permanent bucket: %v", err))
 	}
 
 	// Generate presigned URL for upload
-	url, err := s.minioClient.PresignedPutObject(ctx, bucketPermanent, objectName, defaultPresignedURLExpiry)
+	url, err := minioClient.PresignedPutObject(ctx, bucketPermanent, objectName, defaultPresignedURLExpiry)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate presigned upload URL: %v", err))
 	}
@@ -86,14 +98,20 @@ func (s *FileServer) GetTempUploadSignedUrl(ctx context.Context, req *pb.GetTemp
 		return nil, status.Error(codes.InvalidArgument, "service and path fields are required")
 	}
 
+	// Get MinIO client
+	minioClient, err := s.getMinioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	// Ensure bucket exists
 	objectName := s.getObjectName(req.File.Service, req.File.Path)
-	if err := s.minioClient.EnsureBucket(ctx, bucketTemp, ""); err != nil {
+	if err := minioClient.EnsureBucket(ctx, bucketTemp, ""); err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to ensure temp bucket: %v", err))
 	}
 
 	// Generate presigned URL for upload
-	url, err := s.minioClient.PresignedPutObject(ctx, bucketTemp, objectName, defaultPresignedURLExpiry)
+	url, err := minioClient.PresignedPutObject(ctx, bucketTemp, objectName, defaultPresignedURLExpiry)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate presigned temp upload URL: %v", err))
 	}
@@ -118,6 +136,12 @@ func (s *FileServer) GetDownloadSignedUrls(ctx context.Context, req *pb.GetDownl
 		return nil, status.Error(codes.InvalidArgument, "files list cannot be empty")
 	}
 
+	// Get MinIO client
+	minioClient, err := s.getMinioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	files := make([]*pb.File, 0, len(req.Files))
 	for _, f := range req.Files {
 		if f == nil {
@@ -131,7 +155,7 @@ func (s *FileServer) GetDownloadSignedUrls(ctx context.Context, req *pb.GetDownl
 		}
 
 		objectName := s.getObjectName(f.Service, f.Path)
-		url, err := s.minioClient.PresignedGetObject(ctx, f.Bucket, objectName, defaultPresignedURLExpiry, nil)
+		url, err := minioClient.PresignedGetObject(ctx, f.Bucket, objectName, defaultPresignedURLExpiry, nil)
 		if err != nil {
 			// Skip files that fail to generate URL, but continue processing others
 			continue
@@ -182,6 +206,12 @@ func (s *FileServer) CopyFiles(ctx context.Context, req *pb.CopyFilesRequest) (*
 		}
 	}
 
+	// Get MinIO client
+	minioClient, err := s.getMinioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	// Execute copy operations
 	for _, pair := range req.CopyFiles {
 		fromBucket := pair.From.Bucket
@@ -190,7 +220,7 @@ func (s *FileServer) CopyFiles(ctx context.Context, req *pb.CopyFilesRequest) (*
 		toObjectName := s.getObjectName(pair.To.Service, pair.To.Path)
 
 		// Ensure destination bucket exists
-		if err := s.minioClient.EnsureBucket(ctx, toBucket, ""); err != nil {
+		if err := minioClient.EnsureBucket(ctx, toBucket, ""); err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to ensure destination bucket %s: %v", toBucket, err))
 		}
 
@@ -204,7 +234,7 @@ func (s *FileServer) CopyFiles(ctx context.Context, req *pb.CopyFilesRequest) (*
 			Object: toObjectName,
 		}
 
-		_, err := s.minioClient.CopyObject(ctx, dst, src)
+		_, err := minioClient.CopyObject(ctx, dst, src)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to copy file from %s/%s to %s/%s: %v", fromBucket, fromObjectName, toBucket, toObjectName, err))
 		}
@@ -236,10 +266,16 @@ func (s *FileServer) DeleteFiles(ctx context.Context, req *pb.DeleteFilesRequest
 		bucketFiles[bucket] = append(bucketFiles[bucket], objectName)
 	}
 
+	// Get MinIO client
+	minioClient, err := s.getMinioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	// Execute delete operations
 	for bucket, objectNames := range bucketFiles {
 		for _, objectName := range objectNames {
-			err := s.minioClient.RemoveObject(ctx, bucket, objectName, minioGo.RemoveObjectOptions{})
+			err := minioClient.RemoveObject(ctx, bucket, objectName, minioGo.RemoveObjectOptions{})
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete file %s/%s: %v", bucket, objectName, err))
 			}
@@ -255,8 +291,14 @@ func (s *FileServer) CopyToPermanent(ctx context.Context, req *pb.CopyToPermanen
 		return nil, status.Error(codes.InvalidArgument, "files list cannot be empty")
 	}
 
+	// Get MinIO client
+	minioClient, err := s.getMinioClient()
+	if err != nil {
+		return nil, err
+	}
+
 	// Ensure permanent bucket exists
-	if err := s.minioClient.EnsureBucket(ctx, bucketPermanent, ""); err != nil {
+	if err := minioClient.EnsureBucket(ctx, bucketPermanent, ""); err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to ensure permanent bucket: %v", err))
 	}
 
@@ -290,7 +332,7 @@ func (s *FileServer) CopyToPermanent(ctx context.Context, req *pb.CopyToPermanen
 			Object: objectName,
 		}
 
-		_, err := s.minioClient.CopyObject(ctx, dst, src)
+		_, err := minioClient.CopyObject(ctx, dst, src)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to copy file %s/%s to permanent bucket: %v", fromBucket, objectName, err))
 		}
