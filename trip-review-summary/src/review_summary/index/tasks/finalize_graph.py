@@ -70,6 +70,8 @@ async def _finalize_graph(
         )
 
         async with neo4j_driver.session() as session:  # pyright: ignore
+            # TODO: Use create_graph operation to create the graph in Neo4j
+
             # Create indexes to optimize queries by target_id
             await session.run(
                 "CREATE INDEX entity_target_id "

@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 import polars as pl
 
 
-def create_neo4j_graph(
+def create_graph(
     edges: pl.DataFrame,
     edge_attr: list[str] | None = None,
     nodes: pl.DataFrame | None = None,
