@@ -8,13 +8,17 @@ from review_summary.config.index.finalize_graph_config import FinalizeGraphConfi
 
 @shared_task(bind=True)
 def run_workflow(
-    self: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
+    self: Task[Any, Any], context: dict[str, Any], config: dict[str, Any]
 ) -> dict[str, Any]:
-    async_to_sync(_finalize_graph)(self, context, config)
+    async_to_sync(_finalize_graph)(
+        self, context, FinalizeGraphConfig.model_validate(config)
+    )
     return context
 
 
 async def _finalize_graph(
     task: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
 ) -> None:
-    pass
+    entities_filename = context["entities"]
+    relationships_filename = context["relationships"]
+    

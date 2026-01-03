@@ -10,9 +10,9 @@ class Identified(BaseModel):
         default_factory=lambda: str(uuid7()),
         description="Unique identifier of the item.",
     )
-    short_id: str | None = Field(
+    readable_id: str | None = Field(
         default=None,
-        description="A shorter, human-friendly identifier for the item."
+        description="A human-friendly identifier for the item."
         "Useful for referring to community in prompts or texts displayed to users, "
         "such as in a report text.",
     )

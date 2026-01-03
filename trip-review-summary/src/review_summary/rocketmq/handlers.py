@@ -37,9 +37,9 @@ async def handle_create_review(
         if embedding is None:
             logger.warning(f"Skip text unit {idx} due to empty embedding")
             continue
-        short_id = f"/reviews/{create_review.id}/text-units/{idx}"
+        readable_id = f"/reviews/{create_review.id}/text-units/{idx}"
         text_unit = TextUnit(
-            short_id=short_id,
+            readable_id=readable_id,
             text=text_chunk.text_chunk,
             embedding=embedding,
             n_tokens=text_chunk.n_tokens,

@@ -75,8 +75,8 @@ async def test_handle_create_review(
         assert text_unit.n_tokens is not None
         assert text_unit.n_tokens > 0
 
-        assert text_unit.short_id is not None
-        assert text_unit.short_id.startswith(
+        assert text_unit.readable_id is not None
+        assert text_unit.readable_id.startswith(
             f"/reviews/{matching_review['review_id']}/text-units/"
         )
 

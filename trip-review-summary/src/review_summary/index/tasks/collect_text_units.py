@@ -26,6 +26,7 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
     if target_type != "attraction":
         # Currently, we only support attraction reviews
         raise ValueError(f"Unsupported target type: {target_type}")
+
     qdrant_client: AsyncQdrantClient | None = None
     try:
         qdrant_client = AsyncQdrantClient(url=get_settings().qdrant.url)
@@ -53,6 +54,7 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
         )
         context["text_units"] = filename
         logger.info(f"Saved text units to 's3://review-summary/{filename}'.")
+
     finally:
-        if qdrant_client is not None:
+        if isinstance(qdrant_client, AsyncQdrantClient):
             await qdrant_client.close()
