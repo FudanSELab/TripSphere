@@ -2,7 +2,7 @@ version: '3'
 
 tasks:
   gen-proto:
-    desc: 生成 gRPC 代码
+    desc: Generate protobuf codes
     cmds:
       - ./scripts/gen-proto.sh
 

@@ -56,7 +56,7 @@ scripts/
 # Volume data
 volumes/
 
-# 其他
+# Others
 .DS_Store
 Thumbs.db
 
