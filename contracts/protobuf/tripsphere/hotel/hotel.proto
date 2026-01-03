@@ -1,10 +1,12 @@
 syntax = "proto3";
 
-package org.tripsphere.hotel;
+package tripsphere.hotel;
 
 option java_multiple_files = true;
 option java_package = "org.tripsphere.hotel";
 option java_outer_classname = "HotelServiceProto";
+
+option go_package = "tripsphere/hotel";
 
 // room info
 message Room {

@@ -6,6 +6,8 @@ option java_multiple_files = true;
 option java_package = "org.tripsphere.note";
 option java_outer_classname = "MetadataProto";
 
+option go_package = "tripsphere/note";
+
 service MetadataService {
   // Get the version of note service.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}

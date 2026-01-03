@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package tripsphere.file;
+
+option go_package = "tripsphere/file";
+
+// File represents a file resource
+message File {
+  string name = 1;        // File name, stores the filename when user uploads; this field is independent of the filename in path and does not affect the final file storage path
+  string content_type = 2; // File type, using MIME Type
+  string url = 3;         // URL for upload, write or download
+  string bucket = 4;      // Belongs to bucket, either "temp" or "permanent"
+  string service = 5;     // Service name that owns this file
+  string path = 6;        // File path under the bucket
+}
+
+// GetUploadSignedUrl request
+message GetUploadSignedUrlRequest {
+  File file = 1; // service and path fields are required, other fields can be omitted or empty
+}
+
+// GetUploadSignedUrl response
+message GetUploadSignedUrlResponse {
+  File file = 1; // Contains the generated signed URL and file information
+}
+
+// GetTempUploadSignedUrl request
+message GetTempUploadSignedUrlRequest {
+  File file = 1; // service and path fields are required, other fields can be omitted or empty
+}
+
+// GetTempUploadSignedUrl response
+message GetTempUploadSignedUrlResponse {
+  File file = 1; // Contains the generated signed URL and file information
+}
+
+// GetDownloadSignedUrls request
+message GetDownloadSignedUrlsRequest {
+  repeated File files = 1; // List of files that need download URLs
+}
+
+// GetDownloadSignedUrls response
+message GetDownloadSignedUrlsResponse {
+  repeated File files = 1; // Each File's url field contains the signed URL
+}
+
+// CopyFilePair represents a copy operation pair
+message CopyFilePair {
+  File from = 1; // Source file
+  File to = 2;   // Destination file
+}
+
+// CopyFiles request
+message CopyFilesRequest {
+  repeated CopyFilePair copy_files = 1; // List of file pairs to copy
+}
+
+// CopyFiles response
+message CopyFilesResponse {
+  // Empty response
+}
+
+// DeleteFiles request
+message DeleteFilesRequest {
+  repeated File files = 1; // List of files to delete
+}
+
+// DeleteFiles response
+message DeleteFilesResponse {
+  // Empty response
+}
+
+// CopyToPermanent request
+message CopyToPermanentRequest {
+  repeated File files = 1; // List of files to copy from temp bucket to permanent bucket
+}
+
+// CopyToPermanent response
+message CopyToPermanentResponse {
+  repeated File files = 1; // New file objects (files already in permanent bucket will be ignored)
+}
+
+// FileService provides file-related services
+service FileService {
+  // GetUploadSignedUrl gets a signed URL for permanent file upload, used for frontend to upload a permanent file
+  rpc GetUploadSignedUrl(GetUploadSignedUrlRequest) returns (GetUploadSignedUrlResponse);
+
+  // GetTempUploadSignedUrl gets a signed URL for temporary file upload, used for frontend to upload a temporary file
+  rpc GetTempUploadSignedUrl(GetTempUploadSignedUrlRequest) returns (GetTempUploadSignedUrlResponse);
+
+  // GetDownloadSignedUrls gets signed URLs for a batch of files, used for frontend to display files
+  rpc GetDownloadSignedUrls(GetDownloadSignedUrlsRequest) returns (GetDownloadSignedUrlsResponse);
+
+  // CopyFiles copies a batch of files to new locations
+  rpc CopyFiles(CopyFilesRequest) returns (CopyFilesResponse);
+
+  // DeleteFiles deletes one or more files
+  rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
+
+  // CopyToPermanent copies files from temp bucket to permanent bucket
+  // Files that are already in permanent bucket will be ignored
+  // Since the caller needs to save the new file object array back to database after calling this interface,
+  // which may fail, the copied files will not be deleted immediately to allow the caller to retry
+  rpc CopyToPermanent(CopyToPermanentRequest) returns (CopyToPermanentResponse);
+}
