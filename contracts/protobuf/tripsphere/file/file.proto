@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package org.tripsphere.file;
+package tripsphere.file;
 
 option go_package = "tripsphere/file";
 
