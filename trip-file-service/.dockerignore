@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+TESTING.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yaml
+dev-docker-compose.yaml
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+trip-file-service
+
+# Test files
+*_test.go
+test/
+cmd/test_client/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Dependencies and build cache
+vendor/
+.venv/
+__pycache__/
+
+# Local configuration
+.env
+.env.local
+.env.*.local
+
+# Scripts (can be copied during build if needed)
+scripts/
+
+# Volume data
+volumes/
+
+# 其他
+.DS_Store
+Thumbs.db
+

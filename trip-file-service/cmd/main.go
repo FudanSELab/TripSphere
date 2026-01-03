@@ -8,6 +8,7 @@ import (
 
 	"trip-file-service/clients"
 	pb "trip-file-service/clients/grpc/gen/file"
+	"trip-file-service/config"
 	server "trip-file-service/servies"
 )
 
@@ -16,6 +17,7 @@ const (
 )
 
 func main() {
+	config.Init()
 	clients.Init()
 
 	// Listen on port

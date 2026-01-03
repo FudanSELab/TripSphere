@@ -6,6 +6,6 @@ import (
 )
 
 func Init() {
-	minio.Init()
 	nacos.Init()
+	minio.Init()
 }

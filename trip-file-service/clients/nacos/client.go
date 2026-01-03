@@ -12,23 +12,24 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
-// Config Nacos 客户端配置
+// Config Nacos client configuration
 type Config struct {
-	ServerHosts []string      // Nacos 服务器地址列表，格式: ["127.0.0.1:8848"]
-	NamespaceID string        // 命名空间ID
-	GroupName   string        // 分组名称，默认为 "DEFAULT_GROUP"
-	Username    string        // 用户名（可选）
-	Password    string        // 密码（可选）
-	Timeout     time.Duration // 超时时间
+	Host        string        // Nacos server address
+	Port        int           // Nacos server port
+	NamespaceID string        // Namespace ID
+	GroupName   string        // Group name, defaults to "DEFAULT_GROUP"
+	Username    string        // Username (optional)
+	Password    string        // Password (optional)
+	Timeout     time.Duration // Timeout duration
 }
 
-// Client Nacos 客户端
+// Client Nacos client
 type Client struct {
 	namingClient naming_client.INamingClient
 	config       Config
 }
 
-// NewClient 创建新的 Nacos 客户端
+// NewClient creates a new Nacos client
 func NewClient(ctx context.Context, config Config) (*Client, error) {
 	if config.GroupName == "" {
 		config.GroupName = "DEFAULT_GROUP"
@@ -37,18 +38,17 @@ func NewClient(ctx context.Context, config Config) (*Client, error) {
 		config.Timeout = 5 * time.Second
 	}
 
-	// 构建服务器配置
-	serverConfigs := make([]constant.ServerConfig, 0, len(config.ServerHosts))
-	for _, host := range config.ServerHosts {
-		serverConfigs = append(serverConfigs, constant.ServerConfig{
-			IpAddr:      host,
-			Port:        8848,
+	// Build server configuration
+	serverConfigs := []constant.ServerConfig{
+		{
+			IpAddr:      config.Host,
+			Port:        uint64(config.Port),
 			Scheme:      "http",
 			ContextPath: "/nacos",
-		})
+		},
 	}
 
-	// 客户端配置
+	// Client configuration
 	clientConfig := constant.ClientConfig{
 		NamespaceId:         config.NamespaceID,
 		TimeoutMs:           uint64(config.Timeout.Milliseconds()),
@@ -58,13 +58,13 @@ func NewClient(ctx context.Context, config Config) (*Client, error) {
 		LogLevel:            "info",
 	}
 
-	// 如果有用户名和密码，设置认证
+	// Set authentication if username and password are provided
 	if config.Username != "" {
 		clientConfig.Username = config.Username
 		clientConfig.Password = config.Password
 	}
 
-	// 创建命名客户端
+	// Create naming client
 	namingClient, err := clients.NewNamingClient(
 		vo.NacosClientParam{
 			ClientConfig:  &clientConfig,
@@ -81,7 +81,7 @@ func NewClient(ctx context.Context, config Config) (*Client, error) {
 	}, nil
 }
 
-// RegisterInstance 注册服务实例
+// RegisterInstance registers a service instance
 func (c *Client) RegisterInstance(ctx context.Context, param vo.RegisterInstanceParam) error {
 	param.GroupName = c.config.GroupName
 	success, err := c.namingClient.RegisterInstance(param)
@@ -94,7 +94,7 @@ func (c *Client) RegisterInstance(ctx context.Context, param vo.RegisterInstance
 	return nil
 }
 
-// DeregisterInstance 注销服务实例
+// DeregisterInstance deregisters a service instance
 func (c *Client) DeregisterInstance(ctx context.Context, param vo.DeregisterInstanceParam) error {
 	param.GroupName = c.config.GroupName
 	success, err := c.namingClient.DeregisterInstance(param)
@@ -107,7 +107,7 @@ func (c *Client) DeregisterInstance(ctx context.Context, param vo.DeregisterInst
 	return nil
 }
 
-// GetService 获取服务实例列表
+// GetService gets service instance list
 func (c *Client) GetService(ctx context.Context, param vo.GetServiceParam) (model.Service, error) {
 	param.GroupName = c.config.GroupName
 	service, err := c.namingClient.GetService(param)
@@ -117,7 +117,7 @@ func (c *Client) GetService(ctx context.Context, param vo.GetServiceParam) (mode
 	return service, nil
 }
 
-// SelectInstances 选择健康的服务实例
+// SelectInstances selects healthy service instances
 func (c *Client) SelectInstances(ctx context.Context, param vo.SelectInstancesParam) ([]model.Instance, error) {
 	param.GroupName = c.config.GroupName
 	instances, err := c.namingClient.SelectInstances(param)
@@ -127,7 +127,7 @@ func (c *Client) SelectInstances(ctx context.Context, param vo.SelectInstancesPa
 	return instances, nil
 }
 
-// SelectOneHealthyInstance 选择一个健康的服务实例
+// SelectOneHealthyInstance selects one healthy service instance
 func (c *Client) SelectOneHealthyInstance(ctx context.Context, param vo.SelectOneHealthInstanceParam) (*model.Instance, error) {
 	param.GroupName = c.config.GroupName
 	instance, err := c.namingClient.SelectOneHealthyInstance(param)
@@ -137,19 +137,19 @@ func (c *Client) SelectOneHealthyInstance(ctx context.Context, param vo.SelectOn
 	return instance, nil
 }
 
-// Subscribe 订阅服务变化
+// Subscribe subscribes to service changes
 func (c *Client) Subscribe(param *vo.SubscribeParam) error {
 	param.GroupName = c.config.GroupName
 	return c.namingClient.Subscribe(param)
 }
 
-// Unsubscribe 取消订阅服务变化
+// Unsubscribe unsubscribes from service changes
 func (c *Client) Unsubscribe(param *vo.SubscribeParam) error {
 	param.GroupName = c.config.GroupName
 	return c.namingClient.Unsubscribe(param)
 }
 
-// GetAllServicesInfo 获取所有服务信息
+// GetAllServicesInfo gets all service information
 func (c *Client) GetAllServicesInfo(ctx context.Context, param vo.GetAllServiceInfoParam) (model.ServiceList, error) {
 	param.GroupName = c.config.GroupName
 	serviceList, err := c.namingClient.GetAllServicesInfo(param)
@@ -157,20 +157,4 @@ func (c *Client) GetAllServicesInfo(ctx context.Context, param vo.GetAllServiceI
 		return model.ServiceList{}, fmt.Errorf("failed to get all services info: %w", err)
 	}
 	return serviceList, nil
-}
-
-var Nacos *Client
-
-func Init() {
-	client, err := NewClient(context.Background(), Config{
-		ServerHosts: []string{"localhost:8848"},
-		NamespaceID: "public",
-		GroupName:   "DEFAULT_GROUP",
-		Username:    "nacos",
-		Password:    "nacos",
-	})
-	if err != nil {
-		panic(err)
-	}
-	Nacos = client
 }

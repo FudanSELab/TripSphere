@@ -170,22 +170,3 @@ func (c *Client) ListObjects(ctx context.Context, bucketName string, opts minio.
 func (c *Client) GetClient() *minio.Client {
 	return c.client
 }
-
-var (
-	MinIO *Client
-)
-
-func Init() {
-	client, err := NewClient(context.Background(), Config{
-		Endpoint:        "localhost:9000",
-		AccessKeyID:     "minioadmin",
-		SecretAccessKey: "minioadmin",
-		UseSSL:          false,
-		Region:          "us-east-1",
-		Timeout:         30 * time.Second,
-	})
-	if err != nil {
-		panic(err)
-	}
-	MinIO = client
-}
