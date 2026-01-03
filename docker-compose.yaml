@@ -6,6 +6,38 @@ networks:
     driver: bridge
 
 services:
+  # File Service
+  trip-file-service:
+    build:
+      context: ./trip-file-service
+      dockerfile: Dockerfile
+    image: trip-file-service:latest
+    container_name: trip-file-service
+    ports:
+      - "50051:50051"
+    environment:
+      - APP_ENV=dev
+      - APP_NAME=trip-file-service
+      - PORT=50051
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=public
+      - NACOS_GROUP=DEFAULT_GROUP
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+    depends_on:
+      nacos:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
   # Review Summary
   trip-review-summary:
     image: tripsphere/trip-review-summary:latest
@@ -210,38 +242,6 @@ services:
     ports:
       - "6379:6379"
     restart: "always"
-
-  # Trip File Service
-  trip-file-service:
-    build:
-      context: ./trip-file-service
-      dockerfile: Dockerfile
-    image: trip-file-service:latest
-    container_name: trip-file-service
-    ports:
-      - "50051:50051"
-    environment:
-      - APP_ENV=dev
-      - APP_NAME=trip-file-service
-      - PORT=50051
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-      - NACOS_NAMESPACE=public
-      - NACOS_GROUP=DEFAULT_GROUP
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-    depends_on:
-      nacos:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50051"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
 
 configs:
   qdrant_config:

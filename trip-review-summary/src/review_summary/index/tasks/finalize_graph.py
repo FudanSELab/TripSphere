@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, cast
 
 import polars as pl
 from asgiref.sync import async_to_sync
@@ -27,6 +27,9 @@ def run_workflow(
 async def _finalize_graph(
     task: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
 ) -> None:
+    target_id = cast(str, context["target_id"])
+    target_type = cast(str, context["target_type"])
+
     entities_filename = context["entities"]
     relationships_filename = context["relationships"]
     entities = pl.scan_parquet(
@@ -45,10 +48,14 @@ async def _finalize_graph(
     finalized_entities = entities.with_columns(
         pl.Series("id", [uuid7() for _ in range(len(entities))]),
         pl.Series("readable_id", range(len(entities))),
+        pl.lit(target_id).alias("target_id"),
+        pl.lit(target_type).alias("target_type"),
     )
     finalized_relationships = relationships.with_columns(
         pl.Series("id", [uuid7() for _ in range(len(relationships))]),
         pl.Series("readable_id", range(len(relationships))),
+        pl.lit(target_id).alias("target_id"),
+        pl.lit(target_type).alias("target_type"),
     )
 
     settings = get_settings()
@@ -61,7 +68,57 @@ async def _finalize_graph(
                 settings.neo4j.password.get_secret_value(),
             ),
         )
-        
+
+        async with neo4j_driver.session() as session:  # pyright: ignore
+            # Create indexes to optimize queries by target_id
+            await session.run(
+                "CREATE INDEX entity_target_id "
+                "IF NOT EXISTS FOR (n:Entity) ON (n.target_id)"
+            )
+            await session.run(
+                "CREATE INDEX relationship_target_id "
+                "IF NOT EXISTS FOR ()-[r:RELATES]-() ON (r.target_id)"
+            )
+
+            # Import finalized entities
+            logger.info(f"Importing {len(finalized_entities)} entities to Neo4j...")
+            entities_dicts = finalized_entities.to_dicts()
+            await session.run(
+                """
+                UNWIND $entities AS entity
+                MERGE (n:Entity {id: entity.id})
+                SET n.readable_id = entity.readable_id,
+                    n.target_id = entity.target_id,
+                    n.target_type = entity.target_type,
+                    n.name = entity.name,
+                    n.type = entity.type,
+                    n.description = entity.description
+                """,
+                entities=entities_dicts,
+            )
+
+            # Import finalized relationships
+            logger.info(
+                f"Importing {len(finalized_relationships)} relationships to Neo4j..."
+            )
+            relationships_dicts = finalized_relationships.to_dicts()
+            await session.run(
+                """
+                UNWIND $relationships AS rel
+                MATCH (source:Entity {id: rel.source})
+                MATCH (target:Entity {id: rel.target})
+                MERGE (source)-[r:RELATES {id: rel.id}]->(target)
+                SET r.readable_id = rel.readable_id,
+                    r.target_id = rel.target_id,
+                    r.target_type = rel.target_type,
+                    r.type = rel.type,
+                    r.description = rel.description,
+                    r.weight = rel.weight
+                """,
+                relationships=relationships_dicts,
+            )
+
+            logger.info("Successfully imported entities and relationships to Neo4j")
 
     finally:
         if isinstance(neo4j_driver, AsyncDriver):
