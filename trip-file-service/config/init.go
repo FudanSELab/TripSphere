@@ -20,6 +20,11 @@ var (
 	NacosGroup     string
 	NacosUsername  string
 	NacosPassword  string
+
+	MinIOEndpoint        string
+	MinIOAccessKeyID     string
+	MinIOSecretAccessKey string
+	MinIOUseSSL          bool
 )
 
 func getEnv(key string, defaultValue string) string {
@@ -51,4 +56,9 @@ func Init() {
 	if err != nil {
 		panic(fmt.Errorf("failed to parse nacos port: %w", err))
 	}
+
+	MinIOEndpoint = getEnv("MINIO_ENDPOINT", "minio:9000")
+	MinIOAccessKeyID = getEnv("MINIO_ACCESS_KEY_ID", "minioadmin")
+	MinIOSecretAccessKey = getEnv("MINIO_SECRET_ACCESS_KEY", "minioadmin")
+	MinIOUseSSL = getEnv("MINIO_USE_SSL", "false") == "true"
 }
