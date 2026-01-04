@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any
 
-import polars as pl
+import pandas as pd
 from asgiref.sync import async_to_sync
 from celery import Task, shared_task
 from qdrant_client import AsyncQdrantClient
@@ -23,7 +23,7 @@ def run_workflow(self: Task[Any, Any], context: dict[str, Any]) -> dict[str, Any
 
 
 async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> None:
-    """Collected `text_units` polars DataFrame schema:
+    """Collected `text_units` parquet schema:
     | Column           | Type          | Description                                      |
     | :--------------- | :------------ | :----------------------------------------------- |
     | id               | String        | ID of the TextUnit                               |
@@ -35,7 +35,7 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
     | covariate_ids    | List(String)  | IDs of Covariates extracted from the TextUnit    |
     | n_tokens         | UInt32        | Number of tokens of the text content             |
     | document_id      | String        | ID of the source Document of the TextUnit        |
-    | attributes       | Struct        | Attributes including target information          |
+    | attributes       | Struct/Map    | Attributes including target information          |
     """  # noqa: E501
     qdrant_settings = get_settings().qdrant
     qdrant_client = AsyncQdrantClient(url=qdrant_settings.url)
@@ -54,8 +54,8 @@ async def _internal(
     context: dict[str, Any],
     text_unit_vector_store: TextUnitVectorStore,
 ) -> None:
-    target_id = cast(str, context["target_id"])
-    target_type = cast(str, context["target_type"])
+    target_id = context["target_id"]
+    target_type = context["target_type"]
     if target_type != "attraction":
         # Currently, we only support attraction reviews
         raise ValueError(f"Unsupported target type: {target_type}")
@@ -74,17 +74,13 @@ async def _internal(
         },
     )
 
-    df = pl.DataFrame(
-        [text_unit.model_dump() for text_unit in text_units]
-    ).with_columns(
-        pl.col("entity_ids").cast(pl.List(pl.String)),
-        pl.col("relationship_ids").cast(pl.List(pl.String)),
-        pl.col("covariate_ids").cast(pl.List(pl.String)),
-        pl.col("n_tokens").cast(pl.UInt32),
-    )
+    df = pd.DataFrame([text_unit.model_dump() for text_unit in text_units])
+    df["n_tokens"] = df["n_tokens"].astype("uint32")
+
     filename = f"text_units_{uuid7()}.parquet"
-    df.write_parquet(
-        f"s3://review-summary/{filename}", storage_options=get_storage_options()
+    df.to_parquet(
+        f"s3://review-summary/{filename}",
+        storage_options=get_storage_options(),
     )
     context["text_units"] = filename
     logger.info(f"Saved text units to 's3://review-summary/{filename}'.")

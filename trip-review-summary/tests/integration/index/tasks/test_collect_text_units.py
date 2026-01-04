@@ -1,6 +1,6 @@
 from typing import Any
 
-import polars as pl
+import pandas as pd
 import pytest
 from pytest_mock import MockerFixture, MockType
 
@@ -22,18 +22,18 @@ async def test_collect_text_units(
     )
 
     # Mock write_parquet to save locally
-    original_write_parquet = pl.DataFrame.write_parquet
+    original_to_parquet = pd.DataFrame.to_parquet
 
-    def _mock_write_parquet(self: pl.DataFrame, file: str, **kwargs: Any) -> None:
+    def _mock_to_parquet(self: pd.DataFrame, file: str, **kwargs: Any) -> None:
         if file.startswith("s3://review-summary/"):
             filename = file.replace("s3://review-summary/", "")
             local_path = f"tests/fixtures/output/{filename}"
             # Remove storage_options to avoid S3 connection
             kwargs.pop("storage_options", None)
-            return original_write_parquet(self, local_path, **kwargs)
-        return original_write_parquet(self, file, **kwargs)
+            return original_to_parquet(self, local_path, **kwargs)
+        return original_to_parquet(self, file, **kwargs)
 
-    mocker.patch.object(pl.DataFrame, "write_parquet", _mock_write_parquet)
+    mocker.patch.object(pd.DataFrame, "to_parquet", _mock_to_parquet)
 
     # Mock TextUnitVectorStore find_by_target
     mock_vector_store: MockType = mocker.AsyncMock()

@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
-import polars as pl
+import pandas as pd
 from langchain_openai import ChatOpenAI
 
 from review_summary.config.settings import get_settings
@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 async def summarize_descriptions(
-    entities: pl.LazyFrame,
-    relationships: pl.LazyFrame,
+    entities: pd.DataFrame,
+    relationships: pd.DataFrame,
     chat_model_config: dict[str, Any],
     max_input_tokens: int,
     max_summary_length: int,
     summarization_prompt: str | None = None,
     num_concurrency: int = 4,
-) -> tuple[pl.DataFrame, pl.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Summarize entity and relationship descriptions using a llm."""
     semaphore = asyncio.Semaphore(num_concurrency)
 
@@ -38,8 +38,7 @@ async def summarize_descriptions(
     logger.info("Initialized ChatOpenAI model for description summarization.")
 
     async def _summarize_descriptions(
-        id: str | tuple[str, str],
-        descriptions: list[str],
+        id: str | tuple[str, str], descriptions: list[str]
     ) -> SummarizationResult:
         async with semaphore:
             return await _run_summary_extraction(
@@ -51,19 +50,10 @@ async def summarize_descriptions(
                 summarization_prompt=summarization_prompt,
             )
 
-    # Collect once and iterate
-    entities_df = entities.collect()
-    relationships_df = relationships.collect()
-
     # Process entities
     entity_futures = [
-        _summarize_descriptions(
-            row["title"],
-            sorted(set(row["description"]))  # pyright: ignore
-            if isinstance(row["description"], list)
-            else [row["description"]],
-        )
-        for row in entities_df.iter_rows(named=True)
+        _summarize_descriptions(str(row.title), sorted(set(row.description)))  # type: ignore
+        for row in entities.itertuples()
     ]
     logger.info("Starting summarization of entity descriptions.")
     entity_results = await asyncio.gather(*entity_futures)
@@ -71,24 +61,22 @@ async def summarize_descriptions(
     # Process relationships
     relationship_futures = [
         _summarize_descriptions(
-            (str(row["source"]), str(row["target"])),
-            sorted(set(row["description"]))  # pyright: ignore
-            if isinstance(row["description"], list)
-            else [row["description"]],
+            (str(row.source), str(row.target)),  # ty: ignore
+            sorted(set(row.description)),  # type: ignore
         )
-        for row in relationships_df.iter_rows(named=True)
+        for row in relationships.itertuples()
     ]
     logger.info("Starting summarization of relationship descriptions.")
     relationship_results = await asyncio.gather(*relationship_futures)
 
     # Build DataFrames using Polars-native construction
-    entity_descriptions = pl.DataFrame(
+    entity_descriptions = pd.DataFrame(
         {
             "title": [result.id for result in entity_results],
             "description": [result.description for result in entity_results],
         }
     )
-    relationship_descriptions = pl.DataFrame(
+    relationship_descriptions = pd.DataFrame(
         {
             "source": [result.id[0] for result in relationship_results],
             "target": [result.id[1] for result in relationship_results],

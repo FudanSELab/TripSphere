@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import networkx as nx
-import polars as pl
+import pandas as pd
 
 
 @dataclass
@@ -23,6 +23,6 @@ class Unit:
 class ExtractionResult:
     """Extraction result class definition."""
 
-    entities: pl.LazyFrame
-    relationships: pl.LazyFrame
+    entities: pd.DataFrame
+    relationships: pd.DataFrame
     graph: nx.Graph[str] | None

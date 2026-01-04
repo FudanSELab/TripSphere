@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import polars as pl
+import pandas as pd
 from celery import Task, shared_task
 from graphdatascience import GraphDataScience
 from neo4j import Driver, GraphDatabase
@@ -28,7 +28,7 @@ def run_workflow(
 def _finalize_graph(
     task: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
 ) -> None:
-    """Final `entities` polars DataFrame schema:
+    """Final `entities` parquet schema:
     | Column        | Type         | Description                                          |
     | :------------ | :----------- | :--------------------------------------------------- |
     | id            | String       | ID of the Entity                                     |
@@ -40,7 +40,7 @@ def _finalize_graph(
     | frequency     | UInt32       | Frequency of the Entity appearance in all TextUnits  |
 
     ---
-    Final `relationships` polars DataFrame schema:
+    Final `relationships` parquet schema:
     | Column        | Type         | Description                                                |
     | :------------ | :----------- | :--------------------------------------------------------- |
     | id            | String       | ID of the Relationship                                     |
@@ -80,27 +80,27 @@ def _internal(
 ) -> None:
     entities_filename = context["entities"]
     relationships_filename = context["relationships"]
-    entities = pl.scan_parquet(
+    entities = pd.read_parquet(  # pyright: ignore
         f"s3://review-summary/{entities_filename}",
         storage_options=get_storage_options(),
-    ).collect()
-    relationships = pl.scan_parquet(
+    )
+    relationships = pd.read_parquet(  # pyright: ignore
         f"s3://review-summary/{relationships_filename}",
         storage_options=get_storage_options(),
-    ).collect()
+    )
     logger.info(
         f"Loaded entities from {entities_filename} and "
         f"relationships from {relationships_filename}."
     )
 
-    final_entities = entities.with_columns(
-        pl.Series("id", [str(uuid7()) for _ in range(len(entities))]),
-        pl.Series("readable_id", range(len(entities))),
-    ).select(["id", "readable_id", *entities.columns])
-    final_relationships = relationships.with_columns(
-        pl.Series("id", [str(uuid7()) for _ in range(len(relationships))]),
-        pl.Series("readable_id", range(len(relationships))),
-    ).select(["id", "readable_id", *relationships.columns])
+    final_entities = entities.assign(
+        id=[str(uuid7()) for _ in range(len(entities))],
+        readable_id=pd.Series(range(len(entities))).astype(str),
+    )[["id", "readable_id", *entities.columns]]
+    final_relationships = relationships.assign(
+        id=[str(uuid7()) for _ in range(len(relationships))],
+        readable_id=pd.Series(range(len(relationships))).astype(str),
+    )[["id", "readable_id", *relationships.columns]]
 
     msg = (
         f"Finalized {len(final_entities)} entities and "
@@ -111,8 +111,8 @@ def _internal(
 
     create_graph(
         neo4j_driver=neo4j_driver,
-        nodes=final_entities.lazy(),
-        edges=final_relationships.lazy(),
+        nodes=final_entities,
+        edges=final_relationships,
         attributes={
             "target_id": context["target_id"],
             "target_type": context["target_type"],
@@ -120,17 +120,17 @@ def _internal(
     )
 
     if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
-        ...
+        raise NotImplementedError("Graph embedding is coming soon!")
 
     # Save entities and relationships to storage
     checkpoint_id = checkpoint_id or str(uuid7())
     entities_filename = f"entities_{checkpoint_id}.parquet"
-    final_entities.write_parquet(
+    final_entities.to_parquet(
         f"s3://review-summary/{entities_filename}",
         storage_options=get_storage_options(),
     )
     relationships_filename = f"relationships_{checkpoint_id}.parquet"
-    final_relationships.write_parquet(
+    final_relationships.to_parquet(
         f"s3://review-summary/{relationships_filename}",
         storage_options=get_storage_options(),
     )

@@ -2,19 +2,19 @@ import asyncio
 import logging
 from typing import Any
 
-import polars as pl
+import networkx as nx
+import pandas as pd
 from langchain_openai import ChatOpenAI
 
 from review_summary.config.settings import get_settings
 from review_summary.index.operations.extract_graph.graph_extractor import GraphExtractor
 from review_summary.index.operations.extract_graph.typing import ExtractionResult, Unit
-from review_summary.utils.networkx import to_polars_edgelist
 
 logger = logging.getLogger(__name__)
 
 
 async def extract_graph(
-    text_units: pl.LazyFrame,
+    text_units: pd.DataFrame,
     text_column: str,
     id_column: str,
     entity_types: list[str],
@@ -25,7 +25,7 @@ async def extract_graph(
     completion_delimiter: str | None = None,
     extraction_prompt: str | None = None,
     num_concurrency: int = 4,
-) -> tuple[pl.DataFrame, pl.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     semaphore = asyncio.Semaphore(num_concurrency)
 
     # Initialize ChatOpenAI model with provided config
@@ -37,10 +37,12 @@ async def extract_graph(
     chat_model = ChatOpenAI(**chat_model_config)
     logger.debug("Initialized ChatOpenAI model for graph extraction.")
 
-    async def _process_row(row: dict[str, Any]) -> ExtractionResult:
+    async def _process_row(row: Any) -> ExtractionResult:
         async with semaphore:
+            id = getattr(row, id_column)
+            text = getattr(row, text_column)
             return await _run_graph_extraction(
-                units=[Unit(id=row[id_column], text=row[text_column])],
+                units=[Unit(id=id, text=text)],
                 entity_types=entity_types,
                 chat_model=chat_model,
                 max_gleanings=max_gleanings,
@@ -50,49 +52,47 @@ async def extract_graph(
                 extraction_prompt=extraction_prompt,
             )
 
-    text_units_df = text_units.select([id_column, text_column]).collect()
+    text_units_df = text_units[[id_column, text_column]]
     # Gather all results concurrently with semaphore control
     results = await asyncio.gather(
-        *[_process_row(row) for row in text_units_df.iter_rows(named=True)]
+        *[_process_row(row) for row in text_units_df.itertuples()]
     )
 
-    entity_lfs: list[pl.LazyFrame] = []
-    relationship_lfs: list[pl.LazyFrame] = []
+    entity_dfs: list[pd.DataFrame] = []
+    relationship_dfs: list[pd.DataFrame] = []
     for result in results:
-        entity_lfs.append(result.entities)
-        relationship_lfs.append(result.relationships)
-
-    # Merge all raw entity and raw relationship LazyFrames
+        entity_dfs.append(result.entities)
+        relationship_dfs.append(result.relationships)
+    # Merge all raw entity and raw relationship DataFrames
     logger.info("Merging extracted entities and relationships.")
-    entities = _merge_entities(entity_lfs)
-    relationships = _merge_relationships(relationship_lfs)
-
+    entities = _merge_entities(entity_dfs)
+    relationships = _merge_relationships(relationship_dfs)
     return entities, relationships
 
 
-def _merge_entities(entity_lfs: list[pl.LazyFrame]) -> pl.DataFrame:
-    all_entities = pl.concat(entity_lfs, how="vertical")
+def _merge_entities(entity_dfs: list[pd.DataFrame]) -> pd.DataFrame:
+    all_entities = pd.concat(entity_dfs, ignore_index=True)
     return (
-        all_entities.group_by(["title", "type"], maintain_order=True)
+        all_entities.groupby(["title", "type"], sort=False)  # pyright: ignore
         .agg(
-            pl.col("description"),
-            pl.col("source_id").alias("text_unit_ids"),
-            pl.col("source_id").count().alias("frequency"),
+            description=("description", list),
+            text_unit_ids=("source_id", list),
+            frequency=("source_id", "count"),
         )
-        .collect()
+        .reset_index()
     )
 
 
-def _merge_relationships(relationship_lfs: list[pl.LazyFrame]) -> pl.DataFrame:
-    all_relationships = pl.concat(relationship_lfs, how="vertical")
+def _merge_relationships(relationship_dfs: list[pd.DataFrame]) -> pd.DataFrame:
+    all_relationships = pd.concat(relationship_dfs, ignore_index=False)
     return (
-        all_relationships.group_by(["source", "target"], maintain_order=True)
+        all_relationships.groupby(["source", "target"], sort=False)  # pyright: ignore
         .agg(
-            pl.col("description"),
-            pl.col("source_id").alias("text_unit_ids"),
-            pl.col("weight").sum().alias("weight"),
+            description=("description", list),
+            text_unit_ids=("source_id", list),
+            weight=("weight", "sum"),
         )
-        .collect()
+        .reset_index()
     )
 
 
@@ -140,5 +140,5 @@ async def _run_graph_extraction(
         for node_item in graph.nodes(data=True)
         if node_item
     ]
-    relationships = to_polars_edgelist(graph)
-    return ExtractionResult(pl.LazyFrame(entities), pl.LazyFrame(relationships), graph)
+    relationships = nx.to_pandas_edgelist(graph)  # ty: ignore
+    return ExtractionResult(pd.DataFrame(entities), pd.DataFrame(relationships), graph)

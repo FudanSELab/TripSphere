@@ -1,6 +1,6 @@
 from typing import Any
 
-import polars as pl
+import pandas as pd
 import pytest
 from pytest_mock import MockerFixture, MockType
 
@@ -21,25 +21,25 @@ async def test_extract_graph(
         return_value=graph_parquet_uuid,
     )
 
-    # Mock pl.scan_parquet to read from local fixtures instead of S3
-    original_scan_parquet = pl.scan_parquet
+    # Mock pd.read_parquet to read from local fixtures instead of S3
+    original_read_parquet = pd.read_parquet  # pyright: ignore
 
-    def _mock_scan_parquet(path: str, **kwargs: Any) -> pl.LazyFrame:
+    def _mock_read_parquet(path: str, **kwargs: Any) -> pd.DataFrame:
         # Redirect S3 paths to local fixtures
         if path.startswith("s3://review-summary/"):
             filename = path.replace("s3://review-summary/", "")
             local_path = f"tests/fixtures/{filename}"
             # Remove storage_options to avoid S3 connection
             kwargs.pop("storage_options", None)
-            return original_scan_parquet(local_path, **kwargs)
-        return original_scan_parquet(path, **kwargs)
+            return original_read_parquet(local_path, **kwargs)
+        return original_read_parquet(path, **kwargs)
 
-    mocker.patch("polars.scan_parquet", side_effect=_mock_scan_parquet)
+    mocker.patch("pandas.read_parquet", side_effect=_mock_read_parquet)
 
     # Mock write_parquet to save locally
-    original_write_parquet = pl.DataFrame.write_parquet
+    original_write_parquet = pd.DataFrame.to_parquet
 
-    def _mock_write_parquet(self: pl.DataFrame, file: str, **kwargs: Any) -> None:
+    def _mock_to_parquet(self: pd.DataFrame, file: str, **kwargs: Any) -> None:
         if file.startswith("s3://review-summary/"):
             filename = file.replace("s3://review-summary/", "")
             local_path = f"tests/fixtures/output/{filename}"
@@ -48,7 +48,7 @@ async def test_extract_graph(
             return original_write_parquet(self, local_path, **kwargs)
         return original_write_parquet(self, file, **kwargs)
 
-    mocker.patch.object(pl.DataFrame, "write_parquet", _mock_write_parquet)
+    mocker.patch.object(pd.DataFrame, "to_parquet", _mock_to_parquet)
 
     context = {
         "target_id": "attraction-001",

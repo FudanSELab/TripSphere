@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import polars as pl
+import pandas as pd
 from asgiref.sync import async_to_sync
 from celery import Task, shared_task
 
@@ -31,7 +31,7 @@ def run_workflow(
 async def _extract_graph(
     task: Task[Any, Any], context: dict[str, Any], config: ExtractGraphConfig
 ) -> None:
-    """Extracted `entities` polars DataFrame schema:
+    """Extracted `entities` parquet schema:
     | Column        | Type         | Description                                          |
     | :------------ | :----------- | :--------------------------------------------------- |
     | title         | String       | Name of the entity                                   |
@@ -41,7 +41,7 @@ async def _extract_graph(
     | frequency     | UInt32       | Frequency of the entity appearance in all TextUnits  |
 
     ---
-    Extracted `relationships` polars DataFrame schema:
+    Extracted `relationships` parquet schema:
     | Column        | Type         | Description                                                |
     | :------------ | :----------- | :--------------------------------------------------------- |
     | source        | String       | Source entity name of the relationship                     |
@@ -52,7 +52,7 @@ async def _extract_graph(
     """  # noqa: E501
     # Load text units DataFrame from storage
     text_units_filename = context["text_units"]
-    text_units = pl.scan_parquet(
+    text_units = pd.read_parquet(  # pyright: ignore
         f"s3://review-summary/{text_units_filename}",
         storage_options=get_storage_options(),
     )
@@ -92,30 +92,32 @@ async def _extract_graph(
     )
 
     entity_summaries, relationship_summaries = await summarize_descriptions(
-        entities=extracted_entities.lazy(),
-        relationships=extracted_relationships.lazy(),
+        entities=extracted_entities,
+        relationships=extracted_relationships,
         chat_model_config=config.summary_llm_config,
         max_input_tokens=config.max_input_tokens,
         max_summary_length=config.max_length,
         num_concurrency=config.summary_num_concurrency,
     )
 
-    relationships = extracted_relationships.drop("description").join(
+    relationships = extracted_relationships.drop(columns=["description"]).merge(
         relationship_summaries, on=["source", "target"], how="left"
     )
+    relationships["weight"] = relationships["weight"].astype("float64")
 
-    extracted_entities = extracted_entities.drop("description")
-    entities = extracted_entities.join(entity_summaries, on="title", how="left")
+    extracted_entities.drop(columns=["description"], inplace=True)
+    entities = extracted_entities.merge(entity_summaries, on="title", how="left")
+    entities["frequency"] = entities["frequency"].astype("uint32")
 
     # Save entities and relationships to storage
     checkpoint_id = uuid7()
     entities_filename = f"entities_{checkpoint_id}.parquet"
-    entities.write_parquet(
+    entities.to_parquet(
         f"s3://review-summary/{entities_filename}",
         storage_options=get_storage_options(),
     )
     relationships_filename = f"relationships_{checkpoint_id}.parquet"
-    relationships.write_parquet(
+    relationships.to_parquet(
         f"s3://review-summary/{relationships_filename}",
         storage_options=get_storage_options(),
     )

@@ -1,63 +1,47 @@
 import logging
 
-import polars as pl
-from neo4j import AsyncDriver
+import pandas as pd
+from neo4j import Driver
 
 logger = logging.getLogger(__name__)
 
 
-async def create_graph(
-    neo4j_driver: AsyncDriver,
-    nodes: pl.LazyFrame,
-    edges: pl.LazyFrame,
+def create_graph(
+    neo4j_driver: Driver,
+    nodes: pd.DataFrame,
+    edges: pd.DataFrame,
     attributes: dict[str, str],
 ) -> None:
-    """Create a neo4j graph from nodes and edges dataframes."""
+    """Create a neo4j graph from nodes and edges DataFrames."""
     if "target_id" not in attributes or "target_type" not in attributes:
         raise ValueError("Attributes must include 'target_id' and 'target_type' keys.")
 
-    nodes_lookup = nodes.select(["id", "title"])
-    edges = (
-        edges.join(
-            nodes_lookup.rename({"id": "source_id", "title": "source"}),
-            on="source",
-            how="left",
-        )
-        .join(
-            nodes_lookup.rename({"id": "target_id", "title": "target"}),
-            on="target",
-            how="left",
-        )
-        .with_columns(
-            pl.col("source_id").alias("source"), pl.col("target_id").alias("target")
-        )
-        .drop(["source_id", "target_id"])
-    )
+    # Create mapping from title to id
+    title_to_id = nodes.set_index("title")["id"]
 
-    async with neo4j_driver.session() as session:  # pyright: ignore
+    # Map source and target titles to their IDs
+    edges["source"] = edges["source"].map(title_to_id)
+    edges["target"] = edges["target"].map(title_to_id)
+
+    with neo4j_driver.session() as session:  # pyright: ignore
         # Create indexes to optimize queries by target_id
-        await session.run(
+        session.run(
             "CREATE INDEX entity_target_id "
             "IF NOT EXISTS FOR (n:Entity) ON (n.target_id)"
         )
-        await session.run(
+        session.run(
             "CREATE INDEX relationship_target_id "
             "IF NOT EXISTS FOR ()-[r:RELATES]-() ON (r.target_id)"
         )
 
-        final_nodes = nodes.with_columns(
-            pl.lit(attributes["target_id"]).alias("target_id"),
-            pl.lit(attributes["target_type"]).alias("target_type"),
-        ).collect()
-        final_edges = edges.with_columns(
-            pl.lit(attributes["target_id"]).alias("target_id"),
-            pl.lit(attributes["target_type"]).alias("target_type"),
-        ).collect()
+        # Add attributes using assign for better performance
+        final_nodes = nodes.assign(**attributes)
+        final_edges = edges.assign(**attributes)
 
         # Import finalized entities
         logger.info(f"Importing {len(final_nodes)} entities to Neo4j...")
-        entities_dicts = final_nodes.to_dicts()
-        result = await session.run(
+        entities_dicts = final_nodes.to_dict("records")  # pyright: ignore
+        result = session.run(
             """
             UNWIND $entities AS entity
             MERGE (n:Entity {id: entity.id})
@@ -75,8 +59,8 @@ async def create_graph(
 
         # Import finalized relationships
         logger.info(f"Importing {len(final_edges)} relationships to Neo4j...")
-        relationships_dicts = final_edges.to_dicts()
-        result = await session.run(
+        relationships_dicts = final_edges.to_dict("records")  # pyright: ignore
+        result = session.run(
             """
             UNWIND $relationships AS rel
             MATCH (source:Entity {id: rel.source})
