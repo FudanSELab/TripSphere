@@ -11,7 +11,7 @@ services:
     build:
       context: ./trip-file-service
       dockerfile: Dockerfile
-    image: trip-file-service:latest
+    image: tripsphere/trip-file-service:latest
     container_name: trip-file-service
     ports:
       - "50051:50051"
@@ -40,6 +40,9 @@ services:
 
   # Review Summary
   trip-review-summary:
+    build:
+      context: ./trip-review-summary
+      dockerfile: Dockerfile
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary
     command:
@@ -49,6 +52,9 @@ services:
       - "0.0.0.0"
       - --port
       - "24212"
+    depends_on:
+      nacos:
+        condition: service_healthy
 
   # Review Summary RocketMQ Consumer
   trip-review-summary-consumer:
@@ -58,6 +64,11 @@ services:
       - python
       - -m
       - review_summary.rocketmq
+    depends_on:
+      rmq-proxy:
+        condition: service_healthy
+      rmq-broker:
+        condition: service_healthy
 
   # Review Summary Celery Worker
   trip-review-summary-worker:
@@ -70,6 +81,11 @@ services:
       - worker
       - --loglevel=info
       - --concurrency=4
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   # Nacos
   nacos:
