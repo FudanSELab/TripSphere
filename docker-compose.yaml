@@ -244,6 +244,7 @@ services:
       - ./volumes/neo4j/plugins:/plugins
     environment:
       - NEO4J_AUTH=neo4j/fudanse@fudan.edu.cn
+      - NEO4J_PLUGINS='["graph-data-science"]'
     ports:
       - "7474:7474"
       - "7687:7687"
