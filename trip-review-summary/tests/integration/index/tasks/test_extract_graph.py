@@ -28,7 +28,7 @@ async def test_extract_graph(
     # Mock pl.scan_parquet to read from local fixtures instead of S3
     original_scan_parquet = pl.scan_parquet
 
-    def mock_scan_parquet(path: str, **kwargs: Any) -> pl.LazyFrame:
+    def _mock_scan_parquet(path: str, **kwargs: Any) -> pl.LazyFrame:
         # Redirect S3 paths to local fixtures
         if path.startswith("s3://review-summary/"):
             filename = path.replace("s3://review-summary/", "")
@@ -38,24 +38,21 @@ async def test_extract_graph(
             return original_scan_parquet(local_path, **kwargs)
         return original_scan_parquet(path, **kwargs)
 
-    mocker.patch("polars.scan_parquet", side_effect=mock_scan_parquet)
+    mocker.patch("polars.scan_parquet", side_effect=_mock_scan_parquet)
 
     # Mock write_parquet to save locally
     original_write_parquet = pl.DataFrame.write_parquet
 
-    def mock_write_parquet(self: pl.DataFrame, path: str, **kwargs: Any) -> None:
-        if path.startswith("s3://review-summary/"):
-            filename = path.replace("s3://review-summary/", "")
+    def _mock_write_parquet(self: pl.DataFrame, file: str, **kwargs: Any) -> None:
+        if file.startswith("s3://review-summary/"):
+            filename = file.replace("s3://review-summary/", "")
             local_path = f"tests/fixtures/output/{filename}"
             # Remove storage_options to avoid S3 connection
             kwargs.pop("storage_options", None)
-            original_write_parquet(self, local_path, **kwargs)
-        else:
-            original_write_parquet(self, path, **kwargs)
+            return original_write_parquet(self, local_path, **kwargs)
+        return original_write_parquet(self, file, **kwargs)
 
-    mocker.patch(
-        "polars.DataFrame.write_parquet", side_effect=mock_write_parquet, autospec=True
-    )
+    mocker.patch.object(pl.DataFrame, "write_parquet", _mock_write_parquet)
 
     context = {
         "target_id": "attraction-001",
@@ -66,7 +63,6 @@ async def test_extract_graph(
         graph_llm_config={"name": "gpt-4o", "temperature": 0.0},
         summary_llm_config={"name": "gpt-4o", "temperature": 0.0},
     )
-
     await _extract_graph(mock_task, context, config)
 
     # Add assertions as needed to verify the behavior

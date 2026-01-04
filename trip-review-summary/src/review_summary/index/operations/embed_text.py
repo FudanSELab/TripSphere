@@ -16,7 +16,7 @@ async def embed_text(
     texts: list[str],
     batch_size: int = 16,
     batch_max_tokens: int = 8191,
-    num_threads: int = 4,
+    num_concurrency: int = 4,
     model_config: dict[str, Any] | None = None,
 ) -> list[list[float] | None]:
     model_config = model_config or {}
@@ -30,7 +30,7 @@ async def embed_text(
         api_key=openai_settings.api_key,  # ty: ignore[unknown-argument]
         base_url=openai_settings.base_url,  # ty: ignore[unknown-argument]
     )
-    semaphore = asyncio.Semaphore(num_threads)
+    semaphore = asyncio.Semaphore(num_concurrency)
     # Break up the input texts. The sizes here indicate
     # how many snippets are in each input text
     texts, input_sizes = _prepare_embed_texts(texts, splitter)

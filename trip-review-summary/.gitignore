@@ -17,3 +17,4 @@ logs/
 
 # Test Output
 tests/fixtures/output/
+tests/fixtures/*.parquet

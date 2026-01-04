@@ -46,15 +46,19 @@ async def _extract_graph(
         max_gleanings=config.max_gleanings,
         num_concurrency=config.graph_num_concurrency,
     )
+
     if len(extracted_entities) == 0:
         error_msg = "No entities detected during extraction."
         logger.error(error_msg)
         raise ValueError(error_msg)
+
     logger.info(f"Extracted {len(extracted_entities)} raw entities.")
+
     if len(extracted_relationships) == 0:
         error_msg = "No relationships detected during extraction."
         logger.error(error_msg)
         raise ValueError(error_msg)
+
     logger.info(f"Extracted {len(extracted_relationships)} raw relationships.")
 
     task.update_state(
@@ -93,6 +97,7 @@ async def _extract_graph(
         f"s3://review-summary/{relationships_filename}",
         storage_options=get_storage_options(),
     )
+
     # Update context with filenames
     context["entities"] = entities_filename
     context["relationships"] = relationships_filename
