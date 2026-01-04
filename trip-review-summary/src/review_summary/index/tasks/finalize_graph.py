@@ -88,13 +88,13 @@ async def _internal(
     )
 
     final_entities = entities.with_columns(
-        pl.Series("id", (str(uuid7()) for _ in range(len(entities)))),
+        pl.Series("id", [str(uuid7()) for _ in range(len(entities))]),
         pl.Series("readable_id", range(len(entities))),
-    )
+    ).select(["id", "readable_id", *entities.columns])
     final_relationships = relationships.with_columns(
-        pl.Series("id", (str(uuid7()) for _ in range(len(relationships)))),
+        pl.Series("id", [str(uuid7()) for _ in range(len(relationships))]),
         pl.Series("readable_id", range(len(relationships))),
-    )
+    ).select(["id", "readable_id", *relationships.columns])
 
     msg = (
         f"Finalized {len(final_entities)} entities and "

@@ -63,10 +63,10 @@ async def test_finalize_graph(
     )
     try:
         await _internal(
-            mock_task,
-            context,
-            config,
-            neo4j_driver,
+            task=mock_task,
+            context=context,
+            config=config,
+            neo4j_driver=neo4j_driver,
             checkpoint_id=final_graph_parquet_uuid,
         )
 

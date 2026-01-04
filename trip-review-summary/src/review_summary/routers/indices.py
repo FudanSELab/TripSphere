@@ -35,7 +35,7 @@ class BuildIndexRequest(BaseModel):
 
 
 class TaskSubmitResponse(BaseModel):
-    task_id: str = Field(..., description="ID of the graph index building task.")
+    task_id: str = Field(..., description="ID of the graph indexing (Celery) Task.")
 
 
 indices = APIRouter(prefix="/indices", tags=["Indices"])
