@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import Any, cast
+from typing import Any
 
 import polars as pl
 from asgiref.sync import async_to_sync
@@ -8,6 +10,7 @@ from neo4j import AsyncDriver, AsyncGraphDatabase
 
 from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
 from review_summary.config.settings import get_settings
+from review_summary.index.operations.create_graph import create_graph
 from review_summary.utils.storage import get_storage_options
 from review_summary.utils.uuid import uuid7
 
@@ -27,9 +30,48 @@ def run_workflow(
 async def _finalize_graph(
     task: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
 ) -> None:
-    target_id = cast(str, context["target_id"])
-    target_type = cast(str, context["target_type"])
+    """Final `entities` polars DataFrame schema:
+    | Column        | Type         | Description                                          |
+    | :------------ | :----------- | :--------------------------------------------------- |
+    | id            | String       | ID of the Entity                                     |
+    | readable_id   | String       | Human-friendly ID of the Entity                      |
+    | title         | String       | Name of the Entity                                   |
+    | type          | String       | Type of the Entity                                   |
+    | description   | String       | Description of the Entity                            |
+    | text_unit_ids | List(String) | IDs of TextUnits from which the Entity was extracted |
+    | frequency     | UInt32       | Frequency of the Entity appearance in all TextUnits  |
 
+    ---
+    Final `relationships` polars DataFrame schema:
+    | Column        | Type         | Description                                                |
+    | :------------ | :----------- | :--------------------------------------------------------- |
+    | id            | String       | ID of the Relationship                                     |
+    | readable_id   | String       | Human-friendly ID of the Relationship                      |
+    | source        | String       | Source Entity name of the Relationship                     |
+    | target        | String       | Target Entity name of the Relationship                     |
+    | description   | String       | Description of the Relationship                            |
+    | text_unit_ids | List(String) | IDs of TextUnits from which the Relationship was extracted |
+    | weight        | Float64      | Weight of the Relationship                                 |
+    """  # noqa: E501
+    settings = get_settings()
+    neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
+        settings.neo4j.uri,
+        auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
+    )
+    try:
+        await _internal(task, context, config, neo4j_driver)
+
+    finally:
+        await neo4j_driver.close()  # Ensure the driver is closed properly
+
+
+async def _internal(
+    task: Task[Any, Any],
+    context: dict[str, Any],
+    config: FinalizeGraphConfig,
+    neo4j_driver: AsyncDriver,
+    checkpoint_id: str | None = None,
+) -> None:
     entities_filename = context["entities"]
     relationships_filename = context["relationships"]
     entities = pl.scan_parquet(
@@ -45,83 +87,49 @@ async def _finalize_graph(
         f"relationships from {relationships_filename}."
     )
 
-    finalized_entities = entities.with_columns(
-        pl.Series("id", [uuid7() for _ in range(len(entities))]),
+    final_entities = entities.with_columns(
+        pl.Series("id", (str(uuid7()) for _ in range(len(entities)))),
         pl.Series("readable_id", range(len(entities))),
-        pl.lit(target_id).alias("target_id"),
-        pl.lit(target_type).alias("target_type"),
     )
-    finalized_relationships = relationships.with_columns(
-        pl.Series("id", [uuid7() for _ in range(len(relationships))]),
+    final_relationships = relationships.with_columns(
+        pl.Series("id", (str(uuid7()) for _ in range(len(relationships)))),
         pl.Series("readable_id", range(len(relationships))),
-        pl.lit(target_id).alias("target_id"),
-        pl.lit(target_type).alias("target_type"),
     )
 
-    settings = get_settings()
-    neo4j_driver: AsyncDriver | None = None
-    try:
-        neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
-            settings.neo4j.uri,
-            auth=(
-                settings.neo4j.username,
-                settings.neo4j.password.get_secret_value(),
-            ),
-        )
+    msg = (
+        f"Finalized {len(final_entities)} entities and "
+        f"{len(final_relationships)} relationships."
+    )
+    logger.info(msg)
+    task.update_state(state="PROGRESS", meta={"description": msg})
 
-        async with neo4j_driver.session() as session:  # pyright: ignore
-            # TODO: Use create_graph operation to create the graph in Neo4j
+    await create_graph(
+        neo4j_driver=neo4j_driver,
+        nodes=final_entities.lazy(),
+        edges=final_relationships.lazy(),
+        attributes={
+            "target_id": context["target_id"],
+            "target_type": context["target_type"],
+        },
+    )
 
-            # Create indexes to optimize queries by target_id
-            await session.run(
-                "CREATE INDEX entity_target_id "
-                "IF NOT EXISTS FOR (n:Entity) ON (n.target_id)"
-            )
-            await session.run(
-                "CREATE INDEX relationship_target_id "
-                "IF NOT EXISTS FOR ()-[r:RELATES]-() ON (r.target_id)"
-            )
+    # Save entities and relationships to storage
+    checkpoint_id = checkpoint_id or str(uuid7())
+    entities_filename = f"entities_{checkpoint_id}.parquet"
+    final_entities.write_parquet(
+        f"s3://review-summary/{entities_filename}",
+        storage_options=get_storage_options(),
+    )
+    relationships_filename = f"relationships_{checkpoint_id}.parquet"
+    final_relationships.write_parquet(
+        f"s3://review-summary/{relationships_filename}",
+        storage_options=get_storage_options(),
+    )
 
-            # Import finalized entities
-            logger.info(f"Importing {len(finalized_entities)} entities to Neo4j...")
-            entities_dicts = finalized_entities.to_dicts()
-            await session.run(
-                """
-                UNWIND $entities AS entity
-                MERGE (n:Entity {id: entity.id})
-                SET n.readable_id = entity.readable_id,
-                    n.target_id = entity.target_id,
-                    n.target_type = entity.target_type,
-                    n.name = entity.name,
-                    n.type = entity.type,
-                    n.description = entity.description
-                """,
-                entities=entities_dicts,
-            )
-
-            # Import finalized relationships
-            logger.info(
-                f"Importing {len(finalized_relationships)} relationships to Neo4j..."
-            )
-            relationships_dicts = finalized_relationships.to_dicts()
-            await session.run(
-                """
-                UNWIND $relationships AS rel
-                MATCH (source:Entity {id: rel.source})
-                MATCH (target:Entity {id: rel.target})
-                MERGE (source)-[r:RELATES {id: rel.id}]->(target)
-                SET r.readable_id = rel.readable_id,
-                    r.target_id = rel.target_id,
-                    r.target_type = rel.target_type,
-                    r.type = rel.type,
-                    r.description = rel.description,
-                    r.weight = rel.weight
-                """,
-                relationships=relationships_dicts,
-            )
-
-            logger.info("Successfully imported entities and relationships to Neo4j")
-
-    finally:
-        if isinstance(neo4j_driver, AsyncDriver):
-            await neo4j_driver.close()
+    # Update context with filenames
+    context["entities"] = entities_filename
+    context["relationships"] = relationships_filename
+    logger.info(
+        f"Saved finalized entities to {entities_filename} and "
+        f"finalized relationships to {relationships_filename}."
+    )

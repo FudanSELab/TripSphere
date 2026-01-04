@@ -40,15 +40,15 @@ async def test_collect_text_units(
     find_by_target: MockType = mock_vector_store.find_by_target
     find_by_target.return_value = text_units
 
-    update_statue: MockType = mock_task.update_state
-    update_statue.return_value = None
+    update_state: MockType = mock_task.update_state
+    update_state.return_value = None
 
     context = {"target_id": "attraction-001", "target_type": "attraction"}
     await _internal(mock_task, context, mock_vector_store)
 
     find_by_target.assert_awaited_once_with("attraction-001", "attraction")
     collected_text_units = len(text_units)
-    update_statue.assert_called_once_with(
+    update_state.assert_called_once_with(
         state="PROGRESS",
         meta={
             "description": (

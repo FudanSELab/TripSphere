@@ -23,6 +23,20 @@ def run_workflow(self: Task[Any, Any], context: dict[str, Any]) -> dict[str, Any
 
 
 async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> None:
+    """Collected `text_units` polars DataFrame schema:
+    | Column           | Type          | Description                                      |
+    | :--------------- | :------------ | :----------------------------------------------- |
+    | id               | String        | ID of the TextUnit                               |
+    | readable_id      | String        | Human-friendly ID of the TextUnit                |
+    | text             | String        | Text content of the TextUnit                     |
+    | embedding        | List(Float64) | Embedding vector of the text content             |
+    | entity_ids       | List(String)  | IDs of Entities extracted from the TextUnit      |
+    | relationship_ids | List(String)  | IDs of Relationships extracted from the TextUnit |
+    | covariate_ids    | List(String)  | IDs of Covariates extracted from the TextUnit    |
+    | n_tokens         | UInt32        | Number of tokens of the text content             |
+    | document_id      | String        | ID of the source Document of the TextUnit        |
+    | attributes       | Struct        | Attributes including target information          |
+    """  # noqa: E501
     qdrant_settings = get_settings().qdrant
     qdrant_client = AsyncQdrantClient(url=qdrant_settings.url)
     try:
@@ -60,7 +74,14 @@ async def _internal(
         },
     )
 
-    df = pl.DataFrame([text_unit.model_dump() for text_unit in text_units])
+    df = pl.DataFrame(
+        [text_unit.model_dump() for text_unit in text_units]
+    ).with_columns(
+        pl.col("entity_ids").cast(pl.List(pl.String)),
+        pl.col("relationship_ids").cast(pl.List(pl.String)),
+        pl.col("covariate_ids").cast(pl.List(pl.String)),
+        pl.col("n_tokens").cast(pl.UInt32),
+    )
     filename = f"text_units_{uuid7()}.parquet"
     df.write_parquet(
         f"s3://review-summary/{filename}", storage_options=get_storage_options()

@@ -30,10 +30,10 @@ def text_units() -> list[TextUnit]:
 
 
 @pytest.fixture
-def entities_parquet_uuid() -> str:
+def graph_parquet_uuid() -> str:
     return "019b7ecb-616b-70ce-af4a-755199b8064b"
 
 
 @pytest.fixture
-def relationships_parquet_uuid() -> str:
-    return "019b7ecb-6176-77cf-a766-e18ae7c0c832"
+def final_graph_parquet_uuid() -> str:
+    return "019b87f2-4107-7199-80ff-3d24c91943ad"

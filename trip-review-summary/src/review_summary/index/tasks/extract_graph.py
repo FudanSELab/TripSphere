@@ -31,6 +31,25 @@ def run_workflow(
 async def _extract_graph(
     task: Task[Any, Any], context: dict[str, Any], config: ExtractGraphConfig
 ) -> None:
+    """Extracted `entities` polars DataFrame schema:
+    | Column        | Type         | Description                                          |
+    | :------------ | :----------- | :--------------------------------------------------- |
+    | title         | String       | Name of the entity                                   |
+    | type          | String       | Type of the entity                                   |
+    | description   | String       | Description of the entity                            |
+    | text_unit_ids | List(String) | IDs of TextUnits from which the entity was extracted |
+    | frequency     | UInt32       | Frequency of the entity appearance in all TextUnits  |
+
+    ---
+    Extracted `relationships` polars DataFrame schema:
+    | Column        | Type         | Description                                                |
+    | :------------ | :----------- | :--------------------------------------------------------- |
+    | source        | String       | Source entity name of the relationship                     |
+    | target        | String       | Target entity name of the relationship                     |
+    | description   | String       | Description of the relationship                            |
+    | text_unit_ids | List(String) | IDs of TextUnits from which the relationship was extracted |
+    | weight        | Float64      | Weight of the relationship                                 |
+    """  # noqa: E501
     # Load text units DataFrame from storage
     text_units_filename = context["text_units"]
     text_units = pl.scan_parquet(
@@ -89,12 +108,13 @@ async def _extract_graph(
     entities = extracted_entities.join(entity_summaries, on="title", how="left")
 
     # Save entities and relationships to storage
-    entities_filename = f"entities_{uuid7()}.parquet"
+    checkpoint_id = uuid7()
+    entities_filename = f"entities_{checkpoint_id}.parquet"
     entities.write_parquet(
         f"s3://review-summary/{entities_filename}",
         storage_options=get_storage_options(),
     )
-    relationships_filename = f"relationships_{uuid7()}.parquet"
+    relationships_filename = f"relationships_{checkpoint_id}.parquet"
     relationships.write_parquet(
         f"s3://review-summary/{relationships_filename}",
         storage_options=get_storage_options(),

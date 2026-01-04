@@ -1,26 +1,25 @@
+import logging
 from typing import Any
 
 import polars as pl
 import pytest
+from neo4j import AsyncGraphDatabase
 from pytest_mock import MockerFixture, MockType
 
-from review_summary.config.index.extract_graph_config import ExtractGraphConfig
-from review_summary.index.tasks.extract_graph import _extract_graph  # pyright: ignore
+from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
+from review_summary.config.settings import get_settings
+from review_summary.index.tasks.finalize_graph import _internal  # pyright: ignore
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.asyncio
-async def test_extract_graph(
+async def test_finalize_graph(
     mock_task: MockType,
-    text_units_parquet_uuid: str,
     graph_parquet_uuid: str,
+    final_graph_parquet_uuid: str,
     mocker: MockerFixture,
 ) -> None:
-    # Mock uuid7 to return fixed UUIDs
-    mocker.patch(
-        "review_summary.index.tasks.extract_graph.uuid7",
-        return_value=graph_parquet_uuid,
-    )
-
     # Mock pl.scan_parquet to read from local fixtures instead of S3
     original_scan_parquet = pl.scan_parquet
 
@@ -53,14 +52,29 @@ async def test_extract_graph(
     context = {
         "target_id": "attraction-001",
         "target_type": "attraction",
-        "text_units": f"text_units_{text_units_parquet_uuid}.parquet",
+        "entities": f"entities_{graph_parquet_uuid}.parquet",
+        "relationships": f"relationships_{graph_parquet_uuid}.parquet",
     }
-    config = ExtractGraphConfig(
-        graph_llm_config={"name": "gpt-4o", "temperature": 0.0},
-        summary_llm_config={"name": "gpt-4o", "temperature": 0.0},
+    config = FinalizeGraphConfig()
+    settings = get_settings()
+    neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
+        settings.neo4j.uri,
+        auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
     )
-    await _extract_graph(mock_task, context, config)
+    try:
+        await _internal(
+            mock_task,
+            context,
+            config,
+            neo4j_driver,
+            checkpoint_id=final_graph_parquet_uuid,
+        )
+
+    finally:
+        await neo4j_driver.close()  # Ensure the driver is closed properly
 
     # Add assertions as needed to verify the behavior
-    assert context["entities"] == f"entities_{graph_parquet_uuid}.parquet"
-    assert context["relationships"] == f"relationships_{graph_parquet_uuid}.parquet"
+    assert context["entities"] == f"entities_{final_graph_parquet_uuid}.parquet"
+    assert (
+        context["relationships"] == f"relationships_{final_graph_parquet_uuid}.parquet"
+    )
