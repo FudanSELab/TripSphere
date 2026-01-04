@@ -3,7 +3,8 @@ from typing import Any
 
 import polars as pl
 import pytest
-from neo4j import AsyncGraphDatabase
+from graphdatascience import GraphDataScience
+from neo4j import GraphDatabase
 from pytest_mock import MockerFixture, MockType
 
 from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
@@ -57,21 +58,29 @@ async def test_finalize_graph(
     }
     config = FinalizeGraphConfig()
     settings = get_settings()
-    neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
+    neo4j_driver = GraphDatabase.driver(  # pyright: ignore
         settings.neo4j.uri,
         auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
     )
+    gds: GraphDataScience | None = None
+    if config.embed_graph_enabled is True:
+        gds = GraphDataScience.from_neo4j_driver(neo4j_driver)
+        logger.debug(f"Graph Data Science client, version: {gds.version()}")
+
     try:
-        await _internal(
+        _internal(
             task=mock_task,
             context=context,
             config=config,
             neo4j_driver=neo4j_driver,
+            gds=gds,
             checkpoint_id=final_graph_parquet_uuid,
         )
 
     finally:
-        await neo4j_driver.close()  # Ensure the driver is closed properly
+        if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
+            gds.close()  # This will not close the neo4j_driver
+        neo4j_driver.close()  # Ensure the driver is closed properly
 
     # Add assertions as needed to verify the behavior
     assert context["entities"] == f"entities_{final_graph_parquet_uuid}.parquet"

@@ -4,9 +4,9 @@ import logging
 from typing import Any
 
 import polars as pl
-from asgiref.sync import async_to_sync
 from celery import Task, shared_task
-from neo4j import AsyncDriver, AsyncGraphDatabase
+from graphdatascience import GraphDataScience
+from neo4j import Driver, GraphDatabase
 
 from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
 from review_summary.config.settings import get_settings
@@ -21,13 +21,11 @@ logger = logging.getLogger(__name__)
 def run_workflow(
     self: Task[Any, Any], context: dict[str, Any], config: dict[str, Any]
 ) -> dict[str, Any]:
-    async_to_sync(_finalize_graph)(
-        self, context, FinalizeGraphConfig.model_validate(config)
-    )
+    _finalize_graph(self, context, FinalizeGraphConfig.model_validate(config))
     return context
 
 
-async def _finalize_graph(
+def _finalize_graph(
     task: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
 ) -> None:
     """Final `entities` polars DataFrame schema:
@@ -54,22 +52,30 @@ async def _finalize_graph(
     | weight        | Float64      | Weight of the Relationship                                 |
     """  # noqa: E501
     settings = get_settings()
-    neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
-        settings.neo4j.uri,
+    neo4j_driver = GraphDatabase.driver(  # pyright: ignore
+        uri=settings.neo4j.uri,
         auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
     )
+    gds: GraphDataScience | None = None
+    if config.embed_graph_enabled is True:
+        gds = GraphDataScience.from_neo4j_driver(neo4j_driver)
+        logger.debug(f"Graph Data Science client, version: {gds.version()}")
+
     try:
-        await _internal(task, context, config, neo4j_driver)
+        _internal(task, context, config, neo4j_driver, gds)
 
     finally:
-        await neo4j_driver.close()  # Ensure the driver is closed properly
+        if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
+            gds.close()
+        neo4j_driver.close()  # Ensure the driver is closed properly
 
 
-async def _internal(
+def _internal(
     task: Task[Any, Any],
     context: dict[str, Any],
     config: FinalizeGraphConfig,
-    neo4j_driver: AsyncDriver,
+    neo4j_driver: Driver,
+    gds: GraphDataScience | None = None,
     checkpoint_id: str | None = None,
 ) -> None:
     entities_filename = context["entities"]
@@ -103,7 +109,7 @@ async def _internal(
     logger.info(msg)
     task.update_state(state="PROGRESS", meta={"description": msg})
 
-    await create_graph(
+    create_graph(
         neo4j_driver=neo4j_driver,
         nodes=final_entities.lazy(),
         edges=final_relationships.lazy(),
@@ -112,6 +118,9 @@ async def _internal(
             "target_type": context["target_type"],
         },
     )
+
+    if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
+        ...
 
     # Save entities and relationships to storage
     checkpoint_id = checkpoint_id or str(uuid7())

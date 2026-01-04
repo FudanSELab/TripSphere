@@ -693,7 +693,7 @@ class TestFromPolarsEdgelist:
 
         assert G.number_of_nodes() == 6
         assert G.number_of_edges() == 4
-        assert nx.number_connected_components(G) == 2
+        assert nx.number_connected_components(G) == 2  # ty: ignore
 
     def test_duplicate_edges_in_simple_graph(self) -> None:
         """Test that duplicate edges in simple graph only create one edge."""
@@ -803,6 +803,6 @@ class TestFromPolarsEdgelist:
         G = from_polars_edgelist(df, edge_attr="weight", create_using=nx.DiGraph)
 
         assert isinstance(G, nx.DiGraph)
-        assert nx.is_strongly_connected(G)
+        assert nx.is_strongly_connected(G)  # ty: ignore
         total_weight = sum(G[u][v]["weight"] for u, v in G.edges())
         assert total_weight == 10.0

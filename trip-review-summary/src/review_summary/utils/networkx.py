@@ -88,7 +88,7 @@ def from_polars_edgelist(
     >>> G[0][2]
     AtlasView({'A': {'weight': 3, 'color': 'red'}, 'D': {'weight': 6, 'color': 'blue'}})
     """
-    g: nx.Graph[Any] = cast(nx.Graph, nx.empty_graph(0, create_using))  # pyright: ignore
+    g: nx.Graph[Any] = cast(nx.Graph, nx.empty_graph(0, create_using))  # type: ignore
 
     if edge_attr is None:
         if g.is_multigraph() and edge_key is not None:
@@ -145,11 +145,11 @@ def from_polars_edgelist(
             else:
                 key = g.add_edge(s, t)
 
-            g[s][t][key].update(zip(attr_col_headings, attrs, strict=True))  # pyright: ignore
+            g[s][t][key].update(zip(attr_col_headings, attrs, strict=True))  # type: ignore
     else:
         for s, t, attrs in zip(df[source], df[target], attribute_data, strict=True):
             g.add_edge(s, t)
-            g[s][t].update(zip(attr_col_headings, attrs, strict=True))  # pyright: ignore
+            g[s][t].update(zip(attr_col_headings, attrs, strict=True))  # type: ignore
     return g
 
 

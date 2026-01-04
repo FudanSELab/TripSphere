@@ -11,15 +11,3 @@ def get_storage_options() -> dict[str, Any]:
         "aws_access_key_id": minio_settings.access_key,
         "aws_secret_access_key": minio_settings.secret_key.get_secret_value(),
     }
-
-
-if __name__ == "__main__":
-    import polars as pl
-
-    print(get_storage_options())
-    print(
-        pl.scan_parquet(
-            "s3://review-summary/testfile.parquet",
-            storage_options=get_storage_options(),
-        ).collect()
-    )
