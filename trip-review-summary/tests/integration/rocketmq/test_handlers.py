@@ -27,9 +27,7 @@ def reviews_data() -> list[dict[str, Any]]:
 
 @pytest.mark.asyncio
 async def test_handle_create_review(
-    mock_vector_store: MockType,
-    reviews_data: list[dict[str, Any]],
-    mocker: MockerFixture,
+    mock_vector_store: MockType, reviews_data: list[dict[str, Any]]
 ) -> None:
     """Test handle_create_review with real LLM embeddings and save results locally."""
     # Create output directory if not exists
@@ -38,10 +36,10 @@ async def test_handle_create_review(
 
     all_text_units: list[TextUnit] = []
 
-    async def capture_text_units(text_units: list[TextUnit]) -> None:
+    async def _mock_save_multiple(text_units: list[TextUnit]) -> None:
         all_text_units.extend(text_units)
 
-    mock_vector_store.save_multiple.side_effect = capture_text_units
+    mock_vector_store.save_multiple.side_effect = _mock_save_multiple
 
     for review_data in reviews_data:
         # Convert fixture format to CreateReview message format
@@ -50,7 +48,6 @@ async def test_handle_create_review(
             "Text": review_data["text"],
             "TargetID": review_data["target_id"],
         }
-
         # Execute the handler
         await handle_create_review(mock_vector_store, message)
 
@@ -58,7 +55,11 @@ async def test_handle_create_review(
     for text_unit in all_text_units:
         # Find which review this text unit belongs to
         matching_review: dict[str, Any] | None = next(
-            (r for r in reviews_data if r["review_id"] == text_unit.document_id),
+            (
+                review
+                for review in reviews_data
+                if review["review_id"] == text_unit.document_id
+            ),
             None,
         )
 

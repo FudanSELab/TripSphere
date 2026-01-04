@@ -4,13 +4,8 @@ import logging
 
 from celery import Celery
 
-# Monkey patch celery classes to ensure that
-# type annotations work correctly at runtime
-import review_summary.infra.celery.monkey_patch as celery_monkey_patch
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
-
-_ = celery_monkey_patch  # Make pyright happy
 
 logger = logging.getLogger(__name__)
 

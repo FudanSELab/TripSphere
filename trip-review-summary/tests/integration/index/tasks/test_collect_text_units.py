@@ -4,11 +4,8 @@ import polars as pl
 import pytest
 from pytest_mock import MockerFixture, MockType
 
-import review_summary.infra.celery.monkey_patch as celery_monkey_patch
 from review_summary.index.tasks.collect_text_units import _internal  # pyright: ignore
 from review_summary.models import TextUnit
-
-_ = celery_monkey_patch  # Make pyright happy
 
 
 @pytest.mark.asyncio
