@@ -45,7 +45,9 @@ async def test_save_multiple_success(
     await vector_store.save_multiple(text_units)
 
     # Verify by searching for them
-    target_id = text_units[0].attributes["target_id"] if text_units[0].attributes else ""
+    target_id = (
+        text_units[0].attributes["target_id"] if text_units[0].attributes else ""
+    )
     target_type = (
         text_units[0].attributes["target_type"] if text_units[0].attributes else ""
     )
@@ -80,7 +82,9 @@ async def test_save_multiple_preserves_attributes(
     await vector_store.save_multiple(text_units)
 
     # Retrieve the first text unit
-    target_id = text_units[0].attributes["target_id"] if text_units[0].attributes else ""
+    target_id = (
+        text_units[0].attributes["target_id"] if text_units[0].attributes else ""
+    )
     target_type = (
         text_units[0].attributes["target_type"] if text_units[0].attributes else ""
     )
@@ -92,7 +96,9 @@ async def test_save_multiple_preserves_attributes(
     retrieved_unit = retrieved[0]
 
     # Find matching original unit by text
-    original_unit = next(unit for unit in text_units if unit.text == retrieved_unit.text)
+    original_unit = next(
+        unit for unit in text_units if unit.text == retrieved_unit.text
+    )
 
     # Verify attributes are preserved
     assert retrieved_unit.attributes == original_unit.attributes
