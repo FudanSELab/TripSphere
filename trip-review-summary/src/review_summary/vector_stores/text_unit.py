@@ -1,6 +1,7 @@
 import logging
 from typing import Self
 
+import pandas as pd
 from qdrant_client import AsyncQdrantClient, models
 
 from review_summary.models import TextUnit
@@ -64,7 +65,8 @@ class TextUnitVectorStore:
             collection_name=self.COLLECTION_NAME, scroll_filter=filter, limit=limit
         )
         text_units: list[TextUnit] = [
-            TextUnit.model_validate(record.payload or {}) for record in records
+            TextUnit.model_validate({"id": record.id, **(record.payload or {})})
+            for record in records
         ]
         return text_units
 
@@ -72,3 +74,8 @@ class TextUnitVectorStore:
         self, embedding_vector: list[float], top_k: int = 10
     ) -> list[TextUnit]:
         raise NotImplementedError
+
+    async def upsert_final_text_units(
+        self, text_units: list[TextUnit] | pd.DataFrame
+    ) -> None:
+        """Upsert final text units (already embedded) into the vector store."""
