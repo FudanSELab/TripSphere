@@ -22,7 +22,7 @@ async def test_extract_graph(
     )
 
     # Mock pd.read_parquet to read from local fixtures instead of S3
-    original_read_parquet = pd.read_parquet  # pyright: ignore
+    original_read_parquet = pd.read_parquet
 
     def _mock_read_parquet(path: str, **kwargs: Any) -> pd.DataFrame:
         # Redirect S3 paths to local fixtures

@@ -28,28 +28,28 @@ def run_workflow(
 def _finalize_graph(
     task: Task[Any, Any], context: dict[str, Any], config: FinalizeGraphConfig
 ) -> None:
-    """Final `entities` parquet schema:
+    """Final `entities` pyarrow schema:
     | Column        | Type         | Description                                          |
     | :------------ | :----------- | :--------------------------------------------------- |
-    | id            | String       | ID of the Entity                                     |
-    | readable_id   | String       | Human-friendly ID of the Entity                      |
-    | title         | String       | Name of the Entity                                   |
-    | type          | String       | Type of the Entity                                   |
-    | description   | String       | Description of the Entity                            |
-    | text_unit_ids | List(String) | IDs of TextUnits from which the Entity was extracted |
-    | frequency     | UInt32       | Frequency of the Entity appearance in all TextUnits  |
+    | id            | string       | ID of the Entity                                     |
+    | readable_id   | string       | Human-friendly ID of the Entity                      |
+    | title         | string       | Name of the Entity                                   |
+    | type          | string       | Type of the Entity                                   |
+    | description   | string       | Description of the Entity                            |
+    | text_unit_ids | list<string> | IDs of TextUnits from which the Entity was extracted |
+    | frequency     | int64        | Frequency of the Entity appearance in all TextUnits  |
 
     ---
-    Final `relationships` parquet schema:
+    Final `relationships` pyarrow schema:
     | Column        | Type         | Description                                                |
     | :------------ | :----------- | :--------------------------------------------------------- |
-    | id            | String       | ID of the Relationship                                     |
-    | readable_id   | String       | Human-friendly ID of the Relationship                      |
-    | source        | String       | Source Entity name of the Relationship                     |
-    | target        | String       | Target Entity name of the Relationship                     |
-    | description   | String       | Description of the Relationship                            |
-    | text_unit_ids | List(String) | IDs of TextUnits from which the Relationship was extracted |
-    | weight        | Float64      | Weight of the Relationship                                 |
+    | id            | string       | ID of the Relationship                                     |
+    | readable_id   | string       | Human-friendly ID of the Relationship                      |
+    | source        | string       | Source Entity name of the Relationship                     |
+    | target        | string       | Target Entity name of the Relationship                     |
+    | description   | string       | Description of the Relationship                            |
+    | text_unit_ids | list<string> | IDs of TextUnits from which the Relationship was extracted |
+    | weight        | double       | Weight of the Relationship                                 |
     """  # noqa: E501
     settings = get_settings()
     neo4j_driver = GraphDatabase.driver(  # pyright: ignore
@@ -80,35 +80,45 @@ def _internal(
 ) -> None:
     entities_filename = context["entities"]
     relationships_filename = context["relationships"]
-    entities = pd.read_parquet(  # pyright: ignore
+    entities = pd.read_parquet(
         f"s3://review-summary/{entities_filename}",
         storage_options=get_storage_options(),
+        dtype_backend="pyarrow",
     )
-    relationships = pd.read_parquet(  # pyright: ignore
+    relationships = pd.read_parquet(
         f"s3://review-summary/{relationships_filename}",
         storage_options=get_storage_options(),
+        dtype_backend="pyarrow",
     )
     logger.info(
         f"Loaded entities from {entities_filename} and "
         f"relationships from {relationships_filename}."
     )
 
-    final_entities = entities.assign(
-        id=[str(uuid7()) for _ in range(len(entities))],
-        readable_id=pd.Series(range(len(entities))).astype(str),
+    # Finalize entities
+    final_entities = entities.drop_duplicates(subset="title")
+    final_entities = final_entities.loc[entities["title"].notna()].reset_index()
+    final_entities = final_entities.assign(
+        id=[str(uuid7()) for _ in range(len(final_entities))],
+        readable_id=final_entities.index.astype(str),
     )[["id", "readable_id", *entities.columns]]
-    final_relationships = relationships.assign(
-        id=[str(uuid7()) for _ in range(len(relationships))],
-        readable_id=pd.Series(range(len(relationships))).astype(str),
+
+    # Finalize relationships
+    final_relationships = relationships.drop_duplicates(subset=["source", "target"])
+    final_relationships.reset_index(inplace=True)
+    final_relationships = final_relationships.assign(
+        id=[str(uuid7()) for _ in range(len(final_relationships))],
+        readable_id=final_relationships.index.astype(str),
     )[["id", "readable_id", *relationships.columns]]
 
-    msg = (
+    message = (
         f"Finalized {len(final_entities)} entities and "
         f"{len(final_relationships)} relationships."
     )
-    logger.info(msg)
-    task.update_state(state="PROGRESS", meta={"description": msg})
+    logger.info(message)
+    task.update_state(state="PROGRESS", meta={"description": message})
 
+    logger.info("Importing nodes and edges into Neo4j database.")
     create_graph(
         neo4j_driver=neo4j_driver,
         nodes=final_entities,

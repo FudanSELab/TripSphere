@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import pandas as pd
+import pyarrow as pa
 from asgiref.sync import async_to_sync
 from celery import Task, shared_task
 from qdrant_client import AsyncQdrantClient
@@ -23,19 +24,19 @@ def run_workflow(self: Task[Any, Any], context: dict[str, Any]) -> dict[str, Any
 
 
 async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> None:
-    """Collected `text_units` parquet schema:
-    | Column           | Type          | Description                                      |
-    | :--------------- | :------------ | :----------------------------------------------- |
-    | id               | String        | ID of the TextUnit                               |
-    | readable_id      | String        | Human-friendly ID of the TextUnit                |
-    | text             | String        | Text content of the TextUnit                     |
-    | embedding        | List(Float64) | Embedding vector of the text content             |
-    | entity_ids       | List(String)  | IDs of Entities extracted from the TextUnit      |
-    | relationship_ids | List(String)  | IDs of Relationships extracted from the TextUnit |
-    | covariate_ids    | List(String)  | IDs of Covariates extracted from the TextUnit    |
-    | n_tokens         | UInt32        | Number of tokens of the text content             |
-    | document_id      | String        | ID of the source Document of the TextUnit        |
-    | attributes       | Struct/Map    | Attributes including target information          |
+    """Collected `text_units` pyarrow schema:
+    | Column           | Type         | Description                                      |
+    | :--------------- | :----------- | :----------------------------------------------- |
+    | id               | string       | ID of the TextUnit                               |
+    | readable_id      | string       | Human-friendly ID of the TextUnit                |
+    | text             | string       | Text content of the TextUnit                     |
+    | embedding        | list<double> | Embedding vector of the text content             |
+    | entity_ids       | list<string> | IDs of Entities extracted from the TextUnit      |
+    | relationship_ids | list<string> | IDs of Relationships extracted from the TextUnit |
+    | covariate_ids    | list<string> | IDs of Covariates extracted from the TextUnit    |
+    | n_tokens         | int64        | Number of tokens of the text content             |
+    | document_id      | string       | ID of the source Document of the TextUnit        |
+    | attributes       | struct       | Attributes including target information          |
     """  # noqa: E501
     qdrant_settings = get_settings().qdrant
     qdrant_client = AsyncQdrantClient(url=qdrant_settings.url)
@@ -75,7 +76,10 @@ async def _internal(
     )
 
     df = pd.DataFrame([text_unit.model_dump() for text_unit in text_units])
-    df["n_tokens"] = df["n_tokens"].astype("uint32")
+    list_string_columns = ["entity_ids", "relationship_ids", "covariate_ids"]
+    df[list_string_columns] = df[list_string_columns].astype(
+        pd.ArrowDtype(pa.list_(pa.string()))
+    )
 
     filename = f"text_units_{uuid7()}.parquet"
     df.to_parquet(

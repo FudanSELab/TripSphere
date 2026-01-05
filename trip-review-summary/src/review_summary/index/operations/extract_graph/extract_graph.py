@@ -54,13 +54,14 @@ async def extract_graph(
 
     text_units_df = text_units[[id_column, text_column]]
     # Gather all results concurrently with semaphore control
-    results = await asyncio.gather(
-        *[_process_row(row) for row in text_units_df.itertuples()]
+    futures = asyncio.as_completed(
+        [_process_row(row) for row in text_units_df.itertuples()]
     )
 
     entity_dfs: list[pd.DataFrame] = []
     relationship_dfs: list[pd.DataFrame] = []
-    for result in results:
+    for future in futures:
+        result = await future
         entity_dfs.append(result.entities)
         relationship_dfs.append(result.relationships)
     # Merge all raw entity and raw relationship DataFrames
