@@ -33,7 +33,6 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
     | embedding        | list<double> | Embedding vector of the text content             |
     | entity_ids       | list<string> | IDs of Entities extracted from the TextUnit      |
     | relationship_ids | list<string> | IDs of Relationships extracted from the TextUnit |
-    | covariate_ids    | list<string> | IDs of Covariates extracted from the TextUnit    |
     | n_tokens         | int64        | Number of tokens of the text content             |
     | document_id      | string       | ID of the source Document of the TextUnit        |
     | attributes       | struct       | Attributes including target information          |
@@ -76,7 +75,7 @@ async def _internal(
     )
 
     df = pd.DataFrame([text_unit.model_dump() for text_unit in text_units])
-    list_string_columns = ["entity_ids", "relationship_ids", "covariate_ids"]
+    list_string_columns = ["entity_ids", "relationship_ids"]
     df[list_string_columns] = df[list_string_columns].astype(
         pd.ArrowDtype(pa.list_(pa.string()))
     )

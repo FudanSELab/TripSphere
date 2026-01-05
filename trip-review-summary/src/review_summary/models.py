@@ -45,10 +45,6 @@ class TextUnit(Identified):
     relationship_ids: list[str] | None = Field(
         default=None, description="List of relationship IDs related to the text unit."
     )
-    covariate_ids: dict[str, list[str]] | None = Field(
-        default=None,
-        description="Dict of different types of covariates related to the text unit.",
-    )
     n_tokens: int | None = Field(
         default=None, description="The number of tokens in the text."
     )

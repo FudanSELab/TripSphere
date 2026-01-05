@@ -46,6 +46,7 @@ async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
     pipeline_context: dict[str, Any] = {
         "target_id": request.target_id,
         "target_type": request.target_type,
+        "vector_dim": 3072,  # Vector dimension of embeddings
     }
     extract_graph_config = ExtractGraphConfig(
         # For extract_graph operation
