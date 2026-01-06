@@ -107,6 +107,9 @@ async def _extract_graph(
 
     extracted_entities.drop(columns=["description"], inplace=True)
     entities = extracted_entities.merge(entity_summaries, on="title", how="left")
+    entities = entities.assign(
+        description=lambda df: df["title"] + ":" + df["description"]
+    )  # Combine title and raw description
 
     # Save entities and relationships to storage
     checkpoint_id = uuid7()

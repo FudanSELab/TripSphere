@@ -7,7 +7,9 @@ class ExtractGraphConfig(BaseModel):
     """Configuration for extract_graph task."""
 
     # For extract_graph operation
-    graph_llm_config: dict[str, Any]
+    graph_llm_config: dict[str, Any] = Field(
+        ..., description="The ChatOpenAI configuration for graph extraction."
+    )
     entity_types: list[str] = Field(
         default=["POI", "product", "amenity", "constraint", "character"],
         description="The entity extraction entity types to use.",
@@ -22,7 +24,9 @@ class ExtractGraphConfig(BaseModel):
     )
 
     # For summarize_descriptions operation
-    summary_llm_config: dict[str, Any]
+    summary_llm_config: dict[str, Any] = Field(
+        ..., description="The ChatOpenAI configuration for description summarization."
+    )
     max_length: int = Field(
         default=500,
         description="The description summarization maximum length.",

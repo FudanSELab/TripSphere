@@ -92,19 +92,27 @@ class TextUnitVectorStore:
             selected = text_units.loc[:, ["id", "entity_ids", "relationship_ids"]]
             for row in selected.itertuples():
                 text_unit_id = str(row.id)
-                payload = {
-                    "entity_ids": row.entity_ids,
-                    "relationship_ids": row.relationship_ids,
-                }
-                points_payloads.append((text_unit_id, payload))
+                points_payloads.append(
+                    (
+                        text_unit_id,
+                        {
+                            "entity_ids": row.entity_ids,
+                            "relationship_ids": row.relationship_ids,
+                        },
+                    )
+                )
         else:
             for text_unit in text_units:
                 text_unit_id = text_unit.id
-                payload = {
-                    "entity_ids": text_unit.entity_ids,
-                    "relationship_ids": text_unit.relationship_ids,
-                }
-                points_payloads.append((text_unit_id, payload))
+                points_payloads.append(
+                    (
+                        text_unit_id,
+                        {
+                            "entity_ids": text_unit.entity_ids,
+                            "relationship_ids": text_unit.relationship_ids,
+                        },
+                    )
+                )
 
         # Concurrently update payloads
         tasks = [
