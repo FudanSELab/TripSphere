@@ -54,7 +54,7 @@ class TextUnitVectorStore:
         logger.debug(f"Qdrant upsert result: {result}")
 
     async def find_by_target(
-        self, target_id: str, target_type: str, limit: int = 1024
+        self, target_id: str, target_type: str = "attraction", limit: int = 1024
     ) -> list[TextUnit]:
         """Find text units (without embedding) by target ID and target type."""
         filter = models.Filter(
@@ -79,9 +79,35 @@ class TextUnitVectorStore:
         return text_units
 
     async def search_by_vector(
-        self, embedding_vector: list[float], top_k: int = 10
+        self,
+        embedding_vector: list[float],
+        target_id: str,
+        target_type: str = "attraction",
+        top_k: int = 10,
     ) -> list[TextUnit]:
-        raise NotImplementedError
+        response = await self.client.query_points(
+            collection_name=self.COLLECTION_NAME,
+            query=embedding_vector,
+            query_filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="attributes.target_id",
+                        match=models.MatchValue(value=target_id),
+                    ),
+                    models.FieldCondition(
+                        key="attributes.target_type",
+                        match=models.MatchValue(value=target_type),
+                    ),
+                ]
+            ),
+            limit=top_k,
+        )
+        # Convert response to list of TextUnit
+        text_units: list[TextUnit] = [
+            TextUnit.model_validate({"id": point.id, **(point.payload or {})})
+            for point in response.points
+        ]
+        return text_units
 
     async def update_final_text_units(
         self, text_units: list[TextUnit] | pd.DataFrame

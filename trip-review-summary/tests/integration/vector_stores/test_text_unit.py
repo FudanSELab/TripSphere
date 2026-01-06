@@ -256,3 +256,184 @@ async def test_save_multiple_upsert_behavior(
     # Verify all texts start with "MODIFIED:"
     for unit in found_units:
         assert unit.text.startswith("MODIFIED:")
+
+
+@pytest.mark.asyncio
+async def test_search_by_vector_success(
+    vector_store: TextUnitVectorStore, text_units: list[TextUnit]
+) -> None:
+    """Test searching text units by embedding vector."""
+    # Save text units first
+    await vector_store.save_multiple(text_units)
+
+    # Use the first text unit's embedding for search
+    query_embedding = text_units[0].embedding
+    assert query_embedding is not None
+
+    # Search by vector
+    target_id = "attraction-001"
+    target_type = "attraction"
+    results = await vector_store.search_by_vector(
+        embedding_vector=query_embedding,
+        target_id=target_id,
+        target_type=target_type,
+        top_k=5,
+    )
+
+    # Should return results
+    assert len(results) > 0
+    assert len(results) <= 5
+
+    # The first result should be the same text unit (highest similarity)
+    assert results[0].text == text_units[0].text
+
+    # All results should have the correct target
+    for unit in results:
+        assert unit.attributes is not None
+        assert unit.attributes["target_id"] == target_id
+        assert unit.attributes["target_type"] == target_type
+
+
+@pytest.mark.asyncio
+async def test_search_by_vector_respects_top_k(
+    vector_store: TextUnitVectorStore, text_units: list[TextUnit]
+) -> None:
+    """Test that search_by_vector respects the top_k parameter."""
+    # Save text units
+    await vector_store.save_multiple(text_units)
+
+    query_embedding = text_units[0].embedding
+    assert query_embedding is not None
+
+    # Test different top_k values
+    for top_k in [1, 3, 5, 10]:
+        results = await vector_store.search_by_vector(
+            embedding_vector=query_embedding,
+            target_id="attraction-001",
+            target_type="attraction",
+            top_k=top_k,
+        )
+
+        # Should return at most top_k results
+        assert len(results) <= top_k
+
+
+@pytest.mark.asyncio
+async def test_search_by_vector_filters_by_target(
+    vector_store: TextUnitVectorStore, text_units: list[TextUnit]
+) -> None:
+    """Test that search_by_vector correctly filters by target_id and target_type."""
+    # Modify some text units to have different targets
+    modified_units = text_units.copy()
+    for unit in modified_units[:3]:
+        if unit.attributes:
+            unit.attributes["target_id"] = "hotel-001"
+            unit.attributes["target_type"] = "hotel"
+
+    # Save all units
+    await vector_store.save_multiple(modified_units)
+
+    query_embedding = text_units[0].embedding
+    assert query_embedding is not None
+
+    # Search for attraction units only
+    attraction_results = await vector_store.search_by_vector(
+        embedding_vector=query_embedding,
+        target_id="attraction-001",
+        target_type="attraction",
+        top_k=10,
+    )
+
+    # Should only return attraction units
+    assert len(attraction_results) == len(text_units) - 3
+    for unit in attraction_results:
+        assert unit.attributes is not None
+        assert unit.attributes["target_id"] == "attraction-001"
+        assert unit.attributes["target_type"] == "attraction"
+
+    # Search for hotel units only
+    hotel_results = await vector_store.search_by_vector(
+        embedding_vector=query_embedding,
+        target_id="hotel-001",
+        target_type="hotel",
+        top_k=10,
+    )
+
+    # Should only return hotel units
+    assert len(hotel_results) == 3
+    for unit in hotel_results:
+        assert unit.attributes is not None
+        assert unit.attributes["target_id"] == "hotel-001"
+        assert unit.attributes["target_type"] == "hotel"
+
+
+@pytest.mark.asyncio
+async def test_search_by_vector_empty_results(
+    vector_store: TextUnitVectorStore, text_units: list[TextUnit]
+) -> None:
+    """Test search_by_vector with no matching results."""
+    # Save text units
+    await vector_store.save_multiple(text_units)
+
+    query_embedding = text_units[0].embedding
+    assert query_embedding is not None
+
+    # Search for non-existent target
+    results = await vector_store.search_by_vector(
+        embedding_vector=query_embedding,
+        target_id="nonexistent-id",
+        target_type="attraction",
+        top_k=10,
+    )
+
+    # Should return empty list
+    assert len(results) == 0
+
+
+@pytest.mark.asyncio
+async def test_search_by_vector_ordering(
+    vector_store: TextUnitVectorStore, text_units: list[TextUnit]
+) -> None:
+    """Test that search results are ordered by similarity (score)."""
+    # Save text units
+    await vector_store.save_multiple(text_units)
+
+    query_embedding = text_units[0].embedding
+    assert query_embedding is not None
+
+    # Search by vector
+    results = await vector_store.search_by_vector(
+        embedding_vector=query_embedding,
+        target_id="attraction-001",
+        target_type="attraction",
+        top_k=10,
+    )
+
+    # Results should be ordered by similarity
+    # The first result should be the queried text unit itself (highest similarity)
+    assert len(results) > 1
+    assert results[0].text == text_units[0].text
+
+
+@pytest.mark.asyncio
+async def test_search_by_vector_no_embedding_in_results(
+    vector_store: TextUnitVectorStore, text_units: list[TextUnit]
+) -> None:
+    """Test that search results don't include embeddings."""
+    # Save text units with embeddings
+    await vector_store.save_multiple(text_units)
+
+    query_embedding = text_units[0].embedding
+    assert query_embedding is not None
+
+    # Search by vector
+    results = await vector_store.search_by_vector(
+        embedding_vector=query_embedding,
+        target_id="attraction-001",
+        target_type="attraction",
+        top_k=5,
+    )
+
+    # Results should not include embeddings
+    for unit in results:
+        assert unit.embedding is None
