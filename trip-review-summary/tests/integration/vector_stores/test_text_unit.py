@@ -1,8 +1,8 @@
 """Integration tests for TextUnitVectorStore."""
 
-import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from qdrant_client import AsyncQdrantClient
@@ -29,11 +29,9 @@ async def vector_store(qdrant_client: AsyncQdrantClient) -> TextUnitVectorStore:
 @pytest.fixture
 def text_units() -> list[TextUnit]:
     """Load text units from fixtures file."""
-    fixtures_path = Path("tests") / "fixtures" / "text_units.json"
-    with open(fixtures_path, "r", encoding="utf-8") as f:
-        text_units_data = json.load(f)
-    # Load first 10 text units for testing
-    return [TextUnit.model_validate(unit) for unit in text_units_data[:10]]
+    fixtures_path = Path("tests") / "fixtures" / "text_units.parquet"
+    df = pd.read_parquet(fixtures_path, dtype_backend="pyarrow")
+    return [TextUnit.model_validate(unit.to_dict()) for _, unit in df.iterrows()]
 
 
 @pytest.mark.asyncio

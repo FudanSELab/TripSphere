@@ -61,3 +61,8 @@ python_version = "3.12"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src", "tests"]
+
+[tool.pytest]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]

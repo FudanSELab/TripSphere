@@ -1,7 +1,9 @@
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 from pytest_mock import MockerFixture, MockType
 from qdrant_client import AsyncQdrantClient
 
@@ -14,10 +16,27 @@ from review_summary.index.tasks.create_text_embeddings import (
 from review_summary.vector_stores.entity import EntityVectorStore
 
 
+@pytest_asyncio.fixture
+async def qdrant_client() -> AsyncQdrantClient:
+    """Create an in-memory Qdrant client for testing."""
+    client = AsyncQdrantClient(":memory:")
+    return client
+
+
+@pytest_asyncio.fixture
+async def entity_vector_store(qdrant_client: AsyncQdrantClient) -> EntityVectorStore:
+    """Create an EntityVectorStore with in-memory client."""
+    return await EntityVectorStore.create_vector_store(
+        client=qdrant_client, vector_dim=3072
+    )
+
+
 @pytest.mark.asyncio
 async def test_create_text_embeddings(
     mock_task: MockType,
     final_graph_parquet_uuid: str,
+    qdrant_client: AsyncQdrantClient,
+    entity_vector_store: EntityVectorStore,
     mocker: MockerFixture,
 ) -> None:
     # Mock pandas.read_parquet to read from local fixtures instead of S3
@@ -43,17 +62,11 @@ async def test_create_text_embeddings(
         embedding_model_config: dict[str, Any],
     ) -> list[list[float]]:
         # Return a list of fake embeddings (3072 dimensions) for each text
-        return [[0.1] * 3072 for _ in texts]
+        return [np.random.rand(3072).tolist() for _ in texts]
 
     mocker.patch(
         "review_summary.index.tasks.create_text_embeddings.embed_text",
         side_effect=_mock_embed_text,
-    )
-
-    # Create vector store
-    qdrant_client = AsyncQdrantClient(":memory:")
-    entity_vector_store = await EntityVectorStore.create_vector_store(
-        client=qdrant_client, vector_dim=3072
     )
 
     try:
@@ -94,6 +107,8 @@ async def test_create_text_embeddings(
 async def test_create_text_embeddings_with_multiple_fields(
     mock_task: MockType,
     final_graph_parquet_uuid: str,
+    qdrant_client: AsyncQdrantClient,
+    entity_vector_store: EntityVectorStore,
     mocker: MockerFixture,
 ) -> None:
     """Test creating embeddings for multiple fields (title and description)."""
@@ -120,17 +135,11 @@ async def test_create_text_embeddings_with_multiple_fields(
         embedding_model_config: dict[str, Any],
     ) -> list[list[float]]:
         # Return a list of fake embeddings (3072 dimensions) for each text
-        return [[0.2] * 3072 for _ in texts]
+        return [np.random.rand(3072).tolist() for _ in texts]
 
     mocker.patch(
         "review_summary.index.tasks.create_text_embeddings.embed_text",
         side_effect=_mock_embed_text,
-    )
-
-    # Create vector store
-    qdrant_client = AsyncQdrantClient(":memory:")
-    entity_vector_store = await EntityVectorStore.create_vector_store(
-        client=qdrant_client, vector_dim=3072
     )
 
     try:
@@ -170,14 +179,11 @@ async def test_create_text_embeddings_with_multiple_fields(
 @pytest.mark.asyncio
 async def test_create_text_embeddings_empty_entities(
     mock_task: MockType,
+    qdrant_client: AsyncQdrantClient,
+    entity_vector_store: EntityVectorStore,
     mocker: MockerFixture,
 ) -> None:
     """Test creating embeddings when entities field is not in fields_to_embed."""
-    # Create vector store
-    qdrant_client = AsyncQdrantClient(":memory:")
-    entity_vector_store = await EntityVectorStore.create_vector_store(
-        client=qdrant_client, vector_dim=3072
-    )
 
     try:
         context = {

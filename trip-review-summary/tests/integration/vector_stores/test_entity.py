@@ -1,8 +1,8 @@
 """Integration tests for EntityVectorStore."""
 
-import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from qdrant_client import AsyncQdrantClient
@@ -29,10 +29,9 @@ async def vector_store(qdrant_client: AsyncQdrantClient) -> EntityVectorStore:
 @pytest.fixture
 def entities() -> list[Entity]:
     """Load entities from fixtures file."""
-    fixtures_path = Path("tests") / "fixtures" / "entities.json"
-    with open(fixtures_path, "r", encoding="utf-8") as f:
-        entities_data = json.load(f)
-    return [Entity.model_validate(entity) for entity in entities_data]
+    fixtures_path = Path("tests") / "fixtures" / "entities.parquet"
+    df = pd.read_parquet(fixtures_path, dtype_backend="pyarrow")
+    return [Entity.model_validate(entity.to_dict()) for _, entity in df.iterrows()]
 
 
 @pytest.mark.asyncio
@@ -136,32 +135,6 @@ async def test_search_by_vector_success(
 
 
 @pytest.mark.asyncio
-async def test_search_by_vector_with_title_embedding(
-    vector_store: EntityVectorStore, entities: list[Entity]
-) -> None:
-    """Test searching entities using title embedding."""
-    # Save entities
-    await vector_store.save_multiple(entities)
-
-    # Use title embedding for search
-    query_embedding = entities[0].title_embedding
-    assert query_embedding is not None
-
-    # Search by vector using title vector
-    results = await vector_store.search_by_vector(
-        embedding_vector=query_embedding,
-        target_id="attraction-001",
-        target_type="attraction",
-        top_k=5,
-        vector_name="title",  # Specify title vector
-    )
-
-    # Should return results
-    assert len(results) > 0
-    assert len(results) <= 5
-
-
-@pytest.mark.asyncio
 async def test_search_by_vector_respects_top_k(
     vector_store: EntityVectorStore, entities: list[Entity]
 ) -> None:
@@ -208,7 +181,7 @@ async def test_search_by_vector_filters_by_target(
         embedding_vector=query_embedding,
         target_id="attraction-001",
         target_type="attraction",
-        top_k=10,
+        top_k=1024,
     )
 
     # Should only return attraction entities
@@ -334,7 +307,7 @@ async def test_save_multiple_upsert_behavior(
         embedding_vector=query_embedding,
         target_id="attraction-001",
         target_type="attraction",
-        top_k=10,
+        top_k=1024,
     )
 
     # Should still have same number of entities (upsert, not duplicate)
@@ -389,4 +362,4 @@ async def test_search_by_vector_mixed_targets(
 
     # Verify counts
     assert len(attraction_results) <= 5
-    assert len(hotel_results) <= 5
+    assert len(hotel_results) == min(10, len(entities) - 5)

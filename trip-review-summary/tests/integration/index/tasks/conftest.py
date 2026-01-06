@@ -1,6 +1,6 @@
-import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from celery import Task
 from pytest_mock import MockerFixture, MockType
@@ -23,10 +23,9 @@ def text_units_parquet_uuid() -> str:
 @pytest.fixture
 def text_units() -> list[TextUnit]:
     """Load text units from fixtures file."""
-    fixtures_path = Path("tests") / "fixtures" / "text_units.json"
-    with open(fixtures_path, "r", encoding="utf-8") as f:
-        text_units_data = json.load(f)
-    return [TextUnit.model_validate(unit) for unit in text_units_data]
+    fixtures_path = Path("tests") / "fixtures" / "text_units.parquet"
+    df = pd.read_parquet(fixtures_path, dtype_backend="pyarrow")
+    return [TextUnit.model_validate(unit.to_dict()) for _, unit in df.iterrows()]
 
 
 @pytest.fixture
