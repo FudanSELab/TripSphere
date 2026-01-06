@@ -4,6 +4,8 @@ from typing import Self
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams
 
+from review_summary.models import Entity
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,3 +25,8 @@ class EntityVectorStore:
                 vectors_config=VectorParams(size=vector_dim, distance=Distance.COSINE),
             )
         return cls(client)
+
+    async def search_by_vector(
+        self, embedding_vector: list[float], top_k: int = 10
+    ) -> list[Entity]:
+        raise NotImplementedError
