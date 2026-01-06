@@ -122,3 +122,100 @@ class Relationship(Identified):
             "To be included in the search prompt"
         ),
     )
+
+class CommunityReport(Named):
+    """Defines an LLM-generated summary report of a community."""
+
+    community_id: str
+    """The ID of the community this report is associated with."""
+
+    summary: str = ""
+    """Summary of the report."""
+
+    full_content: str = ""
+    """Full content of the report."""
+
+    rank: float | None = 1.0
+    """Rank of the report, used for sorting (optional). Higher means more important"""
+
+    full_content_embedding: list[float] | None = None
+    """The semantic (i.e. text) embedding of the full report content (optional)."""
+
+    attributes: dict[str, Any] | None = None
+    """A dictionary of additional attributes associated with the report (optional)."""
+
+    size: int | None = None
+    """The size of the report (Amount of text units)."""
+
+    period: str | None = None
+    """The period of the report (optional)."""
+
+    def from_dict(
+        self,
+        d: dict[str, Any],
+        id_key: str = "id",
+        title_key: str = "title",
+        community_id_key: str = "community",
+        short_id_key: str = "human_readable_id",
+        summary_key: str = "summary",
+        full_content_key: str = "full_content",
+        rank_key: str = "rank",
+        attributes_key: str = "attributes",
+        size_key: str = "size",
+        period_key: str = "period",
+    ) -> "CommunityReport":
+        """Create a new community report from the dict data."""
+        return CommunityReport(
+            id=d[id_key],
+            title=d[title_key],
+            community_id=d[community_id_key],
+            readable_id=d.get(short_id_key),
+            summary=d[summary_key],
+            full_content=d[full_content_key],
+            rank=d[rank_key],
+            attributes=d.get(attributes_key),
+            size=d.get(size_key),
+            period=d.get(period_key),
+        )
+    
+class Covariate(Identified):
+    """
+    A protocol for a covariate in the system.
+
+    Covariates are metadata associated with a subject, e.g. entity claims.
+    Each subject (e.g. entity) may be associated with multiple types of covariates.
+    """
+
+    subject_id: str
+    """The subject id."""
+
+    subject_type: str = "entity"
+    """The subject type."""
+
+    covariate_type: str = "claim"
+    """The covariate type."""
+
+    text_unit_ids: list[str] | None = None
+    """List of text unit IDs in which the covariate info appears (optional)."""
+
+    attributes: dict[str, Any] | None = None
+
+    def from_dict(
+        self,
+        d: dict[str, Any],
+        id_key: str = "id",
+        subject_id_key: str = "subject_id",
+        covariate_type_key: str = "covariate_type",
+        short_id_key: str = "human_readable_id",
+        text_unit_ids_key: str = "text_unit_ids",
+        attributes_key: str = "attributes",
+    ) -> "Covariate":
+        """Create a new covariate from the dict data."""
+        return Covariate(
+            id=d[id_key],
+            readable_id=d.get(short_id_key),
+            subject_id=d[subject_id_key],
+            covariate_type=d.get(covariate_type_key, "claim"),
+            text_unit_ids=d.get(text_unit_ids_key),
+            attributes=d.get(attributes_key),
+        )

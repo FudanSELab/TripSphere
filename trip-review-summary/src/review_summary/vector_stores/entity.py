@@ -3,6 +3,10 @@ from typing import Self
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams
+from langchain_openai import OpenAIEmbeddings
+from pydantic import ValidationError
+
+from review_summary.models import Entity
 
 logger = logging.getLogger(__name__)
 
@@ -23,3 +27,12 @@ class EntityVectorStore:
                 vectors_config=VectorParams(size=vector_dim, distance=Distance.COSINE),
             )
         return cls(client)
+    
+    @classmethod
+    async def similarity_search_by_text(
+        cls, text: str, embedder: OpenAIEmbeddings, top: int = 10
+    ) -> list[Entity]:
+        """Embed the text and return the top matching entities from Qdrant."""
+        if text.strip() == "":
+            return []
+        
