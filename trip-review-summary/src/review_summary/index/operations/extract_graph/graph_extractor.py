@@ -145,10 +145,7 @@ class GraphExtractor:
         return results
 
     async def _process_results(
-        self,
-        results: dict[int, str],
-        tuple_delimiter: str,
-        record_delimiter: str,
+        self, results: dict[int, str], tuple_delimiter: str, record_delimiter: str
     ) -> nx.Graph[str]:
         """Parse the result string to create an undirected unipartite graph.
 
@@ -179,23 +176,13 @@ class GraphExtractor:
                         node = graph.nodes[entity_name]
                         if self._join_descriptions:
                             node["description"] = "\n".join(
-                                list(
-                                    {
-                                        *_unpack_descriptions(node),
-                                        entity_description,
-                                    }
-                                )
+                                list({*_unpack_descriptions(node), entity_description})
                             )
                         else:
                             if len(entity_description) > len(node["description"]):
                                 node["description"] = entity_description
                         node["source_id"] = ", ".join(
-                            list(
-                                {
-                                    *_unpack_source_ids(node),
-                                    str(source_doc_id),
-                                }
-                            )
+                            list({*_unpack_source_ids(node), str(source_doc_id)})
                         )
                         node["type"] = (
                             entity_type if entity_type != "" else node["type"]
@@ -224,17 +211,11 @@ class GraphExtractor:
 
                     if source not in graph.nodes():
                         graph.add_node(
-                            source,
-                            type="",
-                            description="",
-                            source_id=edge_source_id,
+                            source, type="", description="", source_id=edge_source_id
                         )
                     if target not in graph.nodes():
                         graph.add_node(
-                            target,
-                            type="",
-                            description="",
-                            source_id=edge_source_id,
+                            target, type="", description="", source_id=edge_source_id
                         )
                     if graph.has_edge(source, target):
                         edge_data = graph.get_edge_data(source, target)
@@ -251,10 +232,7 @@ class GraphExtractor:
                                 )
                             edge_source_id = ", ".join(
                                 list(
-                                    {
-                                        *_unpack_source_ids(edge_data),
-                                        str(source_doc_id),
-                                    }
+                                    {*_unpack_source_ids(edge_data), str(source_doc_id)}
                                 )
                             )
                     graph.add_edge(

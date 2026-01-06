@@ -9,7 +9,7 @@ class ExtractGraphConfig(BaseModel):
     # For extract_graph operation
     graph_llm_config: dict[str, Any]
     entity_types: list[str] = Field(
-        default=["POI", "product", "activity", "amenity", "constraint", "character"],
+        default=["POI", "product", "amenity", "constraint", "character"],
         description="The entity extraction entity types to use.",
     )
     max_gleanings: int = Field(

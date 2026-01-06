@@ -3079,7 +3079,6 @@
     ],
     "entity_ids": null,
     "relationship_ids": null,
-    "covariate_ids": null,
     "n_tokens": 213,
     "document_id": "review-001",
     "attributes": {
@@ -6167,7 +6166,6 @@
     ],
     "entity_ids": null,
     "relationship_ids": null,
-    "covariate_ids": null,
     "n_tokens": 223,
     "document_id": "review-002",
     "attributes": {
@@ -9255,7 +9253,6 @@
     ],
     "entity_ids": null,
     "relationship_ids": null,
-    "covariate_ids": null,
     "n_tokens": 197,
     "document_id": "review-003",
     "attributes": {
@@ -12343,7 +12340,6 @@
     ],
     "entity_ids": null,
     "relationship_ids": null,
-    "covariate_ids": null,
     "n_tokens": 199,
     "document_id": "review-004",
     "attributes": {
@@ -15431,7 +15427,6 @@
     ],
     "entity_ids": null,
     "relationship_ids": null,
-    "covariate_ids": null,
     "n_tokens": 200,
     "document_id": "review-005",
     "attributes": {

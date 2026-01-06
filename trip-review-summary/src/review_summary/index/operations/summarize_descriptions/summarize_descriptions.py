@@ -52,8 +52,8 @@ async def summarize_descriptions(
 
     # Process entities
     entity_futures = [
-        _summarize_descriptions(str(row.title), sorted(set(row.description)))  # type: ignore
-        for row in entities.itertuples()
+        _summarize_descriptions(str(row.title), sorted(set[str](row.description)))  # type: ignore
+        for row in entities.itertuples(index=False)
     ]
     logger.info("Starting summarization of entity descriptions.")
     entity_results = await asyncio.gather(*entity_futures)
@@ -61,10 +61,10 @@ async def summarize_descriptions(
     # Process relationships
     relationship_futures = [
         _summarize_descriptions(
-            (str(row.source), str(row.target)),  # ty: ignore
-            sorted(set(row.description)),  # type: ignore
+            (str(row.source), str(row.target)),
+            sorted(set[str](row.description)),  # type: ignore
         )
-        for row in relationships.itertuples()
+        for row in relationships.itertuples(index=False)
     ]
     logger.info("Starting summarization of relationship descriptions.")
     relationship_results = await asyncio.gather(*relationship_futures)

@@ -31,30 +31,31 @@ def run_workflow(
 async def _extract_graph(
     task: Task[Any, Any], context: dict[str, Any], config: ExtractGraphConfig
 ) -> None:
-    """Extracted `entities` parquet schema:
+    """Extracted `entities` pyarrow schema:
     | Column        | Type         | Description                                          |
     | :------------ | :----------- | :--------------------------------------------------- |
-    | title         | String       | Name of the entity                                   |
-    | type          | String       | Type of the entity                                   |
-    | description   | String       | Description of the entity                            |
-    | text_unit_ids | List(String) | IDs of TextUnits from which the entity was extracted |
-    | frequency     | UInt32       | Frequency of the entity appearance in all TextUnits  |
+    | title         | string       | Name of the entity                                   |
+    | type          | string       | Type of the entity                                   |
+    | description   | string       | Description of the entity                            |
+    | text_unit_ids | list<string> | IDs of TextUnits from which the entity was extracted |
+    | frequency     | int64        | Frequency of the entity appearance in all TextUnits  |
 
     ---
-    Extracted `relationships` parquet schema:
+    Extracted `relationships` pyarrow schema:
     | Column        | Type         | Description                                                |
     | :------------ | :----------- | :--------------------------------------------------------- |
-    | source        | String       | Source entity name of the relationship                     |
-    | target        | String       | Target entity name of the relationship                     |
-    | description   | String       | Description of the relationship                            |
-    | text_unit_ids | List(String) | IDs of TextUnits from which the relationship was extracted |
-    | weight        | Float64      | Weight of the relationship                                 |
+    | source        | string       | Source entity name of the relationship                     |
+    | target        | string       | Target entity name of the relationship                     |
+    | description   | string       | Description of the relationship                            |
+    | text_unit_ids | list<string> | IDs of TextUnits from which the relationship was extracted |
+    | weight        | double       | Weight of the relationship                                 |
     """  # noqa: E501
     # Load text units DataFrame from storage
     text_units_filename = context["text_units"]
-    text_units = pd.read_parquet(  # pyright: ignore
+    text_units = pd.read_parquet(
         f"s3://review-summary/{text_units_filename}",
         storage_options=get_storage_options(),
+        dtype_backend="pyarrow",
     )
     logger.info(f"Loaded text units from {text_units_filename}.")
 
@@ -103,11 +104,9 @@ async def _extract_graph(
     relationships = extracted_relationships.drop(columns=["description"]).merge(
         relationship_summaries, on=["source", "target"], how="left"
     )
-    relationships["weight"] = relationships["weight"].astype("float64")
 
     extracted_entities.drop(columns=["description"], inplace=True)
     entities = extracted_entities.merge(entity_summaries, on="title", how="left")
-    entities["frequency"] = entities["frequency"].astype("uint32")
 
     # Save entities and relationships to storage
     checkpoint_id = uuid7()

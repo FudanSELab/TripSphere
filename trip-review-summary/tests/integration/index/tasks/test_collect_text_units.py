@@ -3,9 +3,11 @@ from typing import Any
 import pandas as pd
 import pytest
 from pytest_mock import MockerFixture, MockType
+from qdrant_client import AsyncQdrantClient
 
 from review_summary.index.tasks.collect_text_units import _internal  # pyright: ignore
 from review_summary.models import TextUnit
+from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
 
 @pytest.mark.asyncio
@@ -35,10 +37,12 @@ async def test_collect_text_units(
 
     mocker.patch.object(pd.DataFrame, "to_parquet", _mock_to_parquet)
 
-    # Mock TextUnitVectorStore find_by_target
-    mock_vector_store: MockType = mocker.AsyncMock()
-    find_by_target: MockType = mock_vector_store.find_by_target
-    find_by_target.return_value = text_units
+    # Pre-save text units to the mock vector store
+    qdrant_client = AsyncQdrantClient(":memory:")
+    mock_vector_store = await TextUnitVectorStore.create_vector_store(
+        client=qdrant_client, vector_dim=3072
+    )
+    await mock_vector_store.save_multiple(text_units)
 
     update_state: MockType = mock_task.update_state
     update_state.return_value = None
@@ -46,7 +50,6 @@ async def test_collect_text_units(
     context = {"target_id": "attraction-001", "target_type": "attraction"}
     await _internal(mock_task, context, mock_vector_store)
 
-    find_by_target.assert_awaited_once_with("attraction-001", "attraction")
     collected_text_units = len(text_units)
     update_state.assert_called_once_with(
         state="PROGRESS",
@@ -61,3 +64,13 @@ async def test_collect_text_units(
         },
     )
     assert context["text_units"] == f"text_units_{text_units_parquet_uuid}.parquet"
+
+    # Make sure the parquet content is correct
+    df = pd.read_parquet(
+        f"tests/fixtures/output/text_units_{text_units_parquet_uuid}.parquet",
+        dtype_backend="pyarrow",
+    )
+    assert len(df) == len(text_units)
+    for i, unit in enumerate(text_units):
+        assert df.iloc[i]["id"] == unit.id
+        assert df.iloc[i]["text"] == unit.text
