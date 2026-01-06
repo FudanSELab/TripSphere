@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from typing import Self
+from typing import Any, Self
 
 import pandas as pd
 from qdrant_client import AsyncQdrantClient, models
@@ -35,8 +36,15 @@ class TextUnitVectorStore:
         points: list[models.PointStruct] = []
         for text_unit in text_units:
             payload = text_unit.model_dump()
-            text_unit_id = payload.pop("id")  # Remove id from payload
-            embedding = payload.pop("embedding")  # Remove embedding from payload
+            # Remove id (UUID) from payload
+            text_unit_id = payload.pop("id")
+            # Remove embedding from payload
+            embedding: list[float] | None = payload.pop("embedding")
+            if embedding is None:
+                logger.warning(
+                    f"Skip TextUnit {text_unit_id} due to missing embedding."
+                )
+                continue
             point = models.PointStruct(
                 id=text_unit_id, vector=embedding, payload=payload
             )
@@ -75,7 +83,39 @@ class TextUnitVectorStore:
     ) -> list[TextUnit]:
         raise NotImplementedError
 
-    async def upsert_final_text_units(
+    async def update_final_text_units(
         self, text_units: list[TextUnit] | pd.DataFrame
     ) -> None:
-        """Upsert final text units (already embedded) into the vector store."""
+        """Update final text units (already embedded) in the vector store."""
+        points_payloads: list[tuple[str, dict[str, Any]]] = []
+        if isinstance(text_units, pd.DataFrame):
+            selected = text_units.loc[:, ["id", "entity_ids", "relationship_ids"]]
+            for row in selected.itertuples():
+                text_unit_id = str(row.id)
+                payload = {
+                    "entity_ids": row.entity_ids,
+                    "relationship_ids": row.relationship_ids,
+                }
+                points_payloads.append((text_unit_id, payload))
+        else:
+            for text_unit in text_units:
+                text_unit_id = text_unit.id
+                payload = {
+                    "entity_ids": text_unit.entity_ids,
+                    "relationship_ids": text_unit.relationship_ids,
+                }
+                points_payloads.append((text_unit_id, payload))
+
+        # Concurrently update payloads
+        tasks = [
+            asyncio.create_task(
+                self.client.set_payload(
+                    collection_name=self.COLLECTION_NAME,
+                    payload=payload,
+                    points=[text_unit_id],
+                )
+            )
+            for text_unit_id, payload in points_payloads
+        ]
+        if len(tasks) > 0:
+            await asyncio.wait(tasks)
