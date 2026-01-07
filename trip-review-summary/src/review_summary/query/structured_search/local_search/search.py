@@ -9,22 +9,25 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from langchain_openai import ChatOpenAI
+
+from review_summary.callbacks.query_callbacks import QueryCallbacks
 from review_summary.prompts.query.local_search_system_prompt import (
     LOCAL_SEARCH_SYSTEM_PROMPT,
 )
-from review_summary.query.structured_search.local_search.mixed_content import LocalSearchMixedContext
-from review_summary.query.context_builder.conversation_history import(
-    ConversationHistory
-)
 from review_summary.query.base import SearchResult
-from review_summary.tokenizer.tokenizer import Tokenizer
-from review_summary.callbacks.query_callbacks import QueryCallbacks
+from review_summary.query.context_builder.conversation_history import (
+    ConversationHistory,
+)
 from review_summary.query.model_wrraper.chat_model import ModelWrapper
+from review_summary.query.structured_search.local_search.mixed_content import (
+    LocalSearchMixedContext,
+)
+from review_summary.tokenizer.tokenizer import Tokenizer
 
 logger = logging.getLogger(__name__)
 
 
-class LocalSearch():
+class LocalSearch:
     """Search orchestration for local search mode."""
 
     def __init__(
@@ -37,27 +40,25 @@ class LocalSearch():
         callbacks: list[QueryCallbacks] | None = None,
         model_params: dict[str, Any] | None = None,
     ):
-        self.model=model
-        self.context_builder=context_builder
-        self.tokenizer=tokenizer
-        self.model_params=model_params
+        self.model = model
+        self.context_builder = context_builder
+        self.tokenizer = tokenizer
+        self.model_params = model_params
 
         self.system_prompt = system_prompt or LOCAL_SEARCH_SYSTEM_PROMPT
         self.callbacks = callbacks or []
         self.response_type = response_type
 
     async def search(
-        self,
-        query: str,
-        conversation_history: ConversationHistory | None = None
+        self, query: str, conversation_history: ConversationHistory | None = None
     ) -> SearchResult:
-        """Build local search context that fits a single context window and generate answer for the user query."""
+        """Build local search context that fits a single
+        context window and generate answer for the user query."""
         start_time = time.time()
         search_prompt = ""
         llm_calls, prompt_tokens, output_tokens = {}, {}, {}
         context_result = await self.context_builder.build_context(
-            query=query,
-            conversation_history=conversation_history
+            query=query, conversation_history=conversation_history
         )
         llm_calls["build_context"] = context_result.llm_calls
         prompt_tokens["build_context"] = context_result.prompt_tokens
@@ -76,8 +77,7 @@ class LocalSearch():
 
             full_response = ""
             async for response in model_wrapper.chat_stream(
-                query=query,
-                history=history_messages
+                query=query, history=history_messages
             ):
                 full_response += response
                 for callback in self.callbacks:
@@ -120,12 +120,12 @@ class LocalSearch():
         query: str,
         conversation_history: ConversationHistory | None = None,
     ) -> AsyncGenerator:
-        """Build local search context that fits a single context window and generate answer for the user query."""
+        """Build local search context that fits a single
+        context window and generate answer for the user query."""
         start_time = time.time()
 
         context_result = self.context_builder.build_context(
-            query=query,
-            conversation_history=conversation_history
+            query=query, conversation_history=conversation_history
         )
         logger.debug("GENERATE ANSWER: %s. QUERY: %s", start_time, query)
         search_prompt = self.system_prompt.format(
@@ -134,7 +134,7 @@ class LocalSearch():
         history_messages = [
             {"role": "system", "content": search_prompt},
         ]
-        
+
         model_wrapper = ModelWrapper(model=self.model)
 
         for callback in self.callbacks:

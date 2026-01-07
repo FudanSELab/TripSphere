@@ -7,8 +7,7 @@ from typing import Any, cast
 
 import pandas as pd
 
-from review_summary.models import Entity
-from review_summary.models import Relationship
+from review_summary.models import Entity, Relationship
 
 
 def get_in_network_relationships(
@@ -16,7 +15,8 @@ def get_in_network_relationships(
     relationships: list[Relationship],
     ranking_attribute: str = "rank",
 ) -> list[Relationship]:
-    """Get all directed relationships between selected entities, sorted by ranking_attribute."""
+    """Get all directed relationships between selected
+    entities, sorted by ranking_attribute."""
     selected_entity_names = [entity.title for entity in selected_entities]
     selected_relationships = [
         relationship
@@ -36,7 +36,8 @@ def get_out_network_relationships(
     relationships: list[Relationship],
     ranking_attribute: str = "rank",
 ) -> list[Relationship]:
-    """Get relationships from selected entities to other entities that are not within the selected entities, sorted by ranking_attribute."""
+    """Get relationships from selected entities to other entities
+    that are not within the selected entities, sorted by ranking_attribute."""
     selected_entity_names = [entity.title for entity in selected_entities]
     source_relationships = [
         relationship

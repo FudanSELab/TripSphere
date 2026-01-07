@@ -65,33 +65,4 @@ class EntityVectorStore:
         top_k: int = 10,
         vector_name: str = "description",  # Add parameter to specify which vector
     ) -> list[Entity]:
-        response = await self.client.query_points(
-            collection_name=self.COLLECTION_NAME,
-            query=embedding_vector,
-            using=vector_name,  # Specify which named vector to use
-            query_filter=models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="attributes.target_id",
-                        match=models.MatchValue(value=target_id),
-                    ),
-                    models.FieldCondition(
-                        key="attributes.target_type",
-                        match=models.MatchValue(value=target_type),
-                    ),
-                ]
-            ),
-            limit=top_k,
-        )
-        # Convert response to list of Entity
-        entities: list[Entity] = [
-            Entity.model_validate(
-                {
-                    "id": point.id,
-                    "rank": int(point.score * 100),
-                    **(point.payload or {}),
-                }
-            )
-            for point in response.points
-        ]
-        return entities
+        raise NotImplementedError

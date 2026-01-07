@@ -119,6 +119,7 @@ class Relationship(Identified):
         ),
     )
 
+
 class CommunityReport(Named):
     """Defines an LLM-generated summary report of a community."""
 
@@ -173,7 +174,8 @@ class CommunityReport(Named):
             size=d.get(size_key),
             period=d.get(period_key),
         )
-    
+
+
 class Covariate(Identified):
     """
     A protocol for a covariate in the system.

@@ -1,5 +1,3 @@
-
-
 """Util functions to get entities from a collection."""
 
 import uuid

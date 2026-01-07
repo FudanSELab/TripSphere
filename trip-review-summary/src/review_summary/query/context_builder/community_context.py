@@ -1,4 +1,3 @@
-
 """Community Context."""
 
 import logging
@@ -7,8 +6,7 @@ from typing import Any, cast
 
 import pandas as pd
 
-from review_summary.models import CommunityReport
-from review_summary.models import Entity
+from review_summary.models import CommunityReport, Entity
 from review_summary.tokenizer.tokenizer import Tokenizer
 
 logger = logging.getLogger(__name__)
@@ -39,9 +37,11 @@ def build_community_context(
     """
     Prepare community report data table as context data for system prompt.
 
-    If entities are provided, the community weight is calculated as the count of text units associated with entities within the community.
+    If entities are provided, the community weight is calculated as the count of text
+    units associated with entities within the community.
 
-    The calculated weight is added as an attribute to the community reports and added to the context data table.
+    The calculated weight is added as an attribute to the community reports and added to
+    the context data table.
     """
     tokenizer = tokenizer
 
@@ -127,7 +127,8 @@ def build_community_context(
         batch_records = []
 
     def _cut_batch() -> None:
-        # convert the current context records to pandas dataframe and sort by weight and rank if exist
+        # convert the current context records to pandas dataframe and sort by weight and
+        #  rank if exist
         record_df = _convert_report_context_to_df(
             context_records=batch_records,
             header=header,
@@ -153,7 +154,8 @@ def build_community_context(
         new_tokens = tokenizer.num_tokens(new_context_text)
 
         if batch_tokens + new_tokens > max_context_tokens:
-            # add the current batch to the context data and start a new batch if we are in multi-batch mode
+            # add the current batch to the context data and start a new batch if we are
+            #  in multi-batch mode
             _cut_batch()
             if single_batch:
                 break
@@ -189,7 +191,8 @@ def _compute_community_weights(
     weight_attribute: str = "occurrence",
     normalize: bool = True,
 ) -> list[CommunityReport]:
-    """Calculate a community's weight as count of text units associated with entities within the community."""
+    """Calculate a community's weight as count of text units associated
+    with entities within the community."""
     if not entities:
         return community_reports
 
@@ -199,12 +202,12 @@ def _compute_community_weights(
             for community_id in entity.community_ids:
                 if community_id not in community_text_units:
                     community_text_units[community_id] = []
-                community_text_units[community_id].extend(entity.text_unit_ids)#type:ignore
+                community_text_units[community_id].extend(entity.text_unit_ids)  # type:ignore
     for report in community_reports:
         if not report.attributes:
             report.attributes = {}
         report.attributes[weight_attribute] = len(
-            set(community_text_units.get(report.community_id, []))#type:ignore
+            set(community_text_units.get(report.community_id, []))  # type:ignore
         )
     if normalize:
         # normalize by max weight
@@ -246,7 +249,8 @@ def _convert_report_context_to_df(
     weight_column: str | None = None,
     rank_column: str | None = None,
 ) -> pd.DataFrame:
-    """Convert report context records to pandas dataframe and sort by weight and rank if exist."""
+    """Convert report context records to pandas
+    dataframe and sort by weight and rank if exist."""
     if len(context_records) == 0:
         return pd.DataFrame()
 

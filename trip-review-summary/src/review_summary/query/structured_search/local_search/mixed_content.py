@@ -1,31 +1,35 @@
 import logging
-from typing import Any
-
 from copy import deepcopy
-import pandas as pd
-from review_summary.models import Entity
-from review_summary.models import TextUnit
-from review_summary.models import CommunityReport
-from review_summary.models import Relationship
-from review_summary.query.context_builder.builders import ContextBuilderResult
-from review_summary.query.context_builder.conversation_history import ConversationHistory
 
-from review_summary.vector_stores.entity import EntityVectorStore
-from review_summary.tokenizer.tokenizer import Tokenizer
+import pandas as pd
 from langchain_openai import OpenAIEmbeddings
-from review_summary.query.context_builder.community_context import (build_community_context)
-from review_summary.query.context_builder.source_context import (build_text_unit_context, count_relationships)
+
+from review_summary.models import CommunityReport, Entity, Relationship, TextUnit
+from review_summary.query.context_builder.builders import ContextBuilderResult
+from review_summary.query.context_builder.community_context import (
+    build_community_context,
+)
+from review_summary.query.context_builder.conversation_history import (
+    ConversationHistory,
+)
 from review_summary.query.context_builder.local_context import (
     build_entity_context,
     build_relationship_context,
 )
+from review_summary.query.context_builder.source_context import (
+    build_text_unit_context,
+    count_relationships,
+)
+from review_summary.tokenizer.tokenizer import Tokenizer
 from review_summary.vector_stores.entity import EntityVectorStore
-
 
 logger = logging.getLogger(__name__)
 
-class LocalSearchMixedContext():
-    """Build data context for local search prompt combining community reports and entity/relationship/covariate tables."""
+
+class LocalSearchMixedContext:
+    """Build data context for local search prompt combining community
+    reports and entity/relationship/covariate tables."""
+
     def __init__(
         self,
         entities: list[Entity],
@@ -80,7 +84,9 @@ class LocalSearchMixedContext():
         """
         Build data context for local search prompt.
 
-        Build a context by combining community reports and entity/relationship/covariate tables, and text units using a predefined ratio set by summary_prop.
+        Build a context by combining community reports
+        and entity/relationship/covariate tables,
+        and text units using a predefined ratio set by summary_prop.
         """
         if include_entity_names is None:
             include_entity_names = []
@@ -93,7 +99,8 @@ class LocalSearchMixedContext():
             raise ValueError(value_error)
 
         # map user query to entities
-        # if there is conversation history, attached the previous user questions to the current query
+        # if there is conversation history, attached the previous
+        # user questions to the current query
         if conversation_history:
             pre_user_questions = "\n".join(
                 conversation_history.get_user_turns(conversation_history_max_turns)
@@ -102,8 +109,7 @@ class LocalSearchMixedContext():
 
         query_embedding = await self.text_embedder.aembed_query(query)
         selected_entities = await self.entity_text_embeddings.search_by_vector(
-            embedding_vector=query_embedding,
-            top_k=top_k_mapped_entities
+            embedding_vector=query_embedding, top_k=top_k_mapped_entities
         )
 
         # build context
@@ -187,7 +193,8 @@ class LocalSearchMixedContext():
         min_community_rank: int = 0,
         context_name: str = "Reports",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
-        """Add community data to the context window until it hits the max_context_tokens limit."""
+        """Add community data to the context window until
+        it hits the max_context_tokens limit."""
         if len(selected_entities) == 0 or len(self.community_reports) == 0:
             return ("", {context_name.lower(): pd.DataFrame()})
 
@@ -197,13 +204,13 @@ class LocalSearchMixedContext():
             if entity.community_ids:
                 for community_id in entity.community_ids:
                     community_matches[community_id] = (
-                        community_matches.get(community_id, 0) + 1 #type: ignore
+                        community_matches.get(community_id, 0) + 1  # type: ignore
                     )
 
         # sort communities by number of matched entities and rank
         selected_communities = [
             self.community_reports[community_id]
-            for community_id in community_matches #type: ignore
+            for community_id in community_matches  # type: ignore
             if community_id in self.community_reports
         ]
         for community in selected_communities:
@@ -233,7 +240,7 @@ class LocalSearchMixedContext():
             context_text = "\n\n".join(context_text)
 
         return (str(context_text), context_data)
-    
+
     def _build_text_unit_context(
         self,
         selected_entities: list[Entity],
@@ -241,11 +248,12 @@ class LocalSearchMixedContext():
         column_delimiter: str = "|",
         context_name: str = "Sources",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
-        """Rank matching text units and add them to the context window until it hits the max_context_tokens limit."""
+        """Rank matching text units and add them to the context
+        window until it hits the max_context_tokens limit."""
         if not selected_entities or not self.text_units:
             return ("", {context_name.lower(): pd.DataFrame()})
         selected_text_units = []
-        text_unit_ids_set = set() #type:ignore
+        text_unit_ids_set = set()  # type:ignore
         unit_info_list = []
         relationship_values = list(self.relationships.values())
 
@@ -263,16 +271,16 @@ class LocalSearchMixedContext():
                     num_relationships = count_relationships(
                         entity_relationships, selected_unit
                     )
-                    text_unit_ids_set.add(text_id)#type:ignore
-                    unit_info_list.append((selected_unit, index, num_relationships))#type:ignore
+                    text_unit_ids_set.add(text_id)  # type:ignore
+                    unit_info_list.append((selected_unit, index, num_relationships))  # type:ignore
 
         # sort by entity_order and the number of relationships desc
-        unit_info_list.sort(key=lambda x: (x[1], -x[2])) #type:ignore
+        unit_info_list.sort(key=lambda x: (x[1], -x[2]))  # type:ignore
 
-        selected_text_units = [unit[0] for unit in unit_info_list] #type:ignore
+        selected_text_units = [unit[0] for unit in unit_info_list]  # type:ignore
 
         context_text, context_data = build_text_unit_context(
-            text_units=selected_text_units, #type:ignore
+            text_units=selected_text_units,  # type:ignore
             tokenizer=self.tokenizer,
             max_context_tokens=max_context_tokens,
             shuffle_data=False,
@@ -280,7 +288,7 @@ class LocalSearchMixedContext():
             column_delimiter=column_delimiter,
         )
         return (str(context_text), context_data)
-    
+
     def _build_local_context(
         self,
         selected_entities: list[Entity],
@@ -292,7 +300,8 @@ class LocalSearchMixedContext():
         relationship_ranking_attribute: str = "rank",
         column_delimiter: str = "|",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
-        """Build data context for local search prompt combining entity/relationship/covariate tables."""
+        """Build data context for local search prompt
+        combining entity/relationship/covariate tables."""
         # build entity context
         entity_context, entity_context_data = build_entity_context(
             selected_entities=selected_entities,
@@ -310,18 +319,19 @@ class LocalSearchMixedContext():
         final_context = []
         final_context_data = {}
 
-        # gradually add entities and associated metadata to the context until we reach limit
+        # gradually add entities and associated
+        # metadata to the context until we reach limit
         for entity in selected_entities:
             current_context = []
             current_context_data = {}
-            added_entities.append(entity) #type:ignore
+            added_entities.append(entity)  # type:ignore
 
             # build relationship context
             (
                 relationship_context,
                 relationship_context_data,
             ) = build_relationship_context(
-                selected_entities=added_entities, #type:ignore
+                selected_entities=added_entities,  # type:ignore
                 relationships=list(self.relationships.values()),
                 tokenizer=self.tokenizer,
                 max_context_tokens=max_context_tokens,
@@ -331,7 +341,7 @@ class LocalSearchMixedContext():
                 relationship_ranking_attribute=relationship_ranking_attribute,
                 context_name="Relationships",
             )
-            current_context.append(relationship_context) #type:ignore
+            current_context.append(relationship_context)  # type:ignore
             current_context_data["relationships"] = relationship_context_data
             total_tokens = entity_tokens + len(
                 self.tokenizer.encode(relationship_context)
@@ -347,6 +357,6 @@ class LocalSearchMixedContext():
             final_context_data = current_context_data
 
         # attach entity context to final context
-        final_context_text = entity_context + "\n\n" + "\n\n".join(final_context) #type:ignore
+        final_context_text = entity_context + "\n\n" + "\n\n".join(final_context)  # type:ignore
         final_context_data["entities"] = entity_context_data
-        return (final_context_text, final_context_data) #type:ignore
+        return (final_context_text, final_context_data)  # type:ignore

@@ -101,7 +101,8 @@ class ConversationHistory:
         """
         Create a conversation history from a list of conversation turns.
 
-        Each turn is a dictionary in the form of {"role": "<conversation_role>", "content": "<turn content>"}
+        Each turn is a dictionary in the form
+        of {"role": "<conversation_role>", "content": "<turn content>"}
         """
         history = cls()
         for turn in conversation_turns:
@@ -140,8 +141,8 @@ class ConversationHistory:
         user_turns = []
         for turn in self.turns[::-1]:
             if turn.role == ConversationRole.USER:
-                user_turns.append(turn.content) 
-                if max_user_turns and len(user_turns) >= max_user_turns: 
+                user_turns.append(turn.content)
+                if max_user_turns and len(user_turns) >= max_user_turns:
                     break
         return user_turns
 
@@ -160,10 +161,15 @@ class ConversationHistory:
 
         Parameters
         ----------
-            user_queries_only: If True, only user queries (not assistant responses) will be included in the context, default is True.
-            max_qa_turns: Maximum number of QA turns to include in the context, default is 1.
-            recency_bias: If True, reverse the order of the conversation history to ensure last QA got prioritized.
-            column_delimiter: Delimiter to use for separating columns in the context data, default is "|".
+            user_queries_only: If True, only user queries
+            (not assistant responses) will be included
+            in the context, default is True.
+            max_qa_turns: Maximum number of QA turns to include
+            in the context, default is 1.
+            recency_bias: If True, reverse the order of the conversation history to
+            ensure last QA got prioritized.
+            column_delimiter: Delimiter to use for separating columns
+            in the context data, default is "|".
             context_name: Name of the context, default is "Conversation History".
 
         """
@@ -190,15 +196,19 @@ class ConversationHistory:
         turn_list = []
         current_context_df = pd.DataFrame()
         for turn in qa_turns:
-            turn_list.append({
-                "turn": ConversationRole.USER.__str__(),
-                "content": turn.user_query.content,
-            })
+            turn_list.append(
+                {
+                    "turn": ConversationRole.USER.__str__(),
+                    "content": turn.user_query.content,
+                }
+            )
             if turn.assistant_answers:
-                turn_list.append({
-                    "turn": ConversationRole.ASSISTANT.__str__(),
-                    "content": turn.get_answer_text(),
-                })
+                turn_list.append(
+                    {
+                        "turn": ConversationRole.ASSISTANT.__str__(),
+                        "content": turn.get_answer_text(),
+                    }
+                )
 
             context_df = pd.DataFrame(turn_list)
             context_text = header + context_df.to_csv(sep=column_delimiter, index=False)

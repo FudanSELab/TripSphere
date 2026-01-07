@@ -8,8 +8,7 @@ from typing import Any, cast
 
 import pandas as pd
 
-from review_summary.models import Relationship
-from review_summary.models import TextUnit
+from review_summary.models import Relationship, TextUnit
 from review_summary.tokenizer.tokenizer import Tokenizer
 
 """
@@ -81,9 +80,11 @@ def build_text_unit_context(
 def count_relationships(
     entity_relationships: list[Relationship], text_unit: TextUnit
 ) -> int:
-    """Count the number of relationships of the selected entity that are associated with the text unit."""
+    """Count the number of relationships of the selected entity
+    that are associated with the text unit."""
     if not text_unit.relationship_ids:
-        # Use list comprehension to count relationships where the text_unit.id is in rel.text_unit_ids
+        # Use list comprehension to count relationships
+        # where the text_unit.id is in rel.text_unit_ids
         return sum(
             1
             for rel in entity_relationships

@@ -1,5 +1,3 @@
-
-
 """Local Context Builder."""
 
 from collections import defaultdict
@@ -7,14 +5,13 @@ from typing import Any, cast
 
 import pandas as pd
 
-from review_summary.models import Entity
-from review_summary.models import Relationship
-
-from review_summary.tokenizer.tokenizer import Tokenizer
+from review_summary.models import Entity, Relationship
 from review_summary.query.input.retrieval.relationships import (
     get_in_network_relationships,
     get_out_network_relationships,
 )
+from review_summary.tokenizer.tokenizer import Tokenizer
+
 
 def build_entity_context(
     selected_entities: list[Entity],
@@ -77,6 +74,7 @@ def build_entity_context(
         record_df = pd.DataFrame()
 
     return current_context_text, record_df
+
 
 def build_relationship_context(
     selected_entities: list[Entity],
@@ -158,8 +156,10 @@ def _filter_relationships(
     top_k_relationships: int = 10,
     relationship_ranking_attribute: str = "rank",
 ) -> list[Relationship]:
-    """Filter and sort relationships based on a set of selected entities and a ranking attribute."""
-    # First priority: in-network relationships (i.e. relationships between selected entities)
+    """Filter and sort relationships based on a set of selected
+    entities and a ranking attribute."""
+    # First priority: in-network relationships
+    #  (i.e. relationships between selected entities)
     in_network_relationships = get_in_network_relationships(
         selected_entities=selected_entities,
         relationships=relationships,
@@ -167,7 +167,8 @@ def _filter_relationships(
     )
 
     # Second priority -  out-of-network relationships
-    # (i.e. relationships between selected entities and other entities that are not within the selected entities)
+    # (i.e. relationships between selected entities and
+    #  other entities that are not within the selected entities)
     out_network_relationships = get_out_network_relationships(
         selected_entities=selected_entities,
         relationships=relationships,
@@ -177,7 +178,8 @@ def _filter_relationships(
         return in_network_relationships + out_network_relationships
 
     # within out-of-network relationships, prioritize mutual relationships
-    # (i.e. relationships with out-network entities that are shared with multiple selected entities)
+    # (i.e. relationships with out-network entities that are
+    # shared with multiple selected entities)
     selected_entity_names = [entity.title for entity in selected_entities]
     out_network_source_names = [
         relationship.source
@@ -238,4 +240,3 @@ def _filter_relationships(
 
     relationship_budget = top_k_relationships * len(selected_entities)
     return in_network_relationships + out_network_relationships[:relationship_budget]
-

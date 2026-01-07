@@ -6,7 +6,6 @@ from typing import Any
 import pandas as pd
 
 
-
 @dataclass
 class SearchResult:
     """A Structured Search Result."""
