@@ -24,7 +24,7 @@ copy_protos() {
         dest_dir="$service_dir/proto"
 
     elif [[ -f "$service_dir/package.json" ]]; then
-        service_lang="Node.js"
+        service_lang="JavaScript"
         dest_dir="$service_dir/lib/proto"
 
     else

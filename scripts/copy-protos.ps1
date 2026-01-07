@@ -25,7 +25,7 @@ function Copy-Protos {
         $destDir = "$ServiceDir/proto"
     }
     elseif (Test-Path "$ServiceDir/package.json") {
-        $serviceLang = "Node.js"
+        $serviceLang = "JavaScript"
         $destDir = "$ServiceDir/lib/proto"
     }
     else {
