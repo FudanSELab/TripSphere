@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from pymongo import AsyncMongoClient
 
 from chat.agent.facade import AgentFacade
-from chat.common.dependencies import (
+from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
     provide_httpx_client,
@@ -23,7 +23,7 @@ from chat.common.exceptions import (
 from chat.common.parts import Part
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Conversation, Message
-from chat.conversation.repositories import ConversationRepository, MessageRepository
+from chat.conversation.repository import ConversationRepository, MessageRepository
 from chat.infra.nacos.naming import NacosNaming
 from chat.utils.pagination import CursorPagination
 from chat.utils.sse import encode
@@ -37,7 +37,10 @@ class SendMessageRequest(BaseModel):
     )
 
 
-class SendMessageResponse(BaseModel): ...
+class SendMessageResponse(BaseModel):
+    query_id: str = Field(..., description="ID of the sent query Message.")
+    agent_answer: Message = Field(..., description="Agent's answer Message.")
+    metadata: dict[str, Any] | None = Field(default=None)
 
 
 messages = APIRouter(prefix="/messages", tags=["Messages"])
@@ -63,8 +66,40 @@ def _check_conversation_access(
 
 
 @messages.post(":send")
-async def send_message() -> SendMessageResponse:
-    return SendMessageResponse()
+async def send_message(
+    conversation_repository: Annotated[
+        ConversationRepository, Depends(provide_conversation_repository)
+    ],
+    message_repository: Annotated[
+        MessageRepository, Depends(provide_message_repository)
+    ],
+    conversation_manager: Annotated[
+        ConversationManager, Depends(provide_conversation_manager)
+    ],
+    request: SendMessageRequest,
+    x_user_id: Annotated[str, Header()],
+    httpx_client: Annotated[AsyncClient, Depends(provide_httpx_client)],
+    mongo_client: Annotated[
+        AsyncMongoClient[dict[str, Any]], Depends(provide_mongo_client)
+    ],
+    nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
+) -> SendMessageResponse:
+    conversation = await _find_conversation(
+        conversation_repository, request.conversation_id
+    )
+    _check_conversation_access(conversation, x_user_id)
+
+    user_query = await conversation_manager.add_user_query(
+        conversation, request.content, metadata=request.metadata
+    )
+    agent_facade = await AgentFacade.create_facade(
+        httpx_client, nacos_naming, mongo_client
+    )
+    agent_answer = await agent_facade.invoke(conversation, user_query)
+    await message_repository.save(agent_answer)
+    return SendMessageResponse(
+        query_id=user_query.message_id, agent_answer=agent_answer
+    )
 
 
 async def _stream_events(
@@ -112,11 +147,9 @@ async def stream_message(
     user_query = await conversation_manager.add_user_query(
         conversation, request.content, metadata=request.metadata
     )
-
     agent_facade = await AgentFacade.create_facade(
         httpx_client, nacos_naming, mongo_client
     )
-
     return StreamingResponse(
         _stream_events(message_repository, agent_facade, conversation, user_query),
         media_type="text/event-stream",

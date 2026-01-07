@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel, Field
 
-from chat.common.dependencies import (
+from chat.common.deps import (
     provide_conversation_manager,
     provide_conversation_repository,
 )
@@ -13,7 +13,7 @@ from chat.common.exceptions import (
 )
 from chat.conversation.manager import ConversationManager
 from chat.conversation.models import Conversation
-from chat.conversation.repositories import ConversationRepository
+from chat.conversation.repository import ConversationRepository
 from chat.utils.pagination import CursorPagination
 
 

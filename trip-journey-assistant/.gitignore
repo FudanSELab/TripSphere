@@ -9,3 +9,6 @@ logs/
 
 # Environment variables
 .env
+
+# Taskfile
+.task/

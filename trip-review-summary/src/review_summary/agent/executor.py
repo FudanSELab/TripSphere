@@ -2,81 +2,21 @@ import logging
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.server.tasks import TaskUpdater
-from a2a.types import (
-    InternalError,
-    InvalidParamsError,
-    Part,
-    TaskState,
-    TextPart,
-    UnsupportedOperationError,
-)
-from a2a.utils import new_agent_text_message, new_task
-from a2a.utils.errors import ServerError
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-
-from review_summary.agent.agent import ReviewSummarizerAgent
+from neo4j import AsyncDriver
+from qdrant_client import AsyncQdrantClient
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewSummarizerAgentExecutor(AgentExecutor):
-    """Review Summarizer AgentExecutor - executes the review summarization agent."""
-
-    def __init__(self, chat_model: ChatOpenAI, embedding_model: OpenAIEmbeddings):
-        self.agent = ReviewSummarizerAgent(chat_model, embedding_model)
+class ReviewSummaryAgentExecutor(AgentExecutor):
+    def __init__(
+        self, neo4j_driver: AsyncDriver, qdrant_client: AsyncQdrantClient
+    ) -> None:
+        self.neo4j_driver = neo4j_driver
+        self.qdrant_client = qdrant_client
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
-        error = self._validate_request(context)
-        if error:
-            raise ServerError(error=InvalidParamsError())
-
-        query = context.get_user_input()
-        task = context.current_task
-        if not task:
-            task = new_task(context.message)  # type: ignore
-            await event_queue.enqueue_event(task)
-        updater = TaskUpdater(event_queue, task.id, task.context_id)
-        try:
-            async for item in self.agent.stream(query, task.context_id):
-                is_task_complete = item["is_task_complete"]
-                require_user_input = item["require_user_input"]
-
-                if not is_task_complete and not require_user_input:
-                    await updater.update_status(
-                        TaskState.working,
-                        new_agent_text_message(
-                            item["content"], task.context_id, task.id
-                        ),
-                    )
-                elif require_user_input:
-                    await updater.update_status(
-                        TaskState.input_required,
-                        new_agent_text_message(
-                            item["content"], task.context_id, task.id
-                        ),
-                        final=True,
-                    )
-                    break
-                else:
-                    await updater.add_artifact(
-                        [Part(root=TextPart(text=item["content"]))],
-                        name="review_summary_result",
-                    )
-                    await updater.complete()
-                    break
-
-        except Exception as e:
-            logger.error(f"An error occurred while streaming the response: {e}")
-            raise ServerError(error=InternalError()) from e
-
-    def _validate_request(self, context: RequestContext) -> bool:
-        # Add validation logic specific to review summarizer
-        # For now, just checking if query is empty
-        query = context.get_user_input()
-        if not query or not query.strip():
-            return True  # Error condition
-        return False  # No error
+        raise NotImplementedError
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
-        raise ServerError(error=UnsupportedOperationError())
+        raise NotImplementedError

@@ -35,14 +35,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
-COPY pyproject.toml uv.lock README.md .
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
 # Install OpenTelemetry auto instrumentation
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv run --locked --no-dev opentelemetry-bootstrap -a requirements | uv pip install --requirements -
+    uv run --locked --no-dev opentelemetry-bootstrap -a requirements \
+    | uv pip install --requirements -
 
 
 # Then, use a final image without uv

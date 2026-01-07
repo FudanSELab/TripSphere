@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROTO_DIR="$SCRIPT_DIR/../../contracts/protobuf/tripsphere"
+PROTO_DIR="$SCRIPT_DIR/../lib/proto/tripsphere"
 OUT_DIR="$SCRIPT_DIR/../lib/grpc/gen"
 
 mkdir -p "$OUT_DIR"

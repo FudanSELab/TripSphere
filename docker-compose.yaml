@@ -1,9 +1,92 @@
+# Docker Compose for Development Environment
+
 networks:
   default:
     name: tripsphere
     driver: bridge
 
 services:
+  # File Service
+  trip-file-service:
+    build:
+      context: ./trip-file-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-file-service:latest
+    container_name: trip-file-service
+    ports:
+      - "50051:50051"
+    environment:
+      - APP_ENV=dev
+      - APP_NAME=trip-file-service
+      - PORT=50051
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=public
+      - NACOS_GROUP=DEFAULT_GROUP
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+    depends_on:
+      nacos:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Review Summary
+  trip-review-summary:
+    build:
+      context: ./trip-review-summary
+      dockerfile: Dockerfile
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary
+    command:
+      - uvicorn
+      - review_summary.asgi:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "24212"
+    depends_on:
+      nacos:
+        condition: service_healthy
+
+  # Review Summary RocketMQ Consumer
+  trip-review-summary-consumer:
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary-consumer
+    command:
+      - python
+      - -m
+      - review_summary.rocketmq
+    depends_on:
+      rmq-proxy:
+        condition: service_healthy
+      rmq-broker:
+        condition: service_healthy
+
+  # Review Summary Celery Worker
+  trip-review-summary-worker:
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary-worker
+    command:
+      - celery
+      - -A
+      - review_summary.celery.app
+      - worker
+      - --loglevel=info
+      - --concurrency=4
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
   # Nacos
   nacos:
     image: nacos/nacos-server:v2.5.1
@@ -14,6 +97,12 @@ services:
     ports:
       - "8848:8848"
       - "9848:9848"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8848/nacos/v1/console/health/liveness || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 90s
 
   # OpenTelemetry Collector
   otel-collector:
@@ -26,7 +115,7 @@ services:
       - "4317:4317"
       - "4318:4318"
 
-  # RocketMQ
+  # RocketMQ Name Server
   rmq-namesrv:
     image: apache/rocketmq:5.3.2
     container_name: rmq-namesrv
@@ -34,6 +123,7 @@ services:
       - "9876:9876"
     command: sh mqnamesrv
 
+  # RocketMQ Broker
   rmq-broker:
     image: apache/rocketmq:5.3.2
     container_name: rmq-broker
@@ -47,6 +137,7 @@ services:
       - rmq-namesrv
     command: sh mqbroker
 
+  # RocketMQ Proxy
   rmq-proxy:
     image: apache/rocketmq:5.3.2
     container_name: rmq-proxy
@@ -76,11 +167,14 @@ services:
   mongodb:
     image: mongodb/mongodb-community-server:8.0-ubi8
     container_name: mongodb
+    user: root  # r/w permissions to the mounted directory
     environment:
       MONGODB_INITDB_ROOT_USERNAME: root
       MONGODB_INITDB_ROOT_PASSWORD: fudanse
     ports:
       - "27017:27017"
+    volumes:
+      - ./volumes/mongodb:/data/db
 
   # MySQL
   mysql:
@@ -94,6 +188,8 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
     healthcheck:
       test: mysql --user=root --password=fudanse --execute="SHOW DATABASES;"
       interval: 30s
@@ -111,7 +207,7 @@ services:
       - "9001:9001"
       - "9000:9000"
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+      - ./volumes/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -119,52 +215,52 @@ services:
       timeout: 20s
       retries: 3
 
-  # etcd
-  etcd:
-    container_name: etcd
-    image: quay.io/coreos/etcd:v3.5.25
-    environment:
-      - ETCD_AUTO_COMPACTION_MODE=revision
-      - ETCD_AUTO_COMPACTION_RETENTION=1000
-      - ETCD_QUOTA_BACKEND_BYTES=4294967296
-      - ETCD_SNAPSHOT_COUNT=50000
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
-    command:
-      - etcd
-      - -advertise-client-urls=http://etcd:2379
-      - -listen-client-urls
-      - http://0.0.0.0:2379
-      - --data-dir
-      - /etcd
-    healthcheck:
-      test: ["CMD", "etcdctl", "endpoint", "health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  # Milvus
-  milvus:
-    container_name: milvus
-    image: milvusdb/milvus:v2.6.7
-    command: ["milvus", "run", "standalone"]
-    security_opt:
-      - seccomp:unconfined
-    environment:
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
-      MQ_TYPE: woodpecker
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
-      interval: 30s
-      start_period: 90s
-      timeout: 20s
-      retries: 3
+  # Qdrant
+  qdrant:
+    image: qdrant/qdrant:v1.16
+    restart: always
+    container_name: qdrant
     ports:
-      - "19530:19530"
-      - "9092:9091"
-    depends_on:
-      - etcd
-      - minio
+      - "6333:6333"
+      - "6334:6334"
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - ./volumes/qdrant:/qdrant/storage
+
+  # Neo4j
+  neo4j:
+    image: neo4j:5.26.19
+    container_name: neo4j
+    volumes:
+      - ./volumes/neo4j/logs:/logs
+      - ./volumes/neo4j/config:/config
+      - ./volumes/neo4j/data:/data
+      - ./volumes/neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH=neo4j/fudanse@fudan.edu.cn
+      - NEO4J_PLUGINS=["graph-data-science"]
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: always
+
+  # Redis
+  redis:
+    image: redis:8.4
+    container_name: redis
+    volumes:
+      - ./volumes/redis/data:/data
+    ports:
+      - "6379:6379"
+    restart: "always"
+
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
