@@ -1,6 +1,4 @@
 import logging
-import time
-from collections.abc import AsyncGenerator
 from typing import Any
 
 from copy import deepcopy
@@ -21,6 +19,7 @@ from review_summary.query.context_builder.local_context import (
     build_entity_context,
     build_relationship_context,
 )
+from review_summary.vector_stores.entity import EntityVectorStore
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,6 @@ class LocalSearchMixedContext():
         text_units: list[TextUnit] | None = None,
         community_reports: list[CommunityReport] | None = None,
         relationships: list[Relationship] | None = None,
-        embedding_vectorstore_key: str = EntityVectorStoreKey.ID,
     ):
         if community_reports is None:
             community_reports = []
@@ -55,9 +53,8 @@ class LocalSearchMixedContext():
         self.entity_text_embeddings = entity_text_embeddings
         self.text_embedder = text_embedder
         self.tokenizer = tokenizer
-        self.embedding_vectorstore_key = embedding_vectorstore_key
 
-    def build_context(
+    async def build_context(
         self,
         query: str,
         conversation_history: ConversationHistory | None = None,
@@ -67,7 +64,7 @@ class LocalSearchMixedContext():
         conversation_history_user_turns_only: bool = True,
         max_context_tokens: int = 8000,
         text_unit_prop: float = 0.5,
-        community_prop: float = 0.25,
+        community_prop: float = 0,
         top_k_mapped_entities: int = 10,
         top_k_relationships: int = 10,
         include_community_rank: bool = False,
@@ -75,12 +72,10 @@ class LocalSearchMixedContext():
         rank_description: str = "number of relationships",
         include_relationship_weight: bool = False,
         relationship_ranking_attribute: str = "rank",
-        return_candidate_context: bool = False,
         use_community_summary: bool = False,
         min_community_rank: int = 0,
         community_context_name: str = "Reports",
         column_delimiter: str = "|",
-        **kwargs: dict[str, Any],
     ) -> ContextBuilderResult:
         """
         Build data context for local search prompt.
@@ -105,16 +100,10 @@ class LocalSearchMixedContext():
             )
             query = f"{query}\n{pre_user_questions}"
 
-        selected_entities = map_query_to_entities(
-            query=query,
-            text_embedding_vectorstore=self.entity_text_embeddings,
-            text_embedder=self.text_embedder,
-            all_entities_dict=self.entities,
-            embedding_vectorstore_key=self.embedding_vectorstore_key,
-            include_entity_names=include_entity_names,
-            exclude_entity_names=exclude_entity_names,
-            k=top_k_mapped_entities,
-            oversample_scaler=2,
+        query_embedding = await self.text_embedder.aembed_query(query)
+        selected_entities = await self.entity_text_embeddings.search_by_vector(
+            embedding_vector=query_embedding,
+            top_k=top_k_mapped_entities
         )
 
         # build context
@@ -127,6 +116,7 @@ class LocalSearchMixedContext():
                 conversation_history_context,
                 conversation_history_context_data,
             ) = conversation_history.build_context(
+                tokenizer=self.tokenizer,
                 include_user_turns_only=conversation_history_user_turns_only,
                 max_qa_turns=conversation_history_max_turns,
                 column_delimiter=column_delimiter,
@@ -149,7 +139,6 @@ class LocalSearchMixedContext():
             column_delimiter=column_delimiter,
             include_community_rank=include_community_rank,
             min_community_rank=min_community_rank,
-            return_candidate_context=return_candidate_context,
             context_name=community_context_name,
         )
         if community_context.strip() != "":
@@ -167,7 +156,6 @@ class LocalSearchMixedContext():
             include_relationship_weight=include_relationship_weight,
             top_k_relationships=top_k_relationships,
             relationship_ranking_attribute=relationship_ranking_attribute,
-            return_candidate_context=return_candidate_context,
             column_delimiter=column_delimiter,
         )
         if local_context.strip() != "":
@@ -178,7 +166,6 @@ class LocalSearchMixedContext():
         text_unit_context, text_unit_context_data = self._build_text_unit_context(
             selected_entities=selected_entities,
             max_context_tokens=text_unit_tokens,
-            return_candidate_context=return_candidate_context,
         )
 
         if text_unit_context.strip() != "":
@@ -276,16 +263,16 @@ class LocalSearchMixedContext():
                     num_relationships = count_relationships(
                         entity_relationships, selected_unit
                     )
-                    text_unit_ids_set.add(text_id)
-                    unit_info_list.append((selected_unit, index, num_relationships))
+                    text_unit_ids_set.add(text_id)#type:ignore
+                    unit_info_list.append((selected_unit, index, num_relationships))#type:ignore
 
         # sort by entity_order and the number of relationships desc
-        unit_info_list.sort(key=lambda x: (x[1], -x[2]))
+        unit_info_list.sort(key=lambda x: (x[1], -x[2])) #type:ignore
 
-        selected_text_units = [unit[0] for unit in unit_info_list]
+        selected_text_units = [unit[0] for unit in unit_info_list] #type:ignore
 
         context_text, context_data = build_text_unit_context(
-            text_units=selected_text_units,
+            text_units=selected_text_units, #type:ignore
             tokenizer=self.tokenizer,
             max_context_tokens=max_context_tokens,
             shuffle_data=False,
@@ -303,7 +290,6 @@ class LocalSearchMixedContext():
         include_relationship_weight: bool = False,
         top_k_relationships: int = 10,
         relationship_ranking_attribute: str = "rank",
-        return_candidate_context: bool = False,
         column_delimiter: str = "|",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
         """Build data context for local search prompt combining entity/relationship/covariate tables."""
@@ -328,14 +314,14 @@ class LocalSearchMixedContext():
         for entity in selected_entities:
             current_context = []
             current_context_data = {}
-            added_entities.append(entity)
+            added_entities.append(entity) #type:ignore
 
             # build relationship context
             (
                 relationship_context,
                 relationship_context_data,
             ) = build_relationship_context(
-                selected_entities=added_entities,
+                selected_entities=added_entities, #type:ignore
                 relationships=list(self.relationships.values()),
                 tokenizer=self.tokenizer,
                 max_context_tokens=max_context_tokens,
@@ -345,7 +331,7 @@ class LocalSearchMixedContext():
                 relationship_ranking_attribute=relationship_ranking_attribute,
                 context_name="Relationships",
             )
-            current_context.append(relationship_context)
+            current_context.append(relationship_context) #type:ignore
             current_context_data["relationships"] = relationship_context_data
             total_tokens = entity_tokens + len(
                 self.tokenizer.encode(relationship_context)
@@ -361,6 +347,6 @@ class LocalSearchMixedContext():
             final_context_data = current_context_data
 
         # attach entity context to final context
-        final_context_text = entity_context + "\n\n" + "\n\n".join(final_context)
+        final_context_text = entity_context + "\n\n" + "\n\n".join(final_context) #type:ignore
         final_context_data["entities"] = entity_context_data
-        return (final_context_text, final_context_data)
+        return (final_context_text, final_context_data) #type:ignore

@@ -140,8 +140,8 @@ class ConversationHistory:
         user_turns = []
         for turn in self.turns[::-1]:
             if turn.role == ConversationRole.USER:
-                user_turns.append(turn.content)
-                if max_user_turns and len(user_turns) >= max_user_turns:
+                user_turns.append(turn.content) 
+                if max_user_turns and len(user_turns) >= max_user_turns: 
                     break
         return user_turns
 

@@ -28,3 +28,8 @@ class EntityVectorStore:
             )
         return cls(client)
 
+    async def search_by_vector(
+        self, embedding_vector: list[float], top_k: int = 10
+    ) -> list[Entity]:
+        raise NotImplementedError
+        

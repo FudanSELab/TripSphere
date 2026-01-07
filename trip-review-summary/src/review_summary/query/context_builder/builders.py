@@ -1,5 +1,7 @@
 import pandas as pd
+from dataclasses import dataclass
 
+@dataclass
 class ContextBuilderResult:
     """A class to hold the results of the build_context."""
 
