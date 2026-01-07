@@ -8,6 +8,7 @@ from review_summary.config.index.extract_graph_config import ExtractGraphConfig
 from review_summary.index.tasks.extract_graph import _extract_graph  # pyright: ignore
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_extract_graph(
     mock_task: MockType,

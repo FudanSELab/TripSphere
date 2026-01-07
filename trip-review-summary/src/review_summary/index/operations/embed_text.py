@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 from langchain_openai.embeddings import OpenAIEmbeddings
+from tiktoken import encoding_name_for_model
 
 from review_summary.config.settings import get_settings
 from review_summary.index.text_splitting import TokenTextSplitter
@@ -14,22 +15,23 @@ from review_summary.tokenizer.tiktoken import TiktokenTokenizer
 
 async def embed_text(
     texts: list[str],
+    embedding_model_config: dict[str, Any],
     batch_size: int = 16,
     batch_max_tokens: int = 8191,
     num_concurrency: int = 4,
-    model_config: dict[str, Any] | None = None,
 ) -> list[list[float] | None]:
-    model_config = model_config or {}
+    openai_settings = get_settings().openai
+    if "api_key" not in embedding_model_config:
+        embedding_model_config["api_key"] = openai_settings.api_key
+    if "base_url" not in embedding_model_config:
+        embedding_model_config["base_url"] = openai_settings.base_url
+    model = OpenAIEmbeddings(**embedding_model_config)
+
     splitter = TokenTextSplitter(
-        TiktokenTokenizer(model_config.get("encoding_name", "cl100k_base")),
+        TiktokenTokenizer(encoding_name_for_model(model.model)),
         chunk_size=batch_max_tokens,
     )
-    openai_settings = get_settings().openai
-    model = OpenAIEmbeddings(
-        model=model_config.get("model_name", "text-embedding-3-large"),
-        api_key=openai_settings.api_key,  # ty: ignore[unknown-argument]
-        base_url=openai_settings.base_url,  # ty: ignore[unknown-argument]
-    )
+
     semaphore = asyncio.Semaphore(num_concurrency)
     # Break up the input texts. The sizes here indicate
     # how many snippets are in each input text

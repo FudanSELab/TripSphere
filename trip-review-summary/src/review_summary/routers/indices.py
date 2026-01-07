@@ -4,6 +4,9 @@ from celery import chain
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+from review_summary.config.index.create_text_embeddings_config import (
+    CreateTextEmbeddingsConfig,
+)
 from review_summary.config.index.extract_graph_config import ExtractGraphConfig
 from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
 from review_summary.index.tasks.collect_text_units import (
@@ -18,11 +21,11 @@ from review_summary.index.tasks.create_community_reports import (
 from review_summary.index.tasks.create_final_text_units import (
     run_workflow as create_final_text_units,
 )
+from review_summary.index.tasks.create_text_embeddings import (
+    run_workflow as create_text_embeddings,
+)
 from review_summary.index.tasks.extract_graph import run_workflow as extract_graph
 from review_summary.index.tasks.finalize_graph import run_workflow as finalize_graph
-from review_summary.index.tasks.generate_text_embeddings import (
-    run_workflow as generate_text_embeddings,
-)
 
 
 class BuildIndexRequest(BaseModel):
@@ -55,6 +58,9 @@ async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
         summary_llm_config={"name": "gpt-4o", "temperature": 0.3},
     )
     finalize_graph_config = FinalizeGraphConfig()
+    create_text_embeddings_config = CreateTextEmbeddingsConfig(
+        embedding_llm_config={"model": "text-embedding-3-large"}
+    )
     pipeline = chain(
         collect_text_units.s(pipeline_context),
         extract_graph.s(extract_graph_config.model_dump()),
@@ -62,7 +68,7 @@ async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
         create_communities.s(),
         create_final_text_units.s(),
         create_community_reports.s(),
-        generate_text_embeddings.s(),
+        create_text_embeddings.s(create_text_embeddings_config.model_dump()),
     )
     result = pipeline.apply_async()
     return TaskSubmitResponse(task_id=result.id)

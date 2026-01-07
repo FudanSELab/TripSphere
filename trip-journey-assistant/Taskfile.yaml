@@ -44,7 +44,7 @@ tasks:
     cmds:
       - docker build . -t {{.PREFIX}}/trip-journey-assistant:{{.TAG}}
 
-  lint:
+  ruff:
     desc: Run ruff format and ruff check --fix
     cmds:
       - uvx ruff format

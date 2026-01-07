@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from typing import Self
+from typing import Any, Self
 
 import pandas as pd
 from qdrant_client import AsyncQdrantClient, models
@@ -35,8 +36,15 @@ class TextUnitVectorStore:
         points: list[models.PointStruct] = []
         for text_unit in text_units:
             payload = text_unit.model_dump()
-            text_unit_id = payload.pop("id")  # Remove id from payload
-            embedding = payload.pop("embedding")  # Remove embedding from payload
+            # Remove id (UUID) from payload
+            text_unit_id = payload.pop("id")
+            # Remove embedding from payload
+            embedding: list[float] | None = payload.pop("embedding")
+            if embedding is None:
+                logger.warning(
+                    f"Skip TextUnit {text_unit_id} due to missing embedding."
+                )
+                continue
             point = models.PointStruct(
                 id=text_unit_id, vector=embedding, payload=payload
             )
@@ -46,7 +54,7 @@ class TextUnitVectorStore:
         logger.debug(f"Qdrant upsert result: {result}")
 
     async def find_by_target(
-        self, target_id: str, target_type: str, limit: int = 1024
+        self, target_id: str, target_type: str = "attraction", limit: int = 1024
     ) -> list[TextUnit]:
         """Find text units (without embedding) by target ID and target type."""
         filter = models.Filter(
@@ -71,11 +79,77 @@ class TextUnitVectorStore:
         return text_units
 
     async def search_by_vector(
-        self, embedding_vector: list[float], top_k: int = 10
+        self,
+        embedding_vector: list[float],
+        target_id: str,
+        target_type: str = "attraction",
+        top_k: int = 10,
     ) -> list[TextUnit]:
-        raise NotImplementedError
+        response = await self.client.query_points(
+            collection_name=self.COLLECTION_NAME,
+            query=embedding_vector,
+            query_filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="attributes.target_id",
+                        match=models.MatchValue(value=target_id),
+                    ),
+                    models.FieldCondition(
+                        key="attributes.target_type",
+                        match=models.MatchValue(value=target_type),
+                    ),
+                ]
+            ),
+            limit=top_k,
+        )
+        # Convert response to list of TextUnit
+        text_units: list[TextUnit] = [
+            TextUnit.model_validate({"id": point.id, **(point.payload or {})})
+            for point in response.points
+        ]
+        return text_units
 
-    async def upsert_final_text_units(
+    async def update_final_text_units(
         self, text_units: list[TextUnit] | pd.DataFrame
     ) -> None:
-        """Upsert final text units (already embedded) into the vector store."""
+        """Update final text units (already embedded) in the vector store."""
+        points_payloads: list[tuple[str, dict[str, Any]]] = []
+        if isinstance(text_units, pd.DataFrame):
+            selected = text_units.loc[:, ["id", "entity_ids", "relationship_ids"]]
+            for row in selected.itertuples():
+                text_unit_id = str(row.id)
+                points_payloads.append(
+                    (
+                        text_unit_id,
+                        {
+                            "entity_ids": row.entity_ids,
+                            "relationship_ids": row.relationship_ids,
+                        },
+                    )
+                )
+        else:
+            for text_unit in text_units:
+                text_unit_id = text_unit.id
+                points_payloads.append(
+                    (
+                        text_unit_id,
+                        {
+                            "entity_ids": text_unit.entity_ids,
+                            "relationship_ids": text_unit.relationship_ids,
+                        },
+                    )
+                )
+
+        # Concurrently update payloads
+        tasks = [
+            asyncio.create_task(
+                self.client.set_payload(
+                    collection_name=self.COLLECTION_NAME,
+                    payload=payload,
+                    points=[text_unit_id],
+                )
+            )
+            for text_unit_id, payload in points_payloads
+        ]
+        if len(tasks) > 0:
+            await asyncio.wait(tasks)

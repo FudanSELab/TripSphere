@@ -45,7 +45,7 @@ tasks:
     cmds:
       - docker build . -t {{.PREFIX}}/trip-review-summary:{{.TAG}}
 
-  lint:
+  ruff:
     desc: Run ruff format and ruff check --fix
     cmds:
       - uvx ruff format

@@ -38,6 +38,7 @@ def _finalize_graph(
     | description   | string       | Description of the Entity                            |
     | text_unit_ids | list<string> | IDs of TextUnits from which the Entity was extracted |
     | frequency     | int64        | Frequency of the Entity appearance in all TextUnits  |
+    | attributes    | struct       | Attributes including target information              |
 
     ---
     Final `relationships` pyarrow schema:
@@ -50,6 +51,7 @@ def _finalize_graph(
     | description   | string       | Description of the Relationship                            |
     | text_unit_ids | list<string> | IDs of TextUnits from which the Relationship was extracted |
     | weight        | double       | Weight of the Relationship                                 |
+    | attributes    | struct       | Attributes including target information                    |
     """  # noqa: E501
     settings = get_settings()
     neo4j_driver = GraphDatabase.driver(  # pyright: ignore
@@ -95,21 +97,32 @@ def _internal(
         f"relationships from {relationships_filename}."
     )
 
-    # Finalize entities
+    target_id = context["target_id"]
+    target_type = context["target_type"]
+
+    # Finalize entities by adding columns: id, readable_id, and attributes
     final_entities = entities.drop_duplicates(subset="title")
     final_entities = final_entities.loc[entities["title"].notna()].reset_index()
     final_entities = final_entities.assign(
         id=[str(uuid7()) for _ in range(len(final_entities))],
         readable_id=final_entities.index.astype(str),
-    )[["id", "readable_id", *entities.columns]]
+        attributes=pd.Series(
+            {"target_id": target_id, "target_type": target_type}
+            for _ in range(len(final_entities))
+        ),
+    )[["id", "readable_id", *entities.columns, "attributes"]]
 
-    # Finalize relationships
+    # Finalize relationships by adding columns: id, readable_id, and attributes
     final_relationships = relationships.drop_duplicates(subset=["source", "target"])
     final_relationships.reset_index(inplace=True)
     final_relationships = final_relationships.assign(
         id=[str(uuid7()) for _ in range(len(final_relationships))],
         readable_id=final_relationships.index.astype(str),
-    )[["id", "readable_id", *relationships.columns]]
+        attributes=pd.Series(
+            {"target_id": target_id, "target_type": target_type}
+            for _ in range(len(final_relationships))
+        ),
+    )[["id", "readable_id", *relationships.columns, "attributes"]]
 
     message = (
         f"Finalized {len(final_entities)} entities and "
@@ -117,20 +130,6 @@ def _internal(
     )
     logger.info(message)
     task.update_state(state="PROGRESS", meta={"description": message})
-
-    logger.info("Importing nodes and edges into Neo4j database.")
-    create_graph(
-        neo4j_driver=neo4j_driver,
-        nodes=final_entities,
-        edges=final_relationships,
-        attributes={
-            "target_id": context["target_id"],
-            "target_type": context["target_type"],
-        },
-    )
-
-    if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
-        raise NotImplementedError("Graph embedding is coming soon!")
 
     # Save entities and relationships to storage
     checkpoint_id = checkpoint_id or str(uuid7())
@@ -152,3 +151,17 @@ def _internal(
         f"Saved finalized entities to {entities_filename} and "
         f"finalized relationships to {relationships_filename}."
     )
+
+    logger.info("Importing nodes and edges into Neo4j database.")
+    create_graph(
+        neo4j_driver=neo4j_driver,
+        nodes=final_entities,
+        edges=final_relationships,
+        attributes={
+            "target_id": context["target_id"],
+            "target_type": context["target_type"],
+        },
+    )
+
+    if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
+        raise NotImplementedError("Graph embedding is coming soon!")

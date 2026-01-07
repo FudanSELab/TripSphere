@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+import pandas as pd
+import pyarrow as pa
 import pytest
 from pytest_mock import MockerFixture, MockType
 
@@ -25,6 +27,7 @@ def reviews_data() -> list[dict[str, Any]]:
         return cast(list[dict[str, Any]], json.load(f))
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_handle_create_review(
     mock_vector_store: MockType, reviews_data: list[dict[str, Any]]
@@ -81,12 +84,15 @@ async def test_handle_create_review(
             f"/reviews/{matching_review['review_id']}/text-units/"
         )
 
-    # Save all text units to a single JSON file
-    if all_text_units:
-        output_file = output_dir / "text_units.json"
-        text_units_data = [unit.model_dump() for unit in all_text_units]
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(text_units_data, f, indent=2, ensure_ascii=False)
+    # Save all text units to a single parquet file
+    if len(all_text_units) > 0:
+        output_file = output_dir / "text_units.parquet"
+        df = pd.DataFrame([text_unit.model_dump() for text_unit in all_text_units])
+        list_string_columns = ["entity_ids", "relationship_ids"]
+        df[list_string_columns] = df[list_string_columns].astype(
+            pd.ArrowDtype(pa.list_(pa.string()))
+        )
+        df.to_parquet(output_file)
 
     # Verify all reviews were processed
     assert len(reviews_data) == 5

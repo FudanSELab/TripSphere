@@ -66,7 +66,7 @@ class Entity(Named):
         default=None,
         description="The semantic (i.e. text) embedding of the description.",
     )
-    name_embedding: list[float] | None = Field(
+    title_embedding: list[float] | None = Field(
         default=None, description="The semantic (i.e. text) embedding of the entity."
     )
     community_ids: list[str] | None = Field(

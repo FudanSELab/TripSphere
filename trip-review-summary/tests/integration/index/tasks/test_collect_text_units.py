@@ -37,31 +37,39 @@ async def test_collect_text_units(
 
     mocker.patch.object(pd.DataFrame, "to_parquet", _mock_to_parquet)
 
-    # Pre-save text units to the mock vector store
+    # Pre-save text units to the vector store
     qdrant_client = AsyncQdrantClient(":memory:")
-    mock_vector_store = await TextUnitVectorStore.create_vector_store(
+    vector_store = await TextUnitVectorStore.create_vector_store(
         client=qdrant_client, vector_dim=3072
     )
-    await mock_vector_store.save_multiple(text_units)
+    await vector_store.save_multiple(text_units)
 
-    update_state: MockType = mock_task.update_state
-    update_state.return_value = None
+    mock_task_update_state: MockType = mock_task.update_state
+    mock_task_update_state.return_value = None
 
-    context = {"target_id": "attraction-001", "target_type": "attraction"}
-    await _internal(mock_task, context, mock_vector_store)
+    try:
+        context = {"target_id": "attraction-001", "target_type": "attraction"}
+        await _internal(mock_task, context, vector_store)
+
+    finally:
+        await qdrant_client.close()
 
     collected_text_units = len(text_units)
-    update_state.assert_called_once_with(
-        state="PROGRESS",
-        meta={
-            "description": (
-                f"Collected {collected_text_units} text units "
-                "for attraction attraction-001."
+    mock_task_update_state.assert_has_calls(
+        [
+            mocker.call(  # pyright: ignore[reportArgumentType]
+                state="PROGRESS",
+                meta={
+                    "description": (
+                        f"Collected {collected_text_units} text units "
+                        "for attraction attraction-001."
+                    ),
+                    "target_id": "attraction-001",
+                    "target_type": "attraction",
+                    "collected_text_units": collected_text_units,
+                },
             ),
-            "target_id": "attraction-001",
-            "target_type": "attraction",
-            "collected_text_units": collected_text_units,
-        },
+        ]
     )
     assert context["text_units"] == f"text_units_{text_units_parquet_uuid}.parquet"
 

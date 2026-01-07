@@ -24,10 +24,7 @@ async def handle_create_review(
     logger.debug(f"Generating embeddings for review {create_review.id}")
     embeddings = await embed_text(
         texts=[text_chunk.text_chunk for text_chunk in text_chunks],
-        model_config={
-            "model_name": "text-embedding-3-large",
-            "encoding_name": "cl100k_base",
-        },
+        embedding_model_config={"model": "text-embedding-3-large"},
     )
 
     # Create basic text units with embeddings
