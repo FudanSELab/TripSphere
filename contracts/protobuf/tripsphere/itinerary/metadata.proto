@@ -2,11 +2,9 @@ syntax = "proto3";
 
 package tripsphere.itinerary;
 
+option go_package = "tripsphere/itinerary";
 option java_multiple_files = true;
 option java_package = "org.tripsphere.itinerary";
-option java_outer_classname = "MetadataProto";
-
-option go_package = "tripsphere/itinerary";
 
 service MetadataService {
   // Get the version of itinerary service.
@@ -16,5 +14,5 @@ service MetadataService {
 message GetVersionRequest {}
 
 message GetVersionResponse {
-  string version = 1;  // e.g., "0.1.0"
+  string version = 1; // e.g., "0.1.0"
 }

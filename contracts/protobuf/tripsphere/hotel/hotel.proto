@@ -2,11 +2,9 @@ syntax = "proto3";
 
 package tripsphere.hotel;
 
+option go_package = "tripsphere/hotel";
 option java_multiple_files = true;
 option java_package = "org.tripsphere.hotel";
-option java_outer_classname = "HotelServiceProto";
-
-option go_package = "tripsphere/hotel";
 
 // room info
 message Room {
@@ -53,11 +51,11 @@ message AddHotelRequest {
 }
 
 message AddHotelResponse {
-  string id = 1;  //hotel id
+  string id = 1; //hotel id
 }
 
 message DeleteHotelRequest {
-  string id = 1;  //hotel id
+  string id = 1; //hotel id
 }
 
 message DeleteHotelResponse {
@@ -65,7 +63,7 @@ message DeleteHotelResponse {
 }
 
 message ChangeHotelRequest {
-  Hotel hotel = 1;  // must include id
+  Hotel hotel = 1; // must include id
 }
 
 message ChangeHotelResponse {
@@ -83,59 +81,59 @@ message HotelPage {
   int32 number_of_elements = 8; // the actual number of hotel on this page
 }
 
-message FindHotelWithinRadiusPageRequest{
+message FindHotelWithinRadiusPageRequest {
   Location location = 1;
-  double radiusKm = 2;
-  int32 number = 3;// page number
-  int32 size = 4; // page size
-  string name = 5;
-  repeated string tags = 6 ;
-}
-
-message FindHotelWithinRadiusPageResponse{
-  HotelPage hotel_page = 1;
-}
-
-message FindHotelsWithinCirclePageRequest{
-  Location location = 1;
-  double radiusKm = 2;
-  int32 number = 3;// page number
+  double radius_km = 2;
+  int32 number = 3; // page number
   int32 size = 4; // page size
   string name = 5;
   repeated string tags = 6;
 }
 
-message FindHotelsWithinCirclePageResponse{
+message FindHotelWithinRadiusPageResponse {
   HotelPage hotel_page = 1;
 }
 
-message FindHotelWithinRadiusRequest{
+message FindHotelsWithinCirclePageRequest {
   Location location = 1;
-  double radiusKm = 2;
+  double radius_km = 2;
+  int32 number = 3; // page number
+  int32 size = 4; // page size
+  string name = 5;
+  repeated string tags = 6;
+}
+
+message FindHotelsWithinCirclePageResponse {
+  HotelPage hotel_page = 1;
+}
+
+message FindHotelWithinRadiusRequest {
+  Location location = 1;
+  double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
 }
 
-message FindHotelWithinRadiusResponse{
+message FindHotelWithinRadiusResponse {
   repeated Hotel content = 1;
 }
 
-message FindHotelsWithinCircleRequest{
+message FindHotelsWithinCircleRequest {
   Location location = 1;
-  double radiusKm = 2;
+  double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
 }
 
-message FindHotelsWithinCircleResponse{
+message FindHotelsWithinCircleResponse {
   repeated Hotel content = 1;
 }
 
-message FindHotelByIdRequest{
+message FindHotelByIdRequest {
   string id = 1;
 }
 
-message FindHotelByIdResponse{
+message FindHotelByIdResponse {
   Hotel hotel = 1;
 }
 
