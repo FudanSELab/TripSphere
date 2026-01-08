@@ -1,21 +1,20 @@
 import * as grpc from "@grpc/grpc-js";
 
 // Attraction
-import { AttractionServiceClient } from "./gen/attraction/attraction_grpc_pb";
+import { AttractionServiceClient } from "@/lib/grpc/gen/attraction/attraction_grpc_pb";
 
 // Hotel
-import { HotelServiceClient } from "./gen/hotel/hotel_grpc_pb";
-import { MetadataServiceClient as HotelMetadataServiceClient } from "./gen/hotel/metadata_grpc_pb";
+import { HotelServiceClient } from "@/lib/grpc/gen/hotel/hotel_grpc_pb";
+import { MetadataServiceClient as HotelMetadataServiceClient } from "@/lib/grpc/gen/hotel/metadata_grpc_pb";
 
 // Itinerary
-// import { ItineraryPlannerServiceClient } from "./gen/itinerary/itinerary_grpc_pb";
-import { MetadataServiceClient as ItineraryMetadataServiceClient } from "./gen/itinerary/metadata_grpc_pb";
+import { MetadataServiceClient as ItineraryMetadataServiceClient } from "@/lib/grpc/gen/itinerary/metadata_grpc_pb";
 
 // Note
-import { MetadataServiceClient as NoteMetadataServiceClient } from "./gen/note/metadata_grpc_pb";
+import { MetadataServiceClient as NoteMetadataServiceClient } from "@/lib/grpc/gen/note/metadata_grpc_pb";
 
 // User
-import { UserServiceClient } from "./gen/user/user_grpc_pb";
+import { UserServiceClient } from "@/lib/grpc/gen/user/user_grpc_pb";
 
 const AtractionAddress = "127.0.0.1:9007";
 const HotelAddress = "127.0.0.1:9007";
@@ -29,7 +28,6 @@ export class GrpcClient {
   public attraction: AttractionServiceClient;
   public hotel: HotelServiceClient;
   public hotelMetadata: HotelMetadataServiceClient;
-  // public itineraryPlanner: ItineraryPlannerServiceClient;
   public itineraryMetadata: ItineraryMetadataServiceClient;
   public noteMetadata: NoteMetadataServiceClient;
   public user: UserServiceClient;
@@ -40,10 +38,6 @@ export class GrpcClient {
     this.attraction = new AttractionServiceClient(AtractionAddress, creds);
     this.hotel = new HotelServiceClient(HotelAddress, creds);
     this.hotelMetadata = new HotelMetadataServiceClient(HotelAddress, creds);
-    // this.itineraryPlanner = new ItineraryPlannerServiceClient(
-    //   ItineraryAddress,
-    //   creds,
-    // );
     this.itineraryMetadata = new ItineraryMetadataServiceClient(
       ItineraryAddress,
       creds,

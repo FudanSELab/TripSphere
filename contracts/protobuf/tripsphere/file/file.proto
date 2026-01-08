@@ -3,15 +3,17 @@ syntax = "proto3";
 package tripsphere.file;
 
 option go_package = "tripsphere/file";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.file";
 
 // File represents a file resource
 message File {
-  string name = 1;        // File name, stores the filename when user uploads; this field is independent of the filename in path and does not affect the final file storage path
+  string name = 1; // File name, stores the filename when user uploads; this field is independent of the filename in path and does not affect the final file storage path
   string content_type = 2; // File type, using MIME Type
-  string url = 3;         // URL for upload, write or download
-  string bucket = 4;      // Belongs to bucket, either "temp" or "permanent"
-  string service = 5;     // Service name that owns this file
-  string path = 6;        // File path under the bucket
+  string url = 3; // URL for upload, write or download
+  string bucket = 4; // Belongs to bucket, either "temp" or "permanent"
+  string service = 5; // Service name that owns this file
+  string path = 6; // File path under the bucket
 }
 
 // GetUploadSignedUrl request
@@ -47,7 +49,7 @@ message GetDownloadSignedUrlsResponse {
 // CopyFilePair represents a copy operation pair
 message CopyFilePair {
   File from = 1; // Source file
-  File to = 2;   // Destination file
+  File to = 2; // Destination file
 }
 
 // CopyFiles request

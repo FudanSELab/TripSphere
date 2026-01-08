@@ -3,8 +3,10 @@ syntax = "proto3";
 package tripsphere.review;
 
 option go_package = "tripsphere/review";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.review";
 
-service trip_review_service {
+service ReviewService {
   rpc CreateReview(CreateReviewRequest) returns (CreateReviewResponse);
   rpc UpdateReview(UpdateReviewRequest) returns (UpdateReviewResponse);
   rpc DeleteReview(DeleteReviewRequest) returns (DeleteReviewResponse);
@@ -12,32 +14,32 @@ service trip_review_service {
   rpc GetReviewByTargetIDWithCursor(GetReviewByTargetIDWithCursorRequest) returns (GetReviewByTargetIDWithCursorResponse);
 }
 
-message GetReviewByTargetIDWithCursorRequest{
-  string target_type =1;
+message GetReviewByTargetIDWithCursorRequest {
+  string target_type = 1;
   string target_id = 2;
-  string cursor =3;
-  int64 limit =4;
+  string cursor = 3;
+  int64 limit = 4;
 }
 
-message GetReviewByTargetIDWithCursorResponse{
-  repeated Review reviews =1;
-  int64 total_reviews =2;
-  bool status =3;
-  string next_cursor=4;
+message GetReviewByTargetIDWithCursorResponse {
+  repeated Review reviews = 1;
+  int64 total_reviews = 2;
+  bool status = 3;
+  string next_cursor = 4;
 }
 
 message CreateReviewRequest {
   string user_id = 1;
-  string target_type =2;
+  string target_type = 2;
   string target_id = 3;
   int64 rating = 4;
-  string text =5;
+  string text = 5;
   repeated string images = 6;
 }
 
 message CreateReviewResponse {
   string id = 1;
-  bool status =2;
+  bool status = 2;
 }
 
 message UpdateReviewRequest {
@@ -48,7 +50,7 @@ message UpdateReviewRequest {
 }
 
 message UpdateReviewResponse {
-  bool status =1;
+  bool status = 1;
 }
 
 message DeleteReviewRequest {
@@ -56,30 +58,30 @@ message DeleteReviewRequest {
 }
 
 message DeleteReviewResponse {
-  bool status =1;
+  bool status = 1;
 }
 
 message GetReviewByTargetIDRequest {
-  string target_type =1;
+  string target_type = 1;
   string target_id = 2;
-  int64 page_number =3;
-  int64 page_size =4;
+  int64 page_number = 3;
+  int64 page_size = 4;
 }
 
 message GetReviewByTargetIDResponse {
-  repeated Review reviews =1;
-  int64 total_reviews =2;
-  bool status =3;
+  repeated Review reviews = 1;
+  int64 total_reviews = 2;
+  bool status = 3;
 }
 
 message Review {
   string id = 1;
   string user_id = 2;
-  string target_type =3;
+  string target_type = 3;
   string target_id = 4;
   int64 rating = 5;
-  string text =6;
+  string text = 6;
   repeated string images = 7;
-  int64 created_at =8;
-  int64 updated_at =9;
+  int64 created_at = 8;
+  int64 updated_at = 9;
 }

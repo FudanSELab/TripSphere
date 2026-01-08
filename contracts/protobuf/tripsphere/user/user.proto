@@ -3,6 +3,8 @@ syntax = "proto3";
 package tripsphere.user;
 
 option go_package = "tripsphere/user";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.user";
 
 // User
 message User {
@@ -29,7 +31,7 @@ message RegisterRequest {
   string password = 2;
 }
 
-message RegisterResponse { }
+message RegisterResponse {}
 
 // Login request
 message LoginRequest {
@@ -50,9 +52,9 @@ message ChangePasswordRequest {
   string new_password = 3;
 }
 
-message ChangePasswordResponse { }
+message ChangePasswordResponse {}
 
-message GetCurrentUserRequest { }
+message GetCurrentUserRequest {}
 
 // Get current user response
 message GetCurrentUserResponse {

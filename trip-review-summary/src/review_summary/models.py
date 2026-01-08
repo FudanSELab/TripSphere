@@ -60,7 +60,7 @@ class TextUnit(Identified):
 class Entity(Named):
     type: str | None = Field(default=None)
     description: str | None = Field(
-        default=None, description="The description(s) of the entity."
+        default=None, description="The description of the entity."
     )
     description_embedding: list[float] | None = Field(
         default=None,
@@ -94,7 +94,7 @@ class Relationship(Identified):
     target: str = Field(..., description="The target entity name.")
     weight: float | None = Field(default=1.0, description="The edge weight.")
     description: str | None = Field(
-        default=None, description="The description(s) of the relationship."
+        default=None, description="The description of the relationship."
     )
     description_embedding: list[float] | None = Field(
         default=None,
