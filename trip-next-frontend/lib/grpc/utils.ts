@@ -1,18 +1,11 @@
 /**
- * 从 JSON 对象创建 protobuf Request 对象的辅助函数
+ * Util function to create protobuf Request object from JSON object
+ * Since the generated protobuf code does not have a direct fromObject method,
+ * this function provides a generic way to create a Request object from a JSON object
  *
- * 由于生成的 protobuf 代码没有直接的 fromObject 方法，
- * 这个函数提供了一个通用的方式来从 JSON 对象创建 Request 对象
- *
- * @param MessageClass - protobuf 消息类（如 LoginRequest）
- * @param data - JSON 对象，字段名应该匹配 AsObject 类型
- * @returns 创建的 protobuf 消息实例
- *
- * @example
- * ```typescript
- * const jsonData = { username: 'test', password: '123456' }
- * const request = createRequestFromObject(LoginRequest, jsonData)
- * ```
+ * @param MessageClass - protobuf message class (e.g. LoginRequest)
+ * @param data - JSON object, field names should match AsObject type
+ * @returns created protobuf message instance
  */
 export function createRequestFromObject<T extends { [key: string]: any }>(
   MessageClass: new () => T,
