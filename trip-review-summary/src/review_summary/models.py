@@ -59,7 +59,7 @@ class TextUnit(Identified):
 
 class Entity(Named):
     type: str | None = Field(default=None)
-    description: str | list[str] | None = Field(
+    description: str | None = Field(
         default=None, description="The description(s) of the entity."
     )
     description_embedding: list[float] | None = Field(
@@ -93,7 +93,7 @@ class Relationship(Identified):
     source: str = Field(..., description="The source entity name.")
     target: str = Field(..., description="The target entity name.")
     weight: float | None = Field(default=1.0, description="The edge weight.")
-    description: str | list[str] | None = Field(
+    description: str | None = Field(
         default=None, description="The description(s) of the relationship."
     )
     description_embedding: list[float] | None = Field(
@@ -173,47 +173,4 @@ class CommunityReport(Named):
             attributes=d.get(attributes_key),
             size=d.get(size_key),
             period=d.get(period_key),
-        )
-
-
-class Covariate(Identified):
-    """
-    A protocol for a covariate in the system.
-
-    Covariates are metadata associated with a subject, e.g. entity claims.
-    Each subject (e.g. entity) may be associated with multiple types of covariates.
-    """
-
-    subject_id: str
-    """The subject id."""
-
-    subject_type: str = "entity"
-    """The subject type."""
-
-    covariate_type: str = "claim"
-    """The covariate type."""
-
-    text_unit_ids: list[str] | None = None
-    """List of text unit IDs in which the covariate info appears (optional)."""
-
-    attributes: dict[str, Any] | None = None
-
-    def from_dict(
-        self,
-        d: dict[str, Any],
-        id_key: str = "id",
-        subject_id_key: str = "subject_id",
-        covariate_type_key: str = "covariate_type",
-        short_id_key: str = "human_readable_id",
-        text_unit_ids_key: str = "text_unit_ids",
-        attributes_key: str = "attributes",
-    ) -> "Covariate":
-        """Create a new covariate from the dict data."""
-        return Covariate(
-            id=d[id_key],
-            readable_id=d.get(short_id_key),
-            subject_id=d[subject_id_key],
-            covariate_type=d.get(covariate_type_key, "claim"),
-            text_unit_ids=d.get(text_unit_ids_key),
-            attributes=d.get(attributes_key),
         )

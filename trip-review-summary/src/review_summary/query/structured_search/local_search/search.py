@@ -34,7 +34,7 @@ class LocalSearch:
         self,
         model: ChatOpenAI,
         context_builder: LocalSearchMixedContext,
-        tokenizer: Tokenizer | None = None,
+        tokenizer: Tokenizer,
         system_prompt: str | None = None,
         response_type: str = "multiple paragraphs",
         callbacks: list[QueryCallbacks] | None = None,
@@ -50,15 +50,20 @@ class LocalSearch:
         self.response_type = response_type
 
     async def search(
-        self, query: str, conversation_history: ConversationHistory | None = None
+        self,
+        query: str,
+        conversation_history: ConversationHistory | None = None,
+        target_id: str = "",
     ) -> SearchResult:
         """Build local search context that fits a single
         context window and generate answer for the user query."""
         start_time = time.time()
         search_prompt = ""
-        llm_calls, prompt_tokens, output_tokens = {}, {}, {}
+        llm_calls: dict[str, int] = {}
+        prompt_tokens: dict[str, int] = {}
+        output_tokens: dict[str, int] = {}
         context_result = await self.context_builder.build_context(
-            query=query, conversation_history=conversation_history
+            query=query, conversation_history=conversation_history, target_id=target_id
         )
         llm_calls["build_context"] = context_result.llm_calls
         prompt_tokens["build_context"] = context_result.prompt_tokens
@@ -119,13 +124,14 @@ class LocalSearch:
         self,
         query: str,
         conversation_history: ConversationHistory | None = None,
+        target_id: str = "",
     ) -> AsyncGenerator:
         """Build local search context that fits a single
         context window and generate answer for the user query."""
         start_time = time.time()
 
-        context_result = self.context_builder.build_context(
-            query=query, conversation_history=conversation_history
+        context_result = await self.context_builder.build_context(
+            query=query, conversation_history=conversation_history, target_id=target_id
         )
         logger.debug("GENERATE ANSWER: %s. QUERY: %s", start_time, query)
         search_prompt = self.system_prompt.format(

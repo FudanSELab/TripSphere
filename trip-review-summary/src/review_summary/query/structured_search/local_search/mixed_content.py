@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import pandas as pd
 from langchain_openai import OpenAIEmbeddings
+from neo4j import AsyncDriver
 
 from review_summary.models import CommunityReport, Entity, Relationship, TextUnit
 from review_summary.query.context_builder.builders import ContextBuilderResult
@@ -20,8 +21,12 @@ from review_summary.query.context_builder.source_context import (
     build_text_unit_context,
     count_relationships,
 )
+from review_summary.query.data_get.get_relationship import (
+    fetch_relationships_for_entities,
+)
 from review_summary.tokenizer.tokenizer import Tokenizer
 from review_summary.vector_stores.entity import EntityVectorStore
+from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -32,31 +37,23 @@ class LocalSearchMixedContext:
 
     def __init__(
         self,
-        entities: list[Entity],
         entity_text_embeddings: EntityVectorStore,
+        text_unit_store: TextUnitVectorStore,
         text_embedder: OpenAIEmbeddings,
         tokenizer: Tokenizer,
-        text_units: list[TextUnit] | None = None,
+        neo4j_driver: AsyncDriver,
         community_reports: list[CommunityReport] | None = None,
-        relationships: list[Relationship] | None = None,
     ):
         if community_reports is None:
             community_reports = []
-        if relationships is None:
-            relationships = []
-        if text_units is None:
-            text_units = []
-        self.entities = {entity.id: entity for entity in entities}
         self.community_reports = {
             community.community_id: community for community in community_reports
-        }
-        self.text_units = {unit.id: unit for unit in text_units}
-        self.relationships = {
-            relationship.id: relationship for relationship in relationships
         }
         self.entity_text_embeddings = entity_text_embeddings
         self.text_embedder = text_embedder
         self.tokenizer = tokenizer
+        self.neo4j_driver = neo4j_driver
+        self.text_unit_store = text_unit_store
 
     async def build_context(
         self,
@@ -80,6 +77,7 @@ class LocalSearchMixedContext:
         min_community_rank: int = 0,
         community_context_name: str = "Reports",
         column_delimiter: str = "|",
+        target_id: str = "",
     ) -> ContextBuilderResult:
         """
         Build data context for local search prompt.
@@ -109,8 +107,18 @@ class LocalSearchMixedContext:
 
         query_embedding = await self.text_embedder.aembed_query(query)
         selected_entities = await self.entity_text_embeddings.search_by_vector(
-            embedding_vector=query_embedding, top_k=top_k_mapped_entities
+            embedding_vector=query_embedding,
+            top_k=top_k_mapped_entities,
+            target_id=target_id,
         )
+        # get relationships
+        relationships: list[Relationship] = []
+        relationships = await fetch_relationships_for_entities(
+            driver=self.neo4j_driver, entities=selected_entities
+        )
+        # get text_units
+        text_units: list[TextUnit] = []
+        text_units = await self.text_unit_store.find_by_target(target_id=target_id)
 
         # build context
         final_context = list[str]()
@@ -163,6 +171,7 @@ class LocalSearchMixedContext:
             top_k_relationships=top_k_relationships,
             relationship_ranking_attribute=relationship_ranking_attribute,
             column_delimiter=column_delimiter,
+            relationships=relationships,
         )
         if local_context.strip() != "":
             final_context.append(str(local_context))
@@ -172,6 +181,8 @@ class LocalSearchMixedContext:
         text_unit_context, text_unit_context_data = self._build_text_unit_context(
             selected_entities=selected_entities,
             max_context_tokens=text_unit_tokens,
+            text_units=text_units,
+            relationships=relationships,
         )
 
         if text_unit_context.strip() != "":
@@ -244,43 +255,45 @@ class LocalSearchMixedContext:
     def _build_text_unit_context(
         self,
         selected_entities: list[Entity],
+        text_units: list[TextUnit],
+        relationships: list[Relationship],
         max_context_tokens: int = 8000,
         column_delimiter: str = "|",
         context_name: str = "Sources",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
         """Rank matching text units and add them to the context
         window until it hits the max_context_tokens limit."""
-        if not selected_entities or not self.text_units:
+        if not selected_entities or not text_units:
             return ("", {context_name.lower(): pd.DataFrame()})
         selected_text_units = []
-        text_unit_ids_set = set()  # type:ignore
-        unit_info_list = []
-        relationship_values = list(self.relationships.values())
+        text_unit_ids_set: set[str] = set()
+        unit_info_list: list[tuple[TextUnit, int, int]] = []
+        text_units_dict = {tu.id: tu for tu in text_units}
 
         for index, entity in enumerate(selected_entities):
             # get matching relationships
             entity_relationships = [
                 rel
-                for rel in relationship_values
+                for rel in relationships
                 if rel.source == entity.title or rel.target == entity.title
             ]
 
             for text_id in entity.text_unit_ids or []:
-                if text_id not in text_unit_ids_set and text_id in self.text_units:
-                    selected_unit = deepcopy(self.text_units[text_id])
+                if text_id not in text_unit_ids_set and text_id in text_units_dict:
+                    selected_unit = deepcopy(text_units_dict[text_id])
                     num_relationships = count_relationships(
                         entity_relationships, selected_unit
                     )
-                    text_unit_ids_set.add(text_id)  # type:ignore
-                    unit_info_list.append((selected_unit, index, num_relationships))  # type:ignore
+                    text_unit_ids_set.add(text_id)
+                    unit_info_list.append((selected_unit, index, num_relationships))
 
         # sort by entity_order and the number of relationships desc
-        unit_info_list.sort(key=lambda x: (x[1], -x[2]))  # type:ignore
+        unit_info_list.sort(key=lambda x: (x[1], -x[2]))
 
-        selected_text_units = [unit[0] for unit in unit_info_list]  # type:ignore
+        selected_text_units = [unit[0] for unit in unit_info_list]
 
         context_text, context_data = build_text_unit_context(
-            text_units=selected_text_units,  # type:ignore
+            text_units=selected_text_units,
             tokenizer=self.tokenizer,
             max_context_tokens=max_context_tokens,
             shuffle_data=False,
@@ -292,6 +305,7 @@ class LocalSearchMixedContext:
     def _build_local_context(
         self,
         selected_entities: list[Entity],
+        relationships: list[Relationship],
         max_context_tokens: int = 8000,
         include_entity_rank: bool = False,
         rank_description: str = "relationship count",
@@ -315,24 +329,24 @@ class LocalSearchMixedContext:
         entity_tokens = len(self.tokenizer.encode(entity_context))
 
         # build relationship-covariate context
-        added_entities = []
+        added_entities: list[Entity] = []
         final_context = []
         final_context_data = {}
 
         # gradually add entities and associated
         # metadata to the context until we reach limit
         for entity in selected_entities:
-            current_context = []
-            current_context_data = {}
-            added_entities.append(entity)  # type:ignore
+            current_context: list[str] = []
+            current_context_data: dict[str, pd.DataFrame] = {}
+            added_entities.append(entity)
 
             # build relationship context
             (
                 relationship_context,
                 relationship_context_data,
             ) = build_relationship_context(
-                selected_entities=added_entities,  # type:ignore
-                relationships=list(self.relationships.values()),
+                selected_entities=added_entities,
+                relationships=relationships,
                 tokenizer=self.tokenizer,
                 max_context_tokens=max_context_tokens,
                 column_delimiter=column_delimiter,
@@ -341,7 +355,7 @@ class LocalSearchMixedContext:
                 relationship_ranking_attribute=relationship_ranking_attribute,
                 context_name="Relationships",
             )
-            current_context.append(relationship_context)  # type:ignore
+            current_context.append(relationship_context)
             current_context_data["relationships"] = relationship_context_data
             total_tokens = entity_tokens + len(
                 self.tokenizer.encode(relationship_context)
@@ -357,6 +371,6 @@ class LocalSearchMixedContext:
             final_context_data = current_context_data
 
         # attach entity context to final context
-        final_context_text = entity_context + "\n\n" + "\n\n".join(final_context)  # type:ignore
+        final_context_text = entity_context + "\n\n" + "\n\n".join(final_context)
         final_context_data["entities"] = entity_context_data
-        return (final_context_text, final_context_data)  # type:ignore
+        return (final_context_text, final_context_data)
