@@ -21,9 +21,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "grpcio-tools>=1.75.1",
     "mypy>=1.18.2",
-    "mypy-protobuf>=3.7.0",
     "pyright>=1.1.406",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",

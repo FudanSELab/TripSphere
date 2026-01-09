@@ -2,8 +2,16 @@
 
 version: '3'
 
-vars:
-  PROTO_SRC_DIR: contracts/protobuf
+includes:
+  chat:
+    taskfile: trip-chat-service/Taskfile.yaml
+    dir: trip-chat-service
+    internal: true
+
+  review-summary:
+    taskfile: trip-review-summary/Taskfile.yaml
+    dir: trip-review-summary
+    internal: true
 
 tasks:
   default:
@@ -14,22 +22,16 @@ tasks:
   
   buf:
     desc: Run buf format and buf lint
-    dir: contracts/protobuf
+    dir: contracts
     cmds:
       - buf format --write
       - buf lint
 
   gen-proto:
-    desc: Generate protobuf codes using buf
-    dir: contracts/protobuf
+    desc: Generate protobuf and gRPC codes using buf
     cmds:
-      - echo Not Implemented Yet
-
-  docker-gen-proto:
-    desc: Generate protobuf codes using buf Docker image
-    dir: contracts/protobuf
-    cmds:
-      - echo Not Implemented Yet
+      - task: chat:gen-proto
+      - task: review-summary:gen-proto
 
   start:
     desc: Start all the services using Docker Compose

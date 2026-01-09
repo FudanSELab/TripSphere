@@ -13,7 +13,7 @@ tasks:
     desc: Set up project development environment
     cmds:
       - uv sync  # Install dependencies and dev-dependencies
-      - task gen-protos
+      - task gen-proto
       - task otel-instr
 
   otel-instr:
@@ -22,7 +22,7 @@ tasks:
       uv run opentelemetry-bootstrap -a requirements \
         | uv pip install --requirements -
 
-  gen-protos:
+  gen-proto:
     desc: Compile .proto files in libs/proto/
     sources: ['libs/proto/**/*.proto']
     cmds:

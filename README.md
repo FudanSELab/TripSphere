@@ -12,8 +12,8 @@ This monorepo contains the TripSphere, an AI-native distributed system based on 
 
 We use [uv](https://docs.astral.sh/uv/) as the Python package and project manager. [Maven Wrapper](https://maven.apache.org/tools/wrapper/) is used to manage Java projects. [Go](https://go.dev/) should be installed for developing Golang projects. [Bun](https://bun.sh/) is used as the JavaScript runtime.
 
-Make sure [Buf](https://buf.build/) is installed if you want to generate protobuf codes without [Docker](https://www.docker.com/).
+[Buf](https://buf.build/) needs to be installed to generate protobuf and gRPC codes.
 
-### Protobuf Codes
+### Protobuf and gRPC Codes
 
-Protobuf codes are useful to ensure projects can be compiled in development, and provide hints for IDEs. We use [Buf](https://buf.build/) to generate protobuf codes. Run `task gen-protos` to generate protobuf codes.
+Protobuf and gRPC codes are useful to ensure projects can be compiled in development, and provide hints for IDEs. We use Buf to generate protobuf and gRPC codes. Run `task gen-proto` to generate protobuf and gRPC codes with Buf CLI.

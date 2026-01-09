@@ -9,7 +9,7 @@ tasks:
       - task --list-all
     silent: true
 
-  gen-protos:
+  gen-proto:
     desc: Compile .proto files in lib/proto/
     cmds:
       - cmd: bash scripts/gen-proto.sh

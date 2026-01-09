@@ -21,7 +21,7 @@ tasks:
       uv run opentelemetry-bootstrap -a requirements \
         | uv pip install --requirements -
 
-  gen-protos:
+  gen-proto:
     desc: Compile .proto files in libs/proto/
     sources: ['libs/proto/**/*.proto']
     cmds:
