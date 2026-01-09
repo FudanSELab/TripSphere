@@ -194,7 +194,7 @@ def _filter_relationships(
     out_network_entity_names = list(
         set(out_network_source_names + out_network_target_names)
     )
-    out_network_entity_links = defaultdict(int)
+    out_network_entity_links: defaultdict[str, int] = defaultdict(int)
     for entity_name in out_network_entity_names:
         targets = [
             relationship.target
@@ -222,19 +222,19 @@ def _filter_relationships(
     if relationship_ranking_attribute == "rank":
         out_network_relationships.sort(
             key=lambda x: (x.attributes["links"], x.rank),  # type: ignore
-            reverse=True,  # type: ignore
+            reverse=True,
         )
     elif relationship_ranking_attribute == "weight":
         out_network_relationships.sort(
             key=lambda x: (x.attributes["links"], x.weight),  # type: ignore
-            reverse=True,  # type: ignore
+            reverse=True,
         )
     else:
         out_network_relationships.sort(
             key=lambda x: (
                 x.attributes["links"],  # type: ignore
                 x.attributes[relationship_ranking_attribute],  # type: ignore
-            ),  # type: ignore
+            ),
             reverse=True,
         )
 

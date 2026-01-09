@@ -196,18 +196,19 @@ def _compute_community_weights(
     if not entities:
         return community_reports
 
-    community_text_units = {}
+    community_text_units: dict[str, list[str]] = {}
     for entity in entities:
         if entity.community_ids:
             for community_id in entity.community_ids:
                 if community_id not in community_text_units:
                     community_text_units[community_id] = []
-                community_text_units[community_id].extend(entity.text_unit_ids)  # type:ignore
+                if entity.text_unit_ids:
+                    community_text_units[community_id].extend(entity.text_unit_ids)
     for report in community_reports:
         if not report.attributes:
             report.attributes = {}
         report.attributes[weight_attribute] = len(
-            set(community_text_units.get(report.community_id, []))  # type:ignore
+            set(community_text_units.get(report.community_id, []))
         )
     if normalize:
         # normalize by max weight

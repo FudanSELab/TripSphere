@@ -21,9 +21,7 @@ class ModelWrapper:
         messages.append(HumanMessage(content=query))
         return messages
 
-    def chat_non_stream(
-        self, query: str, history: List[Dict[str, str]] | None = None
-    ) -> str:
+    def invoke(self, query: str, history: List[Dict[str, str]] | None = None) -> str:
         """
         Non-streaming call: returns the complete response as a string.
 
@@ -38,9 +36,9 @@ class ModelWrapper:
         """
         messages = self._build_messages(query, history)
         response = self.chat_model.invoke(messages)
-        return response.content
+        return response.text
 
-    async def chat_stream(
+    async def astream(
         self, query: str, history: List[Dict[str, str]] | None = None
     ) -> AsyncGenerator[str, None]:
         """
@@ -60,5 +58,5 @@ class ModelWrapper:
         messages = self._build_messages(query, history)
 
         async for chunk in self.chat_model.astream(messages):
-            if chunk.content:
-                yield chunk.content
+            if chunk.text:
+                yield chunk.text

@@ -119,7 +119,7 @@ def to_relationship_dataframe(
     attribute_cols = [col for col in attribute_cols if col not in header]
     header.extend(attribute_cols)
 
-    records = []
+    records: list[list[str]] = []
     for rel in relationships:
         new_record = [
             rel.readable_id if rel.readable_id else "",

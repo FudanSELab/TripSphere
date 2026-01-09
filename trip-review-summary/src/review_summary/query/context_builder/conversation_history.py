@@ -91,7 +91,7 @@ class ConversationHistory:
 
     turns: list[ConversationTurn]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.turns = []
 
     @classmethod
@@ -116,7 +116,7 @@ class ConversationHistory:
             )
         return history
 
-    def add_turn(self, role: ConversationRole, content: str):
+    def add_turn(self, role: ConversationRole, content: str) -> None:
         """Add a new turn to the conversation history."""
         self.turns.append(ConversationTurn(role=role, content=content))
 
@@ -138,7 +138,7 @@ class ConversationHistory:
 
     def get_user_turns(self, max_user_turns: int | None = 1) -> list[str]:
         """Get the last user turns in the conversation history."""
-        user_turns = []
+        user_turns: list[str] = []
         for turn in self.turns[::-1]:
             if turn.role == ConversationRole.USER:
                 user_turns.append(turn.content)
@@ -193,19 +193,16 @@ class ConversationHistory:
         # add table header
         header = f"-----{context_name}-----" + "\n"
 
-        turn_list = []
+        turn_list: list[dict[str, str | None]] = []
         current_context_df = pd.DataFrame()
         for turn in qa_turns:
             turn_list.append(
-                {
-                    "turn": ConversationRole.USER.__str__(),
-                    "content": turn.user_query.content,
-                }
+                {"turn": str(ConversationRole.USER), "content": turn.user_query.content}
             )
             if turn.assistant_answers:
                 turn_list.append(
                     {
-                        "turn": ConversationRole.ASSISTANT.__str__(),
+                        "turn": str(ConversationRole.ASSISTANT),
                         "content": turn.get_answer_text(),
                     }
                 )

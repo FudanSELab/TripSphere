@@ -81,7 +81,7 @@ class LocalSearch:
             ]
 
             full_response = ""
-            async for response in model_wrapper.chat_stream(
+            async for response in model_wrapper.astream(
                 query=query, history=history_messages
             ):
                 full_response += response
@@ -125,7 +125,7 @@ class LocalSearch:
         query: str,
         conversation_history: ConversationHistory | None = None,
         target_id: str = "",
-    ) -> AsyncGenerator:
+    ) -> AsyncGenerator[str, None]:
         """Build local search context that fits a single
         context window and generate answer for the user query."""
         start_time = time.time()
@@ -146,7 +146,7 @@ class LocalSearch:
         for callback in self.callbacks:
             callback.on_context(context_result.context_records)
 
-        async for response in model_wrapper.chat_stream(
+        async for response in model_wrapper.astream(
             query=query,
             history=history_messages,
         ):

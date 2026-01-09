@@ -209,19 +209,19 @@ class LocalSearchMixedContext:
         if len(selected_entities) == 0 or len(self.community_reports) == 0:
             return ("", {context_name.lower(): pd.DataFrame()})
 
-        community_matches = {}
+        community_matches: dict[str, int] = {}
         for entity in selected_entities:
             # increase count of the community that this entity belongs to
             if entity.community_ids:
                 for community_id in entity.community_ids:
                     community_matches[community_id] = (
-                        community_matches.get(community_id, 0) + 1  # type: ignore
+                        community_matches.get(community_id, 0) + 1  # pyright: ignore
                     )
 
         # sort communities by number of matched entities and rank
         selected_communities = [
             self.community_reports[community_id]
-            for community_id in community_matches  # type: ignore
+            for community_id in community_matches  # pyright: ignore
             if community_id in self.community_reports
         ]
         for community in selected_communities:
@@ -230,7 +230,7 @@ class LocalSearchMixedContext:
             community.attributes["matches"] = community_matches[community.community_id]
         selected_communities.sort(
             key=lambda x: (x.attributes["matches"], x.rank),  # type: ignore
-            reverse=True,  # type: ignore
+            reverse=True,
         )
         for community in selected_communities:
             del community.attributes["matches"]  # type: ignore

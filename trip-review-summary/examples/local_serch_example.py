@@ -5,6 +5,7 @@ import pandas as pd
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncGraphDatabase
 from qdrant_client import AsyncQdrantClient
+from tiktoken import encoding_name_for_model
 
 from review_summary.config.settings import get_settings
 from review_summary.models import Entity, TextUnit
@@ -40,19 +41,20 @@ async def load_textunits() -> List[TextUnit]:
 async def main():
     entities = await load_entities()
     textunits = await load_textunits()
+    openai_settings = get_settings().openai
     llm = ChatOpenAI(
-        api_key=settings.openai.api_key.get_secret_value(),
-        base_url=settings.openai.base_url,
         model="gpt-4o",
         temperature=0.0,
+        api_key=openai_settings.api_key.get_secret_value(),
+        base_url=openai_settings.base_url,
     )
     embedder = OpenAIEmbeddings(
-        api_key=settings.openai.api_key.get_secret_value(),
-        base_url=settings.openai.base_url,
         model="text-embedding-3-large",
+        api_key=openai_settings.api_key.get_secret_value(),
+        base_url=openai_settings.base_url,
     )
 
-    tokenizer = TiktokenTokenizer("cl100k_base")
+    tokenizer = TiktokenTokenizer(encoding_name_for_model(llm.model))
 
     neo4j_driver = AsyncGraphDatabase.driver(
         settings.neo4j.uri,

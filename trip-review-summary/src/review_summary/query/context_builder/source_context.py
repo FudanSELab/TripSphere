@@ -26,8 +26,7 @@ def build_text_unit_context(
     random_state: int = 86,
 ) -> tuple[str, dict[str, pd.DataFrame]]:
     """Prepare text-unit data table as context data for system prompt."""
-    tokenizer = tokenizer
-    if text_units is None or len(text_units) == 0:
+    if not text_units:
         return ("", {})
 
     if shuffle_data:
@@ -51,7 +50,7 @@ def build_text_unit_context(
 
     for unit in text_units:
         new_context = [
-            unit.readable_id,
+            str(unit.readable_id),
             unit.text,
             *[
                 str(unit.attributes.get(field, "")) if unit.attributes else ""

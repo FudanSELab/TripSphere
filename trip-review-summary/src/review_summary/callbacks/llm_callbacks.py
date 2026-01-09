@@ -9,6 +9,6 @@ from typing import Protocol
 class BaseLLMCallback(Protocol):
     """Base class for LLM callbacks."""
 
-    def on_llm_new_token(self, token: str):
+    def on_llm_new_token(self, token: str) -> None:
         """Handle when a new token is generated."""
         ...

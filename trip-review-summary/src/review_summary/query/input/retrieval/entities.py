@@ -68,7 +68,7 @@ def to_entity_dataframe(
     attribute_cols = [col for col in attribute_cols if col not in header]
     header.extend(attribute_cols)
 
-    records = []
+    records: list[list[str]] = []
     for entity in entities:
         new_record = [
             entity.readable_id if entity.readable_id else "",
