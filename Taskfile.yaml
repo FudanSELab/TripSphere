@@ -11,19 +11,25 @@ tasks:
     cmds:
       - task --list-all
     silent: true
-
-  copy-protos:
-    desc: Copy .proto files to service directories
-    summary: |
-      Copy .proto files from contracts/protobuf to service directories.
-      If `SERVICES` is not specified, all trip-* directories will be processed.
-    vars:
-      SERVICES: '{{.SERVICES | default "trip-*"}}'
+  
+  buf:
+    desc: Run buf format and buf lint
+    dir: contracts/protobuf
     cmds:
-      - cmd: bash scripts/copy-protos.sh {{.SERVICES}}
-        platforms: [linux, darwin]
-      - cmd: powershell -File scripts/copy-protos.ps1 {{.SERVICES}}
-        platforms: [windows]
+      - buf format --write
+      - buf lint
+
+  gen-proto:
+    desc: Generate protobuf codes using buf
+    dir: contracts/protobuf
+    cmds:
+      - echo Not Implemented Yet
+
+  docker-gen-proto:
+    desc: Generate protobuf codes using buf Docker image
+    dir: contracts/protobuf
+    cmds:
+      - echo Not Implemented Yet
 
   start:
     desc: Start all the services using Docker Compose
