@@ -70,6 +70,9 @@ class MinioSettings(BaseModel):
     access_key: str = Field(default="access_key")
     secret_key: SecretStr = Field(default=SecretStr("secret_key"))
 
+class Attraction_serviceSettings(BaseModel):
+    host: str = Field(default="0.0.0.0")
+    port: int = Field(default=9006)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -88,6 +91,7 @@ class Settings(BaseSettings):
     log: LogSettings = Field(default_factory=LogSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
     minio: MinioSettings = Field(default_factory=MinioSettings)
+    attraction_service: Attraction_serviceSettings = Field(default_factory=Attraction_serviceSettings)
 
     def model_post_init(self, _: Any) -> None:
         if self.app.debug is True:
