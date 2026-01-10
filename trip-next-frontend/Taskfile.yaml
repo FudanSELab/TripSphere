@@ -10,7 +10,7 @@ tasks:
     silent: true
 
   gen-proto:
-    desc: Compile .proto files in lib/proto/
+    desc: Generate protobuf and gRPC codes using protoc
     cmds:
       - cmd: bash scripts/gen-proto.sh
         platforms: [linux, darwin]

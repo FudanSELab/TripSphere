@@ -13,8 +13,8 @@ tasks:
     desc: Set up project development environment
     cmds:
       - uv sync  # Install dependencies and dev-dependencies
-      - task gen-proto
-      - task otel-instr
+      - task: gen-proto
+      - task: otel-instr
 
   otel-instr:
     desc: Install OpenTelemetry instrumentation packages
@@ -23,13 +23,28 @@ tasks:
         | uv pip install --requirements -
 
   gen-proto:
-    desc: Compile .proto files in libs/proto/
-    sources: ['libs/proto/**/*.proto']
+    desc: Generate protobuf and gRPC codes using buf
+    sources:
+      - ../contracts/protobuf/**/*.proto
+    generates:
+      - libs/tripsphere/src/**/*_pb2.py
+      - libs/tripsphere/src/**/*_pb2_grpc.py
+    cmds:
+      - buf generate
+
+  protoc-gen:
+    desc: Generate protobuf and gRPC codes using grpcio-tools
+    sources:
+      - ../contracts/protobuf/**/*.proto
+    generates:
+      - libs/tripsphere/src/**/*_pb2.py
+      - libs/tripsphere/src/**/*_pb2_grpc.py
     cmds:
       - for: sources
         cmd: |
-          uv run -m grpc_tools.protoc \
-            -Ilibs/proto \
+          uv run --locked --no-sync --with 'grpcio-tools' \
+            --with 'mypy-protobuf' -m grpc_tools.protoc \
+            -I../contracts/protobuf \
             --python_out=libs/tripsphere/src \
             --grpc_python_out=libs/tripsphere/src \
             --mypy_out=libs/tripsphere/src \

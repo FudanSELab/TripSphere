@@ -26,7 +26,7 @@ tasks:
     desc: Generate protobuf and gRPC codes using buf
     sources:
       - ../contracts/protobuf/**/*.proto
-    generates: 
+    generates:
       - libs/tripsphere/src/**/*_pb2.py
       - libs/tripsphere/src/**/*_pb2_grpc.py
     cmds:
@@ -36,7 +36,7 @@ tasks:
     desc: Generate protobuf and gRPC codes using grpcio-tools
     sources:
       - ../contracts/protobuf/**/*.proto
-    generates: 
+    generates:
       - libs/tripsphere/src/**/*_pb2.py
       - libs/tripsphere/src/**/*_pb2_grpc.py
     cmds:
