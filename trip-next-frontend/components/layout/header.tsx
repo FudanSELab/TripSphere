@@ -156,7 +156,7 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="animate-slide-down border-t border-gray-100 bg-white md:hidden">
+        <div className="border-t border-gray-100 bg-white md:hidden">
           <div className="space-y-1 px-4 py-3">
             {navLinks.map((link) => {
               const Icon = link.icon;

@@ -10,10 +10,10 @@ tasks:
     silent: true
 
   gen-proto:
-    desc: Generate protobuf and gRPC codes using protoc
+    desc: Generate protobuf and gRPC codes using buf
+    sources:
+      - ../contracts/protobuf/**/*.proto
+    generates:
+      - lib/grpc/gen/**/*.ts
     cmds:
-      - cmd: bash scripts/gen-proto.sh
-        platforms: [linux, darwin]
-      - cmd: powershell -File scripts/gen-proto.ps1
-        platforms: [windows]
-    silent: true
+      - buf generate

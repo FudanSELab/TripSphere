@@ -1,0 +1,11 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  - remote: buf.build/community/stephenh-ts-proto:v2.6.1
+    out: lib/grpc/gen
+    opt:
+      - outputServices=grpc-js
+      - esModuleInterop=true
+inputs:
+  - directory: ../contracts/protobuf

@@ -1,10 +1,5 @@
 "use client";
 
-import {
-  AnimateInView,
-  StaggerContainer,
-  StaggerItem,
-} from "@/components/ui/animate-container";
 import { Card } from "@/components/ui/card";
 import { ImageCarousel } from "@/components/ui/image-carousel";
 import {
@@ -142,23 +137,17 @@ export default function Home() {
         {/* Background gradient */}
         <div className="from-primary-50 to-secondary-50 absolute inset-0 bg-linear-to-br via-white" />
 
-        {/* Animated background shapes */}
+        {/* Background shapes */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="bg-primary-200 animate-float absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
-          <div
-            className="bg-secondary-200 animate-float absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter"
-            style={{ animationDelay: "-1.5s" }}
-          />
-          <div
-            className="bg-accent-200 animate-float absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 mix-blend-multiply blur-3xl filter"
-            style={{ animationDelay: "-3s" }}
-          />
+          <div className="bg-primary-200 absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
+          <div className="bg-secondary-200 absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
+          <div className="bg-accent-200 absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 mix-blend-multiply blur-3xl filter" />
         </div>
 
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-32">
           <div className="grid items-center gap-16 lg:grid-cols-[450px_1fr]">
             {/* Left content */}
-            <AnimateInView className="text-center lg:text-left">
+            <div className="text-center lg:text-left">
               <span className="bg-primary-100 text-primary-700 mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
                 AI-Powered Travel Platform
@@ -188,15 +177,15 @@ export default function Home() {
                   <ArrowRight className="h-5 w-5" />
                 </Link>
               </div>
-            </AnimateInView>
+            </div>
 
             {/* Right content - Placeholder for chat preview */}
-            <AnimateInView delay={0.2} className="relative hidden lg:block">
+            <div className="relative hidden lg:block">
               <div className="from-primary-500/20 to-secondary-500/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-2xl" />
               <div className="relative">
                 <ImageCarousel images={heroImages} autoPlayInterval={4000} />
               </div>
-            </AnimateInView>
+            </div>
           </div>
         </div>
       </section>
@@ -204,11 +193,11 @@ export default function Home() {
       {/* Stats Section */}
       <section className="border-y border-gray-100 bg-white py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <StaggerContainer className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {stats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <StaggerItem key={stat.label} className="text-center">
+                <div key={stat.label} className="text-center">
                   <div className="bg-primary-100 text-primary-600 mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl">
                     <Icon className="h-6 w-6" />
                   </div>
@@ -216,17 +205,17 @@ export default function Home() {
                     {stat.value}
                   </div>
                   <div className="text-gray-500">{stat.label}</div>
-                </StaggerItem>
+                </div>
               );
             })}
-          </StaggerContainer>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
       <section id="features" className="bg-gray-50 py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <AnimateInView className="mb-16 text-center">
+          <div className="mb-16 text-center">
             <span className="bg-secondary-100 text-secondary-700 mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
               <Zap className="h-4 w-4" />
               Features
@@ -238,13 +227,13 @@ export default function Home() {
               Our AI-powered platform provides all the tools you need to plan,
               book, and enjoy your perfect trip.
             </p>
-          </AnimateInView>
+          </div>
 
-          <StaggerContainer className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <StaggerItem key={feature.title}>
+                <div key={feature.title}>
                   <Card hover className="h-full">
                     <div
                       className={`h-14 w-14 rounded-2xl bg-linear-to-br ${feature.color} mb-4 flex items-center justify-center`}
@@ -256,10 +245,10 @@ export default function Home() {
                     </h3>
                     <p className="text-gray-600">{feature.description}</p>
                   </Card>
-                </StaggerItem>
+                </div>
               );
             })}
-          </StaggerContainer>
+          </div>
         </div>
       </section>
 
@@ -267,7 +256,7 @@ export default function Home() {
       <section className="bg-white py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 flex items-center justify-between">
-            <AnimateInView>
+            <div>
               <span className="bg-accent-100 text-accent-700 mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
                 <Globe className="h-4 w-4" />
                 Popular Destinations
@@ -275,7 +264,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
                 Explore Amazing Places
               </h2>
-            </AnimateInView>
+            </div>
             <Link
               href="/attractions"
               className="text-primary-600 hover:text-primary-700 hidden items-center gap-2 font-medium transition-colors sm:inline-flex"
@@ -285,9 +274,9 @@ export default function Home() {
             </Link>
           </div>
 
-          <StaggerContainer className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {destinations.map((destination) => (
-              <StaggerItem key={destination.name}>
+              <div key={destination.name}>
                 <Link
                   href="/attractions"
                   className="group relative block aspect-4/5 overflow-hidden rounded-2xl"
@@ -312,9 +301,9 @@ export default function Home() {
                     </p>
                   </div>
                 </Link>
-              </StaggerItem>
+              </div>
             ))}
-          </StaggerContainer>
+          </div>
 
           <div className="mt-8 text-center sm:hidden">
             <Link
@@ -331,22 +320,19 @@ export default function Home() {
       {/* CTA Section */}
       <section className="from-primary-600 to-secondary-600 bg-linear-to-br py-20 text-white lg:py-32">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <AnimateInView>
+          <div>
             <h2 className="mb-6 text-3xl font-bold sm:text-4xl lg:text-5xl">
               Ready to Start Your Adventure?
             </h2>
-          </AnimateInView>
-          <AnimateInView delay={0.1}>
+          </div>
+          <div>
             <p className="mb-10 text-xl text-white/80">
               Join thousands of travelers who use TripSphere to plan their
               perfect trips. Our AI assistant is ready to help you discover
               amazing destinations.
             </p>
-          </AnimateInView>
-          <AnimateInView
-            delay={0.2}
-            className="flex flex-col items-center justify-center gap-4 sm:flex-row"
-          >
+          </div>
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/chat"
               className="text-primary-600 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
@@ -360,7 +346,7 @@ export default function Home() {
             >
               Create Free Account
             </Link>
-          </AnimateInView>
+          </div>
         </div>
       </section>
     </div>
