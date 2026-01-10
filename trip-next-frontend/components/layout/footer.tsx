@@ -1,4 +1,5 @@
-import { Github, Heart, Mail, Twitter } from "lucide-react";
+import { GithubIcon } from "@/components/icons/github";
+import { Heart, Mail, X } from "lucide-react";
 import Link from "next/link";
 
 const currentYear = new Date().getFullYear();
@@ -30,8 +31,8 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { name: "Twitter", icon: Twitter, href: "#" },
-  { name: "GitHub", icon: Github, href: "#" },
+  { name: "X (Twitter)", icon: X, href: "#" },
+  { name: "GitHub", icon: GithubIcon, href: "https://github.com/FudanSELab/TripSphere" },
   { name: "Email", icon: Mail, href: "mailto:contact@tripsphere.com" },
 ];
 

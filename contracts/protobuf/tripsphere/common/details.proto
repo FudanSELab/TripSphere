@@ -3,10 +3,13 @@ syntax = "proto3";
 package tripsphere.common;
 
 option go_package = "tripsphere/common";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.common";
 
 // Reason enum
 enum Reason {
-    ERROR = 0;
+  REASON_UNSPECIFIED = 0;
+  REASON_ERROR = 1;
 }
 
 // gRPC details structure

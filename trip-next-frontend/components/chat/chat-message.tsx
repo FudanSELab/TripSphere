@@ -16,12 +16,7 @@ export function ChatMessage({
   const isUser = message.role === "user";
 
   return (
-    <div
-      className={cn(
-        "animate-message-fade-in flex gap-3",
-        isUser ? "flex-row-reverse" : "",
-      )}
-    >
+    <div className={cn("flex gap-3", isUser ? "flex-row-reverse" : "")}>
       {/* Avatar */}
       <div
         className={cn(
@@ -53,13 +48,13 @@ export function ChatMessage({
           {/* Typing indicator for streaming */}
           {isStreaming && !message.content && (
             <span className="typing-indicator inline-flex gap-1">
-              <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.32s]" />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.16s]" />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" />
+              <span className="h-2 w-2 rounded-full bg-gray-400" />
+              <span className="h-2 w-2 rounded-full bg-gray-400" />
+              <span className="h-2 w-2 rounded-full bg-gray-400" />
             </span>
           )}
           {isStreaming && message.content && (
-            <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-current" />
+            <span className="ml-0.5 inline-block h-4 w-2 bg-current" />
           )}
         </div>
 

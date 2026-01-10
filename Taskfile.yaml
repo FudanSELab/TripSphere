@@ -2,8 +2,26 @@
 
 version: '3'
 
-vars:
-  PROTO_SRC_DIR: contracts/protobuf
+includes:
+  chat:
+    taskfile: trip-chat-service/Taskfile.yaml
+    dir: trip-chat-service
+    internal: true
+
+  itinerary:
+    taskfile: trip-itinerary-service/Taskfile.yaml
+    dir: trip-itinerary-service
+    internal: true
+
+  next-frontend:
+    taskfile: trip-next-frontend/Taskfile.yaml
+    dir: trip-next-frontend
+    internal: true
+
+  review-summary:
+    taskfile: trip-review-summary/Taskfile.yaml
+    dir: trip-review-summary
+    internal: true
 
 tasks:
   default:
@@ -11,19 +29,21 @@ tasks:
     cmds:
       - task --list-all
     silent: true
-
-  copy-protos:
-    desc: Copy .proto files to service directories
-    summary: |
-      Copy .proto files from contracts/protobuf to service directories.
-      If `SERVICES` is not specified, all trip-* directories will be processed.
-    vars:
-      SERVICES: '{{.SERVICES | default "trip-*"}}'
+  
+  buf:
+    desc: Run buf format and buf lint
+    dir: contracts
     cmds:
-      - cmd: bash scripts/copy-protos.sh {{.SERVICES}}
-        platforms: [linux, darwin]
-      - cmd: powershell -File scripts/copy-protos.ps1 {{.SERVICES}}
-        platforms: [windows]
+      - buf format --write
+      - buf lint
+
+  gen-proto:
+    desc: Generate protobuf and gRPC codes using buf
+    cmds:
+      - task: chat:gen-proto
+      - task: itinerary:gen-proto
+      - task: next-frontend:gen-proto
+      - task: review-summary:gen-proto
 
   start:
     desc: Start all the services using Docker Compose

@@ -231,7 +231,7 @@ export function ChatWindow({
         {/* Empty state with suggestions */}
         {messages.length === 0 && !isStreaming && (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="from-primary-100 to-secondary-100 animate-float mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br">
+            <div className="from-primary-100 to-secondary-100 mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br">
               <Sparkles className="text-primary-600 h-10 w-10" />
             </div>
             <h3 className="mb-2 text-xl font-semibold text-gray-900">

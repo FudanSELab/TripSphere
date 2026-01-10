@@ -15,20 +15,6 @@ ENV UV_PYTHON_DOWNLOADS=0
 # Install the project into `/app`
 WORKDIR /app
 
-COPY libs ./libs
-
-# Compile the gRPC Python files
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    # grpcio-tools version must match pyproject.toml
-    uv run --locked --no-sync --with 'grpcio-tools>=1.75.1' \
-    -m grpc_tools.protoc \
-        -Ilibs/proto \
-        --python_out=libs/tripsphere/src \
-        --grpc_python_out=libs/tripsphere/src \
-        libs/proto/tripsphere/**/*.proto
-
 # Install the project's dependencies using the lockfile and settings
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -38,6 +24,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Then, add the rest of the project source code and install it
 # Installing separately from dependencies allows optimal layer caching
 COPY pyproject.toml uv.lock README.md ./
+COPY libs ./libs
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
@@ -77,14 +64,26 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
+# Default environment variables for uvicorn
+# These can be overridden in docker-compose or at runtime
 ENV UVICORN_HOST=0.0.0.0
 ENV UVICORN_PORT=24212
 
-EXPOSE $UVICORN_PORT
-
-# Start the instrumented app with default (FastAPI) arguments
-ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "review_summary.asgi:app"]
-# Do NOT directly provide uvicorn `--port` option here.
-# It must be overridden via environment variable.
-# Otherwise, app may register incorrect port in service registry.
+# Start the instrumented app with default arguments
+ENTRYPOINT ["opentelemetry-instrument"]
+# No default CMD - must be specified in docker-compose or at runtime
 CMD []
+# Usage Examples:
+
+# 1. API: ["uvicorn", "review_summary.asgi:app"]
+#    Do NOT directly provide uvicorn `--port` option here.
+#    It must be overridden via environment variable `UVICORN_PORT`.
+#    Otherwise, it may register incorrect port in service registry.
+
+# 2. Consumer: ["python", "-m", "review_summary.rocketmq"]
+
+# 3. Worker: ["celery", "-A", "review_summary.celery.app", "worker"]
+
+
+
+

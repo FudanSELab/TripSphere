@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package tripsphere.note;
 
+option go_package = "tripsphere/note";
 option java_multiple_files = true;
 option java_package = "org.tripsphere.note";
-option java_outer_classname = "MetadataProto";
 
 service MetadataService {
   // Get the version of note service.
@@ -14,5 +14,5 @@ service MetadataService {
 message GetVersionRequest {}
 
 message GetVersionResponse {
-  string version = 1;  // e.g., "0.1.0"
+  string version = 1; // e.g., "0.1.0"
 }

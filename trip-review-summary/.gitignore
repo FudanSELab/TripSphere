@@ -1,9 +1,6 @@
 # Byte-compiled
 __pycache__/
 
-# Protobuf
-libs/proto/
-
 # Logs
 logs/
 
@@ -14,3 +11,6 @@ logs/
 
 # Taskfile
 .task/
+
+# Test Output
+tests/fixtures/output/

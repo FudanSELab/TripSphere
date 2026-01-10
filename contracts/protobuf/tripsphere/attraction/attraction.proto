@@ -1,9 +1,10 @@
 syntax = "proto3";
 
-package org.tripsphere.attraction;
+package tripsphere.attraction;
+
+option go_package = "tripsphere/attraction";
 option java_multiple_files = true;
 option java_package = "org.tripsphere.attraction";
-option java_outer_classname = "AttractionServiceProto";
 
 // address info
 message Address {
@@ -21,11 +22,11 @@ message Location {
   double lat = 2;
 }
 
-message File{
+message File {
   //user's file name, not the stored file name
   string name = 1;
   //file type, such as image/png, application/pdf
-  string contextType = 2;
+  string context_type = 2;
   //url used to access the file,uploaded to cloud storage or download
   string url = 3;
   //temp bucket or permanent bucket
@@ -51,12 +52,11 @@ message AddAttractionRequest {
 }
 
 message AddAttractionResponse {
-  string id = 1;//attraction id
+  string id = 1; //attraction id
 }
 
 message DeleteAttractionRequest {
   string id = 1;
-
 }
 
 message DeleteAttractionResponse {
@@ -79,7 +79,7 @@ message FindIdByNameResponse {
   string attraction_id = 1;
 }
 
-service AttractionService{
+service AttractionService {
   rpc AddAttraction(AddAttractionRequest) returns (AddAttractionResponse);
   rpc DeleteAttraction(DeleteAttractionRequest) returns (DeleteAttractionResponse);
   rpc ChangeAttraction(ChangeAttractionRequest) returns (ChangeAttractionResponse);
