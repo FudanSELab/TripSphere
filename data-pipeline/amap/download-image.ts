@@ -5,7 +5,7 @@ import lodash from 'lodash';
 // 配置
 const QPS = 2; // 每秒2个请求
 const REQUEST_INTERVAL = 1000 / QPS; // 500ms
-const BATCH_SIZE = 5; // 每次并行处理的POI数量
+const BATCH_SIZE = 20; // 每次并行处理的POI数量
 
 // 日志文件路径
 const LOG_FILE = 'amap.log';
@@ -116,6 +116,9 @@ async function processPOIsInBatches(pois: Array<{ id?: string; photos?: Array<{ 
     const totalBatches = chunks.length;
     
     for (let i = 0; i < chunks.length; i++) {
+        // 从第55个批次开始，上一次5个一批，下载到了237个
+        if(i < 55) continue;
+        
         const batch = chunks[i];
         const batchNumber = i + 1;
         const startIndex = i * BATCH_SIZE + 1;
