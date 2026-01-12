@@ -8,6 +8,11 @@ includes:
     dir: trip-chat-service
     internal: true
 
+  itinerary-planner:
+    taskfile: trip-itinerary-planner/Taskfile.yaml
+    dir: trip-itinerary-planner
+    internal: true
+
   itinerary:
     taskfile: trip-itinerary-service/Taskfile.yaml
     dir: trip-itinerary-service
@@ -41,6 +46,7 @@ tasks:
     desc: Generate protobuf and gRPC codes using buf
     cmds:
       - task: chat:gen-proto
+      - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: next-frontend:gen-proto
       - task: review-summary:gen-proto
