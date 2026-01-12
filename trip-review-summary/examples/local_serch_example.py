@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 import pandas as pd
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -20,7 +19,7 @@ from review_summary.vector_stores.text_unit import TextUnitVectorStore
 settings = get_settings()
 
 
-async def load_entities() -> List[Entity]:
+async def load_entities() -> list[Entity]:
     df = pd.read_parquet("./tests/fixtures/entities.parquet", dtype_backend="pyarrow")
     entities = []
     for _, row in df.iterrows():
@@ -29,7 +28,7 @@ async def load_entities() -> List[Entity]:
     return entities
 
 
-async def load_textunits() -> List[TextUnit]:
+async def load_textunits() -> list[TextUnit]:
     df = pd.read_parquet("./tests/fixtures/text_units.parquet", dtype_backend="pyarrow")
     textunits = []
     for _, row in df.iterrows():
