@@ -2,11 +2,12 @@ syntax = "proto3";
 
 package tripsphere.hotel;
 
+import "tripsphere/common/geo.proto";
+
 option go_package = "tripsphere/hotel";
 option java_multiple_files = true;
 option java_package = "org.tripsphere.hotel";
 
-// room info
 message Room {
   string name = 1;
   int32 total_number = 2;
@@ -19,31 +20,15 @@ message Room {
   repeated string tags = 9;
 }
 
-// address info
-message Address {
-  string country = 1;
-  string province = 2;
-  string city = 3;
-  string county = 4;
-  string district = 5;
-  string street = 6;
-}
-
-// the location of hotel
-message Location {
-  double lng = 1;
-  double lat = 2;
-}
-
 // hotel info
 message Hotel {
   string id = 1;
   string name = 2;
-  Address address = 3;
+  tripsphere.common.Address address = 3;
   string introduction = 4;
   repeated string tags = 5;
   repeated Room rooms = 6;
-  Location location = 7;
+  tripsphere.common.Location location = 7;
 }
 
 message AddHotelRequest {
@@ -82,7 +67,7 @@ message HotelPage {
 }
 
 message FindHotelWithinRadiusPageRequest {
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radius_km = 2;
   int32 number = 3; // page number
   int32 size = 4; // page size
@@ -95,7 +80,7 @@ message FindHotelWithinRadiusPageResponse {
 }
 
 message FindHotelsWithinCirclePageRequest {
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radius_km = 2;
   int32 number = 3; // page number
   int32 size = 4; // page size
@@ -108,7 +93,7 @@ message FindHotelsWithinCirclePageResponse {
 }
 
 message FindHotelWithinRadiusRequest {
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
@@ -119,7 +104,7 @@ message FindHotelWithinRadiusResponse {
 }
 
 message FindHotelsWithinCircleRequest {
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
