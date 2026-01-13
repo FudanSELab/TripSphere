@@ -32,7 +32,6 @@ export default function AttractionDetailPage() {
 
   // State
   const [attraction, setAttraction] = useState<Attraction | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -47,8 +46,6 @@ export default function AttractionDetailPage() {
         setAttraction(data);
       } catch (error) {
         console.error("Error loading attraction:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -194,33 +191,8 @@ export default function AttractionDetailPage() {
       .map((_, i) => i < rating);
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="bg-primary-100 mx-auto mb-6 flex h-20 w-20 animate-pulse items-center justify-center rounded-full">
-            <div className="border-primary-600 h-10 w-10 animate-spin rounded-full border-4 border-t-transparent" />
-          </div>
-          <p className="font-medium text-gray-600">
-            Loading attraction details...
-          </p>
-          <p className="mt-2 text-sm text-gray-400">Please wait a moment</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!attraction) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="mb-4 text-gray-500">Attraction not found</p>
-          <Link href="/attractions">
-            <Button variant="default">Back to Attractions</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

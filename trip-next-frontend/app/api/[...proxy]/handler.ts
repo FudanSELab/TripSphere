@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { grpcProxyMap, RpcProxyRule } from "@/app/api/[...proxy]/proxy-map";
 import { grpcClient } from "@/lib/grpc/client";
-import { Details } from "@/lib/grpc/gen/common/details_pb";
+import { Details } from "@/lib/grpc/gen/tripsphere/common/details";
 import {
   GetCurrentUserRequest,
   GetCurrentUserResponse,
-} from "@/lib/grpc/gen/user/user_pb";
+} from "@/lib/grpc/gen/tripsphere/user/user";
 import { Reason, ResponseCode } from "@/lib/requests/base/code";
 import { ResponseWrap } from "@/lib/requests/base/request";
 import { mapGrpcCodeToHttp } from "./code";
@@ -136,7 +136,7 @@ async function buildMetadata(req: NextRequest): Promise<grpc.Metadata> {
     authMetadata.add("authorization", `Bearer ${token}`);
 
     // 2. Call user service to get current user data
-    const currentUserRequest = new GetCurrentUserRequest();
+    const currentUserRequest = GetCurrentUserRequest.create({});
     console.log("currentUserRequest:", currentUserRequest);
     const userResponse = await new Promise<GetCurrentUserResponse>(
       (resolve, reject) => {
@@ -154,10 +154,10 @@ async function buildMetadata(req: NextRequest): Promise<grpc.Metadata> {
     );
 
     // 3. Extract user information from response
-    const user = userResponse.getUser();
+    const user = userResponse.user;
     if (user) {
-      const userId = user.getId();
-      const rolesList = user.getRolesList();
+      const userId = user.id;
+      const rolesList = user.roles;
 
       // 4. Set new metadata
       metadata.add("uid", userId.toString());
@@ -258,15 +258,15 @@ function extractErrorDetails(
       if (detailsBin && detailsBin.length > 0) {
         // If binary data found, try to deserialize
         const buffer = Buffer.from(detailsBin[0] as string | Buffer);
-        const details = Details.deserializeBinary(new Uint8Array(buffer));
-        const reasonValue = details.getReason();
+        const details = Details.decode(new Uint8Array(buffer));
+        const reasonValue = details.reason;
         // Map reason value to Reason type
         // In Reason enum, ERROR = 0
         const reasonKey = reasonValue === 0 ? "ERROR" : undefined;
         if (reasonKey) {
           return {
             reason: reasonKey as Reason,
-            msg: details.getMsg() || serviceError.message || "Unknown error",
+            msg: details.msg || serviceError.message || "Unknown error",
           };
         }
       }

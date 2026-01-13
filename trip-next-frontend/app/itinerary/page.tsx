@@ -388,7 +388,7 @@ export default function ItineraryPage() {
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-5 w-5" />
                       Generating...
                     </>
                   ) : (
@@ -408,7 +408,7 @@ export default function ItineraryPage() {
             {isGenerating && (
               <div className="py-16 text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-                  <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+                  <Loader2 className="h-10 w-10 text-green-600" />
                 </div>
                 <h3 className="mb-2 text-xl font-semibold text-gray-900">
                   {generationStatus}

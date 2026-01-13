@@ -1,9 +1,7 @@
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import LoadingBar from "@/components/layout/loading-bar";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,9 +18,6 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="antialiased">
-        <Suspense fallback={null}>
-          <LoadingBar />
-        </Suspense>
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1 pt-16">{children}</main>

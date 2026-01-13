@@ -1,9 +1,7 @@
 from typing import Self
 
 from pydantic import BaseModel, Field
-from rocketmq.v5.model import (  # type: ignore
-    Message as RocketmqMessage,
-)  # pyright: ignore[reportMissingTypeStubs]
+from rocketmq.v5.model import Message as RocketmqMessage  # type: ignore
 
 
 class Message(BaseModel):

@@ -4,8 +4,7 @@ import {
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
-} from "@/lib/grpc/gen/user/user_pb";
-import { createRequestFromObject } from "@/lib/grpc/utils";
+} from "@/lib/grpc/gen/tripsphere/user/user";
 import { ResponseData } from "@/lib/requests";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -31,29 +30,27 @@ export interface RpcProxyMap {
   "POST /api/user/register": RpcProxyRule<
     RegisterRequest,
     RegisterResponse,
-    RegisterRequest.AsObject,
-    RegisterResponse.AsObject
+    RegisterRequest,
+    RegisterResponse
   >;
   "POST /api/user/login": RpcProxyRule<
     LoginRequest,
     LoginResponse,
-    LoginRequest.AsObject,
-    LoginResponse.AsObject
+    LoginRequest,
+    LoginResponse
   >;
 }
 
 export const grpcProxyMap: RpcProxyMap = {
   "POST /api/user/register": {
     method: grpcClient.user.register.bind(grpcClient.user),
-    buildRPCRequest: (request) =>
-      createRequestFromObject(RegisterRequest, request),
-    buildHttpResponse: (response) => RegisterResponse.toObject(false, response),
+    buildRPCRequest: (request) => request,
+    buildHttpResponse: (response) => response,
   },
   "POST /api/user/login": {
     method: grpcClient.user.login.bind(grpcClient.user),
-    buildRPCRequest: (request) =>
-      createRequestFromObject(LoginRequest, request),
-    buildHttpResponse: (response) => LoginResponse.toObject(false, response),
+    buildRPCRequest: (request) => request,
+    buildHttpResponse: (response) => response,
     httpResponseHook: ({ httpResponse }) => {
       const nextResponse = NextResponse.json({
         ...httpResponse,

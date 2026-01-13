@@ -7,3 +7,6 @@ Thumbs.db
 
 # JetBrains
 .idea/
+
+# Taskfile
+.task/

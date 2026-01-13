@@ -8,10 +8,8 @@ from rocketmq import (  # type: ignore
     Credentials,
     FilterExpression,
     SimpleConsumer,
-)  # pyright: ignore[reportMissingTypeStubs]
-from rocketmq import (  # pyright: ignore
-    Message as RocketmqMessage,
 )
+from rocketmq import Message as RocketmqMessage  # pyright: ignore
 
 from review_summary.config.settings import get_settings
 from review_summary.rocketmq.handlers import handle_create_review
