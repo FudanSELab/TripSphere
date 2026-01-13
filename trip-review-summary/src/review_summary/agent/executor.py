@@ -8,15 +8,12 @@ from a2a.utils import (
     new_agent_text_message,
     new_task,
 )
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncDriver
 from qdrant_client import AsyncQdrantClient
 from tiktoken import encoding_name_for_model
 
 from review_summary.config.settings import get_settings
-from review_summary.grpc.attraction import find_attraction_id_by_name
-from review_summary.prompts.agent.get_attraction_name import TARGET_NAME_PROMPT
 from review_summary.query.structured_search.local_search.mixed_content import (
     LocalSearchMixedContext,
 )
@@ -39,6 +36,8 @@ class ReviewSummaryAgentExecutor(AgentExecutor):
         openai_settings = get_settings().openai
 
         query = context.get_user_input()
+
+        target_id = context.metadata["target_id"]
 
         task = context.current_task
         if not task:
@@ -71,15 +70,6 @@ class ReviewSummaryAgentExecutor(AgentExecutor):
                 api_key=openai_settings.api_key,
                 base_url=openai_settings.base_url,
             )
-
-            target_name_response = await llm.ainvoke(
-                [
-                    SystemMessage(content=TARGET_NAME_PROMPT),
-                    HumanMessage(content="query:" + query),
-                ]
-            )
-
-            target_id = find_attraction_id_by_name(target_name_response.text)
 
             embedder = OpenAIEmbeddings(
                 model="text-embedding-3-large",
@@ -119,7 +109,7 @@ class ReviewSummaryAgentExecutor(AgentExecutor):
                 "output_tokens": result.output_tokens,
             }
             await updater.add_artifact(
-                [Part(root=TextPart(text=str(result.context_text)))],
+                [Part(root=TextPart(text=str(result.response)))],
                 name="review_summary",
                 metadata=metadata,
             )

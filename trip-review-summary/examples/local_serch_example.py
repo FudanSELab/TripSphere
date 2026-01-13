@@ -75,7 +75,7 @@ async def main():
     )
 
     local_search = LocalSearch(
-        model=llm,
+        chat_model=llm,
         context_builder=context_builder,
         tokenizer=tokenizer,
         response_type="multiple paragraphs",
