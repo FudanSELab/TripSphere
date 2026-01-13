@@ -59,3 +59,9 @@ tasks:
       TAG: '{{.TAG | default "latest"}}'
     cmds:
       - docker build . -t {{.PREFIX}}/trip-itinerary-planner:{{.TAG}}
+
+  ruff:
+    desc: Run ruff format and ruff check --fix
+    cmds:
+      - uvx ruff format
+      - uvx ruff check --fix
