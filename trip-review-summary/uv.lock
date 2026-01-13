@@ -3640,11 +3640,15 @@ name = "tripsphere"
 version = "0.1.0"
 source = { editable = "libs/tripsphere" }
 dependencies = [
+    { name = "grpcio" },
     { name = "protobuf" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "protobuf", specifier = ">=6.32.1" }]
+requires-dist = [
+    { name = "grpcio", specifier = ">=1.76.0" },
+    { name = "protobuf", specifier = ">=6.32.1" },
+]
 
 [[package]]
 name = "twisted"

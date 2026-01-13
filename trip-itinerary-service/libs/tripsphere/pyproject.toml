@@ -3,6 +3,7 @@ name = "tripsphere"
 version = "0.1.0"
 readme = "README.md"
 dependencies = [
+    "grpcio>=1.75.0",
     "protobuf>=6.32.1",
 ]
 
