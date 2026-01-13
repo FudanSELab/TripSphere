@@ -54,7 +54,7 @@ async def main():
         base_url=openai_settings.base_url,
     )
 
-    tokenizer = TiktokenTokenizer(encoding_name_for_model(llm.model))
+    tokenizer = TiktokenTokenizer(encoding_name_for_model(llm.model_name))
 
     neo4j_driver = AsyncGraphDatabase.driver(
         settings.neo4j.uri,

@@ -38,6 +38,23 @@ class ModelWrapper:
         response = self.chat_model.invoke(messages)
         return response.text
 
+    async def ainvoke(self, query: str, history: List[Dict[str, str]] | None = None) -> str:
+        """
+        Non-streaming call: returns the complete response as a string.
+
+        Args:
+            query: User input.
+            history: Conversation history
+            (a list where each element is a dict of the form
+            {"role": "user" or "assistant", "content": "message"}).
+
+        Returns:
+            The complete model response as a string.
+        """
+        messages = self._build_messages(query, history)
+        response = await self.chat_model.ainvoke(messages)
+        return response.text
+
     async def astream(
         self, query: str, history: List[Dict[str, str]] | None = None
     ) -> AsyncGenerator[str, None]:

@@ -21,7 +21,7 @@ from review_summary.query.context_builder.source_context import (
     build_text_unit_context,
     count_relationships,
 )
-from review_summary.query.data_get.get_relationship import (
+from review_summary.query.fetch_data.get_relationship import (
     fetch_relationships_for_entities,
 )
 from review_summary.tokenizer.tokenizer import Tokenizer
