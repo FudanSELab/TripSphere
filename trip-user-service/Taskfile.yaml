@@ -3,9 +3,18 @@
 version: '3'
 
 tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
   gen-proto:
     desc: Generate protobuf and gRPC codes for user service
     cmds:
-      - mkdir -p src/main/proto
-      - cp ../contracts/protobuf/tripsphere/user/*.proto src/main/proto/
-      - ./mvnw protobuf:compile protobuf:compile-custom
+      - rm -rf src/main/proto
+      - cp -r ../contracts/protobuf/ src/main/proto/
+      - cmd: mvnw protobuf:compile protobuf:compile-custom
+        platforms: [windows]
+      - cmd: ./mvnw protobuf:compile protobuf:compile-custom
+        platforms: [linux, darwin]
