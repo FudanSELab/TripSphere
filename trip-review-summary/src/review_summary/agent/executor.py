@@ -4,10 +4,7 @@ from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TaskState, TextPart
-from a2a.utils import (
-    new_agent_text_message,
-    new_task,
-)
+from a2a.utils import new_agent_text_message, new_task
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncDriver
 from qdrant_client import AsyncQdrantClient
@@ -64,7 +61,7 @@ class ReviewSummaryAgentExecutor(AgentExecutor):
                 client=self.qdrant_client
             )
 
-            llm = ChatOpenAI(
+            chat_model = ChatOpenAI(
                 model="gpt-4o",
                 temperature=0.0,
                 api_key=openai_settings.api_key,
@@ -77,9 +74,11 @@ class ReviewSummaryAgentExecutor(AgentExecutor):
                 base_url=openai_settings.base_url,
             )
 
-            tokenizer = TiktokenTokenizer(encoding_name_for_model(llm.model_name))
+            tokenizer = TiktokenTokenizer(
+                encoding_name_for_model(chat_model.model_name)
+            )
 
-            contex_builder = LocalSearchMixedContext(
+            context_builder = LocalSearchMixedContext(
                 entity_text_embeddings=entity_store,
                 text_unit_store=textunit_store,
                 neo4j_driver=self.neo4j_driver,
@@ -88,7 +87,9 @@ class ReviewSummaryAgentExecutor(AgentExecutor):
             )
 
             search = LocalSearch(
-                chat_model=llm, context_builder=contex_builder, tokenizer=tokenizer
+                chat_model=chat_model,
+                context_builder=context_builder,
+                tokenizer=tokenizer,
             )
 
             await updater.update_status(

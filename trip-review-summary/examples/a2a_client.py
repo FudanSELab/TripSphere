@@ -1,6 +1,5 @@
 import logging
 from typing import Any
-from uuid import uuid4
 
 import httpx
 from a2a.client import A2ACardResolver, A2AClient
@@ -9,6 +8,8 @@ from a2a.types import (
     MessageSendParams,
     SendMessageRequest,
 )
+
+from review_summary.utils.uuid import uuid7
 
 
 async def main() -> None:
@@ -56,13 +57,13 @@ async def main() -> None:
                 "parts": [
                     {"kind": "text", "text": test_query},
                 ],
-                "message_id": str(uuid4()),
+                "message_id": str(uuid7()),
             },
             "metadata": {"target_id": "attraction-001"},
         }
 
         request = SendMessageRequest(
-            id=str(uuid4()), params=MessageSendParams(**send_message_payload)
+            id=str(uuid7()), params=MessageSendParams(**send_message_payload)
         )
         response = await client.send_message(request)
         logger.info("Response:")
