@@ -16,7 +16,6 @@
     <name>trip-hotel-service</name>
     <description>trip-hotel-service</description>
 
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -28,7 +27,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
 
     <properties>
         <java.version>17</java.version>
@@ -145,6 +143,32 @@
 					</execution>
 				</executions>
 			</plugin>
+            <plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.43.0</version>
+				<configuration>
+					<java>
+						<includes>
+							<include>src/main/java/**/*.java</include>
+							<include>src/test/java/**/*.java</include>
+						</includes>
+						<googleJavaFormat>
+							<version>1.17.0</version>
+							<style>AOSP</style>
+							<reflowLongStrings>true</reflowLongStrings>
+						</googleJavaFormat>
+						<removeUnusedImports />
+						<importOrder>
+							<order>#static,java,javax,org,com,io</order>
+						</importOrder>
+						<lineEndings>UNIX</lineEndings>
+						<trimTrailingWhitespace/>
+						<endWithNewline/>
+					</java>
+				</configuration>
+			</plugin>
         </plugins>
     </build>
+
 </project>

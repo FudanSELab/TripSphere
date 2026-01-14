@@ -202,7 +202,7 @@
 						</googleJavaFormat>
 						<removeUnusedImports />
 						<importOrder>
-							<order>java,javax,org,com</order>
+							<order>#static,java,javax,org,com,io</order>
 						</importOrder>
 						<lineEndings>UNIX</lineEndings>
 						<trimTrailingWhitespace/>

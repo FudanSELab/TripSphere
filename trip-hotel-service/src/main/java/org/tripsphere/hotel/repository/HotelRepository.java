@@ -1,17 +1,17 @@
 package org.tripsphere.hotel.repository;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.geo.Circle;
+import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.Point;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.tripsphere.hotel.model.Hotel;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.Point;
-import org.springframework.data.geo.Circle;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface HotelRepository extends MongoRepository<Hotel, String> {
@@ -25,7 +25,8 @@ public interface HotelRepository extends MongoRepository<Hotel, String> {
 
     public Page<Hotel> findByLocationWithin(Circle circle, Pageable pageable);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $nearSphere: {
@@ -37,9 +38,11 @@ public interface HotelRepository extends MongoRepository<Hotel, String> {
               'tags': { $all: ?4 }
             }
             """)
-    List<Hotel> findByLocationNearWithFilters(double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags);
+    List<Hotel> findByLocationNearWithFilters(
+            double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $geoWithin: {
@@ -50,9 +53,11 @@ public interface HotelRepository extends MongoRepository<Hotel, String> {
               'tags': { $all: ?4 }
             }
             """)
-    List<Hotel> findByLocationWithinWithFilters(double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags);
+    List<Hotel> findByLocationWithinWithFilters(
+            double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $nearSphere: {
@@ -64,9 +69,16 @@ public interface HotelRepository extends MongoRepository<Hotel, String> {
               'tags': { $all: ?4 }
             }
             """)
-    Page<Hotel> findByLocationNearWithFilters(double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags, Pageable pageable);
+    Page<Hotel> findByLocationNearWithFilters(
+            double lng,
+            double lat,
+            double maxDistanceMeters,
+            String nameRegex,
+            List<String> tags,
+            Pageable pageable);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $geoWithin: {
@@ -77,6 +89,11 @@ public interface HotelRepository extends MongoRepository<Hotel, String> {
               'tags': { $all: ?4 }
             }
             """)
-    Page<Hotel> findByLocationWithinWithFilters(double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags, Pageable pageable);
-
+    Page<Hotel> findByLocationWithinWithFilters(
+            double lng,
+            double lat,
+            double radiusInRadians,
+            String nameRegex,
+            List<String> tags,
+            Pageable pageable);
 }
