@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>org.tripsphere</groupId>
-    <artifactId>trip-note-service</artifactId>
+    <artifactId>note</artifactId>
     <version>0.1.0</version>
     <name>trip-note-service</name>
 

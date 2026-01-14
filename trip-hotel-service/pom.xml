@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>org.tripsphere</groupId>
-    <artifactId>trip-hotel-service</artifactId>
+    <artifactId>hotel</artifactId>
     <version>0.1.0</version>
     <name>trip-hotel-service</name>
 

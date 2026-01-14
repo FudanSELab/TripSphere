@@ -14,7 +14,7 @@ COPY src ./src
 RUN ./mvnw -B clean package -DskipTests
 
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 # Setup a non-root user
 RUN addgroup --system nonroot \
