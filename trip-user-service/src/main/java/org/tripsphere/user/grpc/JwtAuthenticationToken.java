@@ -1,14 +1,12 @@
 package org.tripsphere.user.grpc;
 
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * JWT authentication token for Spring Security
- */
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+/* JWT authentication token for Spring Security */
 public class JwtAuthenticationToken extends AbstractAuthenticationToken {
 
     private final String token;
@@ -16,10 +14,11 @@ public class JwtAuthenticationToken extends AbstractAuthenticationToken {
     private final List<String> roles;
 
     public JwtAuthenticationToken(String token, String username, List<String> roles) {
-        super(roles.stream()
-                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList()));
+        super(
+                roles.stream()
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList()));
         this.token = token;
         this.username = username;
         this.roles = roles;
@@ -48,4 +47,3 @@ public class JwtAuthenticationToken extends AbstractAuthenticationToken {
         return roles;
     }
 }
-
