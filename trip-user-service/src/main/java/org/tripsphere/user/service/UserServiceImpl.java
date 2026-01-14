@@ -15,18 +15,26 @@ import org.tripsphere.user.model.Role;
 import org.tripsphere.user.model.UserEntity;
 import org.tripsphere.user.repository.UserRepository;
 import org.tripsphere.user.util.JwtUtil;
-import tripsphere.user.UserOuterClass;
+import org.tripsphere.user.RegisterRequest;
+import org.tripsphere.user.RegisterResponse;
+import org.tripsphere.user.LoginRequest;
+import org.tripsphere.user.LoginResponse;
+import org.tripsphere.user.ChangePasswordRequest;
+import org.tripsphere.user.ChangePasswordResponse;
+import org.tripsphere.user.GetCurrentUserRequest;
+import org.tripsphere.user.GetCurrentUserResponse;
+import org.tripsphere.user.User;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @GrpcService
 @Slf4j
-public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserServiceImplBase {
+public class UserServiceImpl extends org.tripsphere.user.UserServiceGrpc.UserServiceImplBase {
 
     // Username pattern: allows letters, numbers, and underscores
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+$");
-    
+
     // Password pattern: at least 6 characters, only letters and numbers
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^[a-zA-Z0-9]{6,}$");
 
@@ -43,8 +51,8 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
     private AuthenticationManager authenticationManager;
 
     @Override
-    public void register(UserOuterClass.RegisterRequest request,
-                        StreamObserver<UserOuterClass.RegisterResponse> responseObserver) {
+    public void register(RegisterRequest request,
+            StreamObserver<RegisterResponse> responseObserver) {
         log.debug("Starting user registration request");
         try {
             String username = request.getUsername();
@@ -65,7 +73,8 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             if (!USERNAME_PATTERN.matcher(username).matches()) {
                 log.warn("Registration failed: invalid username format - {}", username);
                 responseObserver.onError(Status.INVALID_ARGUMENT
-                        .withDescription("Username can only contain letters, numbers, and underscores")
+                        .withDescription(
+                                "Username can only contain letters, numbers, and underscores")
                         .asRuntimeException());
                 return;
             }
@@ -82,7 +91,8 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             if (!PASSWORD_PATTERN.matcher(password).matches()) {
                 log.warn("Registration failed: invalid password format - username: {}", username);
                 responseObserver.onError(Status.INVALID_ARGUMENT
-                        .withDescription("Password must be at least 6 characters and can only contain letters and numbers")
+                        .withDescription(
+                                "Password must be at least 6 characters and can only contain letters and numbers")
                         .asRuntimeException());
                 return;
             }
@@ -105,7 +115,7 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             userRepository.save(user);
             log.info("User registration successful - username: {}, userId: {}", username, user.getId());
 
-            responseObserver.onNext(UserOuterClass.RegisterResponse.newBuilder().build());
+            responseObserver.onNext(RegisterResponse.newBuilder().build());
             responseObserver.onCompleted();
         } catch (Exception e) {
             log.error("User registration exception - username: {}", request.getUsername(), e);
@@ -116,8 +126,8 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
     }
 
     @Override
-    public void login(UserOuterClass.LoginRequest request,
-                     StreamObserver<UserOuterClass.LoginResponse> responseObserver) {
+    public void login(LoginRequest request,
+            StreamObserver<LoginResponse> responseObserver) {
         log.debug("Starting user login request");
         try {
             String username = request.getUsername();
@@ -138,7 +148,8 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             if (!USERNAME_PATTERN.matcher(username).matches()) {
                 log.warn("Login failed: invalid username format - {}", username);
                 responseObserver.onError(Status.INVALID_ARGUMENT
-                        .withDescription("Username can only contain letters, numbers, and underscores")
+                        .withDescription(
+                                "Username can only contain letters, numbers, and underscores")
                         .asRuntimeException());
                 return;
             }
@@ -154,8 +165,7 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             // Authenticate user credentials
             try {
                 authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(username, password)
-                );
+                        new UsernamePasswordAuthenticationToken(username, password));
             } catch (Exception e) {
                 log.warn("Login failed: invalid username or password - username: {}", username);
                 responseObserver.onError(Status.UNAUTHENTICATED
@@ -174,10 +184,11 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
                     .collect(java.util.stream.Collectors.toList());
             String token = jwtUtil.generateToken(username, rolesList);
 
-            log.info("User login successful - username: {}, userId: {}, roles: {}", username, user.getId(), rolesList);
+            log.info("User login successful - username: {}, userId: {}, roles: {}", username, user.getId(),
+                    rolesList);
 
-            UserOuterClass.LoginResponse response = UserOuterClass.LoginResponse.newBuilder()
-                    .setUser(UserOuterClass.User.newBuilder()
+            LoginResponse response = LoginResponse.newBuilder()
+                    .setUser(User.newBuilder()
                             .setId(user.getId())
                             .setUsername(user.getUsername())
                             .addAllRoles(rolesList)
@@ -196,8 +207,8 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
     }
 
     @Override
-    public void changePassword(UserOuterClass.ChangePasswordRequest request,
-                              StreamObserver<UserOuterClass.ChangePasswordResponse> responseObserver) {
+    public void changePassword(ChangePasswordRequest request,
+            StreamObserver<ChangePasswordResponse> responseObserver) {
         log.debug("Starting change password request");
         try {
             String username = request.getUsername();
@@ -233,9 +244,11 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
 
             // Validate new password format: at least 6 characters, only letters and numbers
             if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
-                log.warn("Change password failed: invalid new password format - username: {}", username);
+                log.warn("Change password failed: invalid new password format - username: {}",
+                        username);
                 responseObserver.onError(Status.INVALID_ARGUMENT
-                        .withDescription("New password must be at least 6 characters and can only contain letters and numbers")
+                        .withDescription(
+                                "New password must be at least 6 characters and can only contain letters and numbers")
                         .asRuntimeException());
                 return;
             }
@@ -258,7 +271,7 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             userRepository.save(user);
             log.info("Password change successful - username: {}, userId: {}", username, user.getId());
 
-            responseObserver.onNext(UserOuterClass.ChangePasswordResponse.newBuilder().build());
+            responseObserver.onNext(ChangePasswordResponse.newBuilder().build());
             responseObserver.onCompleted();
         } catch (Exception e) {
             log.error("Change password exception - username: {}", request.getUsername(), e);
@@ -269,14 +282,14 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
     }
 
     @Override
-    public void getCurrentUser(UserOuterClass.GetCurrentUserRequest request,
-                               StreamObserver<UserOuterClass.GetCurrentUserResponse> responseObserver) {
+    public void getCurrentUser(GetCurrentUserRequest request,
+            StreamObserver<GetCurrentUserResponse> responseObserver) {
         log.debug("Starting get current user request");
         try {
             // Get authentication from Spring Security context
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication == null || !authentication.isAuthenticated() 
+
+            if (authentication == null || !authentication.isAuthenticated()
                     || !(authentication instanceof JwtAuthenticationToken)) {
                 log.warn("Get current user failed: not authenticated");
                 responseObserver.onError(Status.UNAUTHENTICATED
@@ -287,7 +300,7 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
 
             JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
             String username = jwtAuth.getUsername();
-            
+
             if (username == null || username.trim().isEmpty()) {
                 log.warn("Get current user failed: username is empty");
                 responseObserver.onError(Status.UNAUTHENTICATED
@@ -303,7 +316,7 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Convert UserEntity to proto User message
-            UserOuterClass.User.Builder userBuilder = UserOuterClass.User.newBuilder()
+            User.Builder userBuilder = User.newBuilder()
                     .setId(userEntity.getId())
                     .setUsername(userEntity.getUsername());
 
@@ -313,11 +326,12 @@ public class UserServiceImpl extends tripsphere.user.UserServiceGrpc.UserService
             }
 
             // Build response
-            UserOuterClass.GetCurrentUserResponse response = UserOuterClass.GetCurrentUserResponse.newBuilder()
+            GetCurrentUserResponse response = GetCurrentUserResponse.newBuilder()
                     .setUser(userBuilder.build())
                     .build();
 
-            log.info("Get current user successful - username: {}, userId: {}", username, userEntity.getId());
+            log.info("Get current user successful - username: {}, userId: {}", username,
+                    userEntity.getId());
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
