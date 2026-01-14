@@ -1,0 +1,20 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  gen-proto:
+    desc: Generate protobuf and gRPC codes for hotel service
+    cmds:
+      - rm -rf src/main/proto
+      - cp -r ../contracts/protobuf/ src/main/proto/
+      - cmd: mvnw protobuf:compile protobuf:compile-custom
+        platforms: [windows]
+      - cmd: ./mvnw protobuf:compile protobuf:compile-custom
+        platforms: [linux, darwin]
