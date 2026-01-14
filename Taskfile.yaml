@@ -3,6 +3,11 @@
 version: '3'
 
 includes:
+  attraction:
+    taskfile: trip-attraction-service/Taskfile.yaml
+    dir: trip-attraction-service
+    internal: true
+
   chat:
     taskfile: trip-chat-service/Taskfile.yaml
     dir: trip-chat-service
@@ -28,6 +33,11 @@ includes:
     dir: trip-review-summary
     internal: true
 
+  user:
+    taskfile: trip-user-service/Taskfile.yaml
+    dir: trip-user-service
+    internal: true
+
 tasks:
   default:
     desc: List all available tasks
@@ -45,11 +55,13 @@ tasks:
   gen-proto:
     desc: Generate protobuf and gRPC codes using buf
     cmds:
+      - task: attraction:gen-proto
       - task: chat:gen-proto
       - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: next-frontend:gen-proto
       - task: review-summary:gen-proto
+      - task: user:gen-proto
 
   start:
     desc: Start all the services using Docker Compose

@@ -1,0 +1,11 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  gen-proto:
+    desc: Generate protobuf and gRPC codes for attraction service
+    cmds:
+      - mkdir -p src/main/proto
+      - cp ../contracts/protobuf/tripsphere/attraction/*.proto src/main/proto/
+      - ./mvnw protobuf:compile protobuf:compile-custom

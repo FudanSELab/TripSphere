@@ -1,38 +1,24 @@
-FROM alpine:latest AS builder
-
-# Install Java and Maven
-RUN apk add --no-cache openjdk17 maven
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
-COPY trip-user-service/.mvn/ .mvn/
-COPY trip-user-service/mvnw trip-user-service/mvnw.cmd ./
-COPY trip-user-service/pom.xml ./
-
-# Make mvnw executable
-RUN chmod +x mvnw
+COPY .mvn/ .mvn/
+COPY mvnw mvnw.cmd ./
+COPY pom.xml ./
 
 RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw -B dependency:go-offline
 
-# Copy entire project for protobuf generation
-COPY contracts /contracts
-COPY trip-user-service/src ./src
-
-# Generate protobuf code first
-RUN ./mvnw protobuf:compile protobuf:compile-custom
+COPY src ./src
 
 RUN ./mvnw -B clean package -DskipTests
 
 
-FROM alpine:latest
-
-# Install Java JRE
-RUN apk add --no-cache openjdk17-jre
+FROM eclipse-temurin:17-jre-alpine
 
 # Setup a non-root user
-RUN addgroup -S nonroot && \
-    adduser -S nonroot -G nonroot
+RUN addgroup --system nonroot \
+ && adduser --system nonroot --ingroup nonroot
 
 ARG JAR=target/trip-user-service-*.jar
 COPY --from=builder --chown=nonroot:nonroot /app/${JAR} app.jar
