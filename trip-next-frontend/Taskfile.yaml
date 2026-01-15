@@ -17,3 +17,8 @@ tasks:
       - lib/grpc/gen/**/*.ts
     cmds:
       - buf generate
+
+  format:
+    desc: Format code with Prettier
+    cmds:
+      - bunx prettier . --write

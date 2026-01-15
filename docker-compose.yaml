@@ -167,6 +167,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Review Service
+  trip-review-service:
+    build:
+      context: ./trip-review-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-review-service:latest
+    container_name: trip-review-service
+    ports:
+      - "50057:50057"  # gRPC
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rmq-proxy:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Review Summary
   trip-review-summary:
     build:

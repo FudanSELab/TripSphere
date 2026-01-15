@@ -16,6 +16,9 @@ import { MetadataServiceClient as ItineraryMetadataServiceClient } from "@/lib/g
 // Note
 import { MetadataServiceClient as NoteMetadataServiceClient } from "@/lib/grpc/gen/tripsphere/note/metadata";
 
+// Review
+import { ReviewServiceClient } from "@/lib/grpc/gen/tripsphere/review/review";
+
 // User
 import { UserServiceClient } from "@/lib/grpc/gen/tripsphere/user/user";
 
@@ -24,6 +27,7 @@ const FileAddress = "127.0.0.1:50051";
 const HotelAddress = "127.0.0.1:50054";
 const ItineraryAddress = "127.0.0.1:50052";
 const NoteAddress = "127.0.0.1:50055";
+const ReviewAddress = "127.0.0.1:50057";
 const UserAddress = "127.0.0.1:50056";
 
 export class GrpcClient {
@@ -35,6 +39,7 @@ export class GrpcClient {
   public hotelMetadata: HotelMetadataServiceClient;
   public itineraryMetadata: ItineraryMetadataServiceClient;
   public noteMetadata: NoteMetadataServiceClient;
+  public review: ReviewServiceClient;
   public user: UserServiceClient;
 
   private constructor(credentials?: grpc.ChannelCredentials) {
@@ -49,6 +54,7 @@ export class GrpcClient {
       creds,
     );
     this.noteMetadata = new NoteMetadataServiceClient(NoteAddress, creds);
+    this.review = new ReviewServiceClient(ReviewAddress, creds);
     this.user = new UserServiceClient(UserAddress, creds);
   }
 
