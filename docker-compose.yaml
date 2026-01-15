@@ -67,8 +67,8 @@ services:
     image: tripsphere/trip-attraction-service:latest
     container_name: trip-attraction-service
     ports:
-      - "9006:9006"
-      - "9009:9008"
+      - "9008:9008"  # HTTP
+      - "9007:9007"  # gRPC
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_attraction_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
