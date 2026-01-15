@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY .mvn/ .mvn/
 COPY mvnw mvnw.cmd ./
+RUN chmod +x mvnw
 COPY pom.xml ./
 
 RUN --mount=type=cache,target=/root/.m2 \
