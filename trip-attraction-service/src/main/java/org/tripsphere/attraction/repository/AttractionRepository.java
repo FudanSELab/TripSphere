@@ -16,6 +16,58 @@ import java.util.Optional;
 @Repository
 public interface AttractionRepository extends MongoRepository<Attraction, String> {
     public Optional<Attraction> findById(String id);
+    @Query("""
+            {
+              'location': {
+                $nearSphere: {
+                  $geometry: { type: 'Point', coordinates: [?0, ?1] },
+                  $maxDistance: ?2
+                }
+              },
+              'name': { $regex: ?3, $options: 'i' },
+              'tags': { $all: ?4 }
+            }
+            """)
+    List<Attraction> findByLocationNearWithFilters(double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags);
 
+    @Query("""
+            {
+              'location': {
+                $geoWithin: {
+                  $centerSphere: [ [ ?0, ?1 ], ?2 ]
+                }
+              },
+              'name': { $regex: ?3, $options: 'i' },
+              'tags': { $all: ?4 }
+            }
+            """)
+    List<Attraction> findByLocationWithinWithFilters(double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags);
+
+    @Query("""
+            {
+              'location': {
+                $nearSphere: {
+                  $geometry: { type: 'Point', coordinates: [?0, ?1] },
+                  $maxDistance: ?2
+                }
+              },
+              'name': { $regex: ?3, $options: 'i' },
+              'tags': { $all: ?4 }
+            }
+            """)
+    Page<Attraction> findByLocationNearWithFilters(double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags, Pageable pageable);
+
+    @Query("""
+            {
+              'location': {
+                $geoWithin: {
+                  $centerSphere: [ [ ?0, ?1 ], ?2 ]
+                }
+              },
+              'name': { $regex: ?3, $options: 'i' },
+              'tags': { $all: ?4 }
+            }
+            """)
+    Page<Attraction> findByLocationWithinWithFilters(double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags, Pageable pageable);
 
 }

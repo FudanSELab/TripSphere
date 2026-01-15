@@ -16,7 +16,7 @@ message Address {
   string street = 6;
 }
 
-// the location of hotel
+// the location of Attraction
 message Location {
   double lng = 1;
   double lat = 2;
@@ -26,7 +26,7 @@ message File {
   //user's file name, not the stored file name
   string name = 1;
   //file type, such as image/png, application/pdf
-  string context_type = 2;
+  string content_type = 2;
   //url used to access the file,uploaded to cloud storage or download
   string url = 3;
   //temp bucket or permanent bucket
@@ -79,9 +79,92 @@ message FindIdByNameResponse {
   string attraction_id = 1;
 }
 
+message FindAttractionByIdRequest{
+  string id =1;
+}
+
+message FindAttractionByIdResponse{
+  Attraction attraction = 1;
+}
+
+message AttractionPage {
+  repeated Attraction content = 1; // content of page
+  int32 total_pages = 2; //total number of pages
+  int64 total_elements = 3; // total number of attractions
+  int32 size = 4; // the size of page
+  int32 number = 5; // size number, start from 0
+  bool first = 6; // if this page is first page
+  bool last = 7; // if this page is last page
+  int32 number_of_elements = 8; // the actual number of attraction on this page
+}
+
+message FindAttractionsWithinRadiusPageRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  int32 number = 3;// page number
+  int32 size = 4; // page size
+  string name = 5;
+  repeated string tags = 6 ;
+}
+
+message FindAttractionsWithinRadiusPageResponse{
+  AttractionPage attraction_page = 1;
+}
+
+message FindAttractionsWithinCirclePageRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  int32 number = 3;// page number
+  int32 size = 4; // page size
+  string name = 5;
+  repeated string tags = 6;
+}
+
+message FindAttractionsWithinCirclePageResponse{
+  AttractionPage attraction_page = 1;
+}
+
+message FindAttractionsWithinRadiusRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  string name = 3;
+  repeated string tags = 4;
+}
+
+message FindAttractionsWithinRadiusResponse{
+  repeated Attraction content = 1;
+}
+
+message FindAttractionsWithinCircleRequest{
+  Location location = 1;
+  double radiusKm = 2;
+  string name = 3;
+  repeated string tags = 4;
+}
+
+message FindAttractionsWithinCircleResponse{
+  repeated Attraction content = 1;
+}
+
+
 service AttractionService {
   rpc AddAttraction(AddAttractionRequest) returns (AddAttractionResponse);
   rpc DeleteAttraction(DeleteAttractionRequest) returns (DeleteAttractionResponse);
   rpc ChangeAttraction(ChangeAttractionRequest) returns (ChangeAttractionResponse);
   rpc FindIdByName(FindIdByNameRequest) returns (FindIdByNameResponse);
+  rpc FindAttractionById(FindAttractionByIdRequest) returns (FindAttractionByIdResponse);
+  //Find attractions located at the specified location and within the specified distance range
+  //and list them in order from near to far, and result has been paginated
+  rpc FindAttractionsWithinRadiusPage(FindAttractionsWithinRadiusPageRequest) returns (FindAttractionsWithinRadiusPageResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  //and result has been paginated
+  rpc FindAttractionsWithinCirclePage(FindAttractionsWithinCirclePageRequest) returns (FindAttractionsWithinCirclePageResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  //and list them in order from near to far
+  rpc FindAttractionsWithinRadius(FindAttractionsWithinRadiusRequest) returns (FindAttractionsWithinRadiusResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  rpc FindAttractionsWithinCircle(FindAttractionsWithinCircleRequest) returns (FindAttractionsWithinCircleResponse);
 }
