@@ -10,12 +10,19 @@ dependencies = [
     "opentelemetry-distro[otlp]>=0.58b0",
     "pydantic-settings>=2.12.0",
     "python-dotenv>=1.2.1",
+    "tripsphere>=0.1.0",
     "uvicorn>=0.38.0",
 ]
 
 [build-system]
 requires = ["uv_build>=0.9.14,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+tripsphere = { workspace = true }
+
+[tool.uv.workspace]
+members = ["libs/tripsphere"]
 
 [tool.ruff]
 target-version = "py312"
