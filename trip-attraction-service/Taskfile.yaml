@@ -11,6 +11,11 @@ tasks:
 
   gen-proto:
     desc: Generate protobuf and gRPC codes for attraction service
+    sources:
+      - ../contracts/protobuf/**/*.proto
+    generates:
+      - target/generated-sources/protobuf/java/**/*.java
+      - target/generated-sources/protobuf/grpc-java/**/*.java
     cmds:
       - rm -rf src/main/proto
       - cp -r ../contracts/protobuf/ src/main/proto/

@@ -13,6 +13,11 @@ includes:
     dir: trip-chat-service
     internal: true
 
+  hotel:
+    taskfile: trip-hotel-service/Taskfile.yaml
+    dir: trip-hotel-service
+    internal: true
+
   itinerary-planner:
     taskfile: trip-itinerary-planner/Taskfile.yaml
     dir: trip-itinerary-planner
@@ -26,6 +31,11 @@ includes:
   next-frontend:
     taskfile: trip-next-frontend/Taskfile.yaml
     dir: trip-next-frontend
+    internal: true
+
+  note:
+    taskfile: trip-note-service/Taskfile.yaml
+    dir: trip-note-service
     internal: true
 
   review-summary:
@@ -57,9 +67,11 @@ tasks:
     cmds:
       - task: attraction:gen-proto
       - task: chat:gen-proto
+      - task: hotel:gen-proto
       - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: next-frontend:gen-proto
+      - task: note:gen-proto
       - task: review-summary:gen-proto
       - task: user:gen-proto
 
