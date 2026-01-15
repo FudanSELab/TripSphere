@@ -48,6 +48,11 @@ includes:
     dir: trip-note-service
     internal: true
 
+  review:
+    taskfile: trip-review-service/Taskfile.yaml
+    dir: trip-review-service
+    internal: true
+
   review-summary:
     taskfile: trip-review-summary/Taskfile.yaml
     dir: trip-review-summary
@@ -77,15 +82,16 @@ tasks:
     cmds:
       - task: attraction:gen-proto
       - task: chat:gen-proto
+      - task: file:gen-proto
       - task: hotel:gen-proto
       - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: journey-assistant:gen-proto
       - task: next-frontend:gen-proto
       - task: note:gen-proto
+      - task: review:gen-proto
       - task: review-summary:gen-proto
       - task: user:gen-proto
-
 
   start:
     desc: Start all the services using Docker Compose
