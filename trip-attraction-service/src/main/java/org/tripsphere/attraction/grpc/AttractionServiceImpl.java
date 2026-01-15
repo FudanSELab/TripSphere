@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.domain.Page;
 import org.tripsphere.attraction.*;
 import org.tripsphere.attraction.model.Address;
 import org.tripsphere.attraction.model.Attraction;
@@ -12,6 +13,8 @@ import org.tripsphere.attraction.model.File;
 import org.tripsphere.attraction.service.AttractionService;
 
 import net.devh.boot.grpc.server.service.GrpcService;
+
+import io.grpc.stub.StreamObserver;
 
 @GrpcService
 public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServiceImplBase {
