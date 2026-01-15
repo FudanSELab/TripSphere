@@ -10,3 +10,6 @@ Thumbs.db
 
 # Taskfile
 .task/
+
+# Docker volumes
+volumes/

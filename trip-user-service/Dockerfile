@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY .mvn/ .mvn/
 COPY mvnw mvnw.cmd ./
+RUN chmod +x mvnw
 COPY pom.xml ./
 
 RUN --mount=type=cache,target=/root/.m2 \
@@ -26,6 +27,9 @@ COPY --from=builder --chown=nonroot:nonroot /app/${JAR} app.jar
 # Use the non-root user to run our application
 USER nonroot
 
-EXPOSE 9007
+# Default gRPC port
+EXPOSE 50056
+# Default HTTP port
+EXPOSE 24217
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

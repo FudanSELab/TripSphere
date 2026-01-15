@@ -32,7 +32,11 @@ const footerLinks = {
 
 const socialLinks = [
   { name: "X (Twitter)", icon: X, href: "#" },
-  { name: "GitHub", icon: GithubIcon, href: "https://github.com/FudanSELab/TripSphere" },
+  {
+    name: "GitHub",
+    icon: GithubIcon,
+    href: "https://github.com/FudanSELab/TripSphere",
+  },
   { name: "Email", icon: Mail, href: "mailto:contact@tripsphere.com" },
 ];
 

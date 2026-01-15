@@ -64,7 +64,7 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 50051
+EXPOSE 50052
 
 # Run the gRPC server by default
 ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "itinerary"]

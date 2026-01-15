@@ -14,7 +14,7 @@ class AppSettings(BaseModel):
 
 
 class GrpcSettings(BaseModel):
-    port: int = Field(default=50051)
+    port: int = Field(default=50052)
 
 
 class NacosSettings(BaseModel):

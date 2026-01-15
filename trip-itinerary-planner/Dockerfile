@@ -64,7 +64,8 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 50059
+# Default HTTP port
+EXPOSE 24215
 
 # TODO: Run the agent server
 ENTRYPOINT ["opentelemetry-instrument"]
