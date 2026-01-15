@@ -14,18 +14,18 @@ COPY src ./src
 RUN ./mvnw -B clean package -DskipTests
 
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 # Setup a non-root user
 RUN addgroup --system nonroot \
  && adduser --system nonroot --ingroup nonroot
 
-ARG JAR=target/trip-note-creator-*.jar
+ARG JAR=target/hotel-*.jar
 COPY --from=builder --chown=nonroot:nonroot /app/${JAR} app.jar
 
 # Use the non-root user to run our application
 USER nonroot
 
-EXPOSE 9090
+EXPOSE 9007
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

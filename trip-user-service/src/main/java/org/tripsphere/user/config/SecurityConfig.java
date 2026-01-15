@@ -1,5 +1,8 @@
 package org.tripsphere.user.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,14 +14,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Configuration
 public class SecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationProvider jwtAuthenticationProvider;
+    @Autowired private JwtAuthenticationProvider jwtAuthenticationProvider;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -27,13 +26,12 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-            UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
+            UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         List<AuthenticationProvider> providers = new ArrayList<>();
-        
+
         // Add JWT authentication provider
         providers.add(jwtAuthenticationProvider);
-        
+
         // Add DAO authentication provider for username/password authentication
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
         daoAuthenticationProvider.setUserDetailsService(userDetailsService);
@@ -43,4 +41,3 @@ public class SecurityConfig {
         return new ProviderManager(providers);
     }
 }
-

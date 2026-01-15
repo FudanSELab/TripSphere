@@ -1,25 +1,22 @@
 package org.tripsphere.attraction.grpc;
 
-import io.grpc.stub.StreamObserver;
-
-import net.devh.boot.grpc.server.service.GrpcService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
-import org.tripsphere.attraction.service.AttractionService;
-import org.tripsphere.attraction.*;
-import org.tripsphere.attraction.model.Attraction;
-import org.tripsphere.attraction.model.Address;
-import org.tripsphere.attraction.model.File;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.tripsphere.attraction.*;
+import org.tripsphere.attraction.model.Address;
+import org.tripsphere.attraction.model.Attraction;
+import org.tripsphere.attraction.model.File;
+import org.tripsphere.attraction.service.AttractionService;
+
+import net.devh.boot.grpc.server.service.GrpcService;
 
 @GrpcService
 public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServiceImplBase {
 
-    @Autowired
-    private AttractionService attractionService;
+    @Autowired private AttractionService attractionService;
 
     @Override
     public void addAttraction(org.tripsphere.attraction.AddAttractionRequest request,
@@ -39,11 +36,14 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         attraction.setTags(request.getAttraction().getTagsList());
         attraction.setName(request.getAttraction().getName());
 
-        GeoJsonPoint location = new GeoJsonPoint(request.getAttraction().getLocation().getLng(), request.getAttraction().getLocation().getLat());
+        GeoJsonPoint location =
+                new GeoJsonPoint(
+                        request.getAttraction().getLocation().getLng(),
+                        request.getAttraction().getLocation().getLat());
         attraction.setLocation(location);
 
         List<File> images = new ArrayList<>();
-        for (int i=0;i<request.getAttraction().getImagesCount();i++){
+        for (int i = 0; i < request.getAttraction().getImagesCount(); i++) {
             File file = new File();
             file.setName(request.getAttraction().getImages(i).getName());
             file.setContentType(request.getAttraction().getImages(i).getContentType());
@@ -55,7 +55,7 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         }
         attraction.setImages(images);
 
-        String id =attractionService.addAttraction(attraction);
+        String id = attractionService.addAttraction(attraction);
 
         AddAttractionResponse response = AddAttractionResponse.newBuilder().setId(id).build();
         responseObserver.onNext(response);
@@ -67,7 +67,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
                                   io.grpc.stub.StreamObserver<org.tripsphere.attraction.DeleteAttractionResponse> responseObserver) {
         String attractionId = request.getId();
         boolean success = attractionService.deleteAttraction(attractionId);
-        DeleteAttractionResponse response = DeleteAttractionResponse.newBuilder().setSuccess(success).build();
+        DeleteAttractionResponse response =
+                DeleteAttractionResponse.newBuilder().setSuccess(success).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -95,7 +96,7 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         List<String> tags = request.getAttraction().getTagsList();
 
         List<File> images = new ArrayList<>();
-        for(int i=0;i<request.getAttraction().getImagesCount();i++){
+        for (int i = 0; i < request.getAttraction().getImagesCount(); i++) {
             File image = new File();
             image.setName(request.getAttraction().getImages(i).getName());
             image.setContentType(request.getAttraction().getImages(i).getContentType());
@@ -107,7 +108,10 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
             images.add(image);
         }
 
-        GeoJsonPoint location = new GeoJsonPoint(request.getAttraction().getLocation().getLng(), request.getAttraction().getLocation().getLat());
+        GeoJsonPoint location =
+                new GeoJsonPoint(
+                        request.getAttraction().getLocation().getLng(),
+                        request.getAttraction().getLocation().getLat());
 
         Attraction attraction = new Attraction();
         attraction.setId(request.getAttraction().getId());
@@ -119,7 +123,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         attraction.setLocation(location);
 
         boolean success = attractionService.changAttraction(attraction);
-        ChangeAttractionResponse response = ChangeAttractionResponse.newBuilder().setSuccess(success).build();
+        ChangeAttractionResponse response =
+                ChangeAttractionResponse.newBuilder().setSuccess(success).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -129,7 +134,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
                              io.grpc.stub.StreamObserver<org.tripsphere.attraction.FindIdByNameResponse> responseObserver) {
         String name = request.getName();
         String attraction_id = attractionService.findAttractionIdByName(name);
-        FindIdByNameResponse response = FindIdByNameResponse.newBuilder().setAttractionId(attraction_id).build();
+        FindIdByNameResponse response =
+                FindIdByNameResponse.newBuilder().setAttractionId(attraction_id).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -311,4 +317,3 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         return attractionProtos;
     }
 }
-

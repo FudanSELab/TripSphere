@@ -1,25 +1,18 @@
 package org.tripsphere.attraction.service;
 
-import org.springaicommunity.mcp.annotation.McpTool;
+import java.util.Optional;
+import java.util.logging.Logger;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.tripsphere.attraction.model.Attraction;
 import org.tripsphere.attraction.repository.AttractionRepository;
 
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Logger;
-
 @Service
 public class AttractionService {
     private static final Logger logger = Logger.getLogger(Attraction.class.getName());
-    @Autowired
-    private AttractionRepository attractionRepository;
+    @Autowired private AttractionRepository attractionRepository;
 
     /**
      * Add attraction
@@ -35,7 +28,7 @@ public class AttractionService {
     /**
      * Delete attraction
      *
-     * @param id      attraction id
+     * @param id attraction id
      * @return if delete success, return true, else return false
      */
     public boolean deleteAttraction(String id) {
@@ -43,8 +36,7 @@ public class AttractionService {
         if (attractionOptional.isPresent()) {
             Attraction attraction = attractionOptional.get();
             attractionRepository.delete(attraction);
-        } else
-            return false;
+        } else return false;
         return true;
     }
 
@@ -77,8 +69,7 @@ public class AttractionService {
         if (attractionOptional.isPresent()) {
             Attraction attraction = attractionOptional.get();
             return attraction;
-        } else
-            return null;
+        } else return null;
     }
 
     /**
@@ -95,8 +86,7 @@ public class AttractionService {
         if (attractionOptional.isPresent()) {
             Attraction attraction = attractionOptional.get();
             return attraction.getId();
-        } else
-            return null;
+        } else return null;
     }
 
     /**

@@ -1,23 +1,26 @@
 package org.tripsphere.user.util;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:MySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm}")
+    @Value(
+            "${jwt.secret:MySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm}")
     private String secret;
 
     @Value("${jwt.expiration:86400000}") // 24 hours
@@ -83,4 +86,3 @@ public class JwtUtil {
         return List.of();
     }
 }
-

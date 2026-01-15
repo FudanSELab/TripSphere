@@ -27,4 +27,3 @@ public class UserEntity {
     @Column(name = "role")
     private java.util.Set<Role> roles = new java.util.HashSet<>();
 }
-

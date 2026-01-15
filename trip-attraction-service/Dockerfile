@@ -20,12 +20,14 @@ FROM eclipse-temurin:17-jre
 RUN addgroup --system nonroot \
  && adduser --system nonroot --ingroup nonroot
 
-ARG JAR=target/note-*.jar
+ARG JAR=target/attraction-*.jar
 COPY --from=builder --chown=nonroot:nonroot /app/${JAR} app.jar
 
 # Use the non-root user to run our application
 USER nonroot
 
-EXPOSE 9090
+EXPOSE 9008
+EXPOSE 9007
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
+

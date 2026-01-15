@@ -6,20 +6,19 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.tripsphere.user.grpc.JwtAuthenticationToken;
 
-/**
- * Authentication provider for JWT tokens
- */
+/* Authentication provider for JWT tokens */
 @Component
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     @Override
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    public Authentication authenticate(Authentication authentication)
+            throws AuthenticationException {
         if (!(authentication instanceof JwtAuthenticationToken)) {
             return null;
         }
 
         JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
-        
+
         // Token validation is already done in JwtGrpcAuthenticationReader
         // Here we just return the authenticated token
         return jwtAuth;
@@ -30,4 +29,3 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         return JwtAuthenticationToken.class.isAssignableFrom(authentication);
     }
 }
-
