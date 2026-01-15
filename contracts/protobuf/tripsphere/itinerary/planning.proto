@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package tripsphere.itinerary;
+
+import "tripsphere/itinerary/itinerary.proto";
+
+option go_package = "tripsphere/itinerary";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.itinerary";
+
+service PlanningService {
+  // Plan an itinerary using planner agent.
+  rpc PlanItinerary(PlanItineraryRequest) returns (PlanItineraryResponse);
+}
+
+message PlanItineraryRequest {
+  string user_id = 1;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+message PlanItineraryResponse {
+  tripsphere.itinerary.Itinerary itinerary = 1;
+}
