@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 import pandas as pd
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -20,43 +19,43 @@ from review_summary.vector_stores.text_unit import TextUnitVectorStore
 settings = get_settings()
 
 
-async def load_entities() -> List[Entity]:
+async def load_entities() -> list[Entity]:
     df = pd.read_parquet("./tests/fixtures/entities.parquet", dtype_backend="pyarrow")
-    entities = []
+    entities: list[Entity] = []
     for _, row in df.iterrows():
         entity = Entity.model_validate(row.to_dict())
         entities.append(entity)
     return entities
 
 
-async def load_textunits() -> List[TextUnit]:
+async def load_textunits() -> list[TextUnit]:
     df = pd.read_parquet("./tests/fixtures/text_units.parquet", dtype_backend="pyarrow")
-    textunits = []
+    textunits: list[TextUnit] = []
     for _, row in df.iterrows():
         textunit = TextUnit.model_validate(row.to_dict())
         textunits.append(textunit)
     return textunits
 
 
-async def main():
+async def main() -> None:
     entities = await load_entities()
     textunits = await load_textunits()
     openai_settings = get_settings().openai
-    llm = ChatOpenAI(
+    chat_model = ChatOpenAI(
         model="gpt-4o",
         temperature=0.0,
-        api_key=openai_settings.api_key.get_secret_value(),
+        api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
     )
     embedder = OpenAIEmbeddings(
         model="text-embedding-3-large",
-        api_key=openai_settings.api_key.get_secret_value(),
+        api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
     )
 
-    tokenizer = TiktokenTokenizer(encoding_name_for_model(llm.model))
+    tokenizer = TiktokenTokenizer(encoding_name_for_model(chat_model.model_name))
 
-    neo4j_driver = AsyncGraphDatabase.driver(
+    neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
         settings.neo4j.uri,
         auth=(settings.neo4j.username, settings.neo4j.password.get_secret_value()),
     )
@@ -76,7 +75,7 @@ async def main():
     )
 
     local_search = LocalSearch(
-        model=llm,
+        chat_model=chat_model,
         context_builder=context_builder,
         tokenizer=tokenizer,
         response_type="multiple paragraphs",
@@ -88,7 +87,15 @@ async def main():
 
     print("🔍 Query:", query)
     print("\n🤖 Response:\n", result.response)
-    print("\n📊 Context Records Keys:", list(result.context_data.keys()))
+    if isinstance(result.context_data, dict):
+        print("\n📊 Context Records Keys:", list[str](result.context_data.keys()))
+    elif isinstance(result.context_data, list):
+        print(
+            "\n📊 Context Records Keys:",
+            [df.columns.tolist() for df in result.context_data],
+        )
+    else:
+        print("\n📊 Context Records Keys:", result.context_data)
     print("\n⏱️  Completion Time:", f"{result.completion_time:.2f}s")
     print(
         "\n🔢 Total Tokens Used (Prompt + Output):",

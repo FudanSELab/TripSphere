@@ -3,9 +3,29 @@
 version: '3'
 
 includes:
+  attraction:
+    taskfile: trip-attraction-service/Taskfile.yaml
+    dir: trip-attraction-service
+    internal: true
+
   chat:
     taskfile: trip-chat-service/Taskfile.yaml
     dir: trip-chat-service
+    internal: true
+
+  file:
+    taskfile: trip-file-service/Taskfile.yaml
+    dir: trip-file-service
+    internal: true
+
+  hotel:
+    taskfile: trip-hotel-service/Taskfile.yaml
+    dir: trip-hotel-service
+    internal: true
+
+  itinerary-planner:
+    taskfile: trip-itinerary-planner/Taskfile.yaml
+    dir: trip-itinerary-planner
     internal: true
 
   itinerary:
@@ -13,14 +33,29 @@ includes:
     dir: trip-itinerary-service
     internal: true
 
+  journey-assistant:
+    taskfile: trip-journey-assistant/Taskfile.yaml
+    dir: trip-journey-assistant
+    internal: true
+
   next-frontend:
     taskfile: trip-next-frontend/Taskfile.yaml
     dir: trip-next-frontend
     internal: true
 
+  note:
+    taskfile: trip-note-service/Taskfile.yaml
+    dir: trip-note-service
+    internal: true
+
   review-summary:
     taskfile: trip-review-summary/Taskfile.yaml
     dir: trip-review-summary
+    internal: true
+
+  user:
+    taskfile: trip-user-service/Taskfile.yaml
+    dir: trip-user-service
     internal: true
 
 tasks:
@@ -40,10 +75,17 @@ tasks:
   gen-proto:
     desc: Generate protobuf and gRPC codes using buf
     cmds:
+      - task: attraction:gen-proto
       - task: chat:gen-proto
+      - task: hotel:gen-proto
+      - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
+      - task: journey-assistant:gen-proto
       - task: next-frontend:gen-proto
+      - task: note:gen-proto
       - task: review-summary:gen-proto
+      - task: user:gen-proto
+
 
   start:
     desc: Start all the services using Docker Compose

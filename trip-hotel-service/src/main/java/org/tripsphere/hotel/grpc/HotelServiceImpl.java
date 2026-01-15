@@ -1,31 +1,30 @@
 package org.tripsphere.hotel.grpc;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.tripsphere.hotel.*;
+import org.tripsphere.hotel.model.Address;
+import org.tripsphere.hotel.model.Hotel;
+import org.tripsphere.hotel.model.Room;
+import org.tripsphere.hotel.service.HotelService;
+
 import io.grpc.stub.StreamObserver;
 
 import net.devh.boot.grpc.server.service.GrpcService;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.info.BuildProperties;
-import org.springframework.data.domain.Page;
-import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
-import org.tripsphere.hotel.*;
-import org.tripsphere.hotel.service.HotelService;
-import org.tripsphere.hotel.model.Hotel;
-import org.tripsphere.hotel.model.Room;
-import org.tripsphere.hotel.model.Address;
-
-import java.util.ArrayList;
-import java.util.List;
-
 @GrpcService
 public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
 
-    @Autowired
-    private HotelService hotelService;
+    @Autowired private HotelService hotelService;
 
     @Override
-    public void addHotel(org.tripsphere.hotel.AddHotelRequest request,
-                         io.grpc.stub.StreamObserver<org.tripsphere.hotel.AddHotelResponse> responseObserver) {
+    public void addHotel(
+            org.tripsphere.hotel.AddHotelRequest request,
+            io.grpc.stub.StreamObserver<org.tripsphere.hotel.AddHotelResponse> responseObserver) {
         Hotel hotel = new Hotel();
         hotel.setName(request.getHotel().getName());
 
@@ -41,10 +40,13 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         hotel.setIntroduction(request.getHotel().getIntroduction());
         hotel.setTags(request.getHotel().getTagsList());
 
-        GeoJsonPoint location = new GeoJsonPoint(request.getHotel().getLocation().getLng(), request.getHotel().getLocation().getLat());
+        GeoJsonPoint location =
+                new GeoJsonPoint(
+                        request.getHotel().getLocation().getLng(),
+                        request.getHotel().getLocation().getLat());
         hotel.setLocation(location);
 
-        //get rooms from request
+        // get rooms from request
         List<Room> rooms = new ArrayList<>();
         for (int i = 0; i < request.getHotel().getRoomsCount(); i++) {
             Room room = new Room();
@@ -69,8 +71,10 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     }
 
     @Override
-    public void deleteHotel(org.tripsphere.hotel.DeleteHotelRequest request,
-                            io.grpc.stub.StreamObserver<org.tripsphere.hotel.DeleteHotelResponse> responseObserver) {
+    public void deleteHotel(
+            org.tripsphere.hotel.DeleteHotelRequest request,
+            io.grpc.stub.StreamObserver<org.tripsphere.hotel.DeleteHotelResponse>
+                    responseObserver) {
         String id = request.getId();
         boolean success = hotelService.deleteHotel(id);
         DeleteHotelResponse response = DeleteHotelResponse.newBuilder().setSuccess(success).build();
@@ -79,8 +83,10 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     }
 
     @Override
-    public void changeHotel(org.tripsphere.hotel.ChangeHotelRequest request,
-                            io.grpc.stub.StreamObserver<org.tripsphere.hotel.ChangeHotelResponse> responseObserver) {
+    public void changeHotel(
+            org.tripsphere.hotel.ChangeHotelRequest request,
+            io.grpc.stub.StreamObserver<org.tripsphere.hotel.ChangeHotelResponse>
+                    responseObserver) {
 
         Hotel hotel = new Hotel();
         hotel.setId(request.getHotel().getId());
@@ -98,9 +104,12 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         hotel.setIntroduction(request.getHotel().getIntroduction());
         hotel.setTags(request.getHotel().getTagsList());
 
-        GeoJsonPoint location = new GeoJsonPoint(request.getHotel().getLocation().getLng(), request.getHotel().getLocation().getLat());
+        GeoJsonPoint location =
+                new GeoJsonPoint(
+                        request.getHotel().getLocation().getLng(),
+                        request.getHotel().getLocation().getLat());
         hotel.setLocation(location);
-        //get rooms from request
+        // get rooms from request
         List<Room> rooms = new ArrayList<>();
         for (int i = 0; i < request.getHotel().getRoomsCount(); i++) {
             Room room = new Room();
@@ -125,8 +134,9 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     }
 
     @Override
-    public void findHotelWithinRadiusPage(FindHotelWithinRadiusPageRequest request,
-                                          StreamObserver<FindHotelWithinRadiusPageResponse> responseObserver) {
+    public void findHotelWithinRadiusPage(
+            FindHotelWithinRadiusPageRequest request,
+            StreamObserver<FindHotelWithinRadiusPageResponse> responseObserver) {
         double lng = request.getLocation().getLng();
         double lat = request.getLocation().getLat();
         double radiusKm = request.getRadiusKm();
@@ -135,20 +145,21 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         String name = request.getName();
         List<String> tags = request.getTagsList();
 
-        Page<Hotel> result = hotelService.findHotelsWithinRadius(lng, lat, radiusKm, name, tags, number, size);
+        Page<Hotel> result =
+                hotelService.findHotelsWithinRadius(lng, lat, radiusKm, name, tags, number, size);
 
         HotelPage hotelPage = buildHotelPage(result);
-        FindHotelWithinRadiusPageResponse response = FindHotelWithinRadiusPageResponse.newBuilder()
-                .setHotelPage(hotelPage)
-                .build();
+        FindHotelWithinRadiusPageResponse response =
+                FindHotelWithinRadiusPageResponse.newBuilder().setHotelPage(hotelPage).build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
     @Override
-    public void findHotelsWithinCirclePage(FindHotelsWithinCirclePageRequest request,
-                                           StreamObserver<FindHotelsWithinCirclePageResponse> responseObserver) {
+    public void findHotelsWithinCirclePage(
+            FindHotelsWithinCirclePageRequest request,
+            StreamObserver<FindHotelsWithinCirclePageResponse> responseObserver) {
         double lng = request.getLocation().getLng();
         double lat = request.getLocation().getLat();
         double radiusKm = request.getRadiusKm();
@@ -157,20 +168,21 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         String name = request.getName();
         List<String> tags = request.getTagsList();
 
-        Page<Hotel> result = hotelService.findHotelsWithinCircle(lng, lat, radiusKm, name, tags, number, size);
+        Page<Hotel> result =
+                hotelService.findHotelsWithinCircle(lng, lat, radiusKm, name, tags, number, size);
 
         HotelPage hotelPage = buildHotelPage(result);
-        FindHotelsWithinCirclePageResponse response = FindHotelsWithinCirclePageResponse.newBuilder()
-                .setHotelPage(hotelPage)
-                .build();
+        FindHotelsWithinCirclePageResponse response =
+                FindHotelsWithinCirclePageResponse.newBuilder().setHotelPage(hotelPage).build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
     @Override
-    public void findHotelWithinRadius(FindHotelWithinRadiusRequest request,
-                                      StreamObserver<FindHotelWithinRadiusResponse> responseObserver) {
+    public void findHotelWithinRadius(
+            FindHotelWithinRadiusRequest request,
+            StreamObserver<FindHotelWithinRadiusResponse> responseObserver) {
         double lng = request.getLocation().getLng();
         double lat = request.getLocation().getLat();
         double radiusKm = request.getRadiusKm();
@@ -180,17 +192,17 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         List<Hotel> hotels = hotelService.findHotelsWithinRadius(lng, lat, radiusKm, name, tags);
 
         List<org.tripsphere.hotel.Hotel> hotelProtos = buildHotelList(hotels);
-        FindHotelWithinRadiusResponse response = FindHotelWithinRadiusResponse.newBuilder()
-                .addAllContent(hotelProtos)
-                .build();
+        FindHotelWithinRadiusResponse response =
+                FindHotelWithinRadiusResponse.newBuilder().addAllContent(hotelProtos).build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
     @Override
-    public void findHotelsWithinCircle(FindHotelsWithinCircleRequest request,
-                                       StreamObserver<FindHotelsWithinCircleResponse> responseObserver) {
+    public void findHotelsWithinCircle(
+            FindHotelsWithinCircleRequest request,
+            StreamObserver<FindHotelsWithinCircleResponse> responseObserver) {
         double lng = request.getLocation().getLng();
         double lat = request.getLocation().getLat();
         double radiusKm = request.getRadiusKm();
@@ -200,72 +212,92 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         List<Hotel> hotels = hotelService.findHotelsWithinCircle(lng, lat, radiusKm, name, tags);
 
         List<org.tripsphere.hotel.Hotel> hotelProtos = buildHotelList(hotels);
-        FindHotelsWithinCircleResponse response = FindHotelsWithinCircleResponse.newBuilder()
-                .addAllContent(hotelProtos)
-                .build();
+        FindHotelsWithinCircleResponse response =
+                FindHotelsWithinCircleResponse.newBuilder().addAllContent(hotelProtos).build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
     @Override
-    public void findHotelById(org.tripsphere.hotel.FindHotelByIdRequest request,
-                              io.grpc.stub.StreamObserver<org.tripsphere.hotel.FindHotelByIdResponse> responseObserver) {
+    public void findHotelById(
+            org.tripsphere.hotel.FindHotelByIdRequest request,
+            io.grpc.stub.StreamObserver<org.tripsphere.hotel.FindHotelByIdResponse>
+                    responseObserver) {
         Hotel hotel = hotelService.findHotelById(request.getId());
-        org.tripsphere.hotel.Hotel.Builder hotelBuilder = org.tripsphere.hotel.Hotel.newBuilder()
-                .setId(hotel.getId() == null ? "" : hotel.getId())
-                .setName(hotel.getName() == null ? "" : hotel.getName())
-                .setIntroduction(hotel.getIntroduction() == null ? "" : hotel.getIntroduction());
+        org.tripsphere.hotel.Hotel.Builder hotelBuilder =
+                org.tripsphere.hotel.Hotel.newBuilder()
+                        .setId(hotel.getId() == null ? "" : hotel.getId())
+                        .setName(hotel.getName() == null ? "" : hotel.getName())
+                        .setIntroduction(
+                                hotel.getIntroduction() == null ? "" : hotel.getIntroduction());
 
-        if (hotel.getTags() != null)
-            hotelBuilder.addAllTags(hotel.getTags());
+        if (hotel.getTags() != null) hotelBuilder.addAllTags(hotel.getTags());
 
         if (hotel.getLocation() != null) {
-            org.tripsphere.hotel.Location locationProto = org.tripsphere.hotel.Location.newBuilder()
-                    .setLng(hotel.getLocation().getX())
-                    .setLat(hotel.getLocation().getY())
-                    .build();
+            org.tripsphere.hotel.Location locationProto =
+                    org.tripsphere.hotel.Location.newBuilder()
+                            .setLng(hotel.getLocation().getX())
+                            .setLat(hotel.getLocation().getY())
+                            .build();
             hotelBuilder.setLocation(locationProto);
         }
 
         if (hotel.getRooms() != null) {
             for (Room room : hotel.getRooms()) {
-                org.tripsphere.hotel.Room.Builder roomBuilder = org.tripsphere.hotel.Room.newBuilder()
-                        .setName(room.getName() == null ? "" : room.getName())
-                        .setTotalNumber(room.getTotal_number())
-                        .setRemainingNumber(room.getRemaining_number())
-                        .setBedWidth(room.getBed_width())
-                        .setBedNumber(room.getBed_number())
-                        .setMinArea(room.getMin_area())
-                        .setMaxArea(room.getMax_area())
-                        .setPeopleNumber(room.getPeople_number());
-                if (room.getTags() != null)
-                    roomBuilder.addAllTags(room.getTags());
+                org.tripsphere.hotel.Room.Builder roomBuilder =
+                        org.tripsphere.hotel.Room.newBuilder()
+                                .setName(room.getName() == null ? "" : room.getName())
+                                .setTotalNumber(room.getTotal_number())
+                                .setRemainingNumber(room.getRemaining_number())
+                                .setBedWidth(room.getBed_width())
+                                .setBedNumber(room.getBed_number())
+                                .setMinArea(room.getMin_area())
+                                .setMaxArea(room.getMax_area())
+                                .setPeopleNumber(room.getPeople_number());
+                if (room.getTags() != null) roomBuilder.addAllTags(room.getTags());
                 hotelBuilder.addRooms(roomBuilder.build());
             }
         }
 
-
-        if (hotel.getAddress() != null){
-            org.tripsphere.hotel.Address.Builder addressBuilder = org.tripsphere.hotel.Address.newBuilder()
-                    .setCountry(hotel.getAddress().getCountry() == null ? "" : hotel.getAddress().getCountry())
-                    .setProvince(hotel.getAddress().getProvince() == null ? "" : hotel.getAddress().getProvince())
-                    .setCity(hotel.getAddress().getCity() == null ? "" : hotel.getAddress().getCity())
-                    .setCounty(hotel.getAddress().getCounty() == null ? "" : hotel.getAddress().getCounty())
-                    .setDistrict(hotel.getAddress().getDistrict() == null ? "" : hotel.getAddress().getDistrict())
-                    .setStreet(hotel.getAddress().getStreet() == null ? "" : hotel.getAddress().getStreet());
+        if (hotel.getAddress() != null) {
+            org.tripsphere.hotel.Address.Builder addressBuilder =
+                    org.tripsphere.hotel.Address.newBuilder()
+                            .setCountry(
+                                    hotel.getAddress().getCountry() == null
+                                            ? ""
+                                            : hotel.getAddress().getCountry())
+                            .setProvince(
+                                    hotel.getAddress().getProvince() == null
+                                            ? ""
+                                            : hotel.getAddress().getProvince())
+                            .setCity(
+                                    hotel.getAddress().getCity() == null
+                                            ? ""
+                                            : hotel.getAddress().getCity())
+                            .setCounty(
+                                    hotel.getAddress().getCounty() == null
+                                            ? ""
+                                            : hotel.getAddress().getCounty())
+                            .setDistrict(
+                                    hotel.getAddress().getDistrict() == null
+                                            ? ""
+                                            : hotel.getAddress().getDistrict())
+                            .setStreet(
+                                    hotel.getAddress().getStreet() == null
+                                            ? ""
+                                            : hotel.getAddress().getStreet());
             hotelBuilder.setAddress(addressBuilder.build());
         }
 
-        FindHotelByIdResponse response = FindHotelByIdResponse.newBuilder().setHotel(hotelBuilder.build()).build();
+        FindHotelByIdResponse response =
+                FindHotelByIdResponse.newBuilder().setHotel(hotelBuilder.build()).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
-
     }
+
     /***********************************************************************************************/
-    /**
-     * 将分页结果 Page<Hotel> 转换为 proto 的 HotelPage
-     */
+    /** 将分页结果 Page<Hotel> 转换为 proto 的 HotelPage */
     private HotelPage buildHotelPage(Page<Hotel> result) {
         List<org.tripsphere.hotel.Hotel> hotelProtos = buildHotelList(result.getContent());
 
@@ -281,42 +313,60 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
                 .build();
     }
 
-    /**
-     * 将 List<Hotel> 转换为 List<proto Hotel>
-     */
+    /** 将 List<Hotel> 转换为 List<proto Hotel> */
     private List<org.tripsphere.hotel.Hotel> buildHotelList(List<Hotel> hotels) {
         List<org.tripsphere.hotel.Hotel> hotelProtos = new ArrayList<>();
 
         for (Hotel hotel : hotels) {
-            org.tripsphere.hotel.Hotel.Builder hotelBuilder = org.tripsphere.hotel.Hotel.newBuilder()
-                    .setId(hotel.getId() == null ? "" : hotel.getId())
-                    .setName(hotel.getName() == null ? "" : hotel.getName())
-                    .setIntroduction(hotel.getIntroduction() == null ? "" : hotel.getIntroduction());
+            org.tripsphere.hotel.Hotel.Builder hotelBuilder =
+                    org.tripsphere.hotel.Hotel.newBuilder()
+                            .setId(hotel.getId() == null ? "" : hotel.getId())
+                            .setName(hotel.getName() == null ? "" : hotel.getName())
+                            .setIntroduction(
+                                    hotel.getIntroduction() == null ? "" : hotel.getIntroduction());
 
-            if (hotel.getTags() != null)
-                hotelBuilder.addAllTags(hotel.getTags());
+            if (hotel.getTags() != null) hotelBuilder.addAllTags(hotel.getTags());
 
             if (hotel.getLocation() != null) {
-                org.tripsphere.hotel.Location locationProto = org.tripsphere.hotel.Location.newBuilder()
-                        .setLng(hotel.getLocation().getX())
-                        .setLat(hotel.getLocation().getY())
-                        .build();
+                org.tripsphere.hotel.Location locationProto =
+                        org.tripsphere.hotel.Location.newBuilder()
+                                .setLng(hotel.getLocation().getX())
+                                .setLat(hotel.getLocation().getY())
+                                .build();
                 hotelBuilder.setLocation(locationProto);
             }
 
-            if (hotel.getAddress() != null){
-                org.tripsphere.hotel.Address.Builder addressBuilder = org.tripsphere.hotel.Address.newBuilder()
-                        .setCountry(hotel.getAddress().getCountry() == null ? "" : hotel.getAddress().getCountry())
-                        .setProvince(hotel.getAddress().getProvince() == null ? "" : hotel.getAddress().getProvince())
-                        .setCity(hotel.getAddress().getCity() == null ? "" : hotel.getAddress().getCity())
-                        .setCounty(hotel.getAddress().getCounty() == null ? "" : hotel.getAddress().getCounty())
-                        .setDistrict(hotel.getAddress().getDistrict() == null ? "" : hotel.getAddress().getDistrict())
-                        .setStreet(hotel.getAddress().getStreet() == null ? "" : hotel.getAddress().getStreet());
+            if (hotel.getAddress() != null) {
+                org.tripsphere.hotel.Address.Builder addressBuilder =
+                        org.tripsphere.hotel.Address.newBuilder()
+                                .setCountry(
+                                        hotel.getAddress().getCountry() == null
+                                                ? ""
+                                                : hotel.getAddress().getCountry())
+                                .setProvince(
+                                        hotel.getAddress().getProvince() == null
+                                                ? ""
+                                                : hotel.getAddress().getProvince())
+                                .setCity(
+                                        hotel.getAddress().getCity() == null
+                                                ? ""
+                                                : hotel.getAddress().getCity())
+                                .setCounty(
+                                        hotel.getAddress().getCounty() == null
+                                                ? ""
+                                                : hotel.getAddress().getCounty())
+                                .setDistrict(
+                                        hotel.getAddress().getDistrict() == null
+                                                ? ""
+                                                : hotel.getAddress().getDistrict())
+                                .setStreet(
+                                        hotel.getAddress().getStreet() == null
+                                                ? ""
+                                                : hotel.getAddress().getStreet());
                 hotelBuilder.setAddress(addressBuilder.build());
             }
             hotelProtos.add(hotelBuilder.build());
         }
         return hotelProtos;
     }
-
 }

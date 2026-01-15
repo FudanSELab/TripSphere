@@ -8,6 +8,7 @@ dependencies = [
     "nacos-sdk-python>=2.0.9",
     "opentelemetry-distro[otlp]>=0.58b0",
     "pydantic-settings>=2.11.0",
+    "pymongo>=4.15.5",
     "tripsphere>=0.1.0",
 ]
 
@@ -17,9 +18,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "grpcio-tools>=1.75.0",
     "mypy>=1.18.2",
-    "mypy-protobuf>=4.0.0",
     "pyright>=1.1.405",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",

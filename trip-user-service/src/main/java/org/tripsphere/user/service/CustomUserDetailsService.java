@@ -13,17 +13,17 @@ import org.tripsphere.user.repository.UserRepository;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        UserEntity user =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(
+                                () -> new UsernameNotFoundException("User not found: " + username));
 
-        String[] roleNames = user.getRoles().stream()
-                .map(Role::name)
-                .toArray(String[]::new);
+        String[] roleNames = user.getRoles().stream().map(Role::name).toArray(String[]::new);
         return User.builder()
                 .username(user.getUsername())
                 .password(user.getPassword())
@@ -31,4 +31,3 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .build();
     }
 }
-

@@ -6,8 +6,8 @@
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
 from review_summary.callbacks.query_callbacks import QueryCallbacks
@@ -18,7 +18,6 @@ from review_summary.query.base import SearchResult
 from review_summary.query.context_builder.conversation_history import (
     ConversationHistory,
 )
-from review_summary.query.model_wrraper.chat_model import ModelWrapper
 from review_summary.query.structured_search.local_search.mixed_content import (
     LocalSearchMixedContext,
 )
@@ -32,18 +31,16 @@ class LocalSearch:
 
     def __init__(
         self,
-        model: ChatOpenAI,
+        chat_model: ChatOpenAI,
         context_builder: LocalSearchMixedContext,
         tokenizer: Tokenizer,
         system_prompt: str | None = None,
         response_type: str = "multiple paragraphs",
         callbacks: list[QueryCallbacks] | None = None,
-        model_params: dict[str, Any] | None = None,
     ):
-        self.model = model
+        self.chat_model = chat_model
         self.context_builder = context_builder
         self.tokenizer = tokenizer
-        self.model_params = model_params
 
         self.system_prompt = system_prompt or LOCAL_SEARCH_SYSTEM_PROMPT
         self.callbacks = callbacks or []
@@ -70,23 +67,19 @@ class LocalSearch:
         output_tokens["build_context"] = context_result.output_tokens
 
         logger.debug("GENERATE ANSWER: %s. QUERY: %s", start_time, query)
-        model_wrapper = ModelWrapper(model=self.model)
         try:
             search_prompt = self.system_prompt.format(
                 context_data=context_result.context_chunks,
                 response_type=self.response_type,
             )
-            history_messages = [
-                {"role": "system", "content": search_prompt},
-            ]
 
             full_response = ""
-            async for response in model_wrapper.astream(
-                query=query, history=history_messages
+            async for chunk in self.chat_model.astream(
+                [SystemMessage(content=search_prompt), HumanMessage(content=query)]
             ):
-                full_response += response
+                full_response += chunk.text
                 for callback in self.callbacks:
-                    callback.on_llm_new_token(response)
+                    callback.on_llm_new_token(chunk.text)
 
             llm_calls["response"] = 1
             prompt_tokens["response"] = len(self.tokenizer.encode(search_prompt))
@@ -137,19 +130,13 @@ class LocalSearch:
         search_prompt = self.system_prompt.format(
             context_data=context_result.context_chunks, response_type=self.response_type
         )
-        history_messages = [
-            {"role": "system", "content": search_prompt},
-        ]
-
-        model_wrapper = ModelWrapper(model=self.model)
 
         for callback in self.callbacks:
             callback.on_context(context_result.context_records)
 
-        async for response in model_wrapper.astream(
-            query=query,
-            history=history_messages,
+        async for chunk in self.chat_model.astream(
+            [SystemMessage(content=search_prompt), HumanMessage(content=query)]
         ):
             for callback in self.callbacks:
-                callback.on_llm_new_token(response)
-            yield response
+                callback.on_llm_new_token(chunk.text)
+            yield chunk.text

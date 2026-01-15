@@ -15,19 +15,8 @@ ENV UV_PYTHON_DOWNLOADS=0
 # Install the project into `/app`
 WORKDIR /app
 
-COPY libs ./libs
-
-# Compile the gRPC Python files
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv run --locked --no-sync --with grpcio-tools -m grpc_tools.protoc \
-        -Ilibs/proto \
-        --python_out=libs/tripsphere/src \
-        --grpc_python_out=libs/tripsphere/src \
-        libs/proto/tripsphere/**/*.proto
-
 # Install the project's dependencies using the lockfile and settings
+COPY libs ./libs
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -75,7 +64,7 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 50051
+EXPOSE 50052
 
 # Run the gRPC server by default
 ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "itinerary"]

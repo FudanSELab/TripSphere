@@ -6,6 +6,46 @@ networks:
     driver: bridge
 
 services:
+  # Attraction Service
+  trip-attraction-service:
+    build:
+      context: ./trip-attraction-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-attraction-service:latest
+    container_name: trip-attraction-service
+    ports:
+      - "24213:24213"  # HTTP
+      - "50053:50053"  # gRPC
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_attraction_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Chat Service
+  trip-chat-service:
+    build:
+      context: ./trip-chat-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-chat-service:latest
+    container_name: trip-chat-service
+    ports:
+      - "24210:24210"  # HTTP
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+      - MONGO_URI=mongodb://root:fudanse@mongodb:27017
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    restart: unless-stopped
+
   # File Service
   trip-file-service:
     build:
@@ -14,7 +54,7 @@ services:
     image: tripsphere/trip-file-service:latest
     container_name: trip-file-service
     ports:
-      - "50051:50051"
+      - "50051:50051"  # gRPC
     environment:
       - APP_ENV=dev
       - APP_NAME=trip-file-service
@@ -38,6 +78,113 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # Hotel Service
+  trip-hotel-service:
+    build:
+      context: ./trip-hotel-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-hotel-service:latest
+    container_name: trip-hotel-service
+    ports:
+      - "50054:50054"  # gRPC
+      - "24214:24214"  # HTTP
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_hotel_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Itinerary Planner
+  trip-itinerary-planner:
+    build:
+      context: ./trip-itinerary-planner
+      dockerfile: Dockerfile
+    image: tripsphere/trip-itinerary-planner:latest
+    container_name: trip-itinerary-planner
+    ports:
+      - "24215:24215"
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+    depends_on:
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "24215"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Itinerary Service
+  trip-itinerary-service:
+    build:
+      context: ./trip-itinerary-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-itinerary-service:latest
+    container_name: trip-itinerary-service
+    ports:
+      - "50052:50052"  # gRPC
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+      - MONGO_URI=mongodb://root:fudanse@mongodb:27017
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Note Service
+  trip-note-service:
+    build:
+      context: ./trip-note-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-note-service:latest
+    container_name: trip-note-service
+    ports:
+      - "24216:24216"  # HTTP
+      - "50055:50055"  # gRPC
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_note_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Review Service
+  trip-review-service:
+    build:
+      context: ./trip-review-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-review-service:latest
+    container_name: trip-review-service
+    ports:
+      - "50057:50057"  # gRPC
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rmq-proxy:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Review Summary
   trip-review-summary:
     build:
@@ -45,6 +192,14 @@ services:
       dockerfile: Dockerfile
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary
+    ports:
+      - "24212:24212"  # HTTP
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+      - QDRANT_URL=http://qdrant:6333
+      - NEO4J_URI=neo4j://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=fudanse@fudan.edu.cn
     command:
       - uvicorn
       - review_summary.asgi:app
@@ -60,6 +215,10 @@ services:
   trip-review-summary-consumer:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-consumer
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+      - QDRANT_URL=http://qdrant:6333
+      - ROCKETMQ_ENDPOINTS=rmq-proxy:8081
     command:
       - python
       - -m
@@ -69,11 +228,24 @@ services:
         condition: service_healthy
       rmq-broker:
         condition: service_healthy
+      qdrant:
+        condition: service_started
 
   # Review Summary Celery Worker
   trip-review-summary-worker:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-worker
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+      - QDRANT_URL=http://qdrant:6333
+      - NEO4J_URI=neo4j://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=fudanse@fudan.edu.cn
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
     command:
       - celery
       - -A
@@ -86,6 +258,31 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      qdrant:
+        condition: service_started
+      neo4j:
+        condition: service_started
+
+  # User Service
+  trip-user-service:
+    build:
+      context: ./trip-user-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-user-service:latest
+    container_name: trip-user-service
+    ports:
+      - "50056:50056"  # gRPC
+      - "24217:24217"  # HTTP
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_user_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
 
   # Nacos
   nacos:
@@ -122,6 +319,12 @@ services:
     ports:
       - "9876:9876"
     command: sh mqnamesrv
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/9876"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   # RocketMQ Broker
   rmq-broker:
@@ -134,16 +337,25 @@ services:
     environment:
       - NAMESRV_ADDR=rmq-namesrv:9876
     depends_on:
-      - rmq-namesrv
+      rmq-namesrv:
+        condition: service_healthy
     command: sh mqbroker
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/10909"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
 
   # RocketMQ Proxy
   rmq-proxy:
     image: apache/rocketmq:5.3.2
     container_name: rmq-proxy
     depends_on:
-      - rmq-broker
-      - rmq-namesrv
+      rmq-broker:
+        condition: service_healthy
+      rmq-namesrv:
+        condition: service_healthy
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -151,6 +363,12 @@ services:
     environment:
       - NAMESRV_ADDR=rmq-namesrv:9876
     command: sh mqproxy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
 
   # RocketMQ Dashboard
   rmq-dashboard:
@@ -161,7 +379,8 @@ services:
     environment:
       - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
     depends_on:
-      - rmq-namesrv
+      rmq-namesrv:
+        condition: service_healthy
 
   # MongoDB
   mongodb:
@@ -259,6 +478,11 @@ services:
     ports:
       - "6379:6379"
     restart: "always"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 configs:
   qdrant_config:

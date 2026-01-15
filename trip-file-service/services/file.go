@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "trip-file-service/clients/grpc/gen/file"
+	pb "trip-file-service/clients/grpc/gen/tripsphere/file"
 	"trip-file-service/clients/minio"
 )
 

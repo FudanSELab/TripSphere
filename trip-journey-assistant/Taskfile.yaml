@@ -13,6 +13,7 @@ tasks:
     desc: Set up project development environment
     cmds:
       - uv sync  # Install dependencies and dev-dependencies
+      - task: gen-proto
       - task: otel-instr
 
   otel-instr:

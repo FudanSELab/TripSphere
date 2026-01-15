@@ -1,0 +1,18 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  gen-proto:
+    desc: Generate protobuf and gRPC codes
+    sources:
+      - ../contracts/protobuf/**/*.proto
+    generates:
+      - api/grpc/gen/**/*.go
+    cmds:
+      - buf generate
+

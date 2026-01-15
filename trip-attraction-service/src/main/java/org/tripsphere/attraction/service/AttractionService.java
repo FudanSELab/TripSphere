@@ -1,6 +1,9 @@
 package org.tripsphere.attraction.service;
 
-import org.springaicommunity.mcp.annotation.McpTool;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -10,16 +13,10 @@ import org.springframework.stereotype.Service;
 import org.tripsphere.attraction.model.Attraction;
 import org.tripsphere.attraction.repository.AttractionRepository;
 
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Logger;
-
 @Service
 public class AttractionService {
     private static final Logger logger = Logger.getLogger(Attraction.class.getName());
-    @Autowired
-    private AttractionRepository attractionRepository;
+    @Autowired private AttractionRepository attractionRepository;
 
     /**
      * Add attraction
@@ -35,7 +32,7 @@ public class AttractionService {
     /**
      * Delete attraction
      *
-     * @param id      attraction id
+     * @param id attraction id
      * @return if delete success, return true, else return false
      */
     public boolean deleteAttraction(String id) {
@@ -43,8 +40,7 @@ public class AttractionService {
         if (attractionOptional.isPresent()) {
             Attraction attraction = attractionOptional.get();
             attractionRepository.delete(attraction);
-        } else
-            return false;
+        } else return false;
         return true;
     }
 
@@ -77,8 +73,7 @@ public class AttractionService {
         if (attractionOptional.isPresent()) {
             Attraction attraction = attractionOptional.get();
             return attraction;
-        } else
-            return null;
+        } else return null;
     }
 
     /**
@@ -95,7 +90,91 @@ public class AttractionService {
         if (attractionOptional.isPresent()) {
             Attraction attraction = attractionOptional.get();
             return attraction.getId();
-        } else
-            return null;
+        } else return null;
+    }
+
+    /**
+     * Find hotels located at the specified location and within the specified distance range, and
+     * list them in order from near to far.
+     *
+     * @param lng Longitude
+     * @param lat Latitude
+     * @param radiusKm distance to center(km)
+     * @return The list of hotels
+     */
+    public List<Attraction> findAttractionsWithinRadius(
+            double lng, double lat, double radiusKm, String name, List<String> tags) {
+        double maxDistanceMeters = radiusKm * 1000; // Mongo expects meters for $nearSphere
+        String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
+        return attractionRepository.findByLocationNearWithFilters(
+                lng, lat, maxDistanceMeters, nameRegex, tags);
+    }
+
+    /**
+     * Find hotels located at the specified location and within the specified distance range
+     *
+     * @param lng Longitude
+     * @param lat Latitude
+     * @param radiusKm distance to center(km)
+     * @return The list of hotels
+     */
+    public List<Attraction> findAttractionsWithinCircle(
+            double lng, double lat, double radiusKm, String name, List<String> tags) {
+        double radiusInRadians = radiusKm / 6378.1; // convert km -> radians for $centerSphere
+        String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
+        return attractionRepository.findByLocationWithinWithFilters(
+                lng, lat, radiusInRadians, nameRegex, tags);
+    }
+
+    /**
+     * Find hotels located at the specified location and within the specified distance range, and
+     * list them in order from near to far, and result has been paginated
+     *
+     * @param lng Longitude
+     * @param lat Latitude
+     * @param radiusKm distance to center(km)
+     * @param page which page you want to find, start from 0
+     * @param size page size
+     * @return The page of hotels
+     */
+    public Page<Attraction> findAttractionsWithinRadius(
+            double lng,
+            double lat,
+            double radiusKm,
+            String name,
+            List<String> tags,
+            int page,
+            int size) {
+        double maxDistanceMeters = radiusKm * 1000;
+        String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
+        Pageable pageable = PageRequest.of(page, size);
+        return attractionRepository.findByLocationNearWithFilters(
+                lng, lat, maxDistanceMeters, nameRegex, tags, pageable);
+    }
+
+    /**
+     * Find hotels located at the specified location and within the specified distance range, and
+     * result has been paginated
+     *
+     * @param lng Longitude
+     * @param lat Latitude
+     * @param radiusKm distance to center(km)
+     * @param page which page you want to find, start from 0
+     * @param size page size
+     * @return The page of hotels
+     */
+    public Page<Attraction> findAttractionsWithinCircle(
+            double lng,
+            double lat,
+            double radiusKm,
+            String name,
+            List<String> tags,
+            int page,
+            int size) {
+        double radiusInRadians = radiusKm / 6378.1;
+        String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
+        Pageable pageable = PageRequest.of(page, size);
+        return attractionRepository.findByLocationWithinWithFilters(
+                lng, lat, radiusInRadians, nameRegex, tags, pageable);
     }
 }

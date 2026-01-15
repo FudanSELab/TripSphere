@@ -2,20 +2,20 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"github.com/google/uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log"
 	"time"
-	pd "trip-review-service/api/grpc"
+	pd "trip-review-service/api/grpc/gen/tripsphere/review"
 	"trip-review-service/internal/domain"
 	mq "trip-review-service/internal/handler/middleware"
 	"trip-review-service/internal/repository"
+
+	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type ReviewService struct {
-	pd.UnimplementedTripReviewServiceServer
+	pd.UnimplementedReviewServiceServer
 	db domain.ReviewRepository
 	mq *mq.MQ
 }
@@ -34,7 +34,7 @@ func (r *ReviewService) CreateReview(ctx context.Context, request *pd.CreateRevi
 	newUUID, err := uuid.NewUUID()
 	if err != nil {
 		log.Println("")
-		return &pd.CreateReviewResponse{Status: false, Id: ""}, status.Error(codes.Internal, fmt.Sprintf("failed to create "))
+		return &pd.CreateReviewResponse{Status: false, Id: ""}, status.Error(codes.Internal, "failed to create ")
 	}
 	id := newUUID.String()
 	review := &domain.Review{ID: id, UserID: request.UserId, TargetType: domain.ReviewTargetType(request.TargetType),
@@ -43,7 +43,7 @@ func (r *ReviewService) CreateReview(ctx context.Context, request *pd.CreateRevi
 	err = reviewService.db.Create(ctx, review)
 	if err != nil {
 		log.Printf("failed to create %+v\n", review)
-		return &pd.CreateReviewResponse{Status: false, Id: ""}, status.Error(codes.Internal, fmt.Sprintf("failed to create "))
+		return &pd.CreateReviewResponse{Status: false, Id: ""}, status.Error(codes.Internal, "failed to create ")
 	}
 
 	r.mq.AddMessage("ReviewTopic", review.ToString(), "CreateReview")
@@ -65,7 +65,7 @@ func (r *ReviewService) UpdateReview(ctx context.Context, request *pd.UpdateRevi
 	err := reviewService.db.Update(ctx, review)
 	if err != nil {
 		log.Printf("update fail:%s\n", err.Error())
-		return &pd.UpdateReviewResponse{Status: false}, status.Error(codes.Internal, fmt.Sprintf("failed to update "))
+		return &pd.UpdateReviewResponse{Status: false}, status.Error(codes.Internal, "failed to update ")
 	}
 
 	r.mq.AddMessage("ReviewTopic", review.ToString(), "UpdateReview")
@@ -78,7 +78,7 @@ func (r *ReviewService) DeleteReview(ctx context.Context, request *pd.DeleteRevi
 	id := request.Id
 	err := reviewService.db.Delete(ctx, id)
 	if err != nil {
-		return &pd.DeleteReviewResponse{Status: false}, status.Error(codes.Internal, fmt.Sprintf("failed to delete"))
+		return &pd.DeleteReviewResponse{Status: false}, status.Error(codes.Internal, "failed to delete")
 	}
 
 	r.mq.AddMessage("ReviewTopic", id, "DeleteReview")
@@ -90,7 +90,7 @@ func (r *ReviewService) GetReviewByTargetID(ctx context.Context, request *pd.Get
 	reviews, err := reviewService.db.FindByTarget(ctx, domain.ReviewTargetType(request.TargetType), request.TargetId, request.PageSize*(request.PageNumber-1), request.PageSize)
 	if err != nil {
 		log.Printf("get reviews by target id fail\n")
-		return &pd.GetReviewByTargetIDResponse{Reviews: []*pd.Review{}}, status.Error(codes.Internal, fmt.Sprintf("failed to get reviews by target id"))
+		return &pd.GetReviewByTargetIDResponse{Reviews: []*pd.Review{}}, status.Error(codes.Internal, "failed to get reviews by target id")
 	}
 	var pbReviews []*pd.Review
 	for _, review := range reviews {
@@ -118,7 +118,7 @@ func (r *ReviewService) GetReviewByTargetIDWithCursor(ctx context.Context, reque
 	reviews, nextCursor, err := reviewService.db.FindByTargetWithCursor(ctx, domain.ReviewTargetType(request.TargetType), request.TargetId, request.Cursor, request.Limit)
 	if err != nil {
 		log.Printf("get reviews by target id with cursor fail:%s\n", err.Error())
-		return &pd.GetReviewByTargetIDWithCursorResponse{Reviews: []*pd.Review{}, NextCursor: ""}, status.Error(codes.Internal, fmt.Sprintf("failed to get reviews by target id with cursor"))
+		return &pd.GetReviewByTargetIDWithCursorResponse{Reviews: []*pd.Review{}, NextCursor: ""}, status.Error(codes.Internal, "failed to get reviews by target id with cursor")
 	}
 	var pbReviews []*pd.Review
 	for _, review := range reviews {

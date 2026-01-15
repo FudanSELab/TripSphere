@@ -1,13 +1,22 @@
 import logging
 
 import grpc
-from tripsphere.itinerary import metadata_pb2_grpc
+from tripsphere.itinerary import (
+    itinerary_pb2_grpc,
+    metadata_pb2_grpc,
+    planning_pb2_grpc,
+)
 
+from itinerary.config.logging import setup_logging
 from itinerary.config.settings import get_settings
+from itinerary.grpc.itinerary import ItineraryServiceServicer
 from itinerary.grpc.metadata import MetadataServiceServicer
+from itinerary.grpc.planning import PlanningServiceServicer
 from itinerary.nacos.naming import NacosNaming
 
 logger = logging.getLogger(__name__)
+
+setup_logging()
 
 
 async def serve() -> None:
@@ -17,6 +26,12 @@ async def serve() -> None:
     server = grpc.aio.server()
     metadata_pb2_grpc.add_MetadataServiceServicer_to_server(
         MetadataServiceServicer(), server
+    )
+    planning_pb2_grpc.add_PlanningServiceServicer_to_server(
+        PlanningServiceServicer(), server
+    )
+    itinerary_pb2_grpc.add_ItineraryServiceServicer_to_server(
+        ItineraryServiceServicer(), server
     )
     server.add_insecure_port(f"[::]:{settings.grpc.port}")
     nacos_naming: NacosNaming | None = None

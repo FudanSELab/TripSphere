@@ -16,6 +16,7 @@ ENV UV_PYTHON_DOWNLOADS=0
 WORKDIR /app
 
 # Install the project's dependencies using the lockfile and settings
+COPY libs ./libs
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -24,7 +25,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Then, add the rest of the project source code and install it
 # Installing separately from dependencies allows optimal layer caching
 COPY pyproject.toml uv.lock README.md ./
-COPY libs ./libs
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
