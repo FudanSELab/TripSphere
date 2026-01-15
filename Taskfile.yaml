@@ -82,6 +82,7 @@ tasks:
       - task: itinerary:gen-proto
       - task: journey-assistant:gen-proto
       - task: next-frontend:gen-proto
+      - task: note:gen-proto
       - task: review-summary:gen-proto
       - task: user:gen-proto
 
