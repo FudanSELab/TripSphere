@@ -43,7 +43,7 @@ services:
       nacos:
         condition: service_healthy
       mongodb:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   # File Service
@@ -113,6 +113,12 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50059"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
 
   # Itinerary Service
@@ -123,7 +129,7 @@ services:
     image: tripsphere/trip-itinerary-service:latest
     container_name: trip-itinerary-service
     ports:
-      - "50052:50051"
+      - "50052:50052"
     environment:
       - NACOS_SERVER_ADDRESS=nacos:8848
       - MONGO_URI=mongodb://root:fudanse@mongodb:27017
@@ -131,7 +137,13 @@ services:
       nacos:
         condition: service_healthy
       mongodb:
-        condition: service_healthy
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
 
   # Note Service
@@ -198,7 +210,7 @@ services:
       rmq-broker:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
 
   # Review Summary Celery Worker
   trip-review-summary-worker:
@@ -228,9 +240,9 @@ services:
       minio:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
       neo4j:
-        condition: service_healthy
+        condition: service_started
 
   # User Service
   trip-user-service:
