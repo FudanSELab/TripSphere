@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: trip-note-service
+  profiles:
+    active: dev
+
+server:
+  port: 24216
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.tripsphere.note: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

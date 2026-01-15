@@ -1,0 +1,14 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        namespace: dev
+        group: DEV_GROUP
+
+grpc:
+  server:
+    port: 50055
+
+logging:
+  level:
+    org.tripsphere.note: DEBUG
