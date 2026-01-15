@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	pd "trip-review-service/api/grpc"
+	pd "trip-review-service/api/grpc/gen/tripsphere/review"
 	"trip-review-service/internal/service"
 
 	"google.golang.org/grpc"
@@ -23,7 +23,7 @@ func main() {
 
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	pd.RegisterTripReviewServiceServer(grpcServer, service.GetReviewService())
+	pd.RegisterReviewServiceServer(grpcServer, service.GetReviewService())
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		return

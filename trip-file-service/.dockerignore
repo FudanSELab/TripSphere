@@ -12,7 +12,6 @@ TESTING.md
 Dockerfile
 .dockerignore
 docker-compose*.yaml
-dev-docker-compose.yaml
 
 # Build artifacts
 *.exe
