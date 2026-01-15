@@ -14,8 +14,8 @@ services:
     image: tripsphere/trip-attraction-service:latest
     container_name: trip-attraction-service
     ports:
-      - "9010:9010"  # HTTP
-      - "9009:9009"  # gRPC
+      - "24213:24213"  # HTTP
+      - "50053:50053"  # gRPC
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_attraction_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
@@ -35,7 +35,7 @@ services:
     image: tripsphere/trip-chat-service:latest
     container_name: trip-chat-service
     ports:
-      - "24210:24210"
+      - "24210:24210"  # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=nacos:8848
       - MONGO_URI=mongodb://root:fudanse@mongodb:27017
@@ -54,7 +54,7 @@ services:
     image: tripsphere/trip-file-service:latest
     container_name: trip-file-service
     ports:
-      - "50051:50051"
+      - "50051:50051"  # gRPC
     environment:
       - APP_ENV=dev
       - APP_NAME=trip-file-service
@@ -86,8 +86,8 @@ services:
     image: tripsphere/trip-hotel-service:latest
     container_name: trip-hotel-service
     ports:
-      - "9011:9011"  # gRPC
-      - "9012:9012"  # HTTP
+      - "50054:50054"  # gRPC
+      - "24214:24214"  # HTTP
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_hotel_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
@@ -107,14 +107,14 @@ services:
     image: tripsphere/trip-itinerary-planner:latest
     container_name: trip-itinerary-planner
     ports:
-      - "50059:50059"
+      - "24215:24215"
     environment:
       - NACOS_SERVER_ADDRESS=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50059"]
+      test: ["CMD", "nc", "-z", "localhost", "24215"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -129,7 +129,7 @@ services:
     image: tripsphere/trip-itinerary-service:latest
     container_name: trip-itinerary-service
     ports:
-      - "50052:50052"
+      - "50052:50052"  # gRPC
     environment:
       - NACOS_SERVER_ADDRESS=nacos:8848
       - MONGO_URI=mongodb://root:fudanse@mongodb:27017
@@ -154,7 +154,8 @@ services:
     image: tripsphere/trip-note-service:latest
     container_name: trip-note-service
     ports:
-      - "9090:9090"
+      - "24216:24216"  # HTTP
+      - "50055:50055"  # gRPC
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_note_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
@@ -174,7 +175,7 @@ services:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary
     ports:
-      - "24212:24212"
+      - "24212:24212"  # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=nacos:8848
       - QDRANT_URL=http://qdrant:6333
@@ -252,8 +253,8 @@ services:
     image: tripsphere/trip-user-service:latest
     container_name: trip-user-service
     ports:
-      - "9007:9007"
-      - "9008:9008"
+      - "50056:50056"  # gRPC
+      - "24217:24217"  # HTTP
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_user_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root

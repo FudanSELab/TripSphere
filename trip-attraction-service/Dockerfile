@@ -27,8 +27,10 @@ COPY --from=builder --chown=nonroot:nonroot /app/${JAR} app.jar
 # Use the non-root user to run our application
 USER nonroot
 
-EXPOSE 9008
-EXPOSE 9007
+# Default gRPC port
+EXPOSE 50053
+# Default HTTP port
+EXPOSE 24213
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
