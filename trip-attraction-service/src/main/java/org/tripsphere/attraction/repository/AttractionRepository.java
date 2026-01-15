@@ -9,7 +9,9 @@ import org.tripsphere.attraction.model.Attraction;
 @Repository
 public interface AttractionRepository extends MongoRepository<Attraction, String> {
     public Optional<Attraction> findById(String id);
-    @Query("""
+
+    @Query(
+            """
             {
               'location': {
                 $nearSphere: {
@@ -21,9 +23,11 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
               'tags': { $all: ?4 }
             }
             """)
-    List<Attraction> findByLocationNearWithFilters(double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags);
+    List<Attraction> findByLocationNearWithFilters(
+            double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $geoWithin: {
@@ -34,9 +38,11 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
               'tags': { $all: ?4 }
             }
             """)
-    List<Attraction> findByLocationWithinWithFilters(double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags);
+    List<Attraction> findByLocationWithinWithFilters(
+            double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $nearSphere: {
@@ -48,9 +54,16 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
               'tags': { $all: ?4 }
             }
             """)
-    Page<Attraction> findByLocationNearWithFilters(double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags, Pageable pageable);
+    Page<Attraction> findByLocationNearWithFilters(
+            double lng,
+            double lat,
+            double maxDistanceMeters,
+            String nameRegex,
+            List<String> tags,
+            Pageable pageable);
 
-    @Query("""
+    @Query(
+            """
             {
               'location': {
                 $geoWithin: {
@@ -61,6 +74,11 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
               'tags': { $all: ?4 }
             }
             """)
-    Page<Attraction> findByLocationWithinWithFilters(double lng, double lat, double radiusInRadians, String nameRegex, List<String> tags, Pageable pageable);
-
+    Page<Attraction> findByLocationWithinWithFilters(
+            double lng,
+            double lat,
+            double radiusInRadians,
+            String nameRegex,
+            List<String> tags,
+            Pageable pageable);
 }
