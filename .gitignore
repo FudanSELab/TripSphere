@@ -10,3 +10,5 @@ Thumbs.db
 
 # Taskfile
 .task/
+
+volumes/

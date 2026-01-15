@@ -16,10 +16,10 @@ import { MetadataServiceClient as NoteMetadataServiceClient } from "@/lib/grpc/g
 // User
 import { UserServiceClient } from "@/lib/grpc/gen/tripsphere/user/user";
 
-const AtractionAddress = "127.0.0.1:9007";
-const HotelAddress = "127.0.0.1:9007";
-const ItineraryAddress = "127.0.0.1:9007";
-const NoteAddress = "127.0.0.1:9007";
+const AtractionAddress = "127.0.0.1:9006";
+const HotelAddress = "127.0.0.1:9010";
+const ItineraryAddress = "127.0.0.1:50052";
+const NoteAddress = "127.0.0.1:9090";
 const UserAddress = "127.0.0.1:9007";
 
 export class GrpcClient {
