@@ -51,11 +51,11 @@ message FindIdByNameResponse {
   string attraction_id = 1;
 }
 
-message FindAttractionByIdRequest{
-  string id =1;
+message FindAttractionByIdRequest {
+  string id = 1;
 }
 
-message FindAttractionByIdResponse{
+message FindAttractionByIdResponse {
   Attraction attraction = 1;
 }
 
@@ -70,54 +70,53 @@ message AttractionPage {
   int32 number_of_elements = 8; // the actual number of attraction on this page
 }
 
-message FindAttractionsWithinRadiusPageRequest{
+message FindAttractionsWithinRadiusPageRequest {
   tripsphere.common.Location location = 1;
-  double radiusKm = 2;
-  int32 number = 3;// page number
-  int32 size = 4; // page size
-  string name = 5;
-  repeated string tags = 6 ;
-}
-
-message FindAttractionsWithinRadiusPageResponse{
-  AttractionPage attraction_page = 1;
-}
-
-message FindAttractionsWithinCirclePageRequest{
-  tripsphere.common.Location location = 1;
-  double radiusKm = 2;
-  int32 number = 3;// page number
+  double radius_km = 2;
+  int32 number = 3; // page number
   int32 size = 4; // page size
   string name = 5;
   repeated string tags = 6;
 }
 
-message FindAttractionsWithinCirclePageResponse{
+message FindAttractionsWithinRadiusPageResponse {
   AttractionPage attraction_page = 1;
 }
 
-message FindAttractionsWithinRadiusRequest{
+message FindAttractionsWithinCirclePageRequest {
   tripsphere.common.Location location = 1;
-  double radiusKm = 2;
+  double radius_km = 2;
+  int32 number = 3; // page number
+  int32 size = 4; // page size
+  string name = 5;
+  repeated string tags = 6;
+}
+
+message FindAttractionsWithinCirclePageResponse {
+  AttractionPage attraction_page = 1;
+}
+
+message FindAttractionsWithinRadiusRequest {
+  tripsphere.common.Location location = 1;
+  double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
 }
 
-message FindAttractionsWithinRadiusResponse{
+message FindAttractionsWithinRadiusResponse {
   repeated Attraction content = 1;
 }
 
-message FindAttractionsWithinCircleRequest{
+message FindAttractionsWithinCircleRequest {
   tripsphere.common.Location location = 1;
-  double radiusKm = 2;
+  double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
 }
 
-message FindAttractionsWithinCircleResponse{
+message FindAttractionsWithinCircleResponse {
   repeated Attraction content = 1;
 }
-
 
 service AttractionService {
   rpc AddAttraction(AddAttractionRequest) returns (AddAttractionResponse);

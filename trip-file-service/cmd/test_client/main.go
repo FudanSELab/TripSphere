@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "trip-file-service/clients/grpc/gen/file"
+	pb "trip-file-service/clients/grpc/gen/tripsphere/file"
 )
 
 const (

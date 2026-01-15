@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc"
 
 	"trip-file-service/clients"
-	pb "trip-file-service/clients/grpc/gen/file"
+	pb "trip-file-service/clients/grpc/gen/tripsphere/file"
 	"trip-file-service/clients/nacos"
 	"trip-file-service/config"
-	server "trip-file-service/servies"
+	server "trip-file-service/services"
 )
 
 const (
