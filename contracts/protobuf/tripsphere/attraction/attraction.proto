@@ -71,7 +71,7 @@ message AttractionPage {
 }
 
 message FindAttractionsWithinRadiusPageRequest{
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radiusKm = 2;
   int32 number = 3;// page number
   int32 size = 4; // page size
@@ -84,7 +84,7 @@ message FindAttractionsWithinRadiusPageResponse{
 }
 
 message FindAttractionsWithinCirclePageRequest{
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radiusKm = 2;
   int32 number = 3;// page number
   int32 size = 4; // page size
@@ -97,7 +97,7 @@ message FindAttractionsWithinCirclePageResponse{
 }
 
 message FindAttractionsWithinRadiusRequest{
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radiusKm = 2;
   string name = 3;
   repeated string tags = 4;
@@ -108,7 +108,7 @@ message FindAttractionsWithinRadiusResponse{
 }
 
 message FindAttractionsWithinCircleRequest{
-  Location location = 1;
+  tripsphere.common.Location location = 1;
   double radiusKm = 2;
   string name = 3;
   repeated string tags = 4;

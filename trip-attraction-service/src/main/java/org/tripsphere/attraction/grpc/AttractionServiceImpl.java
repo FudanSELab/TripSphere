@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.domain.Page;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.tripsphere.attraction.*;
 import org.tripsphere.attraction.model.Address;
 import org.tripsphere.attraction.model.Attraction;
 import org.tripsphere.attraction.model.File;
 import org.tripsphere.attraction.service.AttractionService;
 
-import net.devh.boot.grpc.server.service.GrpcService;
-
 import io.grpc.stub.StreamObserver;
+
+import net.devh.boot.grpc.server.service.GrpcService;
 
 @GrpcService
 public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServiceImplBase {
@@ -43,8 +43,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
 
         GeoJsonPoint location =
                 new GeoJsonPoint(
-                        request.getAttraction().getLocation().getLng(),
-                        request.getAttraction().getLocation().getLat());
+                        request.getAttraction().getLocation().getLongitude(),
+                        request.getAttraction().getLocation().getLatitude());
         attraction.setLocation(location);
 
         List<File> images = new ArrayList<>();
@@ -119,8 +119,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
 
         GeoJsonPoint location =
                 new GeoJsonPoint(
-                        request.getAttraction().getLocation().getLng(),
-                        request.getAttraction().getLocation().getLat());
+                        request.getAttraction().getLocation().getLongitude(),
+                        request.getAttraction().getLocation().getLatitude());
 
         Attraction attraction = new Attraction();
         attraction.setId(request.getAttraction().getId());
@@ -169,17 +169,17 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         if (attraction.getTags() != null) attractionBuilder.addAllTags(attraction.getTags());
 
         if (attraction.getLocation() != null) {
-            org.tripsphere.attraction.Location locationProto =
-                    org.tripsphere.attraction.Location.newBuilder()
-                            .setLng(attraction.getLocation().getX())
-                            .setLat(attraction.getLocation().getY())
+            org.tripsphere.common.Location locationProto =
+                    org.tripsphere.common.Location.newBuilder()
+                            .setLongitude(attraction.getLocation().getX())
+                            .setLatitude(attraction.getLocation().getY())
                             .build();
             attractionBuilder.setLocation(locationProto);
         }
 
         if (attraction.getAddress() != null) {
-            org.tripsphere.attraction.Address.Builder addressBuilder =
-                    org.tripsphere.attraction.Address.newBuilder()
+            org.tripsphere.common.Address.Builder addressBuilder =
+                    org.tripsphere.common.Address.newBuilder()
                             .setCountry(
                                     attraction.getAddress().getCountry() == null
                                             ? ""
@@ -221,8 +221,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
             io.grpc.stub.StreamObserver<
                             org.tripsphere.attraction.FindAttractionsWithinRadiusPageResponse>
                     responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         int number = request.getNumber();
         int size = request.getSize();
@@ -247,8 +247,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
     public void findAttractionsWithinCirclePage(
             FindAttractionsWithinCirclePageRequest request,
             StreamObserver<FindAttractionsWithinCirclePageResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         int number = request.getNumber();
         int size = request.getSize();
@@ -273,8 +273,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
     public void findAttractionsWithinRadius(
             FindAttractionsWithinRadiusRequest request,
             StreamObserver<FindAttractionsWithinRadiusResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         String name = request.getName();
         List<String> tags = request.getTagsList();
@@ -297,8 +297,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
     public void findAttractionsWithinCircle(
             FindAttractionsWithinCircleRequest request,
             StreamObserver<FindAttractionsWithinCircleResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         String name = request.getName();
         List<String> tags = request.getTagsList();
@@ -353,17 +353,17 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
             if (attraction.getTags() != null) attractionBuilder.addAllTags(attraction.getTags());
 
             if (attraction.getLocation() != null) {
-                org.tripsphere.attraction.Location locationProto =
-                        org.tripsphere.attraction.Location.newBuilder()
-                                .setLng(attraction.getLocation().getX())
-                                .setLat(attraction.getLocation().getY())
+                org.tripsphere.common.Location locationProto =
+                        org.tripsphere.common.Location.newBuilder()
+                                .setLongitude(attraction.getLocation().getX())
+                                .setLatitude(attraction.getLocation().getY())
                                 .build();
                 attractionBuilder.setLocation(locationProto);
             }
 
             if (attraction.getAddress() != null) {
-                org.tripsphere.attraction.Address.Builder addressBuilder =
-                        org.tripsphere.attraction.Address.newBuilder()
+                org.tripsphere.common.Address.Builder addressBuilder =
+                        org.tripsphere.common.Address.newBuilder()
                                 .setCountry(
                                         attraction.getAddress().getCountry() == null
                                                 ? ""
