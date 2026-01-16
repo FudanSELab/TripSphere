@@ -96,4 +96,4 @@ tasks:
   start:
     desc: Start all the services using Docker Compose
     cmds:
-      - echo Not Implemented Yet
+      - docker compose up -d

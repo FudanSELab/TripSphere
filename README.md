@@ -8,7 +8,7 @@ This monorepo contains the TripSphere, an AI-native distributed system based on 
 
 ### Prerequisites
 
-[Task](https://taskfile.dev/#/installation) is required to run the tasks defined in the `Taskfile.yml`. Run `task` to show all available tasks.
+[Task](https://taskfile.dev/#/installation) is required to run the tasks defined in the `Taskfile.yml`. You can run `task` to show all available tasks.
 
 We use [uv](https://docs.astral.sh/uv/) as the Python package and project manager. [Maven Wrapper](https://maven.apache.org/tools/wrapper/) is used to manage Java projects. [Go](https://go.dev/) should be installed for developing Golang projects. [Bun](https://bun.sh/) is used as the JavaScript runtime.
 
