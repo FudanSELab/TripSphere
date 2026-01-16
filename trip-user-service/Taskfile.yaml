@@ -39,3 +39,14 @@ tasks:
         platforms: [windows]
       - cmd: ./mvnw spotless:apply
         platforms: [linux, darwin]
+
+  run:
+    desc: Run the application with local profile
+    aliases: [run-local]
+    cmds:
+      - echo "Not Implemented Yet"
+
+  run-dev:
+    desc: Run the application with development profile
+    cmds:
+      - - echo "Not Implemented Yet"

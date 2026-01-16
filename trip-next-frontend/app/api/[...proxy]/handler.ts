@@ -2,6 +2,7 @@ import * as grpc from "@grpc/grpc-js";
 import { parse } from "cookie";
 import { NextRequest, NextResponse } from "next/server";
 
+import { mapGrpcCodeToHttp } from "@/app/api/[...proxy]/code";
 import { grpcProxyMap, RpcProxyRule } from "@/app/api/[...proxy]/proxy-map";
 import { grpcClient } from "@/lib/grpc/client";
 import { Details } from "@/lib/grpc/gen/tripsphere/common/details";
@@ -11,7 +12,6 @@ import {
 } from "@/lib/grpc/gen/tripsphere/user/user";
 import { Reason, ResponseCode } from "@/lib/requests/base/code";
 import { ResponseWrap } from "@/lib/requests/base/request";
-import { mapGrpcCodeToHttp } from "./code";
 
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 

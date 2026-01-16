@@ -69,7 +69,7 @@ class AgentFacade:
         self.default_runner = Runner(
             app_name=self.app_name,
             agent=_root_agent.clone(
-                {"sub_agents": list(self.remote_a2a_agents.values())}
+                {"sub_agents": list[RemoteA2aAgent](self.remote_a2a_agents.values())}
             ),
             session_service=self.session_service,
         )
@@ -95,7 +95,7 @@ class AgentFacade:
     ) -> Self:
         instance = cls(httpx_client)
         # TODO: Remote agents discovery through Nacos
-        await instance._post_init(["http://localhost:8000"], mongo_client)
+        await instance._post_init(["http://localhost:24211"], mongo_client)
         return instance
 
     async def invoke(self, conversation: Conversation, user_query: Message) -> Message:

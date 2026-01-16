@@ -14,7 +14,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_CHAT_SERVICE_URL || "http://localhost:24210";
 
   /**
    * Helper function to convert text content to Part array
