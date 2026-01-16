@@ -36,9 +36,13 @@ services:
     container_name: trip-chat-service
     ports:
       - "24210:24210"  # HTTP
+    env_file:
+      - ./trip-chat-service/.env.development
     environment:
-      - NACOS_SERVER_ADDRESS=nacos:8848
-      - MONGO_URI=mongodb://root:fudanse@mongodb:27017
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
     depends_on:
       nacos:
         condition: service_healthy
@@ -108,8 +112,12 @@ services:
     container_name: trip-itinerary-planner
     ports:
       - "24215:24215"
+    env_file:
+      - ./trip-itinerary-planner/.env.development
     environment:
-      - NACOS_SERVER_ADDRESS=nacos:8848
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
     depends_on:
       nacos:
         condition: service_healthy
@@ -130,9 +138,11 @@ services:
     container_name: trip-itinerary-service
     ports:
       - "50052:50052"  # gRPC
+    env_file:
+      - ./trip-itinerary-service/.env.development
     environment:
-      - NACOS_SERVER_ADDRESS=nacos:8848
-      - MONGO_URI=mongodb://root:fudanse@mongodb:27017
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
     depends_on:
       nacos:
         condition: service_healthy
@@ -144,6 +154,52 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    restart: unless-stopped
+
+  # Journey Assistant
+  trip-journey-assistant:
+    build:
+      context: ./trip-journey-assistant
+      dockerfile: Dockerfile
+    image: tripsphere/trip-journey-assistant:latest
+    container_name: trip-journey-assistant
+    ports:
+      - "24211:24211"  # HTTP
+    env_file:
+      - ./trip-journey-assistant/.env.development
+    environment:
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+    depends_on:
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "24211"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Next.js Frontend
+  trip-next-frontend:
+    build:
+      context: ./trip-next-frontend
+      dockerfile: Dockerfile
+    image: tripsphere/trip-next-frontend:latest
+    container_name: trip-next-frontend
+    ports:
+      - "3000:3000"  # HTTP
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8848}
+    depends_on:
+      - trip-chat-service
+      - trip-itinerary-service
+      - trip-attraction-service
+      - trip-hotel-service
+      - trip-user-service
     restart: unless-stopped
 
   # Note Service
@@ -194,12 +250,16 @@ services:
     container_name: trip-review-summary
     ports:
       - "24212:24212"  # HTTP
+    env_file:
+      - ./trip-review-summary/.env.development
     environment:
-      - NACOS_SERVER_ADDRESS=nacos:8848
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=fudanse@fudan.edu.cn
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
     command:
       - uvicorn
       - review_summary.asgi:app
@@ -215,10 +275,14 @@ services:
   trip-review-summary-consumer:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-consumer
+    env_file:
+      - ./trip-review-summary/.env.development
     environment:
-      - NACOS_SERVER_ADDRESS=nacos:8848
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - ROCKETMQ_ENDPOINTS=rmq-proxy:8081
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
     command:
       - python
       - -m
@@ -235,8 +299,10 @@ services:
   trip-review-summary-worker:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-worker
+    env_file:
+      - ./trip-review-summary/.env.development
     environment:
-      - NACOS_SERVER_ADDRESS=nacos:8848
+      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
       - NEO4J_USERNAME=neo4j
@@ -246,6 +312,8 @@ services:
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
     command:
       - celery
       - -A
@@ -277,11 +345,19 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_user_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=fudanse
+      - grpc.server.port=50056
+      - server.port=24217
     depends_on:
       mysql:
         condition: service_healthy
       nacos:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50056"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
 
   # Nacos

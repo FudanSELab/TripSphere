@@ -22,13 +22,14 @@ import { ReviewServiceClient } from "@/lib/grpc/gen/tripsphere/review/review";
 // User
 import { UserServiceClient } from "@/lib/grpc/gen/tripsphere/user/user";
 
-const AttractionAddress = "127.0.0.1:50053";
-const FileAddress = "127.0.0.1:50051";
-const HotelAddress = "127.0.0.1:50054";
-const ItineraryAddress = "127.0.0.1:50052";
-const NoteAddress = "127.0.0.1:50055";
-const ReviewAddress = "127.0.0.1:50057";
-const UserAddress = "127.0.0.1:50056";
+// Use environment variables with Docker service names as defaults
+const AttractionAddress = process.env.GRPC_ATTRACTION_ADDRESS || "trip-attraction-service:50053";
+const FileAddress = process.env.GRPC_FILE_ADDRESS || "trip-file-service:50051";
+const HotelAddress = process.env.GRPC_HOTEL_ADDRESS || "trip-hotel-service:50054";
+const ItineraryAddress = process.env.GRPC_ITINERARY_ADDRESS || "trip-itinerary-service:50052";
+const NoteAddress = process.env.GRPC_NOTE_ADDRESS || "trip-note-service:50055";
+const ReviewAddress = process.env.GRPC_REVIEW_ADDRESS || "trip-review-service:50057";
+const UserAddress = process.env.GRPC_USER_ADDRESS || "trip-user-service:50056";
 
 export class GrpcClient {
   private static instance: GrpcClient;

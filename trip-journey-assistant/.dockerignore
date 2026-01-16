@@ -71,8 +71,3 @@ docker-compose*.yaml
 tests/
 .pytest_cache/
 
-# Examples
-examples/
-
-# Scripts
-scripts/

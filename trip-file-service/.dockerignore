@@ -1,16 +1,53 @@
+# Go
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
 # Git
-.git
+.git/
 .gitignore
 .gitattributes
 
 # Documentation
-*.md
 README.md
 TESTING.md
+CHANGELOG.md
+LICENSE
+
+# Task
+Taskfile.yaml
 
 # Docker
 Dockerfile
 .dockerignore
+docker-compose*.yml
 docker-compose*.yaml
 
 # Build artifacts
@@ -25,37 +62,3 @@ trip-file-service
 *_test.go
 test/
 cmd/test_client/
-
-# Temporary files
-*.tmp
-*.temp
-*.log
-*.swp
-*.swo
-*~
-
-# IDE
-.vscode/
-.idea/
-*.iml
-
-# Dependencies and build cache
-vendor/
-.venv/
-__pycache__/
-
-# Local configuration
-.env
-.env.local
-.env.*.local
-
-# Scripts (can be copied during build if needed)
-scripts/
-
-# Volume data
-volumes/
-
-# Others
-.DS_Store
-Thumbs.db
-

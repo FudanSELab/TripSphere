@@ -1,4 +1,4 @@
-import { ReasonMap } from "@/lib/grpc/gen/common/details_pb";
+import { Reason as PbReason } from "@/lib/grpc/gen/tripsphere/common/details";
 
 export enum ResponseCode {
   SUCCESS = "Success",
@@ -9,4 +9,9 @@ export enum ResponseCode {
   UNAUTHORIZED = "Unauthorized",
 }
 
-export type Reason = keyof ReasonMap;
+export const ReasonMap = {
+  REASON_UNSPECIFIED: PbReason.REASON_UNSPECIFIED,
+  REASON_ERROR: PbReason.REASON_ERROR,
+};
+
+export type Reason = keyof typeof ReasonMap;
