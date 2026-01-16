@@ -7,7 +7,7 @@ public class File {
     // user's file name, not the stored file name
     private String name;
     // file type, such as image/png, application/pdf
-    private String contextType;
+    private String contentType;
     // url used to access the file,uploaded to cloud storage or download
     private String url;
     // temp bucket or permanent bucket

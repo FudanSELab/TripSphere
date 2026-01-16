@@ -5,7 +5,7 @@ spring:
     active: dev
 
 server:
-  port: 8080
+  port: 24216
 
 management:
   endpoints:

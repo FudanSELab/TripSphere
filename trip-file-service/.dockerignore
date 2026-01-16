@@ -50,8 +50,15 @@ Dockerfile
 docker-compose*.yml
 docker-compose*.yaml
 
-# Scripts
-scripts/
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+trip-file-service
 
-# Tests
+# Test files
+*_test.go
+test/
 cmd/test_client/

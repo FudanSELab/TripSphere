@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package tripsphere.common;
+
+option go_package = "tripsphere/common";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.common";
+
+message Location {
+  double longitude = 1;
+  double latitude = 2;
+}
+
+message Address {
+  string country = 1;
+  string province = 2;
+  string city = 3;
+  string county = 4;
+  string district = 5;
+  string street = 6;
+}

@@ -7,7 +7,7 @@ This document describes how to test the FileService gRPC server functionality.
 1. **Start dependency services**
    ```bash
    # Start MinIO and Nacos
-   docker-compose -f dev-docker-compose.yaml up -d
+   docker-compose -f docker-compose.dev.yaml up -d
    ```
 
 2. **Start gRPC Server**
