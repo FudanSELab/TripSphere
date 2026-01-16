@@ -7,5 +7,6 @@ plugins:
     opt:
       - outputServices=grpc-js
       - esModuleInterop=true
+      # - fileSuffix=_pb
 inputs:
   - directory: ../contracts/protobuf

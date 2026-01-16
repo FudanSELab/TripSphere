@@ -1,62 +1,57 @@
-# Git
-.git
-.gitignore
-.gitattributes
-
-# Documentation
-*.md
-README.md
-TESTING.md
-
-# Docker
-Dockerfile
-.dockerignore
-docker-compose*.yaml
-dev-docker-compose.yaml
-
-# Build artifacts
+# Go
+# Binaries for programs and plugins
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-trip-file-service
 
-# Test files
-*_test.go
-test/
-cmd/test_client/
+# Test binary, built with `go test -c`
+*.test
 
-# Temporary files
-*.tmp
-*.temp
-*.log
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
 *.swp
 *.swo
 *~
-
-# IDE
-.vscode/
-.idea/
 *.iml
 
-# Dependencies and build cache
-vendor/
-.venv/
-__pycache__/
-
-# Local configuration
-.env
-.env.local
-.env.*.local
-
-# Scripts (can be copied during build if needed)
-scripts/
-
-# Volume data
-volumes/
-
-# Others
+# OS
 .DS_Store
 Thumbs.db
 
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+TESTING.md
+CHANGELOG.md
+LICENSE
+
+# Task
+Taskfile.yaml
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+docker-compose*.yaml
+
+# Scripts
+scripts/
+
+# Tests
+cmd/test_client/

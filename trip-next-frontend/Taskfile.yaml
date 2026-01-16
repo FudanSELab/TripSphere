@@ -17,3 +17,11 @@ tasks:
       - lib/grpc/gen/**/*.ts
     cmds:
       - buf generate
+
+  build:
+    desc: Build Docker image
+    vars:
+      PREFIX: '{{.PREFIX | default "tripsphere"}}'
+      TAG: '{{.TAG | default "latest"}}'
+    cmds:
+      - docker build . -t {{.PREFIX}}/trip-next-frontend:{{.TAG}}

@@ -146,6 +146,28 @@ services:
       start_period: 40s
     restart: unless-stopped
 
+  # Journey Assistant
+  trip-journey-assistant:
+    build:
+      context: ./trip-journey-assistant
+      dockerfile: Dockerfile
+    image: tripsphere/trip-journey-assistant:latest
+    container_name: trip-journey-assistant
+    ports:
+      - "50058:50058"
+    environment:
+      - NACOS_SERVER_ADDRESS=nacos:8848
+    depends_on:
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50058"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
   # Note Service
   trip-note-service:
     build:
@@ -164,6 +186,20 @@ services:
         condition: service_healthy
       nacos:
         condition: service_healthy
+    restart: unless-stopped
+
+  # Next.js Frontend
+  trip-next-frontend:
+    build:
+      context: ./trip-next-frontend
+      dockerfile: Dockerfile
+    image: tripsphere/trip-next-frontend:latest
+    container_name: trip-next-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
     restart: unless-stopped
 
   # Review Summary

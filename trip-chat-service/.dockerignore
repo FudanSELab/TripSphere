@@ -1,19 +1,72 @@
-.venv/
-
+# Python
 __pycache__/
-
-.ruff_cache/
-.mypy_cache/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
 .pytest_cache/
 
-Dockerfile
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
 
-.gitignore
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
 
+# OS
 .DS_Store
 Thumbs.db
 
-*_pb2.py
-*_pb2.pyi
-*_pb2_grpc.py
-*_pb2_grpc.pyi
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+CHANGELOG.md
+LICENSE
+
+# Task
+Taskfile.yaml
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+docker-compose*.yaml
+
+# Tests
+tests/
+.pytest_cache/

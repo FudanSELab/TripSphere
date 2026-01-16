@@ -85,8 +85,22 @@ tasks:
       - task: review-summary:gen-proto
       - task: user:gen-proto
 
+  build:
+    desc: Build all service Docker images
+    cmds:
+      - task: attraction:build
+      - task: chat:build
+      - task: file:build
+      - task: hotel:build
+      - task: itinerary-planner:build
+      - task: itinerary:build
+      - task: journey-assistant:build
+      - task: next-frontend:build
+      - task: note:build
+      - task: review-summary:build
+      - task: user:build
 
   start:
     desc: Start all the services using Docker Compose
     cmds:
-      - echo Not Implemented Yet
+      - docker-compose up -d
