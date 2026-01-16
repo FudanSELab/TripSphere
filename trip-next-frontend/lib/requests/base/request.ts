@@ -1,5 +1,5 @@
 import { isSSR } from "@/lib/utils/env";
-import { Reason, ResponseCode } from "./code";
+import { Reason, ResponseCode } from "@/lib/requests/base/code";
 
 export interface ResponseWrap<DataType = any> {
   data: DataType;
