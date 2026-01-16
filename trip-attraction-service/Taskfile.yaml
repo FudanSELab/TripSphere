@@ -10,7 +10,7 @@ tasks:
     silent: true
 
   gen-proto:
-    desc: Generate protobuf and gRPC codes for attraction service
+    desc: Generate protobuf and gRPC codes
     sources:
       - ../contracts/protobuf/**/*.proto
     generates:

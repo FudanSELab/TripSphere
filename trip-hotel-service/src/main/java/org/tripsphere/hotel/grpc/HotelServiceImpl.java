@@ -42,8 +42,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
 
         GeoJsonPoint location =
                 new GeoJsonPoint(
-                        request.getHotel().getLocation().getLng(),
-                        request.getHotel().getLocation().getLat());
+                        request.getHotel().getLocation().getLongitude(),
+                        request.getHotel().getLocation().getLatitude());
         hotel.setLocation(location);
 
         // get rooms from request
@@ -106,8 +106,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
 
         GeoJsonPoint location =
                 new GeoJsonPoint(
-                        request.getHotel().getLocation().getLng(),
-                        request.getHotel().getLocation().getLat());
+                        request.getHotel().getLocation().getLongitude(),
+                        request.getHotel().getLocation().getLatitude());
         hotel.setLocation(location);
         // get rooms from request
         List<Room> rooms = new ArrayList<>();
@@ -137,8 +137,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     public void findHotelWithinRadiusPage(
             FindHotelWithinRadiusPageRequest request,
             StreamObserver<FindHotelWithinRadiusPageResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         int number = request.getNumber();
         int size = request.getSize();
@@ -160,8 +160,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     public void findHotelsWithinCirclePage(
             FindHotelsWithinCirclePageRequest request,
             StreamObserver<FindHotelsWithinCirclePageResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         int number = request.getNumber();
         int size = request.getSize();
@@ -183,8 +183,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     public void findHotelWithinRadius(
             FindHotelWithinRadiusRequest request,
             StreamObserver<FindHotelWithinRadiusResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         String name = request.getName();
         List<String> tags = request.getTagsList();
@@ -203,8 +203,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
     public void findHotelsWithinCircle(
             FindHotelsWithinCircleRequest request,
             StreamObserver<FindHotelsWithinCircleResponse> responseObserver) {
-        double lng = request.getLocation().getLng();
-        double lat = request.getLocation().getLat();
+        double lng = request.getLocation().getLongitude();
+        double lat = request.getLocation().getLatitude();
         double radiusKm = request.getRadiusKm();
         String name = request.getName();
         List<String> tags = request.getTagsList();
@@ -235,10 +235,10 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         if (hotel.getTags() != null) hotelBuilder.addAllTags(hotel.getTags());
 
         if (hotel.getLocation() != null) {
-            org.tripsphere.hotel.Location locationProto =
-                    org.tripsphere.hotel.Location.newBuilder()
-                            .setLng(hotel.getLocation().getX())
-                            .setLat(hotel.getLocation().getY())
+            org.tripsphere.common.Location locationProto =
+                    org.tripsphere.common.Location.newBuilder()
+                            .setLongitude(hotel.getLocation().getX())
+                            .setLatitude(hotel.getLocation().getY())
                             .build();
             hotelBuilder.setLocation(locationProto);
         }
@@ -261,8 +261,8 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
         }
 
         if (hotel.getAddress() != null) {
-            org.tripsphere.hotel.Address.Builder addressBuilder =
-                    org.tripsphere.hotel.Address.newBuilder()
+            org.tripsphere.common.Address.Builder addressBuilder =
+                    org.tripsphere.common.Address.newBuilder()
                             .setCountry(
                                     hotel.getAddress().getCountry() == null
                                             ? ""
@@ -328,17 +328,17 @@ public class HotelServiceImpl extends HotelServiceGrpc.HotelServiceImplBase {
             if (hotel.getTags() != null) hotelBuilder.addAllTags(hotel.getTags());
 
             if (hotel.getLocation() != null) {
-                org.tripsphere.hotel.Location locationProto =
-                        org.tripsphere.hotel.Location.newBuilder()
-                                .setLng(hotel.getLocation().getX())
-                                .setLat(hotel.getLocation().getY())
+                org.tripsphere.common.Location locationProto =
+                        org.tripsphere.common.Location.newBuilder()
+                                .setLongitude(hotel.getLocation().getX())
+                                .setLatitude(hotel.getLocation().getY())
                                 .build();
                 hotelBuilder.setLocation(locationProto);
             }
 
             if (hotel.getAddress() != null) {
-                org.tripsphere.hotel.Address.Builder addressBuilder =
-                        org.tripsphere.hotel.Address.newBuilder()
+                org.tripsphere.common.Address.Builder addressBuilder =
+                        org.tripsphere.common.Address.newBuilder()
                                 .setCountry(
                                         hotel.getAddress().getCountry() == null
                                                 ? ""

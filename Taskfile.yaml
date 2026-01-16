@@ -78,7 +78,7 @@ tasks:
       - buf lint
 
   gen-proto:
-    desc: Generate protobuf and gRPC codes using buf
+    desc: Generate protobuf and gRPC codes
     cmds:
       - task: attraction:gen-proto
       - task: chat:gen-proto
@@ -105,6 +105,7 @@ tasks:
       - task: journey-assistant:build
       - task: next-frontend:build
       - task: note:build
+      - task: review:build
       - task: review-summary:build
       - task: user:build
 
