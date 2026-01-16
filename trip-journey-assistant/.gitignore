@@ -6,6 +6,7 @@ logs/
 
 # Environment variables
 .env
+.env.development
 
 # Taskfile
 .task/
