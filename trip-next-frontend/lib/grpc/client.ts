@@ -23,17 +23,15 @@ import { ReviewServiceClient } from "@/lib/grpc/gen/tripsphere/review/review";
 import { UserServiceClient } from "@/lib/grpc/gen/tripsphere/user/user";
 
 // Use environment variables with Docker service names as defaults
-const AttractionAddress =
-  process.env.GRPC_ATTRACTION_ADDRESS || "trip-attraction-service:50053";
-const FileAddress = process.env.GRPC_FILE_ADDRESS || "trip-file-service:50051";
-const HotelAddress =
-  process.env.GRPC_HOTEL_ADDRESS || "trip-hotel-service:50054";
-const ItineraryAddress =
-  process.env.GRPC_ITINERARY_ADDRESS || "trip-itinerary-service:50052";
-const NoteAddress = process.env.GRPC_NOTE_ADDRESS || "trip-note-service:50055";
-const ReviewAddress =
-  process.env.GRPC_REVIEW_ADDRESS || "trip-review-service:50057";
-const UserAddress = process.env.GRPC_USER_ADDRESS || "trip-user-service:50056";
+const AttractionUrl =
+  process.env.GRPC_ATTRACTION_URL || "trip-attraction-service:50053";
+const FileUrl = process.env.GRPC_FILE_URL || "trip-file-service:50051";
+const HotelUrl = process.env.GRPC_HOTEL_URL || "trip-hotel-service:50054";
+const ItineraryUrl =
+  process.env.GRPC_ITINERARY_URL || "trip-itinerary-service:50052";
+const NoteUrl = process.env.GRPC_NOTE_URL || "trip-note-service:50055";
+const ReviewUrl = process.env.GRPC_REVIEW_URL || "trip-review-service:50057";
+const UserUrl = process.env.GRPC_USER_URL || "trip-user-service:50056";
 
 export class GrpcClient {
   private static instance: GrpcClient;
@@ -50,17 +48,17 @@ export class GrpcClient {
   private constructor(credentials?: grpc.ChannelCredentials) {
     const creds = credentials ?? grpc.credentials.createInsecure();
 
-    this.attraction = new AttractionServiceClient(AttractionAddress, creds);
-    this.file = new FileServiceClient(FileAddress, creds);
-    this.hotel = new HotelServiceClient(HotelAddress, creds);
-    this.hotelMetadata = new HotelMetadataServiceClient(HotelAddress, creds);
+    this.attraction = new AttractionServiceClient(AttractionUrl, creds);
+    this.file = new FileServiceClient(FileUrl, creds);
+    this.hotel = new HotelServiceClient(HotelUrl, creds);
+    this.hotelMetadata = new HotelMetadataServiceClient(HotelUrl, creds);
     this.itineraryMetadata = new ItineraryMetadataServiceClient(
-      ItineraryAddress,
+      ItineraryUrl,
       creds,
     );
-    this.noteMetadata = new NoteMetadataServiceClient(NoteAddress, creds);
-    this.review = new ReviewServiceClient(ReviewAddress, creds);
-    this.user = new UserServiceClient(UserAddress, creds);
+    this.noteMetadata = new NoteMetadataServiceClient(NoteUrl, creds);
+    this.review = new ReviewServiceClient(ReviewUrl, creds);
+    this.user = new UserServiceClient(UserUrl, creds);
   }
 
   public static getInstance(credentials?: grpc.ChannelCredentials): GrpcClient {
