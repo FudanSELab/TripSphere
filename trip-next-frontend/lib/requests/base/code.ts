@@ -1,4 +1,4 @@
-import { ReasonMap } from "@/lib/grpc/gen/common/details_pb";
+import { Reason as ProtoReason } from "@/lib/grpc/gen/tripsphere/common/details_pb";
 
 export enum ResponseCode {
   SUCCESS = "Success",
@@ -9,4 +9,11 @@ export enum ResponseCode {
   UNAUTHORIZED = "Unauthorized",
 }
 
-export type Reason = keyof ReasonMap;
+// Map of reason codes to their string representations
+export const ReasonMap = {
+  REASON_UNSPECIFIED: ProtoReason.REASON_UNSPECIFIED,
+  REASON_ERROR: ProtoReason.REASON_ERROR,
+  ERROR: "ERROR", // String version for HTTP responses
+} as const;
+
+export type Reason = keyof typeof ReasonMap;
