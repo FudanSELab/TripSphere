@@ -34,6 +34,15 @@ tasks:
     cmds:
       - docker build . -t {{.PREFIX}}/trip-attraction-service:{{.TAG}}
 
+  build-aliyun:
+    desc: Build Docker image with Aliyun mirror
+    vars:
+      PREFIX: '{{.PREFIX | default "tripsphere"}}'
+      TAG: '{{.TAG | default "latest"}}'
+    cmd: |
+        docker build . -t {{.PREFIX}}/trip-attraction-service:{{.TAG}} \
+        --build-arg ALIYUN_MIRROR=true
+
   format:
     desc: Format Java code using spotless
     cmds:

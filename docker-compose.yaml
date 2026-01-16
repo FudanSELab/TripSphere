@@ -9,7 +9,7 @@ services:
   # Attraction Service
   trip-attraction-service:
     build:
-      context: ./trip-attraction-service
+      context: trip-attraction-service
       dockerfile: Dockerfile
     image: tripsphere/trip-attraction-service:latest
     container_name: trip-attraction-service
@@ -30,14 +30,12 @@ services:
   # Chat Service
   trip-chat-service:
     build:
-      context: ./trip-chat-service
+      context: trip-chat-service
       dockerfile: Dockerfile
     image: tripsphere/trip-chat-service:latest
     container_name: trip-chat-service
     ports:
       - "24210:24210"  # HTTP
-    env_file:
-      - ./trip-chat-service/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
@@ -53,7 +51,7 @@ services:
   # File Service
   trip-file-service:
     build:
-      context: ./trip-file-service
+      context: trip-file-service
       dockerfile: Dockerfile
     image: tripsphere/trip-file-service:latest
     container_name: trip-file-service
@@ -85,7 +83,7 @@ services:
   # Hotel Service
   trip-hotel-service:
     build:
-      context: ./trip-hotel-service
+      context: trip-hotel-service
       dockerfile: Dockerfile
     image: tripsphere/trip-hotel-service:latest
     container_name: trip-hotel-service
@@ -106,14 +104,12 @@ services:
   # Itinerary Planner
   trip-itinerary-planner:
     build:
-      context: ./trip-itinerary-planner
+      context: trip-itinerary-planner
       dockerfile: Dockerfile
     image: tripsphere/trip-itinerary-planner:latest
     container_name: trip-itinerary-planner
     ports:
       - "24215:24215"
-    env_file:
-      - ./trip-itinerary-planner/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -132,14 +128,12 @@ services:
   # Itinerary Service
   trip-itinerary-service:
     build:
-      context: ./trip-itinerary-service
+      context: trip-itinerary-service
       dockerfile: Dockerfile
     image: tripsphere/trip-itinerary-service:latest
     container_name: trip-itinerary-service
     ports:
       - "50052:50052"  # gRPC
-    env_file:
-      - ./trip-itinerary-service/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
@@ -159,14 +153,12 @@ services:
   # Journey Assistant
   trip-journey-assistant:
     build:
-      context: ./trip-journey-assistant
+      context: trip-journey-assistant
       dockerfile: Dockerfile
     image: tripsphere/trip-journey-assistant:latest
     container_name: trip-journey-assistant
     ports:
       - "24211:24211"  # HTTP
-    env_file:
-      - ./trip-journey-assistant/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -185,7 +177,7 @@ services:
   # Next.js Frontend
   trip-next-frontend:
     build:
-      context: ./trip-next-frontend
+      context: trip-next-frontend
       dockerfile: Dockerfile
     image: tripsphere/trip-next-frontend:latest
     container_name: trip-next-frontend
@@ -195,17 +187,18 @@ services:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8848}
     depends_on:
-      - trip-chat-service
-      - trip-itinerary-service
       - trip-attraction-service
+      - trip-chat-service
+      - trip-file-service
       - trip-hotel-service
+      - trip-itinerary-service
       - trip-user-service
     restart: unless-stopped
 
   # Note Service
   trip-note-service:
     build:
-      context: ./trip-note-service
+      context: trip-note-service
       dockerfile: Dockerfile
     image: tripsphere/trip-note-service:latest
     container_name: trip-note-service
@@ -226,7 +219,7 @@ services:
   # Review Service
   trip-review-service:
     build:
-      context: ./trip-review-service
+      context: trip-review-service
       dockerfile: Dockerfile
     image: tripsphere/trip-review-service:latest
     container_name: trip-review-service
@@ -238,20 +231,18 @@ services:
       mysql:
         condition: service_healthy
       rmq-proxy:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   # Review Summary
   trip-review-summary:
     build:
-      context: ./trip-review-summary
+      context: trip-review-summary
       dockerfile: Dockerfile
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary
     ports:
       - "24212:24212"  # HTTP
-    env_file:
-      - ./trip-review-summary/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
@@ -275,8 +266,6 @@ services:
   trip-review-summary-consumer:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-consumer
-    env_file:
-      - ./trip-review-summary/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
@@ -289,9 +278,9 @@ services:
       - review_summary.rocketmq
     depends_on:
       rmq-proxy:
-        condition: service_healthy
+        condition: service_started
       rmq-broker:
-        condition: service_healthy
+        condition: service_started
       qdrant:
         condition: service_started
 
@@ -299,8 +288,6 @@ services:
   trip-review-summary-worker:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-worker
-    env_file:
-      - ./trip-review-summary/.env.development
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
@@ -334,7 +321,7 @@ services:
   # User Service
   trip-user-service:
     build:
-      context: ./trip-user-service
+      context: trip-user-service
       dockerfile: Dockerfile
     image: tripsphere/trip-user-service:latest
     container_name: trip-user-service
@@ -352,12 +339,6 @@ services:
         condition: service_healthy
       nacos:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50056"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     restart: unless-stopped
 
   # Nacos
@@ -395,12 +376,6 @@ services:
     ports:
       - "9876:9876"
     command: sh mqnamesrv
-    healthcheck:
-      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/9876"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
 
   # RocketMQ Broker
   rmq-broker:
@@ -414,14 +389,8 @@ services:
       - NAMESRV_ADDR=rmq-namesrv:9876
     depends_on:
       rmq-namesrv:
-        condition: service_healthy
+        condition: service_started
     command: sh mqbroker
-    healthcheck:
-      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/10909"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 20s
 
   # RocketMQ Proxy
   rmq-proxy:
@@ -429,9 +398,9 @@ services:
     container_name: rmq-proxy
     depends_on:
       rmq-broker:
-        condition: service_healthy
+        condition: service_started
       rmq-namesrv:
-        condition: service_healthy
+        condition: service_started
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -439,12 +408,6 @@ services:
     environment:
       - NAMESRV_ADDR=rmq-namesrv:9876
     command: sh mqproxy
-    healthcheck:
-      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 30s
 
   # RocketMQ Dashboard
   rmq-dashboard:
@@ -456,7 +419,7 @@ services:
       - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
     depends_on:
       rmq-namesrv:
-        condition: service_healthy
+        condition: service_started
 
   # MongoDB
   mongodb:
