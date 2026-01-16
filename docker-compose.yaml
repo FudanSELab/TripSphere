@@ -164,7 +164,6 @@ services:
     image: tripsphere/trip-journey-assistant:latest
     container_name: trip-journey-assistant
     ports:
-      - "50058:50058"  # gRPC
       - "24211:24211"  # HTTP
     env_file:
       - ./trip-journey-assistant/.env.development
@@ -176,7 +175,7 @@ services:
       nacos:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50058"]
+      test: ["CMD", "nc", "-z", "localhost", "24211"]
       interval: 30s
       timeout: 10s
       retries: 3
