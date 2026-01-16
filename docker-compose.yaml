@@ -481,6 +481,7 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
     ports:
       - "3306:3306"
     volumes:
@@ -490,6 +491,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   # MinIO
   minio:

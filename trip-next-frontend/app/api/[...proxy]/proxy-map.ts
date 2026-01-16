@@ -27,13 +27,13 @@ export interface RpcProxyRule<
 }
 
 export interface RpcProxyMap {
-  "POST /api/user/register": RpcProxyRule<
+  "POST /api/v1/user/register": RpcProxyRule<
     RegisterRequest,
     RegisterResponse,
     RegisterRequest,
     RegisterResponse
   >;
-  "POST /api/user/login": RpcProxyRule<
+  "POST /api/v1/user/login": RpcProxyRule<
     LoginRequest,
     LoginResponse,
     LoginRequest,
@@ -42,12 +42,12 @@ export interface RpcProxyMap {
 }
 
 export const grpcProxyMap: RpcProxyMap = {
-  "POST /api/user/register": {
+  "POST /api/v1/user/register": {
     method: grpcClient.user.register.bind(grpcClient.user),
     buildRPCRequest: (request) => request,
     buildHttpResponse: (response) => response,
   },
-  "POST /api/user/login": {
+  "POST /api/v1/user/login": {
     method: grpcClient.user.login.bind(grpcClient.user),
     buildRPCRequest: (request) => request,
     buildHttpResponse: (response) => response,

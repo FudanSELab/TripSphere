@@ -1,21 +1,21 @@
+import { post } from "@/lib/requests/base/request";
 import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   User,
 } from "@/lib/types";
-import { post } from "../base/request";
 
 export async function register(data: RegisterRequest) {
-  return post<{ message?: string }>("/api/user/register", data);
+  return post<{ message?: string }>("/api/v1/user/register", data);
 }
 
 export async function login(credentials: LoginRequest) {
-  return post<LoginResponse>("/api/user/login", credentials);
+  return post<LoginResponse>("/api/v1/user/login", credentials);
 }
 
 export async function getCurrentUser(token?: string | null) {
-  return post<User>("/api/user/get-current-user", undefined);
+  return post<User>("/api/v1/user/get-current-user", undefined);
 }
 
 export async function changePassword(data: {
@@ -23,9 +23,9 @@ export async function changePassword(data: {
   oldPassword: string;
   newPassword: string;
 }) {
-  return post<{ message?: string }>("/api/user/change-password", data);
+  return post<{ message?: string }>("/api/v1/user/change-password", data);
 }
 
 export async function logout() {
-  return post<{}>("/api/user/logout", {});
+  return post<{}>("/api/v1/user/logout", {});
 }
