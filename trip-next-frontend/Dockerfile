@@ -1,13 +1,13 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM oven/bun:alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install dependencies using npm (since bun.lock is present, we'll use npm for Docker)
-RUN npm install --frozen-lockfile
+# Install dependencies using bun
+RUN bun install --frozen-lockfile
 
 # Copy generated proto files and source code
 COPY lib ./lib
@@ -18,11 +18,11 @@ COPY next.config.ts tsconfig.json ./
 COPY postcss.config.mjs eslint.config.mjs ./
 
 # Build the application
-RUN npm run build
+RUN bun run build
 
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM oven/bun:alpine AS runner
 
 WORKDIR /app
 
@@ -47,5 +47,5 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["bun", "server.js"]
 

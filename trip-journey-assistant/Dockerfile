@@ -64,9 +64,15 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-EXPOSE 50058
+ENV UVICORN_HOST=0.0.0.0
+ENV UVICORN_PORT=24211
 
-# Run the agent server
-ENTRYPOINT ["opentelemetry-instrument", "python", "-m", "journey_assistant"]
+EXPOSE $UVICORN_PORT
+
+# Run the agent server with uvicorn
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "journey_assistant.agent:app"]
+# Do NOT directly provide uvicorn `--port` option here.
+# It must be overridden via environment variable.
+# Otherwise, app may register incorrect port in service registry.
 CMD []
 
