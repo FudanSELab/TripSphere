@@ -19,6 +19,7 @@ tasks:
     cmds:
       - rm -rf src/main/proto
       - cp -r ../contracts/protobuf/ src/main/proto/
+      - chmod +x mvnw
       - cmd: mvnw protobuf:compile protobuf:compile-custom
         platforms: [windows]
       - cmd: ./mvnw protobuf:compile protobuf:compile-custom
