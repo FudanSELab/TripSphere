@@ -35,13 +35,13 @@ tasks:
       - docker build . -t {{.PREFIX}}/trip-user-service:{{.TAG}}
 
   build-aliyun:
-    desc: Build Docker image with Aliyun mirror
+    desc: Build Docker image with Aliyun Maven mirror
     vars:
       PREFIX: '{{.PREFIX | default "tripsphere"}}'
       TAG: '{{.TAG | default "latest"}}'
     cmd: |
         docker build . -t {{.PREFIX}}/trip-user-service:{{.TAG}} \
-        --build-arg ALIYUN_MIRROR=true
+        --build-arg MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
 
   format:
     desc: Format Java code using spotless

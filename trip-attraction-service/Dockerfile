@@ -2,7 +2,7 @@ FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
-ARG ALIYUN_MIRROR=false
+ARG MAVEN_MIRROR_URL
 
 COPY .mvn/ .mvn/
 COPY mvnw mvnw.cmd ./
@@ -14,21 +14,21 @@ RUN <<EOF cat > /tmp/settings.xml
 <settings>
     <mirrors>
         <mirror>
-            <id>aliyun-maven</id>
+            <id>maven-mirror</id>
             <mirrorOf>*</mirrorOf>
-            <name>Aliyun Maven Repository</name>
-            <url>https://maven.aliyun.com/repository/public</url>
+            <name>Maven Mirror Repository</name>
+            <url>${MAVEN_MIRROR_URL}</url>
         </mirror>
     </mirrors>
 </settings>
 EOF
 
 RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -B dependency:go-offline $([ "$ALIYUN_MIRROR" = "true" ] && echo "-s /tmp/settings.xml")
+    ./mvnw -B dependency:go-offline $([ -n "$MAVEN_MIRROR_URL" ] && echo "-s /tmp/settings.xml")
 
 COPY src ./src
 
-RUN ./mvnw -B clean package -DskipTests $([ "$ALIYUN_MIRROR" = "true" ] && echo "-s /tmp/settings.xml")
+RUN ./mvnw -B clean package -DskipTests $([ -n "$MAVEN_MIRROR_URL" ] && echo "-s /tmp/settings.xml")
 
 
 FROM eclipse-temurin:17-jre
