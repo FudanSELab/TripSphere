@@ -49,4 +49,4 @@ tasks:
   run-dev:
     desc: Run the application with development profile
     cmds:
-      - - echo "Not Implemented Yet"
+      - echo "Not Implemented Yet"
