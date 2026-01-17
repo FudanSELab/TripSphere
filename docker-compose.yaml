@@ -341,18 +341,24 @@ services:
 
   # Nacos
   nacos:
-    image: nacos/nacos-server:v2.5.1
+    image: nacos/nacos-server:v3.1.1
     container_name: nacos
     environment:
       - PREFER_HOST_MODE=hostname
       - MODE=standalone
+      - NACOS_AUTH_IDENTITY_KEY=root
+      - NACOS_AUTH_IDENTITY_VALUE=fudanse
+      - NACOS_AUTH_TOKEN=VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=
     ports:
+      - "18080:8080"  # Console
       - "8848:8848"
       - "9848:9848"
     healthcheck:
       test: 
-        - "CMD-SHELL"
-        - "curl -f http://localhost:8848/nacos/v1/console/health/liveness || exit 1"
+        - "CMD"
+        - "curl"
+        - "-f"
+        - "http://localhost:8080/v3/console/health/readiness"
       interval: 5s
       timeout: 3s
       retries: 20
