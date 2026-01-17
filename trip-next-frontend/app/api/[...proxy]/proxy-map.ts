@@ -9,17 +9,18 @@ import { ResponseData } from "@/lib/requests";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-export type HttpResponseHook<HttpResponseType = any> = (ctx: {
+export type HttpResponseHook<HttpResponseType = unknown> = (ctx: {
   req: NextRequest;
   httpResponse: ResponseData<HttpResponseType>;
 }) => NextResponse | void;
 
 export interface RpcProxyRule<
-  RPCRequestType = any,
-  RPCResponseType = any,
-  HttpRequestType = any,
-  HttpResponseType = any,
+  RPCRequestType = unknown,
+  RPCResponseType = unknown,
+  HttpRequestType = unknown,
+  HttpResponseType = unknown,
 > {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   method: Function;
   buildRPCRequest: (request: HttpRequestType) => RPCRequestType;
   buildHttpResponse: (response: RPCResponseType) => HttpResponseType;
@@ -52,11 +53,12 @@ export const grpcProxyMap: RpcProxyMap = {
     buildRPCRequest: (request) => request,
     buildHttpResponse: (response) => response,
     httpResponseHook: ({ httpResponse }) => {
+      const loginData = httpResponse.data as LoginResponse;
       const nextResponse = NextResponse.json({
         ...httpResponse,
-        data: { user: httpResponse.data.user },
+        data: { user: loginData?.user },
       });
-      const token = httpResponse.data?.token;
+      const token = loginData?.token;
       if (token) {
         nextResponse.cookies.set("token", token, {
           httpOnly: true,

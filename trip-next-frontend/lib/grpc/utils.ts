@@ -7,9 +7,9 @@
  * @param data - JSON object, field names should match AsObject type
  * @returns created protobuf message instance
  */
-export function createRequestFromObject<T extends { [key: string]: any }>(
+export function createRequestFromObject<T extends { [key: string]: unknown }>(
   MessageClass: new () => T,
-  data: Partial<Record<string, any>>,
+  data: Partial<Record<string, unknown>>,
 ): T {
   const message = new MessageClass();
   // Iterate over each field of the data object
@@ -21,7 +21,7 @@ export function createRequestFromObject<T extends { [key: string]: any }>(
     // call the corresponding setter method according to the field name
     // for example: username -> setUsername, oldPassword -> setOldPassword
     const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-    const setter = (message as any)[setterName];
+    const setter = (message as Record<string, unknown>)[setterName];
 
     if (typeof setter === "function") {
       setter.call(message, value);

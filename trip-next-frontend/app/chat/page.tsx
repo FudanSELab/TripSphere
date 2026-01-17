@@ -85,7 +85,7 @@ export default function ChatPage() {
 
   if (!auth.user) {
     return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <MessageSquare className="mx-auto mb-4 h-16 w-16 text-gray-400" />
           <h2 className="mb-2 text-xl font-semibold text-gray-900">
@@ -100,7 +100,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex h-screen">
       {/* Sidebar */}
       {showSidebar && (
         <aside className="flex w-80 flex-col border-r border-gray-200 bg-gray-50 transition-all duration-300">

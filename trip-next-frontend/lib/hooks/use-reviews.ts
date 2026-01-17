@@ -32,6 +32,7 @@ export function useReviews() {
         reviews: [],
         totalReviews: 0,
         status: true,
+        nextCursor: "",
       };
     } catch (err) {
       const message =

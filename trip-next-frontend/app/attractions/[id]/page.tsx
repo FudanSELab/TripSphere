@@ -198,7 +198,7 @@ export default function AttractionDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back button */}
-      <div className="border-b border-gray-200 bg-white">
+      <div className="pt-16">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <Link
             href="/attractions"
@@ -211,7 +211,7 @@ export default function AttractionDetailPage() {
       </div>
 
       {/* Main content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left column - Main content */}
           <div className="space-y-6 lg:col-span-2">

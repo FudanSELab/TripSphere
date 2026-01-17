@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  const response = NextResponse.json<ResponseWrap<{}>>({
+export async function POST(_: NextRequest) {
+  const response = NextResponse.json<ResponseWrap<Record<string, never>>>({
     data: {},
     code: ResponseCode.SUCCESS,
     msg: "Logout successful",

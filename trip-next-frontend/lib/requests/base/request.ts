@@ -1,7 +1,7 @@
 import { Reason, ResponseCode } from "@/lib/requests/base/code";
 import { isSSR } from "@/lib/utils/env";
 
-export interface ResponseWrap<DataType = any> {
+export interface ResponseWrap<DataType = unknown> {
   data: DataType;
   code: ResponseCode;
   msg: string;
@@ -39,6 +39,21 @@ function buildHeaders(options: RequestOptions): HeadersInit {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+
+  // Add token from localStorage if available (only in browser)
+  if (!isSSR()) {
+    try {
+      const authStorage = localStorage.getItem("auth-storage");
+      if (authStorage) {
+        const authState = JSON.parse(authStorage);
+        if (authState.state?.token) {
+          headers["Authorization"] = `Bearer ${authState.state.token}`;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to get auth token:", e);
+    }
+  }
 
   if (options.headers) {
     Object.assign(headers, options.headers);
@@ -79,6 +94,7 @@ export async function request<T = unknown>(
       ...fetchOptions,
       headers: requestHeaders,
       body: requestBody,
+      credentials: "include", // Include cookies in requests
     });
     return (await response.json()) as ResponseWrap<T>;
   } catch (error) {

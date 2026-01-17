@@ -133,7 +133,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative flex min-h-[90vh] items-center overflow-hidden bg-white">
+      <section className="relative flex h-screen items-center overflow-hidden bg-white">
         {/* Background gradient */}
         <div className="from-primary-50 to-secondary-50 absolute inset-0 bg-linear-to-br via-white" />
 
@@ -186,28 +186,6 @@ export default function Home() {
                 <ImageCarousel images={heroImages} autoPlayInterval={4000} />
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="border-y border-gray-100 bg-white py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.label} className="text-center">
-                  <div className="bg-primary-100 text-primary-600 mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <div className="text-3xl font-bold text-gray-900">
-                    {stat.value}
-                  </div>
-                  <div className="text-gray-500">{stat.label}</div>
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>

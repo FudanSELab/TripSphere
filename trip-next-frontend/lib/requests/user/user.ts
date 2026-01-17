@@ -27,5 +27,5 @@ export async function changePassword(data: {
 }
 
 export async function logout() {
-  return post<{}>("/api/v1/user/logout", {});
+  return post<Record<string, never>>("/api/v1/user/logout", {});
 }

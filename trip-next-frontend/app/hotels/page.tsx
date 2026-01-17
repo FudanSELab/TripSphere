@@ -284,7 +284,7 @@ export default function HotelsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
-      <div className="from-secondary-600 to-accent-600 bg-linear-to-br py-16 text-white">
+      <div className="from-secondary-600 to-accent-600 bg-linear-to-br pt-32 pb-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">

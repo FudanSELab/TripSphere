@@ -41,12 +41,14 @@ export async function proxyHandler(req: NextRequest): Promise<NextResponse> {
     const body = METHODS_WITH_BODY.has(req.method.toUpperCase())
       ? await parseBody(req)
       : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const grpcRequest = rule.buildRPCRequest(body as any);
     const metadata = await buildMetadata(req);
     const grpcResponse = await invokeRPC(rule, grpcRequest, metadata);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const httpResponse = rule.buildHttpResponse(grpcResponse as any);
 
-    const responseData: ResponseWrap<any> = {
+    const responseData: ResponseWrap<unknown> = {
       data: httpResponse,
       code: ResponseCode.SUCCESS,
       msg: "Success",
@@ -184,12 +186,20 @@ function parseCookieToken(req: NextRequest): string | undefined {
 }
 
 async function invokeRPC(
-  rule: RpcProxyRule,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rule: RpcProxyRule<any, any, any, any>,
   request: unknown,
   metadata?: grpc.Metadata,
 ): Promise<unknown> {
-  const method = rule.method;
-  return new Promise((resolve, reject) => {
+  const method = rule.method as (
+    request: unknown,
+    metadataOrCallback:
+      | grpc.Metadata
+      | ((err: grpc.ServiceError | null, response: unknown) => void),
+    callback?: (err: grpc.ServiceError | null, response: unknown) => void,
+  ) => void;
+
+  return new Promise<unknown>((resolve, reject) => {
     const callback = (err: grpc.ServiceError | null, response: unknown) => {
       if (err) return reject(err);
       resolve(response);
