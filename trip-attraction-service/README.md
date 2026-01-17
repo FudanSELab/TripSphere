@@ -15,6 +15,6 @@ Then, build jar package:
 Finally, start the server:
 
 ```bash
-java -jar target/attraction-0.0.1-SNAPSHOT.jar
+java -jar target/attraction-0.1.0.jar
 ```
 

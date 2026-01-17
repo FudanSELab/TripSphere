@@ -2,8 +2,8 @@ spring:
   cloud:
     nacos:
       discovery:
-        namespace: dev
-        group: DEV_GROUP
+        namespace: public
+        group: DEFAULT_GROUP
 
 grpc:
   server:

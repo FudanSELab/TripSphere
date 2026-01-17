@@ -1,11 +1,11 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: trip-user-service-mysql
+    container_name: trip-user-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: fudanse
-      MYSQL_DATABASE: trip_user_service_db
+      MYSQL_DATABASE: user_db
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"

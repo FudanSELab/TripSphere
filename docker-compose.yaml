@@ -17,12 +17,11 @@ services:
       - "24213:24213"  # HTTP
       - "50053:50053"  # gRPC
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_attraction_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - SPRING_DATA_MONGODB_DATABASE=attraction_db
     depends_on:
-      mysql:
-        condition: service_healthy
+      mongodb:
+        condition: service_started
       nacos:
         condition: service_healthy
     restart: unless-stopped
@@ -91,12 +90,11 @@ services:
       - "50054:50054"  # gRPC
       - "24214:24214"  # HTTP
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_hotel_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - SPRING_DATA_MONGODB_DATABASE=hotel_db
     depends_on:
-      mysql:
-        condition: service_healthy
+      mongodb:
+        condition: service_started
       nacos:
         condition: service_healthy
     restart: unless-stopped
@@ -205,13 +203,7 @@ services:
     ports:
       - "24216:24216"  # HTTP
       - "50055:50055"  # gRPC
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_note_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=fudanse
     depends_on:
-      mysql:
-        condition: service_healthy
       nacos:
         condition: service_healthy
     restart: unless-stopped
@@ -329,7 +321,7 @@ services:
       - "50056:50056"  # gRPC
       - "24217:24217"  # HTTP
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trip_user_service_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=fudanse
       - grpc.server.port=50056
