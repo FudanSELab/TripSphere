@@ -5,6 +5,11 @@ networks:
     name: tripsphere
     driver: bridge
 
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
+
 services:
   # Attraction Service
   trip-attraction-service:
@@ -183,7 +188,6 @@ services:
       - "3000:3000"  # HTTP
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8848}
     depends_on:
       - trip-attraction-service
       - trip-chat-service
@@ -321,7 +325,9 @@ services:
       - "50056:50056"  # gRPC
       - "24217:24217"  # HTTP
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/user_db?\
+        useUnicode=true&characterEncoding=utf8&useSSL=false&\
+        serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=fudanse
       - grpc.server.port=50056
@@ -344,7 +350,9 @@ services:
       - "8848:8848"
       - "9848:9848"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8848/nacos/v1/console/health/liveness || exit 1"]
+      test: 
+        - "CMD-SHELL"
+        - "curl -f http://localhost:8848/nacos/v1/console/health/liveness || exit 1"
       interval: 5s
       timeout: 3s
       retries: 20
@@ -441,6 +449,7 @@ services:
       - "3306:3306"
     volumes:
       - ./volumes/mysql:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: mysql --user=root --password=fudanse --execute="SHOW DATABASES;"
       interval: 30s
@@ -516,8 +525,3 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-
-configs:
-  qdrant_config:
-    content: |
-      log_level: INFO
