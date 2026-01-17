@@ -8,7 +8,7 @@ option java_package = "org.tripsphere.user";
 
 // User
 message User {
-  int64 id = 1;
+  string id = 1;
   string username = 2;
   repeated string roles = 3;
 }
