@@ -330,8 +330,7 @@ services:
         serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=fudanse
-      - grpc.server.port=50056
-      - server.port=24217
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       mysql:
         condition: service_healthy
