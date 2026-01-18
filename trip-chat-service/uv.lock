@@ -535,7 +535,7 @@ requires-dist = [
     { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.20.0" },
     { name = "grpcio", specifier = ">=1.75.1" },
     { name = "litellm", specifier = ">=1.80.5" },
-    { name = "nacos-sdk-python", specifier = ">=2.0.9" },
+    { name = "nacos-sdk-python", specifier = ">=3.0.2" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.58b0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "pymongo", specifier = ">=4.15.3" },

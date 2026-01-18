@@ -26,6 +26,11 @@ dev = [
     "types-grpcio>=1.0.0.20250914",
 ]
 
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
 [tool.uv.sources]
 tripsphere = { workspace = true }
 

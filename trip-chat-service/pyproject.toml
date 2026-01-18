@@ -8,7 +8,7 @@ dependencies = [
     "google-adk[a2a,otel-gcp]>=1.20.0",
     "grpcio>=1.75.1",
     "litellm>=1.80.5",
-    "nacos-sdk-python>=2.0.9",
+    "nacos-sdk-python>=3.0.2",
     "opentelemetry-distro[otlp]>=0.58b0",
     "pydantic-settings>=2.11.0",
     "pymongo>=4.15.3",
@@ -28,6 +28,11 @@ dev = [
     "pytest-mock>=3.15.1",
     "types-grpcio>=1.0.0.20251009",
 ]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
 
 [tool.uv.sources]
 tripsphere = { workspace = true }
