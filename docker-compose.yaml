@@ -183,12 +183,10 @@ services:
     environment:
       - NODE_ENV=production
     depends_on:
-      - trip-attraction-service
-      - trip-chat-service
-      - trip-file-service
-      - trip-hotel-service
-      - trip-itinerary-service
-      - trip-user-service
+      trip-chat-service:
+        condition: service_healthy
+      trip-user-service:
+        condition: service_healthy
     restart: unless-stopped
 
   # Note Service
