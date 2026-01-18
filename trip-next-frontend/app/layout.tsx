@@ -1,5 +1,5 @@
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
-import { Footer } from "@/components/layout/footer";
+import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { Header } from "@/components/layout/header";
 import type { Metadata } from "next";
 import "./globals.css";
@@ -21,7 +21,7 @@ export default function RootLayout({
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">{children}</main>
-          <Footer />
+          <ConditionalFooter />
           <ChatSidebar />
         </div>
       </body>

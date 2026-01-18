@@ -4,21 +4,20 @@ import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
 import {
+  Bot,
   Calendar,
   FileText,
   Hotel,
   LogOut,
   MapPin,
-  Menu,
   MessageSquare,
   User,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
 
 const navLinks = [
+  { name: "Chat", path: "/chat", icon: Bot },
   { name: "Attractions", path: "/attractions", icon: MapPin },
   { name: "Hotels", path: "/hotels", icon: Hotel },
   { name: "Itinerary", path: "/itinerary", icon: Calendar },
@@ -30,7 +29,6 @@ export function Header() {
   const router = useRouter();
   const auth = useAuth();
   const chatSidebar = useChatSidebar();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(path + "/");
@@ -43,7 +41,6 @@ export function Header() {
 
   const openAiAssistant = () => {
     chatSidebar.open();
-    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -55,13 +52,11 @@ export function Header() {
             <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br text-xl font-bold text-white shadow-lg transition-transform group-hover:scale-105">
               T
             </div>
-            <span className="gradient-text hidden text-xl font-bold sm:inline">
-              TripSphere
-            </span>
+            <span className="gradient-text text-xl font-bold">TripSphere</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden items-center gap-1 md:flex">
+          {/* Navigation */}
+          <div className="flex items-center gap-1">
             {navLinks.map((link) => {
               const Icon = link.icon;
               return (
@@ -85,7 +80,7 @@ export function Header() {
           <div className="flex items-center gap-3">
             {/* Chat button */}
             <button
-              className="from-primary-500 to-secondary-500 hidden items-center gap-2 rounded-lg bg-linear-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg sm:flex"
+              className="from-primary-500 to-secondary-500 flex items-center gap-2 rounded-lg bg-linear-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg"
               onClick={openAiAssistant}
             >
               <MessageSquare className="h-4 w-4" />
@@ -97,7 +92,7 @@ export function Header() {
               <div className="group relative">
                 <button className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-gray-100">
                   <Avatar name={auth.user?.username} size="sm" />
-                  <span className="hidden text-sm font-medium text-gray-700 sm:inline">
+                  <span className="text-sm font-medium text-gray-700">
                     {auth.user?.username}
                   </span>
                 </button>
@@ -138,54 +133,9 @@ export function Header() {
                 </Link>
               </div>
             )}
-
-            {/* Mobile menu button */}
-            <button
-              className="rounded-lg p-2 transition-colors hover:bg-gray-100 md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {!isMobileMenuOpen ? (
-                <Menu className="h-5 w-5 text-gray-700" />
-              ) : (
-                <X className="h-5 w-5 text-gray-700" />
-              )}
-            </button>
           </div>
         </div>
       </nav>
-
-      {/* Mobile Navigation */}
-      {isMobileMenuOpen && (
-        <div className="border-t border-gray-100 bg-white md:hidden">
-          <div className="space-y-1 px-4 py-3">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.path}
-                  href={link.path}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive(link.path)
-                      ? "bg-primary-100 text-primary-700"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Icon className="h-5 w-5" />
-                  {link.name}
-                </Link>
-              );
-            })}
-            <button
-              className="from-primary-500 to-secondary-500 flex w-full items-center gap-3 rounded-lg bg-linear-to-r px-3 py-2 text-sm font-medium text-white"
-              onClick={openAiAssistant}
-            >
-              <MessageSquare className="h-5 w-5" />
-              AI Assistant
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
