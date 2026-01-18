@@ -1,6 +1,7 @@
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { Header } from "@/components/layout/header";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -18,12 +19,14 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="antialiased">
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <ConditionalFooter />
-          <ChatSidebar />
-        </div>
+        <AuthProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <ConditionalFooter />
+            <ChatSidebar />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

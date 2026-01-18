@@ -41,8 +41,9 @@ export async function proxyHandler(req: NextRequest): Promise<NextResponse> {
     const body = METHODS_WITH_BODY.has(req.method.toUpperCase())
       ? await parseBody(req)
       : undefined;
+    // Type assertion needed because buildRPCRequest signature varies by rule
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const grpcRequest = rule.buildRPCRequest(body as any);
+    const grpcRequest = (rule as any).buildRPCRequest(body);
     const metadata = await buildMetadata(req);
     const grpcResponse = await invokeRPC(rule, grpcRequest, metadata);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

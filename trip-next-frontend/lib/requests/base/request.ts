@@ -40,20 +40,9 @@ function buildHeaders(options: RequestOptions): HeadersInit {
     "Content-Type": "application/json",
   };
 
-  // Add token from localStorage if available (only in browser)
-  if (!isSSR()) {
-    try {
-      const authStorage = localStorage.getItem("auth-storage");
-      if (authStorage) {
-        const authState = JSON.parse(authStorage);
-        if (authState.state?.token) {
-          headers["Authorization"] = `Bearer ${authState.state.token}`;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to get auth token:", e);
-    }
-  }
+  // Note: Token is NOT added here. BFF will read token from cookie
+  // and add it to gRPC metadata when forwarding requests.
+  // This follows the architecture where BFF manages authentication.
 
   if (options.headers) {
     Object.assign(headers, options.headers);

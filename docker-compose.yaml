@@ -182,6 +182,7 @@ services:
       - "3000:3000"  # HTTP
     environment:
       - NODE_ENV=production
+      - GRPC_USER_URL=trip-user-service:50056
     depends_on:
       trip-chat-service:
         condition: service_healthy

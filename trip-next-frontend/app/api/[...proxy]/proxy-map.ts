@@ -1,11 +1,14 @@
 import { grpcClient } from "@/lib/grpc/client";
 import {
+  GetCurrentUserRequest,
+  GetCurrentUserResponse,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
 } from "@/lib/grpc/gen/tripsphere/user/user";
 import { ResponseData } from "@/lib/requests";
+import { User } from "@/lib/types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -40,6 +43,12 @@ export interface RpcProxyMap {
     LoginRequest,
     LoginResponse
   >;
+  "POST /api/v1/user/get-current-user": RpcProxyRule<
+    GetCurrentUserRequest,
+    GetCurrentUserResponse,
+    undefined,
+    User
+  >;
 }
 
 export const grpcProxyMap: RpcProxyMap = {
@@ -69,6 +78,28 @@ export const grpcProxyMap: RpcProxyMap = {
         });
       }
       return nextResponse;
+    },
+  },
+  "POST /api/v1/user/get-current-user": {
+    method: grpcClient.user.getCurrentUser.bind(grpcClient.user),
+    buildRPCRequest: () => GetCurrentUserRequest.create({}),
+    buildHttpResponse: (response: GetCurrentUserResponse) => {
+      // Convert gRPC User to frontend User type
+      const grpcUser = response.user;
+      if (!grpcUser) {
+        throw new Error("User not found in response");
+      }
+
+      // Note: gRPC User only has id, username, roles
+      // avatar and createdAt are optional in frontend User type
+      const user: User = {
+        id: grpcUser.id,
+        username: grpcUser.username,
+        roles: grpcUser.roles,
+        // avatar and createdAt not provided by gRPC User
+      };
+
+      return user;
     },
   },
 };

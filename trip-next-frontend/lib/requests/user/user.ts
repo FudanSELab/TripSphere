@@ -14,7 +14,8 @@ export async function login(credentials: LoginRequest) {
   return post<LoginResponse>("/api/v1/user/login", credentials);
 }
 
-export async function getCurrentUser(token?: string | null) {
+export async function getCurrentUser() {
+  // BFF will read token from cookie and validate
   return post<User>("/api/v1/user/get-current-user", undefined);
 }
 
