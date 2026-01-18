@@ -7,6 +7,7 @@ import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
 import type { ChatContext, Conversation, Message } from "@/lib/types";
 import { cn, generateId } from "@/lib/utils";
 import { Send, Sparkles, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./chat-message";
 
@@ -26,6 +27,7 @@ export function ChatSidebar({
   const { isOpen, context, title: storeTitle, close } = useChatSidebar();
   const auth = useAuth();
   const chat = useChat();
+  const pathname = usePathname();
 
   // Use props if provided, otherwise use store values
   const initialContext = propInitialContext || context;
@@ -40,6 +42,13 @@ export function ChatSidebar({
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-close sidebar when navigating to /chat page
+  useEffect(() => {
+    if (pathname === "/chat" && isOpen) {
+      close();
+    }
+  }, [pathname, isOpen, close]);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {

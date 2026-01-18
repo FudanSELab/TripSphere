@@ -78,14 +78,16 @@ export function Header() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
-            {/* Chat button */}
-            <button
-              className="from-primary-500 to-secondary-500 flex items-center gap-2 rounded-lg bg-linear-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg"
-              onClick={openAiAssistant}
-            >
-              <MessageSquare className="h-4 w-4" />
-              AI Assistant
-            </button>
+            {/* Chat button - hidden on /chat page */}
+            {pathname !== "/chat" && (
+              <button
+                className="from-primary-500 to-secondary-500 flex items-center gap-2 rounded-lg bg-linear-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                onClick={openAiAssistant}
+              >
+                <MessageSquare className="h-4 w-4" />
+                AI Assistant
+              </button>
+            )}
 
             {/* User menu */}
             {auth.isAuthenticated ? (
