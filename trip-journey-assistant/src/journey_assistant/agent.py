@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from datetime import datetime
 from functools import lru_cache
 from importlib.metadata import version
@@ -14,8 +13,6 @@ from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from mcp import StdioServerParameters
 
 from journey_assistant.config.settings import get_settings
-
-warnings.filterwarnings("ignore")  # Suppress ADK Experimental Warnings
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +72,7 @@ agent_card = AgentCard(
     version=version("journey-assistant"),
     # If no endpoint is available in the current version,
     # this URL will be used by Nacos AI service.
-    url=f"http://trip-journey-assistant:{get_settings().uvicorn.port}",
+    url=f"http://localhost:{get_settings().uvicorn.port}",
     skills=[weather_info],
     capabilities=AgentCapabilities(),
     default_input_modes=["text"],
