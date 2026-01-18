@@ -70,7 +70,7 @@ ENV UVICORN_PORT=24211
 EXPOSE $UVICORN_PORT
 
 # Run the agent server with uvicorn
-ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "journey_assistant.agent:app"]
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "journey_assistant.asgi:app"]
 # Do NOT directly provide uvicorn `--port` option here.
 # It must be overridden via environment variable.
 # Otherwise, app may register incorrect port in service registry.

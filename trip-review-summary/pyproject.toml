@@ -39,11 +39,6 @@ dev = [
     "types-networkx>=3.6.1.20251220",
 ]
 
-[[tool.uv.index]]
-name = "pypi"
-url = "https://pypi.org/simple"
-default = true
-
 [tool.uv.sources]
 tripsphere = { workspace = true }
 
