@@ -2,9 +2,9 @@ import asyncio
 import logging
 import os
 import warnings
+from functools import lru_cache
 from typing import Any, AsyncGenerator, Self
 
-from a2a.client import A2ACardResolver, A2AClientError
 from a2a.client import ClientConfig as A2AClientConfig
 from a2a.client import ClientFactory as A2AClientFactory
 from a2a.types import AgentCard, TransportProtocol
@@ -20,8 +20,8 @@ from pymongo import AsyncMongoClient
 from chat.agent.session import MongoSessionService
 from chat.common.parts import Part
 from chat.config.settings import get_settings
-from chat.conversation.models import Author, Conversation, Message
-from chat.infra.nacos.naming import NacosNaming
+from chat.infra.nacos.ai import NacosAI
+from chat.internal.models import Author, Conversation, Message
 from chat.prompts.agent import DELEGATOR_INSTRUCTION
 
 # Suppress ADK Experimental Warnings
@@ -29,21 +29,31 @@ warnings.filterwarnings("ignore", module="google.adk")
 
 logger = logging.getLogger(__name__)
 
-_openai_settings = get_settings().openai
-os.environ["OPENAI_API_KEY"] = _openai_settings.api_key.get_secret_value()
-os.environ["OPENAI_BASE_URL"] = _openai_settings.base_url
-_root_agent = LlmAgent(
-    name="agent_facade",
-    model=LiteLlm(model="openai/gpt-4o-mini"),
-    instruction=DELEGATOR_INSTRUCTION,
-)
+
+@lru_cache(maxsize=1, typed=True)
+def get_root_agent(model: str = "openai/gpt-4o-mini") -> LlmAgent:
+    openai_settings = get_settings().openai
+    if not os.environ.get("OPENAI_API_KEY", None):
+        os.environ["OPENAI_API_KEY"] = openai_settings.api_key.get_secret_value()
+    if not os.environ.get("OPENAI_BASE_URL", None):
+        os.environ["OPENAI_BASE_URL"] = openai_settings.base_url
+
+    return LlmAgent(
+        name="agent_facade", model=LiteLlm(model), instruction=DELEGATOR_INSTRUCTION
+    )
 
 
 class AgentFacade:
     """Orchestrator for scheduling agents and delegating tasks."""
 
-    def __init__(self, httpx_client: AsyncClient) -> None:
+    def __init__(
+        self,
+        httpx_client: AsyncClient,
+        nacos_ai: NacosAI,
+        mongo_client: AsyncMongoClient[dict[str, Any]],
+    ) -> None:
         self.httpx_client = httpx_client
+        self.nacos_ai = nacos_ai
         a2a_client_config = A2AClientConfig(
             httpx_client=self.httpx_client,
             supported_transports=[
@@ -54,32 +64,28 @@ class AgentFacade:
         self.a2a_client_factory = A2AClientFactory(a2a_client_config)
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
         self.agent_cards: dict[str, AgentCard] = {}
-        self.session_service: MongoSessionService | None = None
+        self.session_service = MongoSessionService(mongo_client)
         self.default_runner: Runner | None = None
         self.app_name = get_settings().app.name
 
-    async def _post_init(
-        self, agent_base_urls: list[str], mongo_client: AsyncMongoClient[dict[str, Any]]
-    ) -> None:
+    async def _post_init(self, agent_names: list[str]) -> None:
         async with asyncio.TaskGroup() as group:
-            for base_url in agent_base_urls:
-                group.create_task(self._resolve_base_url(base_url))
+            for agent_name in agent_names:
+                group.create_task(self._resolve_agent_name(agent_name))
 
-        self.session_service = MongoSessionService(mongo_client)
         self.default_runner = Runner(
             app_name=self.app_name,
-            agent=_root_agent.clone(
+            agent=get_root_agent().clone(
                 {"sub_agents": list[RemoteA2aAgent](self.remote_a2a_agents.values())}
             ),
             session_service=self.session_service,
         )
 
-    async def _resolve_base_url(self, base_url: str) -> None:
-        card_resolver = A2ACardResolver(self.httpx_client, base_url)
+    async def _resolve_agent_name(self, agent_name: str) -> None:
         try:
-            agent_card = await card_resolver.get_agent_card()
-        except A2AClientError as e:
-            logger.error(f"Failed to resolve base url {base_url}: {e}")
+            agent_card = await self.nacos_ai.get_agent_card(agent_name)
+        except Exception as e:
+            logger.error(f"Failed to resolve agent name {agent_name}: {e}")
             return None
         self.agent_cards[agent_card.name] = agent_card
         self.remote_a2a_agents[agent_card.name] = RemoteA2aAgent(
@@ -90,12 +96,12 @@ class AgentFacade:
     async def create_facade(
         cls,
         httpx_client: AsyncClient,
-        nacos_naming: NacosNaming,
+        nacos_ai: NacosAI,
         mongo_client: AsyncMongoClient[dict[str, Any]],
     ) -> Self:
-        instance = cls(httpx_client)
-        # TODO: Remote agents discovery through Nacos
-        await instance._post_init(["http://localhost:24211"], mongo_client)
+        instance = cls(httpx_client, nacos_ai, mongo_client)
+        # Remote A2A agents discovery through Nacos AI service
+        await instance._post_init(["journey_assistant"])
         return instance
 
     async def invoke(self, conversation: Conversation, user_query: Message) -> Message:
@@ -110,8 +116,6 @@ class AgentFacade:
     async def stream(
         self, conversation: Conversation, user_query: Message
     ) -> AsyncGenerator[Event | Message, None]:
-        if self.session_service is None:
-            raise RuntimeError("Session service is not initialized.")
         session = await self.session_service.get_session(
             app_name=self.app_name,
             user_id=conversation.user_id,

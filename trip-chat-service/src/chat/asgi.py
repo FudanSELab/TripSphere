@@ -9,6 +9,7 @@ from pymongo import AsyncMongoClient
 
 from chat.config.logging import setup_logging
 from chat.config.settings import get_settings
+from chat.infra.nacos.ai import NacosAI
 from chat.infra.nacos.naming import NacosNaming
 from chat.routers.conversation import conversations
 from chat.routers.memory import memories
@@ -27,6 +28,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.httpx_client = AsyncClient()
     app.state.mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
     try:
+        app.state.nacos_ai = await NacosAI.create_nacos_ai(
+            server_address=settings.nacos.server_address
+        )
         app.state.nacos_naming = await NacosNaming.create_naming(
             service_name=settings.app.name,
             port=settings.uvicorn.port,
@@ -45,6 +49,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)
+            await app.state.nacos_naming.shutdown()
+        if isinstance(app.state.nacos_ai, NacosAI):
+            await app.state.nacos_ai.shutdown()
         await app.state.mongo_client.close()
         await app.state.httpx_client.aclose()
 

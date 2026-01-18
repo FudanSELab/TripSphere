@@ -8,8 +8,8 @@ from pymongo.asynchronous.collection import AsyncCollection
 
 from chat.common.parts import Part, TextPart
 from chat.config.settings import get_settings
-from chat.conversation.models import Author, Message
-from chat.conversation.repository import MongoMessageRepository
+from chat.internal.models import Author, Message
+from chat.internal.repository import MongoMessageRepository
 from chat.utils.pagination import encode_uuid_cursor
 from chat.utils.uuid import uuid7
 

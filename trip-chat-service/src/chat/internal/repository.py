@@ -4,7 +4,7 @@ from typing import Any, Literal
 from pymongo import ASCENDING, DESCENDING
 from pymongo.asynchronous.collection import AsyncCollection
 
-from chat.conversation.models import Conversation, Message
+from chat.internal.models import Conversation, Message
 from chat.utils.pagination import (
     CursorPagination,
     decode_uuid_cursor,

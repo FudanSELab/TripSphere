@@ -11,9 +11,9 @@ from chat.common.exceptions import (
     ConversationAccessDeniedException,
     ConversationNotFoundException,
 )
-from chat.conversation.manager import ConversationManager
-from chat.conversation.models import Conversation
-from chat.conversation.repository import ConversationRepository
+from chat.internal.manager import ConversationManager
+from chat.internal.models import Conversation
+from chat.internal.repository import ConversationRepository
 from chat.utils.pagination import CursorPagination
 
 

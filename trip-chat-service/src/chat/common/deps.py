@@ -5,14 +5,14 @@ from httpx import AsyncClient
 from pymongo import AsyncMongoClient
 
 from chat.config.settings import get_settings
-from chat.conversation.manager import ConversationManager
-from chat.conversation.repository import (
+from chat.infra.nacos.ai import NacosAI
+from chat.internal.manager import ConversationManager
+from chat.internal.repository import (
     ConversationRepository,
     MessageRepository,
     MongoConversationRepository,
     MongoMessageRepository,
 )
-from chat.infra.nacos.naming import NacosNaming
 
 
 def provide_httpx_client(request: Request) -> AsyncClient:
@@ -23,8 +23,8 @@ def provide_mongo_client(request: Request) -> AsyncMongoClient[dict[str, Any]]:
     return cast(AsyncMongoClient[dict[str, Any]], request.app.state.mongo_client)
 
 
-def provide_nacos_naming(request: Request) -> NacosNaming:
-    return cast(NacosNaming, request.app.state.nacos_naming)
+def provide_nacos_ai(request: Request) -> NacosAI:
+    return cast(NacosAI, request.app.state.nacos_ai)
 
 
 async def provide_conversation_repository(

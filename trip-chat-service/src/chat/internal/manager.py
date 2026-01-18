@@ -1,8 +1,8 @@
 from typing import Any, Literal
 
 from chat.common.parts import Part
-from chat.conversation.models import Author, Conversation, Message
-from chat.conversation.repository import ConversationRepository, MessageRepository
+from chat.internal.models import Author, Conversation, Message
+from chat.internal.repository import ConversationRepository, MessageRepository
 from chat.utils.pagination import CursorPagination
 
 

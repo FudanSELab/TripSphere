@@ -7,8 +7,8 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
 from chat.config.settings import get_settings
-from chat.conversation.models import Conversation
-from chat.conversation.repository import MongoConversationRepository
+from chat.internal.models import Conversation
+from chat.internal.repository import MongoConversationRepository
 from chat.utils.pagination import encode_uuid_cursor
 from chat.utils.uuid import uuid7
 

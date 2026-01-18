@@ -13,7 +13,7 @@ from chat.common.deps import (
     provide_httpx_client,
     provide_message_repository,
     provide_mongo_client,
-    provide_nacos_naming,
+    provide_nacos_ai,
 )
 from chat.common.exceptions import (
     ConversationAccessDeniedException,
@@ -21,10 +21,10 @@ from chat.common.exceptions import (
     MessageNotFoundException,
 )
 from chat.common.parts import Part
-from chat.conversation.manager import ConversationManager
-from chat.conversation.models import Conversation, Message
-from chat.conversation.repository import ConversationRepository, MessageRepository
-from chat.infra.nacos.naming import NacosNaming
+from chat.infra.nacos.ai import NacosAI
+from chat.internal.manager import ConversationManager
+from chat.internal.models import Conversation, Message
+from chat.internal.repository import ConversationRepository, MessageRepository
 from chat.utils.pagination import CursorPagination
 from chat.utils.sse import encode
 
@@ -82,7 +82,7 @@ async def send_message(
     mongo_client: Annotated[
         AsyncMongoClient[dict[str, Any]], Depends(provide_mongo_client)
     ],
-    nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
+    nacos_ai: Annotated[NacosAI, Depends(provide_nacos_ai)],
 ) -> SendMessageResponse:
     conversation = await _find_conversation(
         conversation_repository, request.conversation_id
@@ -92,9 +92,7 @@ async def send_message(
     user_query = await conversation_manager.add_user_query(
         conversation, request.content, metadata=request.metadata
     )
-    agent_facade = await AgentFacade.create_facade(
-        httpx_client, nacos_naming, mongo_client
-    )
+    agent_facade = await AgentFacade.create_facade(httpx_client, nacos_ai, mongo_client)
     agent_answer = await agent_facade.invoke(conversation, user_query)
     await message_repository.save(agent_answer)
     return SendMessageResponse(
@@ -137,7 +135,7 @@ async def stream_message(
     mongo_client: Annotated[
         AsyncMongoClient[dict[str, Any]], Depends(provide_mongo_client)
     ],
-    nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
+    nacos_ai: Annotated[NacosAI, Depends(provide_nacos_ai)],
 ) -> StreamingResponse:
     conversation = await _find_conversation(
         conversation_repository, request.conversation_id
@@ -147,9 +145,7 @@ async def stream_message(
     user_query = await conversation_manager.add_user_query(
         conversation, request.content, metadata=request.metadata
     )
-    agent_facade = await AgentFacade.create_facade(
-        httpx_client, nacos_naming, mongo_client
-    )
+    agent_facade = await AgentFacade.create_facade(httpx_client, nacos_ai, mongo_client)
     return StreamingResponse(
         _stream_events(message_repository, agent_facade, conversation, user_query),
         media_type="text/event-stream",

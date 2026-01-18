@@ -11,12 +11,12 @@ from chat.common.deps import (
     provide_httpx_client,
     provide_message_repository,
     provide_mongo_client,
-    provide_nacos_naming,
+    provide_nacos_ai,
 )
 from chat.common.parts import Part, TextPart
-from chat.conversation.manager import ConversationManager
-from chat.conversation.models import Author, Conversation, Message
-from chat.conversation.repository import ConversationRepository, MessageRepository
+from chat.internal.manager import ConversationManager
+from chat.internal.models import Author, Conversation, Message
+from chat.internal.repository import ConversationRepository, MessageRepository
 from chat.routers.message import messages
 from chat.utils.pagination import CursorPagination
 
@@ -106,10 +106,10 @@ def mock_nacos_naming(app: FastAPI, mocker: MockerFixture) -> AsyncMockType:
     """Create a mock NacosNaming."""
     mock_naming = mocker.AsyncMock()
 
-    def override_provide_nacos_naming() -> AsyncMockType:
+    def override_provide_nacos_ai() -> AsyncMockType:
         return mock_naming
 
-    app.dependency_overrides[provide_nacos_naming] = override_provide_nacos_naming
+    app.dependency_overrides[provide_nacos_ai] = override_provide_nacos_ai
     return mock_naming
 
 
