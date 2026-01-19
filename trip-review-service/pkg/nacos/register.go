@@ -3,13 +3,8 @@ package nacos
 import (
 	"context"
 	"net"
-	"trip-file-service/config"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-)
-
-var (
-	registerIP string
 )
 
 // getLocalIP gets the local IP address
@@ -33,18 +28,31 @@ func getLocalIP() string {
 }
 
 // Register registers the service to Nacos
-func Register(ctx context.Context) error {
-	if Nacos == nil {
+func (c *Client) Register(ctx context.Context, serviceName string, port uint64) error {
+	if c == nil {
 		return nil
 	}
 	registerIP := getLocalIP()
-	return Nacos.RegisterInstance(ctx, vo.RegisterInstanceParam{
+	return c.RegisterInstance(ctx, vo.RegisterInstanceParam{
 		Ip:          registerIP,
-		Port:        config.PortInt,
-		ServiceName: config.AppName,
+		Port:        port,
+		ServiceName: serviceName,
 		Weight:      1,
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,
+	})
+}
+
+// Deregister deregisters the service from Nacos
+func (c *Client) Deregister(ctx context.Context, serviceName string, port uint64) error {
+	if c == nil {
+		return nil
+	}
+	registerIP := getLocalIP()
+	return c.DeregisterInstance(ctx, vo.DeregisterInstanceParam{
+		Ip:          registerIP,
+		Port:        port,
+		ServiceName: serviceName,
 	})
 }

@@ -3,10 +3,12 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/apache/rocketmq-clients/golang"
 	"github.com/apache/rocketmq-clients/golang/credentials"
-	"log"
-	"trip-review-service/configs"
+
+	"trip-review-service/config"
 )
 
 type message struct {
@@ -47,19 +49,16 @@ func (m *MQ) AddMessage(topic, body, tag string) {
 func (m *MQ) SendMessage() {
 
 	go func() {
-		for {
-			select {
-			case msg := <-m.messageChan:
-				log.Println("sending msg", msg.Body, " to", msg.Topic)
+		for msg := range m.messageChan {
+			log.Println("sending msg", msg.Body, " to", msg.Topic)
 
-				resp, err := m.Producer.Send(context.TODO(), msg.GetMsg())
-				if err != nil {
-					log.Println("failed to send message:", err)
-				}
+			resp, err := m.Producer.Send(context.TODO(), msg.GetMsg())
+			if err != nil {
+				log.Println("failed to send message:", err)
+			}
 
-				for i := 0; i < len(resp); i++ {
-					fmt.Printf("%#v\n", resp[i])
-				}
+			for i := range resp {
+				fmt.Printf("%#v\n", resp[i])
 			}
 		}
 	}()
@@ -83,18 +82,25 @@ func GetMQ() *MQ {
 }
 
 func init() {
-	config := configs.GetConfig()
+	// Initialize config first
+	config.Init()
+
+	// Skip if RocketMQ endpoint is not configured
+	if config.RocketMQEndpoint == "" || config.RocketMQEndpoint == "localhost:8081" {
+		log.Println("RocketMQ endpoint not configured, skipping producer initialization")
+		return
+	}
 
 	producer, err := golang.NewProducer(&golang.Config{
-		Endpoint: config.RocketMQ.Endpoint,
+		Endpoint: config.RocketMQEndpoint,
 		Credentials: &credentials.SessionCredentials{
-			AccessKey:    config.RocketMQ.AccessKey,
-			AccessSecret: config.RocketMQ.SecretKey,
+			AccessKey:    config.RocketMQAccessKey,
+			AccessSecret: config.RocketMQSecretKey,
 		},
-	},
-	)
+	})
 	if err != nil {
 		log.Println("failed to create rocketmq producer:", err)
+		return
 	}
 	log.Println("success to create rocketmq producer")
 	mq = &MQ{Producer: producer, messageChan: make(chan *message, 1024)}
@@ -102,6 +108,7 @@ func init() {
 	err = mq.Producer.Start()
 	if err != nil {
 		log.Println("failed to start rocketmq producer:", err)
+		return
 	}
 	log.Println("success to start rocketmq producer")
 
