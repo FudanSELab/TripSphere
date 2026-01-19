@@ -1959,7 +1959,7 @@ wheels = [
 
 [[package]]
 name = "nacos-sdk-python"
-version = "3.0.2"
+version = "3.0.3"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
 dependencies = [
     { name = "a2a" },
@@ -1974,9 +1974,9 @@ dependencies = [
     { name = "pycryptodome" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://mirrors.aliyun.com/pypi/packages/20/8e/ddeff6f75a55c3cf45139079d519c9ee8cc836a0b68d207f2dbe4691cdca/nacos_sdk_python-3.0.2.tar.gz", hash = "sha256:d006559cbc5b6c812e06f1ef4e1397610e1501e68e7aaca075352a57cd502773" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/93/95/503992c18b0ce0ee148a4c9c1a2249f384d1749b1a4568f588c6bfbe31a2/nacos_sdk_python-3.0.3.tar.gz", hash = "sha256:f9bf03303a84f8a7f506d58217c5f0f36481e91cfd78b6b214bcba9ef0ca454c" }
 wheels = [
-    { url = "https://mirrors.aliyun.com/pypi/packages/12/02/8c3e1d930a9d07aed45b4e1faa4b2e7f53a49b7be78c686f0e0c32a27a5f/nacos_sdk_python-3.0.2-py3-none-any.whl", hash = "sha256:9c015abb68b461914fa72c8484561c6c70d26dff606ef810ee7b319c76b5161e" },
+    { url = "https://mirrors.aliyun.com/pypi/packages/2b/a1/1d840f6ca56383a2df630e70acbc2dc9b6c86ba18472f4d6337e5d7e19ab/nacos_sdk_python-3.0.3-py3-none-any.whl", hash = "sha256:8185f86c4384130318054c20f53ea511ba993ecea58724ccfe2f877d725e5df0" },
 ]
 
 [[package]]
@@ -3218,7 +3218,7 @@ requires-dist = [
     { name = "graphdatascience", specifier = ">=1.18" },
     { name = "grpcio", specifier = ">=1.76.0" },
     { name = "langchain-openai", specifier = ">=1.1.6" },
-    { name = "nacos-sdk-python", specifier = ">=3.0.2" },
+    { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.60b1" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },

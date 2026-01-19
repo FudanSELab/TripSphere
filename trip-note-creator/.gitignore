@@ -1,0 +1,12 @@
+# Byte-compiled
+__pycache__/
+
+# Logs
+logs/
+
+# Environment variables
+.env.local
+.env.development
+
+# Taskfile
+.task/
