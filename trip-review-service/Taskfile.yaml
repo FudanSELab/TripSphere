@@ -34,3 +34,7 @@ tasks:
         --build-arg ALPINE_MIRROR=s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g \
         --build-arg GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
 
+  import-data:
+    desc: Import sample data to database
+    cmds:
+      - uv run --script scripts/import_reviews.py

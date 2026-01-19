@@ -1,1 +1,6 @@
-"""Batch process reviews from a table to Qdrant."""
+# /// script
+# requires-python = ">=3.12"
+# dependencies = []
+# ///
+
+"""Batch process reviews to generate TextUnits and save them to Qdrant"""
