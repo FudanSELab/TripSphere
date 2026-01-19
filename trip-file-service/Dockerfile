@@ -1,17 +1,29 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
 
+RUN go env -w GO111MODULE=on
+ARG GOPROXY
+RUN if [ -n "$GOPROXY" ]; then go env -w GOPROXY="$GOPROXY"; fi
+
 # Set working directory
 WORKDIR /build
 
+ARG ALPINE_MIRROR
+RUN if [ -n "$ALPINE_MIRROR" ]; then \
+        sed -i "$ALPINE_MIRROR" /etc/apk/repositories; \
+    fi
+
 # Install necessary build tools
-RUN apk add --no-cache git ca-certificates tzdata
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add git ca-certificates tzdata
 
 # Copy go mod files
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
 # Copy source code
 COPY . .
@@ -20,7 +32,9 @@ COPY . .
 # CGO_ENABLED=0 disables CGO, generates statically linked binary
 # GOOS=linux specifies target operating system
 # GOARCH=amd64 specifies target architecture
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags='-w -s -extldflags "-static"' \
     -o trip-file-service \
     ./cmd/main.go

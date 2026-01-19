@@ -24,3 +24,13 @@ tasks:
     cmds:
       - docker build . -t {{.PREFIX}}/trip-review-service:{{.TAG}}
 
+  build-aliyun:
+    desc: Build Docker image with Aliyun Go mirror
+    vars:
+      PREFIX: '{{.PREFIX | default "tripsphere"}}'
+      TAG: '{{.TAG | default "latest"}}'
+    cmd: |
+        docker build . -t {{.PREFIX}}/trip-review-service:{{.TAG}} \
+        --build-arg ALPINE_MIRROR=s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g \
+        --build-arg GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+
