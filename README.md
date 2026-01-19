@@ -17,3 +17,7 @@ We use [uv](https://docs.astral.sh/uv/) as the Python package and project manage
 ### Protobuf and gRPC Codes
 
 Protobuf and gRPC codes are useful to ensure projects can be compiled in development, and provide hints for IDEs. We use Buf to generate protobuf and gRPC codes. Run `task gen-proto` to generate protobuf and gRPC codes with Buf CLI.
+
+### Docker Compose
+
+For development environment, you can use Docker Compose to start the system. Run `task start` to run the services, agents, databases, and middlewares.

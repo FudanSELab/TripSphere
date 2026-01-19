@@ -3,51 +3,146 @@ syntax = "proto3";
 package tripsphere.itinerary;
 
 import "google/protobuf/struct.proto";
+import "tripsphere/common/geo.proto";
 
 option go_package = "tripsphere/itinerary";
 option java_multiple_files = true;
 option java_package = "org.tripsphere.itinerary";
 
+// ========== Helper message types ==========
+
+message ActivityLocation {
+  string name = 1;
+  tripsphere.common.Location coordinates = 2;
+  string address = 3;
+}
+
+message Cost {
+  double amount = 1;
+  string currency = 2; // ISO 4217 (CNY, USD, etc.)
+}
+
+enum BudgetLevel {
+  BUDGET_LEVEL_UNSPECIFIED = 0;
+  BUDGET_LEVEL_BUDGET = 1;
+  BUDGET_LEVEL_MODERATE = 2;
+  BUDGET_LEVEL_LUXURY = 3;
+}
+
+// ========== Core data structures ==========
+
 message Activity {
   string activity_id = 1;
-  string kind = 2;
-  google.protobuf.Struct metadata = 3;
+  string kind = 2; // attraction_visit, dining, hotel_stay, transport, custom
+
+  // Basic information
+  string name = 3;
+  string description = 4;
+
+  // Time information
+  string start_time = 5; // HH:MM
+  string end_time = 6;
+
+  // Location information
+  ActivityLocation location = 7;
+
+  // Category
+  string category = 8; // sightseeing, dining, shopping, entertainment, etc.
+
+  // Cost
+  Cost cost = 9;
+
+  // Resource associations
+  string attraction_id = 10; // Associated attraction ID
+  string hotel_id = 11; // Associated hotel ID
+
+  // Extension fields
+  google.protobuf.Struct metadata = 12;
 }
 
 message DayPlan {
   string day_plan_id = 1;
-  string title = 2;
-  repeated Activity activities = 3;
-  google.protobuf.Struct metadata = 4;
+  int32 day_number = 2;
+  string date = 3; // YYYY-MM-DD
+  string title = 4;
+  repeated Activity activities = 5;
+  string notes = 6;
+  google.protobuf.Struct metadata = 7;
+}
+
+message ItinerarySummary {
+  double total_estimated_cost = 1;
+  string currency = 2;
+  int32 total_activities = 3;
+  repeated string highlights = 4;
 }
 
 message Itinerary {
   string itinerary_id = 1;
   string title = 2;
   string user_id = 3;
-  repeated DayPlan day_plans = 4;
+
+  // Destination information
+  string destination = 4;
+
+  // Dates
   string start_date = 5; // YYYY-MM-DD
-  string end_date = 6; // YYYY-MM-DD
-  string created_at = 7;
-  string updated_at = 8;
-  google.protobuf.Struct metadata = 9;
+  string end_date = 6;
+
+  // Daily schedule
+  repeated DayPlan day_plans = 7;
+
+  // Summary information
+  ItinerarySummary summary = 8;
+
+  // Timestamps
+  string created_at = 9;
+  string updated_at = 10;
+
+  // Preference information (for future modifications)
+  repeated string interests = 11;
+  BudgetLevel budget_level = 12;
+  int32 num_travelers = 13;
+
+  // Extension fields
+  google.protobuf.Struct metadata = 14;
 }
+
+// ========== Service interfaces ==========
 
 service ItineraryService {
-  // Create a new itinerary.
+  // Itinerary CRUD
   rpc CreateItinerary(CreateItineraryRequest) returns (CreateItineraryResponse);
-
-  // Get an existing itinerary by ID.
   rpc GetItinerary(GetItineraryRequest) returns (GetItineraryResponse);
-
-  // Delete an existing itinerary by ID.
+  rpc UpdateItinerary(UpdateItineraryRequest) returns (UpdateItineraryResponse);
   rpc DeleteItinerary(DeleteItineraryRequest) returns (DeleteItineraryResponse);
+  rpc ListUserItineraries(ListUserItinerariesRequest) returns (ListUserItinerariesResponse);
+
+  // DayPlan operations
+  rpc AddDayPlan(AddDayPlanRequest) returns (AddDayPlanResponse);
+  rpc UpdateDayPlan(UpdateDayPlanRequest) returns (UpdateDayPlanResponse);
+  rpc DeleteDayPlan(DeleteDayPlanRequest) returns (DeleteDayPlanResponse);
+
+  // Activity operations
+  rpc AddActivity(AddActivityRequest) returns (AddActivityResponse);
+  rpc UpdateActivity(UpdateActivityRequest) returns (UpdateActivityResponse);
+  rpc DeleteActivity(DeleteActivityRequest) returns (DeleteActivityResponse);
+  rpc ReorderActivities(ReorderActivitiesRequest) returns (ReorderActivitiesResponse);
 }
 
-message CreateItineraryRequest {}
+// ========== Request/Response messages ==========
 
-message CreateItineraryResponse {}
+// CreateItinerary
+message CreateItineraryRequest {
+  Itinerary itinerary = 1;
+}
 
+message CreateItineraryResponse {
+  string itinerary_id = 1;
+  Itinerary itinerary = 2;
+}
+
+// GetItinerary
 message GetItineraryRequest {
   string itinerary_id = 1;
 }
@@ -56,8 +151,110 @@ message GetItineraryResponse {
   Itinerary itinerary = 1;
 }
 
+// UpdateItinerary
+message UpdateItineraryRequest {
+  Itinerary itinerary = 1;
+}
+
+message UpdateItineraryResponse {
+  Itinerary itinerary = 1;
+}
+
+// DeleteItinerary
 message DeleteItineraryRequest {
   string itinerary_id = 1;
 }
 
-message DeleteItineraryResponse {}
+message DeleteItineraryResponse {
+  bool success = 1;
+}
+
+// ListUserItineraries
+message ListUserItinerariesRequest {
+  string user_id = 1;
+  int32 page_number = 2;
+  int32 page_size = 3;
+}
+
+message ListUserItinerariesResponse {
+  repeated Itinerary itineraries = 1;
+  int32 total_count = 2;
+  int32 page_number = 3;
+  int32 page_size = 4;
+}
+
+// AddDayPlan
+message AddDayPlanRequest {
+  string itinerary_id = 1;
+  DayPlan day_plan = 2;
+}
+
+message AddDayPlanResponse {
+  string day_plan_id = 1;
+  DayPlan day_plan = 2;
+}
+
+// UpdateDayPlan
+message UpdateDayPlanRequest {
+  string itinerary_id = 1;
+  DayPlan day_plan = 2;
+}
+
+message UpdateDayPlanResponse {
+  DayPlan day_plan = 1;
+}
+
+// DeleteDayPlan
+message DeleteDayPlanRequest {
+  string itinerary_id = 1;
+  string day_plan_id = 2;
+}
+
+message DeleteDayPlanResponse {
+  bool success = 1;
+}
+
+// AddActivity
+message AddActivityRequest {
+  string itinerary_id = 1;
+  string day_plan_id = 2;
+  Activity activity = 3;
+}
+
+message AddActivityResponse {
+  string activity_id = 1;
+  Activity activity = 2;
+}
+
+// UpdateActivity
+message UpdateActivityRequest {
+  string itinerary_id = 1;
+  string day_plan_id = 2;
+  Activity activity = 3;
+}
+
+message UpdateActivityResponse {
+  Activity activity = 1;
+}
+
+// DeleteActivity
+message DeleteActivityRequest {
+  string itinerary_id = 1;
+  string day_plan_id = 2;
+  string activity_id = 3;
+}
+
+message DeleteActivityResponse {
+  bool success = 1;
+}
+
+// ReorderActivities
+message ReorderActivitiesRequest {
+  string itinerary_id = 1;
+  string day_plan_id = 2;
+  repeated string activity_ids = 3; // New order
+}
+
+message ReorderActivitiesResponse {
+  DayPlan day_plan = 1;
+}

@@ -37,6 +37,7 @@ dev = [
     "pytest-mock>=3.15.1",
     "types-grpcio>=1.0.0.20251009",
     "types-networkx>=3.6.1.20251220",
+    "types-protobuf>=6.32.1.20251210",
 ]
 
 [tool.uv.sources]
