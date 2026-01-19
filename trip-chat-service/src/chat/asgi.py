@@ -11,6 +11,7 @@ from chat.config.logging import setup_logging
 from chat.config.settings import get_settings
 from chat.infra.nacos.ai import NacosAI
 from chat.infra.nacos.naming import NacosNaming
+from chat.infra.nacos.utils import client_shutdown
 from chat.routers.conversation import conversations
 from chat.routers.memory import memories
 from chat.routers.message import messages
@@ -49,9 +50,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)
-            await app.state.nacos_naming.shutdown()
-        if isinstance(app.state.nacos_ai, NacosAI):
-            await app.state.nacos_ai.shutdown()
+        await client_shutdown(app.state.nacos_ai, app.state.nacos_naming)
         await app.state.mongo_client.close()
         await app.state.httpx_client.aclose()
 

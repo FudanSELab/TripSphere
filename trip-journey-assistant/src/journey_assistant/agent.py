@@ -53,7 +53,7 @@ def get_root_agent(model: str = "openai/gpt-4o-mini") -> LlmAgent:
     return LlmAgent(
         name=AGENT_NAME,
         description=AGENT_DESCRIPTION,
-        model=LiteLlm(model),
+        model=LiteLlm(model=model),
         instruction=root_instruction,
         tools=[weather_toolset],
     )

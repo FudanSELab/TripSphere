@@ -104,7 +104,7 @@ class RocketMQConsumer:
                         logger.error(f"Message processing error: {e}", exc_info=True)
                     finally:
                         # Acknowledge message after processing
-                        await asyncio.to_thread(self._consumer.ack, rmq_message)
+                        await asyncio.to_thread(self._consumer.ack, rmq_message)  # pyright: ignore
 
             except Exception as e:
                 if self._running:  # Only log if not shutting down

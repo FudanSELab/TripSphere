@@ -1,4 +1,3 @@
-import socket
 from typing import Self
 
 from v2.nacos import (  # type: ignore
@@ -8,14 +7,7 @@ from v2.nacos import (  # type: ignore
     RegisterInstanceParam,
 )  # pyright: ignore[reportMissingTypeStubs]
 
-
-def get_local_ip() -> str:
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(("8.8.8.8", 80))
-            return str(s.getsockname()[0])
-    except Exception:
-        return socket.gethostbyname(socket.gethostname())
+from review_summary.infra.nacos.utils import get_local_ip
 
 
 class NacosNaming:
@@ -30,7 +22,7 @@ class NacosNaming:
             .namespace_id(self.namespace_id)
             .build()
         )
-        self.naming_service: NacosNamingService
+        self.naming_service: NacosNamingService | None = None
         self.service_name = service_name
         self.ip = get_local_ip()
         self.port = port
@@ -46,6 +38,8 @@ class NacosNaming:
         return instance
 
     async def register(self, ephemeral: bool = True) -> None:
+        if self.naming_service is None:
+            raise RuntimeError("Nacos naming service is not initialized")
         await self.naming_service.register_instance(
             request=RegisterInstanceParam(
                 ip=self.ip,
@@ -56,6 +50,8 @@ class NacosNaming:
         )
 
     async def deregister(self, ephemeral: bool = True) -> None:
+        if self.naming_service is None:
+            raise RuntimeError("Nacos naming service is not initialized")
         await self.naming_service.deregister_instance(
             request=DeregisterInstanceParam(
                 ip=self.ip,
@@ -64,3 +60,8 @@ class NacosNaming:
                 ephemeral=ephemeral,
             )
         )
+
+    async def shutdown(self) -> None:
+        if self.naming_service is None:
+            raise RuntimeError("Nacos naming service is not initialized")
+        await self.naming_service.shutdown()

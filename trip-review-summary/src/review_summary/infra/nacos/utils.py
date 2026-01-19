@@ -1,11 +1,10 @@
 import socket
 
-from chat.infra.nacos.ai import NacosAI
-from chat.infra.nacos.naming import NacosNaming
+from review_summary.infra.nacos.ai import NacosAI
+from review_summary.infra.nacos.naming import NacosNaming
 
 
 def get_local_ip() -> str:
-    """Get local IP address."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.connect(("8.8.8.8", 80))

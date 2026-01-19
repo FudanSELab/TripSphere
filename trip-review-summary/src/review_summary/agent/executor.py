@@ -22,7 +22,7 @@ from review_summary.vector_stores.text_unit import TextUnitVectorStore
 logger = logging.getLogger(__name__)
 
 
-class ReviewSummaryAgentExecutor(AgentExecutor):
+class A2aAgentExecutor(AgentExecutor):
     def __init__(
         self, neo4j_driver: AsyncDriver, qdrant_client: AsyncQdrantClient
     ) -> None:
