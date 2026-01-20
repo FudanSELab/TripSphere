@@ -86,7 +86,7 @@ class AgentFacade:
             agent_card = await self.nacos_ai.get_agent_card(agent_name)
         except Exception as e:
             logger.error(f"Failed to resolve agent name {agent_name}: {e}")
-            return None
+            return None  # Fail silently for now
         self.agent_cards[agent_card.name] = agent_card
         self.remote_a2a_agents[agent_card.name] = RemoteA2aAgent(
             name=agent_card.name, agent_card=agent_card
