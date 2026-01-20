@@ -5,7 +5,7 @@ from typing import Any
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
-from a2a.types import Part, Task, TaskState, TextPart
+from a2a.types import DataPart, Part, Task, TaskState, TextPart
 from a2a.utils import new_agent_text_message, new_task
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncDriver
@@ -186,15 +186,7 @@ class A2aAgentExecutor(AgentExecutor):
     async def _ensure_task(
         self, context: RequestContext, event_queue: EventQueue
     ) -> Task:
-        """Ensure a task exists for the current execution.
-
-        Arguments:
-            context: The request context
-            event_queue: Event queue for task creation
-
-        Returns:
-            The current or newly created task
-        """
+        """Ensure a task exists for the current execution."""
         task = context.current_task
         if not task:
             task = new_task(context.message)  # type: ignore
@@ -205,26 +197,17 @@ class A2aAgentExecutor(AgentExecutor):
     async def _execute_search(
         self, query: str, target_id: str, updater: TaskUpdater
     ) -> SearchResult:
-        """Execute the search operation with progress updates.
-
-        Arguments:
-            query: User query to search for
-            target_id: ID of the target attraction
-            updater: Task updater for status updates
-
-        Returns:
-            SearchResult containing the response and metadata
-        """
+        """Execute the search operation with progress updates."""
         await updater.update_status(
             TaskState.working,
             new_agent_text_message(
-                text="Finding attraction information...",
+                text="Collecting attraction information...",
                 context_id=updater.context_id,
                 task_id=updater.task_id,
             ),
         )
 
-        # Initialize search components
+        # Initialize search engine
         search = await self._init_search_engine()
 
         await updater.update_status(
@@ -244,16 +227,10 @@ class A2aAgentExecutor(AgentExecutor):
             f"tokens: {result.prompt_tokens + result.output_tokens}, "
             f"time: {result.completion_time:.2f}s"
         )
-
         return result
 
     async def _handle_success(self, result: SearchResult, updater: TaskUpdater) -> None:
-        """Handle successful search result.
-
-        Arguments:
-            result: The search result to process
-            updater: Task updater for status updates
-        """
+        """Handle successful search result."""
         metadata: dict[str, Any] = {
             "completion_time": result.completion_time,
             "llm_calls": result.llm_calls,
@@ -261,22 +238,20 @@ class A2aAgentExecutor(AgentExecutor):
             "output_tokens": result.output_tokens,
         }
 
-        await updater.add_artifact(
-            [Part(root=TextPart(text=str(result.response)))],
-            name="review_summary",
-            metadata=metadata,
-        )
+        if isinstance(result.response, str):
+            parts = [Part(root=TextPart(text=result.response))]
+        elif isinstance(result.response, dict):
+            parts = [Part(root=DataPart(data=result.response))]
+        else:
+            parts = [Part(root=DataPart(data=item)) for item in result.response]
+
+        await updater.add_artifact(parts=parts, metadata=metadata)
         await updater.complete()
         logger.info(f"Task {updater.task_id} completed successfully")
 
     async def _handle_error(self, error: Exception, updater: TaskUpdater) -> None:
-        """Handle execution errors with appropriate logging and user feedback.
+        """Handle execution errors with appropriate logging and user feedback."""
 
-        Arguments:
-            error: The exception that occurred
-            updater: Task updater for status updates
-        """
-        # Format error message - matches original behavior
         error_msg = f"Error processing review summary: {str(error)}"
 
         # Enhanced logging with error categorization for debugging
@@ -291,14 +266,10 @@ class A2aAgentExecutor(AgentExecutor):
         else:
             logger.error(error_msg, exc_info=True)
 
-        # Send failure status with error message (matches original behavior)
+        # Send failure status with error message
         await updater.update_status(
             TaskState.failed,
-            new_agent_text_message(
-                text=error_msg,
-                context_id=updater.context_id,
-                task_id=updater.task_id,
-            ),
+            new_agent_text_message(error_msg, updater.context_id, updater.task_id),
             final=True,
         )
 
@@ -310,10 +281,6 @@ class A2aAgentExecutor(AgentExecutor):
         2. Initializing components
         3. Executing search
         4. Returning results
-
-        Arguments:
-            context: The request context containing user query and metadata
-            event_queue: Event queue for task updates
         """
         task = await self._ensure_task(context, event_queue)
         updater = TaskUpdater(event_queue, task.id, task.context_id)
@@ -333,14 +300,9 @@ class A2aAgentExecutor(AgentExecutor):
             await self._handle_error(e, updater)
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
-        """Cancel the current task execution.
-
-        Arguments:
-            context: The request context
-            event_queue: Event queue for task updates
-        """
+        """Cancel the current task execution."""
         task = context.current_task
-        if not task:
+        if task is None:
             logger.debug("No active task to cancel")
             return
 

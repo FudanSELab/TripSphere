@@ -6,10 +6,10 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
+from itinerary_planner._planning.state import ItineraryState, Question
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from itinerary_planner._planning.state import ItineraryState, Question
 from itinerary_planner.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,8 @@ async def research_destination(state: ItineraryState) -> dict[str, Any]:
     messages = [
         SystemMessage(
             content=(
-                "You are a knowledgeable travel expert with deep knowledge of destinations worldwide."
+                "You are a knowledgeable travel expert with deep knowledge"
+                " of destinations worldwide."
             )
         ),
         HumanMessage(
@@ -63,7 +64,10 @@ Budget level: {state["budget_level"]}
     ]
 
     response = await llm.ainvoke(messages)
-    destination_info = str(response.content)
+    content = response.content  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    destination_info = (
+        content if isinstance(content, str) else str(content)  # pyright: ignore[reportUnknownArgumentType]
+    )
 
     logger.info(f"Destination research completed for {state['destination']}")
     return {"destination_info": destination_info}
@@ -113,7 +117,10 @@ Return ONLY the JSON array, no additional text.
     ]
 
     response = await llm.ainvoke(messages)
-    response_text = str(response.content).strip()
+    content = response.content  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    response_text = (
+        content if isinstance(content, str) else str(content)  # pyright: ignore[reportUnknownArgumentType]
+    ).strip()
 
     # Try to extract JSON from response
     try:
@@ -194,7 +201,10 @@ Return ONLY the JSON object, no additional text.
     ]
 
     response = await llm.ainvoke(messages)
-    response_text = str(response.content).strip()
+    content = response.content  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    response_text = (
+        content if isinstance(content, str) else str(content)  # pyright: ignore[reportUnknownArgumentType]
+    ).strip()
 
     # Try to extract JSON from response
     try:
@@ -289,7 +299,10 @@ Return ONLY the JSON array.
     ]
 
     response = await llm.ainvoke(messages)
-    response_text = str(response.content).strip()
+    content = response.content  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    response_text = (
+        content if isinstance(content, str) else str(content)  # pyright: ignore[reportUnknownArgumentType]
+    ).strip()
 
     try:
         if response_text.startswith("```"):
@@ -374,7 +387,10 @@ Return ONLY a JSON object."""
     ]
 
     response = await llm.ainvoke(messages)
-    response_text = str(response.content).strip()
+    content = response.content  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    response_text = (
+        content if isinstance(content, str) else str(content)  # pyright: ignore[reportUnknownArgumentType]
+    ).strip()
 
     try:
         # Remove markdown code blocks if present

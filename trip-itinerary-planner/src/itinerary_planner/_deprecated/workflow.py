@@ -3,9 +3,6 @@
 import logging
 from typing import Any, Literal, cast
 
-from langgraph.graph import END, StateGraph
-from langgraph.graph.state import CompiledStateGraph
-
 from itinerary_planner._planning.nodes import (
     check_need_clarification,
     create_daily_schedule,
@@ -15,6 +12,10 @@ from itinerary_planner._planning.nodes import (
     suggest_activities,
 )
 from itinerary_planner._planning.state import ItineraryState
+from langgraph.graph import END, StateGraph  # pyright: ignore[reportMissingTypeStubs]
+from langgraph.graph.state import (  # pyright: ignore[reportMissingTypeStubs]
+    CompiledStateGraph,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +45,15 @@ def create_planning_workflow() -> CompiledStateGraph[ItineraryState]:
     workflow = StateGraph[ItineraryState](ItineraryState)
 
     # Add nodes
-    workflow.add_node("research_destination", research_destination)
-    workflow.add_node("check_clarification", check_need_clarification)
-    workflow.add_node(
+    workflow.add_node("research_destination", research_destination)  # pyright: ignore
+    workflow.add_node("check_clarification", check_need_clarification)  # pyright: ignore
+    workflow.add_node(  # pyright: ignore
         "ask_question", lambda state: state
     )  # Placeholder for interruption
-    workflow.add_node("incorporate_response", incorporate_user_response)
-    workflow.add_node("suggest_activities", suggest_activities)
-    workflow.add_node("create_daily_schedule", create_daily_schedule)
-    workflow.add_node("finalize_itinerary", finalize_itinerary)
+    workflow.add_node("incorporate_response", incorporate_user_response)  # pyright: ignore
+    workflow.add_node("suggest_activities", suggest_activities)  # pyright: ignore
+    workflow.add_node("create_daily_schedule", create_daily_schedule)  # pyright: ignore
+    workflow.add_node("finalize_itinerary", finalize_itinerary)  # pyright: ignore
 
     # Define the flow
     workflow.set_entry_point("research_destination")
@@ -77,10 +78,10 @@ def create_planning_workflow() -> CompiledStateGraph[ItineraryState]:
     workflow.add_edge("finalize_itinerary", END)
 
     # Compile the workflow
-    app = workflow.compile()
+    app = workflow.compile()  # type: ignore[misc]
 
     logger.info("Planning workflow created and compiled")
-    return cast(CompiledStateGraph[ItineraryState], app)
+    return app  # type: ignore[return-value]
 
 
 class ItineraryPlanner:
@@ -140,7 +141,7 @@ class ItineraryPlanner:
 
         try:
             # Run the workflow
-            result = await self.workflow.ainvoke(initial_state)
+            result = await self.workflow.ainvoke(initial_state)  # type: ignore[misc]
 
             if result.get("error"):
                 logger.error(f"Error during planning: {result['error']}")
