@@ -53,9 +53,9 @@ async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
     }
     extract_graph_config = ExtractGraphConfig(
         # For extract_graph operation
-        graph_llm_config={"name": "gpt-4o", "temperature": 0.3},
+        graph_llm_config={"model": "gpt-4o", "temperature": 0.3},
         # For summarize_descriptions operation
-        summary_llm_config={"name": "gpt-4o", "temperature": 0.3},
+        summary_llm_config={"model": "gpt-4o", "temperature": 0.3},
     )
     finalize_graph_config = FinalizeGraphConfig()
     create_text_embeddings_config = CreateTextEmbeddingsConfig(

@@ -16,31 +16,27 @@ from review_summary.tokenizer.tiktoken import TiktokenTokenizer
 from review_summary.vector_stores.entity import EntityVectorStore
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
-settings = get_settings()
-
 
 async def load_entities() -> list[Entity]:
     df = pd.read_parquet("./tests/fixtures/entities.parquet", dtype_backend="pyarrow")
-    entities: list[Entity] = []
-    for _, row in df.iterrows():
-        entity = Entity.model_validate(row.to_dict())
-        entities.append(entity)
+    entities: list[Entity] = [
+        Entity.model_validate(row.to_dict()) for _, row in df.iterrows()
+    ]
     return entities
 
 
 async def load_textunits() -> list[TextUnit]:
     df = pd.read_parquet("./tests/fixtures/text_units.parquet", dtype_backend="pyarrow")
-    textunits: list[TextUnit] = []
-    for _, row in df.iterrows():
-        textunit = TextUnit.model_validate(row.to_dict())
-        textunits.append(textunit)
+    textunits: list[TextUnit] = [
+        TextUnit.model_validate(row.to_dict()) for _, row in df.iterrows()
+    ]
     return textunits
 
 
 async def main() -> None:
-    entities = await load_entities()
-    textunits = await load_textunits()
-    openai_settings = get_settings().openai
+    settings = get_settings()
+
+    openai_settings = settings.openai
     chat_model = ChatOpenAI(
         model="gpt-4o",
         temperature=0.0,
@@ -52,7 +48,6 @@ async def main() -> None:
         api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
     )
-
     tokenizer = TiktokenTokenizer(encoding_name_for_model(chat_model.model_name))
 
     neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
@@ -61,14 +56,18 @@ async def main() -> None:
     )
 
     qdrant_client = AsyncQdrantClient(":memory:")
-    entity_store = await EntityVectorStore.create_vector_store(qdrant_client)
-    await entity_store.save_multiple(entities)
-    textunit_store = await TextUnitVectorStore.create_vector_store(qdrant_client)
-    await textunit_store.save_multiple(text_units=textunits)
+    entity_vector_store = await EntityVectorStore.create_vector_store(qdrant_client)
+    text_unit_vector_store = await TextUnitVectorStore.create_vector_store(
+        client=qdrant_client
+    )
+    entities = await load_entities()
+    textunits = await load_textunits()
+    await entity_vector_store.save_multiple(entities)
+    await text_unit_vector_store.save_multiple(text_units=textunits)
 
     context_builder = LocalSearchMixedContext(
-        entity_text_embeddings=entity_store,
-        text_unit_store=textunit_store,
+        entity_vector_store=entity_vector_store,
+        text_unit_vector_store=text_unit_vector_store,
         embedding_model=embedding_model,
         tokenizer=tokenizer,
         neo4j_driver=neo4j_driver,
@@ -81,8 +80,7 @@ async def main() -> None:
         response_type="multiple paragraphs",
     )
 
-    query = "Just summarize review"
-
+    query = "Just summarize the reviews"
     result = await local_search.search(query=query, target_id="attraction-001")
 
     print("🔍 Query:", query)
