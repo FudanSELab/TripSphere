@@ -13,13 +13,11 @@ from qdrant_client import AsyncQdrantClient
 from tiktoken import encoding_name_for_model
 
 from review_summary.config.settings import get_settings
+from review_summary.query.base import SearchResult
 from review_summary.query.structured_search.local_search.mixed_content import (
     LocalSearchMixedContext,
 )
-from review_summary.query.structured_search.local_search.search import (
-    LocalSearch,
-    SearchResult,
-)
+from review_summary.query.structured_search.local_search.search import LocalSearch
 from review_summary.tokenizer.tiktoken import TiktokenTokenizer
 from review_summary.vector_stores.entity import EntityVectorStore
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
@@ -50,14 +48,14 @@ class A2aAgentExecutor(AgentExecutor):
 
         # Initialize core components (lazy initialization on first use)
         # These are cached across requests for better performance
-        self.chat_model: ChatOpenAI | None = None
-        self.embedding_model: OpenAIEmbeddings | None = None
-        self.tokenizer: TiktokenTokenizer | None = None
-        self.search_engine: LocalSearch | None = None
+        self._chat_model: ChatOpenAI | None = None
+        self._embedding_model: OpenAIEmbeddings | None = None
+        self._tokenizer: TiktokenTokenizer | None = None
+        self._search_engine: LocalSearch | None = None
 
         logger.info("A2aAgentExecutor initialized successfully")
 
-    async def _initialize_vector_stores(
+    async def _init_vector_stores(
         self,
     ) -> tuple[EntityVectorStore, TextUnitVectorStore]:
         """Initialize vector stores in parallel for better performance.
@@ -79,15 +77,15 @@ class A2aAgentExecutor(AgentExecutor):
         Returns:
             Initialized ChatOpenAI instance
         """
-        if self.chat_model is None:
+        if self._chat_model is None:
             logger.debug(f"Initializing ChatOpenAI with model: {self.CHAT_MODEL}")
-            self.chat_model = ChatOpenAI(
+            self._chat_model = ChatOpenAI(
                 model=self.CHAT_MODEL,
                 temperature=self.CHAT_TEMPERATURE,
                 api_key=self.openai_settings.api_key,
                 base_url=self.openai_settings.base_url,
             )
-        return self.chat_model
+        return self._chat_model
 
     def _get_embedding_model(self) -> OpenAIEmbeddings:
         """Get or create the embedding_model instance (lazy initialization).
@@ -95,16 +93,16 @@ class A2aAgentExecutor(AgentExecutor):
         Returns:
             Initialized OpenAIEmbeddings instance
         """
-        if self.embedding_model is None:
+        if self._embedding_model is None:
             logger.debug(
                 f"Initializing OpenAIEmbeddings with model: {self.EMBEDDING_MODEL}"
             )
-            self.embedding_model = OpenAIEmbeddings(
+            self._embedding_model = OpenAIEmbeddings(
                 model=self.EMBEDDING_MODEL,
                 api_key=self.openai_settings.api_key,
                 base_url=self.openai_settings.base_url,
             )
-        return self.embedding_model
+        return self._embedding_model
 
     def _get_tokenizer(self) -> TiktokenTokenizer:
         """Get or create the tokenizer instance (lazy initialization).
@@ -112,16 +110,16 @@ class A2aAgentExecutor(AgentExecutor):
         Returns:
             Initialized TiktokenTokenizer instance
         """
-        if self.tokenizer is None:
+        if self._tokenizer is None:
             chat_model = self._get_chat_model()
             encoding_name = encoding_name_for_model(chat_model.model_name)
             logger.debug(
                 f"Initializing TiktokenTokenizer with encoding: {encoding_name}"
             )
-            self.tokenizer = TiktokenTokenizer(encoding_name)
-        return self.tokenizer
+            self._tokenizer = TiktokenTokenizer(encoding_name)
+        return self._tokenizer
 
-    async def _initialize_search_engine(self) -> LocalSearch:
+    async def _init_search_engine(self) -> LocalSearch:
         """Initialize or get the cached search instance with all dependencies.
 
         The search instance is cached after first initialization for better performance.
@@ -131,11 +129,11 @@ class A2aAgentExecutor(AgentExecutor):
         Returns:
             Initialized LocalSearch instance
         """
-        if self.search_engine is None:
+        if self._search_engine is None:
             logger.debug("Initializing LocalSearch with all dependencies")
 
             # Initialize vector stores in parallel
-            entity_store, textunit_store = await self._initialize_vector_stores()
+            entity_store, textunit_store = await self._init_vector_stores()
 
             # Get cached model instances (reused across requests for efficiency)
             chat_model = self._get_chat_model()
@@ -152,7 +150,7 @@ class A2aAgentExecutor(AgentExecutor):
             )
 
             # Initialize search and cache it
-            self.search_engine = LocalSearch(
+            self._search_engine = LocalSearch(
                 chat_model=chat_model,
                 context_builder=context_builder,
                 tokenizer=tokenizer,
@@ -161,7 +159,7 @@ class A2aAgentExecutor(AgentExecutor):
         else:
             logger.debug("Using cached LocalSearch instance")
 
-        return self.search_engine
+        return self._search_engine
 
     def _validate_context(self, context: RequestContext) -> tuple[str, str]:
         """Validate and extract required information from request context.
@@ -227,7 +225,7 @@ class A2aAgentExecutor(AgentExecutor):
         )
 
         # Initialize search components
-        search = await self._initialize_search_engine()
+        search = await self._init_search_engine()
 
         await updater.update_status(
             TaskState.working,
@@ -242,8 +240,9 @@ class A2aAgentExecutor(AgentExecutor):
         logger.info(f"Executing search for target_id: {target_id}")
         result = await search.search(query=query, target_id=target_id)
         logger.info(
-            f"Search completed - tokens: {result.prompt_tokens + result.output_tokens}"
-            f", time: {result.completion_time:.2f}s"
+            f"Search completed - "
+            f"tokens: {result.prompt_tokens + result.output_tokens}, "
+            f"time: {result.completion_time:.2f}s"
         )
 
         return result
@@ -350,9 +349,7 @@ class A2aAgentExecutor(AgentExecutor):
         await updater.update_status(
             TaskState.canceled,
             new_agent_text_message(
-                "Review summary request cancelled",
-                task.context_id,
-                task.id,
+                "Review summary request cancelled", task.context_id, task.id
             ),
             final=True,
         )
