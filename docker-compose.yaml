@@ -391,6 +391,41 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+    depends_on:
+      tempo:
+        condition: service_started
+
+  # Tempo - Distributed Tracing Backend
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    user: root
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - ./volumes/tempo:/tmp/tempo
+    ports:
+      - "3200:3200"  # Tempo HTTP API
+      - "4317"       # OTLP gRPC receiver (internal only)
+    restart: unless-stopped
+
+  # Grafana - Observability Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./grafana/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./volumes/grafana:/var/lib/grafana
+    ports:
+      - "3001:3000"  # Use port 3001 to avoid conflict with frontend
+    depends_on:
+      tempo:
+        condition: service_started
+    restart: unless-stopped
 
   # RocketMQ Name Server
   rmq-namesrv:

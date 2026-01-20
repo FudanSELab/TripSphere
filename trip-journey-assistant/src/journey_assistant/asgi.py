@@ -6,16 +6,25 @@ from starlette.applications import Starlette
 
 from journey_assistant.agent import agent_card, get_root_agent
 from journey_assistant.config.settings import get_settings
+from journey_assistant.config.telemetry import instrument_starlette, setup_telemetry
 from journey_assistant.nacos.ai import NacosAI
 
 warnings.filterwarnings("ignore")  # Suppress ADK Experimental Warnings
 
 logger = logging.getLogger(__name__)
 
+# Initialize OpenTelemetry auto-instrumentation
+# This should be done early, before creating the Starlette app
+setup_telemetry(service_name="trip-journey-assistant")
+
 
 def create_app() -> Starlette:
     # Get the A2A Starlette app
     a2a_app = to_a2a(get_root_agent(), agent_card=agent_card)
+
+    # Instrument Starlette for automatic tracing
+    # This enables auto-extraction of trace context from HTTP headers
+    instrument_starlette(a2a_app)
 
     # Wrap the existing startup events with our lifespan logic
     original_startup = a2a_app.router.on_startup

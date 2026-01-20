@@ -11,6 +11,7 @@ from tripsphere.itinerary import (
 
 from itinerary.config.logging import setup_logging
 from itinerary.config.settings import get_settings
+from itinerary.config.telemetry import setup_telemetry
 from itinerary.grpc.itinerary import ItineraryServiceServicer
 from itinerary.grpc.metadata import MetadataServiceServicer
 from itinerary.grpc.planning import PlanningServiceServicer
@@ -20,6 +21,10 @@ from itinerary.nacos.naming import NacosNaming
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+# Initialize OpenTelemetry auto-instrumentation
+# This should be done early, before creating the gRPC server
+setup_telemetry(service_name="trip-itinerary-service")
 
 
 async def serve() -> None:
