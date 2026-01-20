@@ -47,7 +47,7 @@ async def main() -> None:
         api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
     )
-    embedder = OpenAIEmbeddings(
+    embedding_model = OpenAIEmbeddings(
         model="text-embedding-3-large",
         api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
@@ -69,7 +69,7 @@ async def main() -> None:
     context_builder = LocalSearchMixedContext(
         entity_text_embeddings=entity_store,
         text_unit_store=textunit_store,
-        text_embedder=embedder,
+        embedding_model=embedding_model,
         tokenizer=tokenizer,
         neo4j_driver=neo4j_driver,
     )

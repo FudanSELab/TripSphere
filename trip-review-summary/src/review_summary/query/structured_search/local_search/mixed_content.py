@@ -39,7 +39,7 @@ class LocalSearchMixedContext:
         self,
         entity_text_embeddings: EntityVectorStore,
         text_unit_store: TextUnitVectorStore,
-        text_embedder: OpenAIEmbeddings,
+        embedding_model: OpenAIEmbeddings,
         tokenizer: Tokenizer,
         neo4j_driver: AsyncDriver,
         community_reports: list[CommunityReport] | None = None,
@@ -50,7 +50,7 @@ class LocalSearchMixedContext:
             community.community_id: community for community in community_reports
         }
         self.entity_text_embeddings = entity_text_embeddings
-        self.text_embedder = text_embedder
+        self.embedding_model = embedding_model
         self.tokenizer = tokenizer
         self.neo4j_driver = neo4j_driver
         self.text_unit_store = text_unit_store
@@ -105,7 +105,7 @@ class LocalSearchMixedContext:
             )
             query = f"{query}\n{pre_user_questions}"
 
-        query_embedding = await self.text_embedder.aembed_query(query)
+        query_embedding = await self.embedding_model.aembed_query(query)
         selected_entities = await self.entity_text_embeddings.search_by_vector(
             embedding_vector=query_embedding,
             top_k=top_k_mapped_entities,

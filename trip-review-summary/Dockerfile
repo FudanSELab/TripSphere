@@ -69,7 +69,7 @@ WORKDIR /app
 ENV UVICORN_HOST=0.0.0.0
 ENV UVICORN_PORT=24212
 
-# Start the instrumented app with default arguments
+# Start the instrumented app
 ENTRYPOINT ["opentelemetry-instrument"]
 # No default CMD - must be specified in docker-compose or at runtime
 CMD []

@@ -4,7 +4,7 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "a2a-sdk[all]>=0.3.22",
+    "a2a-sdk[http-server,telemetry]>=0.3.22",
     "asgiref>=3.11.0",
     "celery[redis]>=5.6.1",
     "fastapi[standard]>=0.128.0",
