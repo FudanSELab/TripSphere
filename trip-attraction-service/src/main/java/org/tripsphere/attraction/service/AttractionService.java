@@ -45,7 +45,7 @@ public class AttractionService {
     }
 
     /**
-     * Change attraction information except images
+     * Change attraction information
      *
      * @param attraction attraction
      * @return if change success, return true, else return false
@@ -59,6 +59,8 @@ public class AttractionService {
         attractionOld.setIntroduction(attraction.getIntroduction());
         attractionOld.setLocation(attraction.getLocation());
         attractionOld.setTags(attraction.getTags());
+        attractionOld.setImages(attraction.getImages());
+        attractionRepository.save(attractionOld);
         return true;
     }
 
