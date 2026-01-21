@@ -1,6 +1,16 @@
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 from itinerary_planner.models.itinerary import Itinerary
+
+
+class PlanningStep(StrEnum):
+    ANALYZING_PREFERENCES = "analyzing_preferences"
+    RESEARCHING_DESTINATION = "researching_destination"
+    FINDING_ATTRACTIONS = "finding_attractions"
+    OPTIMIZING_ROUTE = "optimizing_route"
+    FINALIZING = "finalizing"
 
 
 class PlanningProgressEvent(BaseModel):

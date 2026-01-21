@@ -135,9 +135,10 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
                     responseObserver) {
         Attraction attraction = attractionService.findAttractionById(request.getId());
         if (attraction == null) {
-            responseObserver.onError(io.grpc.Status.NOT_FOUND
-                    .withDescription("Attraction not found with id: " + request.getId())
-                    .asRuntimeException());
+            responseObserver.onError(
+                    io.grpc.Status.NOT_FOUND
+                            .withDescription("Attraction not found with id: " + request.getId())
+                            .asRuntimeException());
             return;
         }
         org.tripsphere.attraction.Attraction.Builder attractionBuilder =

@@ -108,8 +108,7 @@ public class AttractionService {
             double lng, double lat, double radiusKm, String name, List<String> tags) {
         double maxDistanceMeters = radiusKm * 1000; // Mongo expects meters for $nearSphere
         String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
-        return attractionRepository.findByLocationNearWithFilters(
-                lng, lat, maxDistanceMeters, nameRegex, tags);
+        return attractionRepository.findByLocationNearWithFilters(lng, lat, maxDistanceMeters);
     }
 
     /**
