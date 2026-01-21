@@ -37,8 +37,8 @@ class LocalSearchMixedContext:
 
     def __init__(
         self,
-        entity_text_embeddings: EntityVectorStore,
-        text_unit_store: TextUnitVectorStore,
+        entity_vector_store: EntityVectorStore,
+        text_unit_vector_store: TextUnitVectorStore,
         embedding_model: OpenAIEmbeddings,
         tokenizer: Tokenizer,
         neo4j_driver: AsyncDriver,
@@ -49,11 +49,11 @@ class LocalSearchMixedContext:
         self.community_reports = {
             community.community_id: community for community in community_reports
         }
-        self.entity_text_embeddings = entity_text_embeddings
+        self.entity_vector_store = entity_vector_store
         self.embedding_model = embedding_model
         self.tokenizer = tokenizer
         self.neo4j_driver = neo4j_driver
-        self.text_unit_store = text_unit_store
+        self.text_unit_vector_store = text_unit_vector_store
 
     async def build_context(
         self,
@@ -79,12 +79,10 @@ class LocalSearchMixedContext:
         column_delimiter: str = "|",
         target_id: str = "",
     ) -> ContextBuilderResult:
-        """
-        Build data context for local search prompt.
+        """Build data context for local search prompt.
 
-        Build a context by combining community reports
-        and entity/relationship/covariate tables,
-        and text units using a predefined ratio set by summary_prop.
+        Build a context by combining community reports, entity/relationship/covariate
+        tables, and text units using a predefined ratio set by summary_prop.
         """
         if include_entity_names is None:
             include_entity_names = []
@@ -106,10 +104,10 @@ class LocalSearchMixedContext:
             query = f"{query}\n{pre_user_questions}"
 
         query_embedding = await self.embedding_model.aembed_query(query)
-        selected_entities = await self.entity_text_embeddings.search_by_vector(
+        selected_entities = await self.entity_vector_store.search_by_vector(
             embedding_vector=query_embedding,
-            top_k=top_k_mapped_entities,
             target_id=target_id,
+            top_k=top_k_mapped_entities,
         )
         # get relationships
         relationships: list[Relationship] = []
@@ -118,7 +116,7 @@ class LocalSearchMixedContext:
         )
         # get text_units
         text_units: list[TextUnit] = []
-        text_units = await self.text_unit_store.find_by_target(target_id=target_id)
+        text_units = await self.text_unit_vector_store.find_by_target(target_id)
 
         # build context
         final_context = list[str]()
@@ -204,8 +202,9 @@ class LocalSearchMixedContext:
         min_community_rank: int = 0,
         context_name: str = "Reports",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
-        """Add community data to the context window until
-        it hits the max_context_tokens limit."""
+        """Add community data to the context window until it hits the
+        max_context_tokens limit.
+        """
         if len(selected_entities) == 0 or len(self.community_reports) == 0:
             return ("", {context_name.lower(): pd.DataFrame()})
 
@@ -261,8 +260,9 @@ class LocalSearchMixedContext:
         column_delimiter: str = "|",
         context_name: str = "Sources",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
-        """Rank matching text units and add them to the context
-        window until it hits the max_context_tokens limit."""
+        """Rank matching text units and add them to the context window until it hits
+        the max_context_tokens limit.
+        """
         if not selected_entities or not text_units:
             return ("", {context_name.lower(): pd.DataFrame()})
         selected_text_units = []
@@ -314,8 +314,9 @@ class LocalSearchMixedContext:
         relationship_ranking_attribute: str = "rank",
         column_delimiter: str = "|",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
-        """Build data context for local search prompt
-        combining entity/relationship/covariate tables."""
+        """Build data context for local search prompt combining
+        entity/relationship/covariate tables.
+        """
         # build entity context
         entity_context, entity_context_data = build_entity_context(
             selected_entities=selected_entities,

@@ -874,6 +874,7 @@ name = "itinerary"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "a2a-sdk" },
     { name = "grpcio" },
     { name = "nacos-sdk-python" },
     { name = "opentelemetry-distro", extra = ["otlp"] },
@@ -895,6 +896,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "a2a-sdk", specifier = ">=0.3.22" },
     { name = "grpcio", specifier = ">=1.75.0" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.58b0" },

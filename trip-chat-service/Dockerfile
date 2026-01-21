@@ -69,7 +69,7 @@ ENV UVICORN_PORT=24210
 
 EXPOSE $UVICORN_PORT
 
-# Start the instrumented app with default (FastAPI) arguments
+# Start the instrumented uvicorn server
 ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "chat.asgi:app"]
 # Do NOT directly provide uvicorn `--port` option here.
 # It must be overridden via environment variable.

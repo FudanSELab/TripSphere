@@ -7,33 +7,27 @@ import type { DayPlan, Itinerary } from "@/lib/types";
 import {
   Calendar,
   ChevronDown,
-  Edit3,
-  GripVertical,
+  ChevronUp,
   Loader2,
   MapPin,
-  Plus,
-  Save,
+  Settings,
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 
-const availableInterests = [
-  "Culture",
-  "Food",
-  "Nature",
-  "Adventure",
-  "Shopping",
-  "History",
-  "Art",
-  "Nightlife",
-  "Family",
-  "Photography",
+// Travel preference options
+const travelInterests = [
+  { id: "culture", label: "Culture", icon: "🎭" },
+  { id: "classic", label: "Classic", icon: "⭐" },
+  { id: "nature", label: "Nature", icon: "🏞️" },
+  { id: "cityscape", label: "Cityscape", icon: "🏙️" },
+  { id: "history", label: "History", icon: "🏛️" },
 ];
 
-const budgetOptions = [
-  { value: "budget", label: "Budget", description: "Economical options" },
-  { value: "moderate", label: "Moderate", description: "Balanced comfort" },
-  { value: "luxury", label: "Luxury", description: "Premium experience" },
+const paceOptions = [
+  { value: "relaxed", label: "Relaxed", description: "2-3 places/d" },
+  { value: "moderate", label: "Moderate", description: "3-4 places/d" },
+  { value: "intense", label: "Intense", description: "5+ places/d" },
 ];
 
 export default function ItineraryPage() {
@@ -41,11 +35,14 @@ export default function ItineraryPage() {
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Preference state
   const [interests, setInterests] = useState<string[]>([]);
-  const [budgetLevel, setBudgetLevel] = useState<
-    "budget" | "moderate" | "luxury"
-  >("moderate");
-  const [numTravelers, setNumTravelers] = useState(2);
+  const [pace, setPace] = useState<"relaxed" | "moderate" | "intense">(
+    "moderate",
+  );
+  const [additionalPreferences, setAdditionalPreferences] = useState("");
+  const [showPreferences, setShowPreferences] = useState(true);
 
   // Generated itinerary state
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
@@ -55,11 +52,11 @@ export default function ItineraryPage() {
   const [expandedDays, setExpandedDays] = useState<number[]>([1]);
 
   // Toggle interest selection
-  const toggleInterest = (interest: string) => {
+  const toggleInterest = (interestId: string) => {
     setInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest],
+      prev.includes(interestId)
+        ? prev.filter((i) => i !== interestId)
+        : [...prev, interestId],
     );
   };
 
@@ -72,6 +69,32 @@ export default function ItineraryPage() {
     setIsGenerating(true);
     setGenerationProgress(0);
     setGenerationStatus("Analyzing your preferences...");
+
+    // Log user preferences for AI planning
+    console.log("Planning request:", {
+      destination,
+      startDate,
+      endDate,
+      interests,
+      pace,
+      additionalPreferences,
+    });
+
+    // TODO: Call actual AI planning API
+    // const response = await fetch('/api/itineraries/plannings', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({
+    //     destination,
+    //     start_date: startDate,
+    //     end_date: endDate,
+    //     interests,
+    //     preferences: {
+    //       pace,
+    //       additional: additionalPreferences,
+    //     },
+    //   }),
+    // });
 
     // Simulate AI generation with progress
     const steps = [
@@ -296,86 +319,109 @@ export default function ItineraryPage() {
                   </div>
                 </div>
 
-                {/* Travelers */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Number of Travelers
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-                      disabled={numTravelers <= 1}
-                      onClick={() =>
-                        setNumTravelers(Math.max(1, numTravelers - 1))
-                      }
-                    >
-                      -
-                    </button>
-                    <span className="w-8 text-center text-lg font-medium text-gray-900">
-                      {numTravelers}
-                    </span>
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
-                      onClick={() => setNumTravelers(numTravelers + 1)}
-                    >
-                      +
-                    </button>
-                  </div>
+                {/* Preferences Section Header */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between text-left"
+                    onClick={() => setShowPreferences(!showPreferences)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-900">
+                        Preferences
+                      </span>
+                    </div>
+                    {showPreferences ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
                 </div>
 
-                {/* Budget level */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Budget Level
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {budgetOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`rounded-lg border p-3 text-center transition-all ${
-                          budgetLevel === option.value
-                            ? "border-green-500 bg-green-50 text-green-700"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        onClick={() =>
-                          setBudgetLevel(
-                            option.value as "budget" | "moderate" | "luxury",
-                          )
+                {/* Preferences Content */}
+                {showPreferences && (
+                  <div className="space-y-4">
+                    {/* Travel Interests */}
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Travel Interests
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {travelInterests.map((interest) => (
+                          <button
+                            key={interest.id}
+                            type="button"
+                            className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all ${
+                              interests.includes(interest.id)
+                                ? "bg-green-600 text-white shadow-sm"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                            onClick={() => toggleInterest(interest.id)}
+                          >
+                            <span>{interest.icon}</span>
+                            <span>{interest.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Pace Selection */}
+                    <div>
+                      <label className="mt-6 mb-2 block text-sm font-medium text-gray-700">
+                        Trip Pace
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {paceOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`rounded-lg border p-3 text-center transition-all ${
+                              pace === option.value
+                                ? "border-green-500 bg-green-50 text-green-700"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                            onClick={() =>
+                              setPace(
+                                option.value as
+                                  | "relaxed"
+                                  | "moderate"
+                                  | "intense",
+                              )
+                            }
+                          >
+                            <div className="text-sm font-medium">
+                              {option.label}
+                            </div>
+                            <div className="mt-1 text-xs text-gray-500">
+                              {option.description}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Additional Preferences */}
+                    <div>
+                      <label className="mt-6 mb-2 block text-sm font-medium text-gray-700">
+                        Additional Notes
+                        <span className="ml-1 text-xs font-normal text-gray-500">
+                          (Optional)
+                        </span>
+                      </label>
+                      <textarea
+                        value={additionalPreferences}
+                        onChange={(e) =>
+                          setAdditionalPreferences(e.target.value)
                         }
-                      >
-                        <div className="text-sm font-medium">
-                          {option.label}
-                        </div>
-                      </button>
-                    ))}
+                        placeholder="E.g., prefer less crowded places, want to visit local markets..."
+                        rows={3}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
                   </div>
-                </div>
-
-                {/* Interests */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Interests
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {availableInterests.map((interest) => (
-                      <button
-                        key={interest}
-                        type="button"
-                        className={`rounded-full px-3 py-1.5 text-sm font-medium transition-all ${
-                          interests.includes(interest)
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                        onClick={() => toggleInterest(interest)}
-                      >
-                        {interest}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                )}
 
                 {/* Generate button */}
                 <Button
@@ -444,30 +490,18 @@ export default function ItineraryPage() {
               <div className="space-y-6">
                 {/* Summary card */}
                 <Card>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        {itinerary.destination}
-                      </h2>
-                      <p className="mt-1 text-gray-500">
-                        {formatDayDate(itinerary.startDate)} -{" "}
-                        {formatDayDate(itinerary.endDate)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Edit3 className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button variant="default" size="sm">
-                        <Save className="h-4 w-4" />
-                        Save
-                      </Button>
-                    </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {itinerary.destination}
+                    </h2>
+                    <p className="mt-1 text-gray-500">
+                      {formatDayDate(itinerary.startDate)} -{" "}
+                      {formatDayDate(itinerary.endDate)}
+                    </p>
                   </div>
 
                   {/* Summary stats */}
-                  <div className="mt-6 grid grid-cols-3 gap-4 border-t border-gray-100 pt-6">
+                  <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">
                         {itinerary.dayPlans.length}
@@ -480,33 +514,7 @@ export default function ItineraryPage() {
                       </div>
                       <div className="text-sm text-gray-500">Activities</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">
-                        ¥{itinerary.summary?.totalEstimatedCost}
-                      </div>
-                      <div className="text-sm text-gray-500">Est. Cost</div>
-                    </div>
                   </div>
-
-                  {/* Highlights */}
-                  {itinerary.summary?.highlights &&
-                    itinerary.summary.highlights.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="mb-2 text-sm font-medium text-gray-700">
-                          Highlights
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {itinerary.summary.highlights.map((highlight) => (
-                            <Badge
-                              key={highlight}
-                              className="bg-green-100 text-green-700"
-                            >
-                              {highlight}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                 </Card>
 
                 {/* Day by day itinerary */}
@@ -552,7 +560,7 @@ export default function ItineraryPage() {
                             {day.activities.map((activity) => (
                               <div
                                 key={activity.id}
-                                className="group flex gap-4 rounded-xl bg-gray-50 p-4 transition-colors hover:bg-gray-100"
+                                className="flex gap-4 rounded-xl bg-gray-50 p-4"
                               >
                                 {/* Time */}
                                 <div className="shrink-0 text-center">
@@ -597,21 +605,8 @@ export default function ItineraryPage() {
                                     ) : null}
                                   </div>
                                 </div>
-
-                                {/* Actions */}
-                                <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                                  <button className="rounded-lg p-2 text-gray-400 hover:bg-white hover:text-gray-600">
-                                    <GripVertical className="h-4 w-4" />
-                                  </button>
-                                </div>
                               </div>
                             ))}
-
-                            {/* Add activity button */}
-                            <button className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-3 text-gray-400 transition-colors hover:border-green-500 hover:text-green-600">
-                              <Plus className="h-4 w-4" />
-                              Add Activity
-                            </button>
 
                             {/* Day notes */}
                             {day.notes && (

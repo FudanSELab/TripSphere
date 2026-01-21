@@ -57,8 +57,8 @@ async def test_extract_graph(
         "text_units": f"text_units_{text_units_parquet_uuid}.parquet",
     }
     config = ExtractGraphConfig(
-        graph_llm_config={"name": "gpt-4o", "temperature": 0.0},
-        summary_llm_config={"name": "gpt-4o", "temperature": 0.0},
+        graph_llm_config={"model": "gpt-4o", "temperature": 0.0},
+        summary_llm_config={"model": "gpt-4o", "temperature": 0.0},
     )
     await _extract_graph(mock_task, context, config)
 
