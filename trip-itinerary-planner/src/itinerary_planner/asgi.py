@@ -20,6 +20,7 @@ from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.ai import NacosAI
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.nacos.utils import client_shutdown
+from itinerary_planner.routers.itineraries import itineraries
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,8 @@ def create_fastapi_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Include routers
+    app.include_router(itineraries)
     return app
 
 

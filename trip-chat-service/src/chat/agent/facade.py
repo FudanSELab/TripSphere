@@ -5,9 +5,7 @@ import warnings
 from functools import lru_cache
 from typing import Any, AsyncGenerator, Self
 
-from a2a.client import ClientConfig as A2AClientConfig
-from a2a.client import ClientFactory as A2AClientFactory
-from a2a.types import AgentCard, TransportProtocol
+from a2a.types import AgentCard
 from google.adk.agents import LlmAgent
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.events import Event
@@ -54,14 +52,6 @@ class AgentFacade:
     ) -> None:
         self.httpx_client = httpx_client
         self.nacos_ai = nacos_ai
-        a2a_client_config = A2AClientConfig(
-            httpx_client=self.httpx_client,
-            supported_transports=[
-                TransportProtocol.jsonrpc,
-                TransportProtocol.http_json,
-            ],
-        )
-        self.a2a_client_factory = A2AClientFactory(a2a_client_config)
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
         self.agent_cards: dict[str, AgentCard] = {}
         self.session_service = MongoSessionService(mongo_client)
