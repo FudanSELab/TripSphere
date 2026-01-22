@@ -35,4 +35,7 @@ def encode(
         buffer.write(f"retry: {retry}")
         buffer.write(DEFAULT_SEPARATOR)
 
+    # SSE requires an empty line to mark the end of an event
+    buffer.write(DEFAULT_SEPARATOR)
+
     return buffer.getvalue()
