@@ -1,5 +1,12 @@
 import { grpcClient } from "@/lib/grpc/client";
 import {
+  Attraction,
+  FindAttractionByIdRequest,
+  FindAttractionByIdResponse,
+  FindAttractionsWithinRadiusRequest,
+  FindAttractionsWithinRadiusResponse,
+} from "@/lib/grpc/gen/tripsphere/attraction/attraction";
+import {
   GetCurrentUserRequest,
   GetCurrentUserResponse,
   LoginRequest,
@@ -31,33 +38,52 @@ export interface RpcProxyRule<
 }
 
 export interface RpcProxyMap {
-  "POST /api/v1/user/register": RpcProxyRule<
+  // ============================================================================
+  // User APIs
+  // ============================================================================
+  "POST /api/v1/users/register": RpcProxyRule<
     RegisterRequest,
     RegisterResponse,
     RegisterRequest,
     RegisterResponse
   >;
-  "POST /api/v1/user/login": RpcProxyRule<
+  "POST /api/v1/users/login": RpcProxyRule<
     LoginRequest,
     LoginResponse,
     LoginRequest,
     LoginResponse
   >;
-  "POST /api/v1/user/get-current-user": RpcProxyRule<
+  "GET /api/v1/users/current": RpcProxyRule<
     GetCurrentUserRequest,
     GetCurrentUserResponse,
     undefined,
     User
   >;
+
+  // ============================================================================
+  // Attraction APIs
+  // ============================================================================
+  "GET /api/v1/attractions/:id": RpcProxyRule<
+    FindAttractionByIdRequest,
+    FindAttractionByIdResponse,
+    { id: string },
+    Attraction
+  >;
+  "POST /api/v1/attractions/nearby": RpcProxyRule<
+    FindAttractionsWithinRadiusRequest,
+    FindAttractionsWithinRadiusResponse,
+    FindAttractionsWithinRadiusRequest,
+    Attraction[]
+  >;
 }
 
 export const grpcProxyMap: RpcProxyMap = {
-  "POST /api/v1/user/register": {
+  "POST /api/v1/users/register": {
     method: grpcClient.user.register.bind(grpcClient.user),
     buildRPCRequest: (request) => request,
     buildHttpResponse: (response) => response,
   },
-  "POST /api/v1/user/login": {
+  "POST /api/v1/users/login": {
     method: grpcClient.user.login.bind(grpcClient.user),
     buildRPCRequest: (request) => request,
     buildHttpResponse: (response) => response,
@@ -80,7 +106,7 @@ export const grpcProxyMap: RpcProxyMap = {
       return nextResponse;
     },
   },
-  "POST /api/v1/user/get-current-user": {
+  "GET /api/v1/users/current": {
     method: grpcClient.user.getCurrentUser.bind(grpcClient.user),
     buildRPCRequest: () => GetCurrentUserRequest.create({}),
     buildHttpResponse: (response: GetCurrentUserResponse) => {
@@ -100,6 +126,29 @@ export const grpcProxyMap: RpcProxyMap = {
       };
 
       return user;
+    },
+  },
+  "GET /api/v1/attractions/:id": {
+    method: grpcClient.attraction.findAttractionById.bind(
+      grpcClient.attraction,
+    ),
+    buildRPCRequest: (request: { id: string }) =>
+      FindAttractionByIdRequest.create({ id: request.id }),
+    buildHttpResponse: (response: FindAttractionByIdResponse) => {
+      if (!response.attraction) {
+        throw new Error("Attraction not found in response");
+      }
+      return response.attraction;
+    },
+  },
+  "POST /api/v1/attractions/nearby": {
+    method: grpcClient.attraction.findAttractionsWithinRadius.bind(
+      grpcClient.attraction,
+    ),
+    buildRPCRequest: (request: FindAttractionsWithinRadiusRequest) =>
+      FindAttractionsWithinRadiusRequest.create(request),
+    buildHttpResponse: (response: FindAttractionsWithinRadiusResponse) => {
+      return response.content;
     },
   },
 };

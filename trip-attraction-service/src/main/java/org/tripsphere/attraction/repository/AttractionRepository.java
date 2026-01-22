@@ -25,8 +25,7 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
               }
             }
             """)
-    List<Attraction> findByLocationNearWithFilters(
-            double lng, double lat, double maxDistanceMeters);
+    List<Attraction> findByLocationNear(double lng, double lat, double maxDistanceMeters);
 
     @Query(
             """

@@ -38,6 +38,11 @@ export default function AttractionDetailPage() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [userReview, setUserReview] = useState<Review | null>(null);
 
+  // Scroll to top when navigating to this page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Fetch attraction data
   useEffect(() => {
     const loadAttraction = async () => {
@@ -257,8 +262,12 @@ export default function AttractionDetailPage() {
                     <Badge variant="default">{attraction.category}</Badge>
                     {attraction.tags && (
                       <div className="flex gap-2">
-                        {attraction.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary">
+                        {attraction.tags.slice(0, 3).map((tag, index) => (
+                          <Badge
+                            key={`${attraction.id}-tag-${index}`}
+                            variant="secondary"
+                            size="sm"
+                          >
                             {tag}
                           </Badge>
                         ))}

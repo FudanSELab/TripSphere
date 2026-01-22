@@ -96,28 +96,28 @@ public class AttractionService {
     }
 
     /**
-     * Find hotels located at the specified location and within the specified distance range, and
-     * list them in order from near to far.
+     * Find attractions located at the specified location and within the specified distance range,
+     * and list them in order from near to far.
      *
      * @param lng Longitude
      * @param lat Latitude
      * @param radiusKm distance to center(km)
-     * @return The list of hotels
+     * @return The list of attractions
      */
     public List<Attraction> findAttractionsWithinRadius(
             double lng, double lat, double radiusKm, String name, List<String> tags) {
         double maxDistanceMeters = radiusKm * 1000; // Mongo expects meters for $nearSphere
         String nameRegex = (name == null || name.isBlank()) ? ".*" : ".*" + name + ".*";
-        return attractionRepository.findByLocationNearWithFilters(lng, lat, maxDistanceMeters);
+        return attractionRepository.findByLocationNear(lng, lat, maxDistanceMeters);
     }
 
     /**
-     * Find hotels located at the specified location and within the specified distance range
+     * Find attractions located at the specified location and within the specified distance range
      *
      * @param lng Longitude
      * @param lat Latitude
      * @param radiusKm distance to center(km)
-     * @return The list of hotels
+     * @return The list of attractions
      */
     public List<Attraction> findAttractionsWithinCircle(
             double lng, double lat, double radiusKm, String name, List<String> tags) {
@@ -128,15 +128,15 @@ public class AttractionService {
     }
 
     /**
-     * Find hotels located at the specified location and within the specified distance range, and
-     * list them in order from near to far, and result has been paginated
+     * Find attractions located at the specified location and within the specified distance range,
+     * and list them in order from near to far, and result has been paginated
      *
      * @param lng Longitude
      * @param lat Latitude
      * @param radiusKm distance to center(km)
      * @param page which page you want to find, start from 0
      * @param size page size
-     * @return The page of hotels
+     * @return The page of attractions
      */
     public Page<Attraction> findAttractionsWithinRadius(
             double lng,
@@ -154,15 +154,15 @@ public class AttractionService {
     }
 
     /**
-     * Find hotels located at the specified location and within the specified distance range, and
-     * result has been paginated
+     * Find attractions located at the specified location and within the specified distance range,
+     * and result has been paginated
      *
      * @param lng Longitude
      * @param lat Latitude
      * @param radiusKm distance to center(km)
      * @param page which page you want to find, start from 0
      * @param size page size
-     * @return The page of hotels
+     * @return The page of attractions
      */
     public Page<Attraction> findAttractionsWithinCircle(
             double lng,

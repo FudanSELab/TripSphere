@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.amazonaws.com",
       },
+      {
+        protocol: "http",
+        hostname: "47.120.37.103",
+        port: "9000",
+      },
     ],
   },
 };
