@@ -5,7 +5,7 @@ This directory contains scripts for processing and importing attraction data.
 ## Setup Instructions
 
 ### 1. Compile Proto Files
-Compile the `file_service` proto files and place the generated code in the `file` folder.
+Compile `file.proto` in `contracts/protobuf/` and place the generated code in the `file/` folder.
 
 ### 2. Prepare Data Files
 Place the `filtered_attractions.json` file in the current directory. The file should contain POI structures provided by AMap (Gaode Maps).
