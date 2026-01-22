@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @Accessors(chain = true)
 @Data
-@Document("Attractions")
+@Document("attractions")
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class Attraction implements Serializable {
     @Id private String id;

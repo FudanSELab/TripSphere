@@ -38,8 +38,8 @@ export default function ItineraryPage() {
 
   // Form state
   const [destination, setDestination] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState("2026-12-29");
+  const [endDate, setEndDate] = useState("2026-12-31");
 
   // Preference state
   const [interests, setInterests] = useState<string[]>([]);
