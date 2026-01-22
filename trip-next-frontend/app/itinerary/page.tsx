@@ -3,7 +3,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { DayPlan, Itinerary } from "@/lib/types";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useItineraryPlanner } from "@/lib/hooks/use-itinerary-planner";
+import type { Itinerary } from "@/lib/types";
 import {
   Calendar,
   ChevronDown,
@@ -31,6 +33,9 @@ const paceOptions = [
 ];
 
 export default function ItineraryPage() {
+  const auth = useAuth();
+  const planner = useItineraryPlanner();
+
   // Form state
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -46,9 +51,6 @@ export default function ItineraryPage() {
 
   // Generated itinerary state
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [generationStatus, setGenerationStatus] = useState("");
   const [expandedDays, setExpandedDays] = useState<number[]>([1]);
 
   // Toggle interest selection
@@ -60,153 +62,46 @@ export default function ItineraryPage() {
     );
   };
 
-  // Generate itinerary
+  // Generate itinerary using streaming API
   const generateItinerary = async () => {
     if (!destination || !startDate || !endDate) {
       return;
     }
 
-    setIsGenerating(true);
-    setGenerationProgress(0);
-    setGenerationStatus("Analyzing your preferences...");
+    // Reset previous itinerary
+    setItinerary(null);
 
-    // Log user preferences for AI planning
-    console.log("Planning request:", {
-      destination,
-      startDate,
-      endDate,
-      interests,
-      pace,
-      additionalPreferences,
-    });
-
-    // TODO: Call actual AI planning API
-    // const response = await fetch('/api/itineraries/plannings', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     destination,
-    //     start_date: startDate,
-    //     end_date: endDate,
-    //     interests,
-    //     preferences: {
-    //       pace,
-    //       additional: additionalPreferences,
-    //     },
-    //   }),
-    // });
-
-    // Simulate AI generation with progress
-    const steps = [
-      { progress: 20, status: "Researching destination..." },
-      { progress: 40, status: "Finding best attractions..." },
-      { progress: 60, status: "Optimizing route..." },
-      { progress: 80, status: "Adding recommendations..." },
-      { progress: 100, status: "Finalizing itinerary..." },
-    ];
-
-    for (const step of steps) {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setGenerationProgress(step.progress);
-      setGenerationStatus(step.status);
-    }
-
-    // Mock generated itinerary
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const numDays =
-      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const mockDayPlans: DayPlan[] = Array.from({ length: numDays }, (_, i) => {
-      const date = new Date(start);
-      date.setDate(date.getDate() + i);
-
-      return {
-        dayNumber: i + 1,
-        date: date.toISOString().split("T")[0],
-        activities: [
-          {
-            id: `${i}-1`,
-            name:
-              i === 0
-                ? "Arrival & Check-in"
-                : `Morning at ${["West Lake", "The Bund", "Yu Garden", "Temple"][i % 4]}`,
-            description: "Start your day with a visit to this iconic location.",
-            startTime: "09:00",
-            endTime: "12:00",
-            location: {
-              name: destination,
-              latitude: 31.23,
-              longitude: 121.47,
-              address: destination,
-            },
-            category: "sightseeing",
-            cost: { amount: 0, currency: "CNY" },
-          },
-          {
-            id: `${i}-2`,
-            name: `Lunch at Local Restaurant`,
-            description:
-              "Enjoy authentic local cuisine at a recommended restaurant.",
-            startTime: "12:30",
-            endTime: "14:00",
-            location: {
-              name: "Local Restaurant",
-              latitude: 31.23,
-              longitude: 121.47,
-              address: destination,
-            },
-            category: "dining",
-            cost: { amount: 150, currency: "CNY" },
-          },
-          {
-            id: `${i}-3`,
-            name:
-              i === numDays - 1
-                ? "Departure"
-                : `Afternoon at ${["Shopping District", "Museum", "Park", "Landmark"][i % 4]}`,
-            description: "Continue exploring the city and its attractions.",
-            startTime: "15:00",
-            endTime: "18:00",
-            location: {
-              name: destination,
-              latitude: 31.23,
-              longitude: 121.47,
-              address: destination,
-            },
-            category: i === numDays - 1 ? "transportation" : "sightseeing",
-            cost: { amount: 80, currency: "CNY" },
-          },
-        ],
-        notes:
-          i === 0
-            ? "Remember to exchange currency and get a local SIM card."
-            : "",
-      };
-    });
-
-    setItinerary({
-      id: "itinerary-" + Date.now(),
-      destination: destination,
-      startDate: startDate,
-      endDate: endDate,
-      dayPlans: mockDayPlans,
-      summary: {
-        totalEstimatedCost: numDays * 230,
-        currency: "CNY",
-        totalActivities: numDays * 3,
-        highlights: [
-          "Local cuisine experience",
-          "Cultural immersion",
-          "Scenic landmarks",
-        ],
+    // Call streaming API
+    const result = await planner.planItineraryStream(
+      {
+        user_id: auth.user?.id || "anonymous",
+        destination,
+        start_date: startDate,
+        end_date: endDate,
+        interests,
+        pace,
+        additional_preferences: additionalPreferences,
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+      // onProgress callback
+      (event) => {
+        console.log("Progress:", event);
+      },
+      // onComplete callback
+      (completedItinerary) => {
+        setItinerary(completedItinerary);
+        setExpandedDays([1]);
+      },
+      // onError callback
+      (error) => {
+        console.error("Planning failed:", error);
+      },
+    );
 
-    setExpandedDays([1]);
-    setIsGenerating(false);
+    // Also set itinerary from result if not set by callback
+    if (result && !itinerary) {
+      setItinerary(result);
+      setExpandedDays([1]);
+    }
   };
 
   // Toggle day expansion
@@ -429,12 +324,15 @@ export default function ItineraryPage() {
                   className="w-full"
                   size="lg"
                   disabled={
-                    !destination || !startDate || !endDate || isGenerating
+                    !destination ||
+                    !startDate ||
+                    !endDate ||
+                    planner.isGenerating
                   }
                 >
-                  {isGenerating ? (
+                  {planner.isGenerating ? (
                     <>
-                      <Loader2 className="h-5 w-5" />
+                      <Loader2 className="h-5 w-5 animate-spin" />
                       Generating...
                     </>
                   ) : (
@@ -451,26 +349,51 @@ export default function ItineraryPage() {
           {/* Itinerary display */}
           <div className="lg:col-span-2">
             {/* Loading state */}
-            {isGenerating && (
+            {planner.isGenerating && (
               <div className="py-16 text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-                  <Loader2 className="h-10 w-10 text-green-600" />
+                  <Loader2 className="h-10 w-10 animate-spin text-green-600" />
                 </div>
                 <h3 className="mb-2 text-xl font-semibold text-gray-900">
-                  {generationStatus}
+                  {planner.statusMessage || "Planning your trip..."}
                 </h3>
                 <div className="mx-auto h-2 w-64 overflow-hidden rounded-full bg-gray-200">
                   <div
                     className="h-full rounded-full bg-green-600 transition-all duration-500"
-                    style={{ width: `${generationProgress}%` }}
+                    style={{ width: `${planner.progress}%` }}
                   />
                 </div>
+                <p className="mt-2 text-sm text-gray-400">
+                  {planner.progress}% complete
+                </p>
                 <p className="mt-4 text-gray-500">This may take a moment...</p>
               </div>
             )}
 
+            {/* Error state */}
+            {planner.error && !planner.isGenerating && (
+              <div className="py-16 text-center">
+                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+                  <span className="text-3xl">❌</span>
+                </div>
+                <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                  Planning Failed
+                </h3>
+                <p className="mx-auto max-w-md text-gray-500">
+                  {planner.error}
+                </p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={() => planner.reset()}
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+
             {/* Empty state */}
-            {!isGenerating && !itinerary && (
+            {!planner.isGenerating && !planner.error && !itinerary && (
               <div className="py-16 text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
                   <Calendar className="h-10 w-10 text-green-600" />
@@ -486,7 +409,7 @@ export default function ItineraryPage() {
             )}
 
             {/* Generated itinerary */}
-            {!isGenerating && itinerary && (
+            {!planner.isGenerating && itinerary && (
               <div className="space-y-6">
                 {/* Summary card */}
                 <Card>
