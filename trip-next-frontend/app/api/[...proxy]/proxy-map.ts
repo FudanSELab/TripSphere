@@ -1,4 +1,14 @@
 import { grpcClient } from "@/lib/grpc/client";
+
+// Attraction types
+import {
+  FindAttractionByIdRequest,
+  FindAttractionByIdResponse,
+  FindAttractionsWithinRadiusPageRequest,
+  FindAttractionsWithinRadiusPageResponse,
+} from "@/lib/grpc/gen/tripsphere/attraction/attraction";
+
+// User types
 import {
   GetCurrentUserRequest,
   GetCurrentUserResponse,
@@ -7,8 +17,9 @@ import {
   RegisterRequest,
   RegisterResponse,
 } from "@/lib/grpc/gen/tripsphere/user/user";
+
 import { ResponseData } from "@/lib/requests";
-import { User } from "@/lib/types";
+import type { Attraction, User } from "@/lib/types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -31,6 +42,7 @@ export interface RpcProxyRule<
 }
 
 export interface RpcProxyMap {
+  // User APIs
   "POST /api/v1/user/register": RpcProxyRule<
     RegisterRequest,
     RegisterResponse,
@@ -49,9 +61,65 @@ export interface RpcProxyMap {
     undefined,
     User
   >;
+
+  // Attraction APIs
+  "POST /api/v1/attraction/find-by-id": RpcProxyRule<
+    FindAttractionByIdRequest,
+    FindAttractionByIdResponse,
+    { id: string },
+    Attraction
+  >;
+  "POST /api/v1/attraction/search": RpcProxyRule<
+    FindAttractionsWithinRadiusPageRequest,
+    FindAttractionsWithinRadiusPageResponse,
+    {
+      location: { lng: number; lat: number };
+      radiusKm: number;
+      page: number;
+      pageSize: number;
+      name?: string;
+      tags?: string[];
+    },
+    {
+      attractions: Attraction[];
+      totalPages: number;
+      totalElements: number;
+      currentPage: number;
+      pageSize: number;
+    }
+  >;
+}
+
+// Helper function to convert gRPC Attraction to frontend Attraction
+function convertGrpcAttractionToFrontend(
+  grpcAttraction: import("@/lib/grpc/gen/tripsphere/attraction/attraction").Attraction,
+): Attraction {
+  return {
+    id: grpcAttraction.id,
+    name: grpcAttraction.name,
+    description: grpcAttraction.introduction, // Map introduction to description
+    address: grpcAttraction.address || {
+      country: "",
+      province: "",
+      city: "",
+      county: "",
+      district: "",
+      street: "",
+    },
+    location: {
+      lng: grpcAttraction.location?.longitude || 0,
+      lat: grpcAttraction.location?.latitude || 0,
+    },
+    category: grpcAttraction.tags?.[0] || "Attraction", // Use first tag as category
+    images: grpcAttraction.images,
+    tags: grpcAttraction.tags,
+  };
 }
 
 export const grpcProxyMap: RpcProxyMap = {
+  // ============================================================================
+  // User APIs
+  // ============================================================================
   "POST /api/v1/user/register": {
     method: grpcClient.user.register.bind(grpcClient.user),
     buildRPCRequest: (request) => request,
@@ -100,6 +168,68 @@ export const grpcProxyMap: RpcProxyMap = {
       };
 
       return user;
+    },
+  },
+
+  // ============================================================================
+  // Attraction APIs
+  // ============================================================================
+  "POST /api/v1/attraction/find-by-id": {
+    method: grpcClient.attraction.findAttractionById.bind(
+      grpcClient.attraction,
+    ),
+    buildRPCRequest: (request: { id: string }) =>
+      FindAttractionByIdRequest.create({ id: request.id }),
+    buildHttpResponse: (response: FindAttractionByIdResponse) => {
+      if (!response.attraction) {
+        throw new Error("Attraction not found");
+      }
+      return convertGrpcAttractionToFrontend(response.attraction);
+    },
+  },
+
+  "POST /api/v1/attraction/search": {
+    method: grpcClient.attraction.findAttractionsWithinRadiusPage.bind(
+      grpcClient.attraction,
+    ),
+    buildRPCRequest: (request: {
+      location: { lng: number; lat: number };
+      radiusKm: number;
+      page: number;
+      pageSize: number;
+      name?: string;
+      tags?: string[];
+    }) =>
+      FindAttractionsWithinRadiusPageRequest.create({
+        location: {
+          longitude: request.location.lng,
+          latitude: request.location.lat,
+        },
+        radiusKm: request.radiusKm,
+        number: request.page,
+        size: request.pageSize,
+        name: request.name || "",
+        tags: request.tags || [],
+      }),
+    buildHttpResponse: (response: FindAttractionsWithinRadiusPageResponse) => {
+      const page = response.attractionPage;
+      if (!page) {
+        return {
+          attractions: [],
+          totalPages: 0,
+          totalElements: 0,
+          currentPage: 0,
+          pageSize: 0,
+        };
+      }
+
+      return {
+        attractions: page.content.map(convertGrpcAttractionToFrontend),
+        totalPages: page.totalPages,
+        totalElements: Number(page.totalElements),
+        currentPage: page.number,
+        pageSize: page.size,
+      };
     },
   },
 };

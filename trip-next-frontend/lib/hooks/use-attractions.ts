@@ -1,94 +1,95 @@
+import { useCallback } from "react";
 import type { Attraction } from "@/lib/types";
+import {
+  findAttractionById,
+  searchAttractions,
+} from "@/lib/requests/attraction/attraction";
 
 export function useAttractions() {
-  const fetchAttraction = async (id: string): Promise<Attraction | null> => {
-    try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_ATTRACTION_SERVICE_URL}/attractions/${id}`)
-      // const data = await response.json()
-      // return data
+  const fetchAttraction = useCallback(
+    async (id: string): Promise<Attraction | null> => {
+      try {
+        const response = await findAttractionById(id);
+        if (response.code === "Success" && response.data) {
+          return response.data;
+        }
+        return null;
+      } catch (error) {
+        console.error("Error fetching attraction:", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
-      // For now, return mock data based on ID
-      await new Promise((resolve) => setTimeout(resolve, 300));
+  const fetchAttractions = useCallback(
+    async (params?: {
+      location?: { lng: number; lat: number };
+      radiusKm?: number;
+      page?: number;
+      pageSize?: number;
+      name?: string;
+      tags?: string[];
+    }): Promise<Attraction[]> => {
+      try {
+        // Default to Shanghai center if no location provided
+        const defaultLocation = { lng: 121.4737, lat: 31.2304 };
+        const location = params?.location || defaultLocation;
+        const radiusKm = params?.radiusKm || 50; // Default 50km radius
 
-      // Mock data - in production this would come from the API
-      const mockAttractions: Record<string, Attraction> = {
-        "1": {
-          id: "1",
-          name: "The Bund",
-          description:
-            "The Bund is a waterfront area in central Shanghai, featuring a mix of historical colonial-era buildings and modern skyscrapers. It offers stunning views of the Huangpu River and the futuristic Pudong skyline across the water. A must-visit destination for any traveler to Shanghai, the Bund combines history, architecture, and vibrant city life.",
-          address: {
-            country: "China",
-            province: "Shanghai",
-            city: "Shanghai",
-            county: "Huangpu",
-            district: "",
-            street: "Zhongshan East 1st Road",
-          },
-          location: { lng: 121.4883, lat: 31.2319 },
-          category: "Landmark",
-          rating: 4.8,
-          openingHours: "24 hours",
-          ticketPrice: "Free",
-          images: [
-            "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=1200&h=800&fit=crop",
-            "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=1200&h=800&fit=crop",
-            "https://images.unsplash.com/photo-1538428494232-9c0d8a3ab403?w=1200&h=800&fit=crop",
-          ],
-          tags: ["Historic", "Scenic", "Night View", "Photography"],
-        },
-        "2": {
-          id: "2",
-          name: "Yu Garden",
-          description:
-            "A classical Chinese garden located in the Old City of Shanghai, featuring traditional architecture and landscapes.",
-          address: {
-            country: "China",
-            province: "Shanghai",
-            city: "Shanghai",
-            county: "Huangpu",
-            district: "",
-            street: "Anren Street",
-          },
-          location: { lng: 121.492, lat: 31.227 },
-          category: "Garden",
-          rating: 4.6,
-          openingHours: "8:30 AM - 5:00 PM",
-          ticketPrice: "¥40",
-          images: [
-            "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=600&h=400&fit=crop",
-          ],
-          tags: ["Traditional", "Cultural", "Architecture"],
-        },
-      };
+        const response = await searchAttractions({
+          location,
+          radiusKm,
+          page: params?.page ?? 0,
+          pageSize: params?.pageSize ?? 20,
+          name: params?.name,
+          tags: params?.tags,
+        });
 
-      return mockAttractions[id] || null;
-    } catch (error) {
-      console.error("Error fetching attraction:", error);
-      throw error;
-    }
-  };
+        if (response.code === "Success" && response.data) {
+          return response.data.attractions;
+        }
+        return [];
+      } catch (error) {
+        console.error("Error fetching attractions:", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
-  const fetchAttractions = async (): Promise<Attraction[]> => {
-    try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_ATTRACTION_SERVICE_URL}/attractions`)
-      // const data = await response.json()
-      // return data
-
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Mock data - returning the list from the index page
-      return [];
-    } catch (error) {
-      console.error("Error fetching attractions:", error);
-      throw error;
-    }
-  };
+  const searchNearby = useCallback(
+    async (params: {
+      location: { lng: number; lat: number };
+      radiusKm: number;
+      page?: number;
+      pageSize?: number;
+      name?: string;
+      tags?: string[];
+    }) => {
+      try {
+        const response = await searchAttractions(params);
+        if (response.code === "Success" && response.data) {
+          return response.data;
+        }
+        return {
+          attractions: [],
+          totalPages: 0,
+          totalElements: 0,
+          currentPage: 0,
+          pageSize: 0,
+        };
+      } catch (error) {
+        console.error("Error searching attractions:", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
   return {
     fetchAttraction,
     fetchAttractions,
+    searchNearby,
   };
 }

@@ -52,8 +52,7 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
                   $maxDistance: ?2
                 }
               },
-              'name': { $regex: ?3, $options: 'i' },
-              'tags': { $all: ?4 }
+              'name': { $regex: ?3, $options: 'i' }
             }
             """)
     Page<Attraction> findByLocationNearWithFilters(
