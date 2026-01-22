@@ -1,7 +1,7 @@
 import logging
 
 import grpc
-from langchain_core.tools import tool  # type: ignore
+from langchain_core.tools import tool  # pyright: ignore
 from pydantic import BaseModel, Field
 from tripsphere.attraction import attraction_pb2, attraction_pb2_grpc
 from tripsphere.common import geo_pb2
@@ -10,25 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 class AttractionDetail(BaseModel):
-    """Detailed information about an attraction."""
-
     id: str = Field(description="Attraction ID")
     name: str = Field(description="Attraction name")
     description: str = Field(description="Detailed description")
-    latitude: float = Field(description="Latitude coordinate")
     longitude: float = Field(description="Longitude coordinate")
+    latitude: float = Field(description="Latitude coordinate")
     address: str = Field(description="Full address")
     tags: list[str] = Field(default_factory=list, description="Tags/categories")
-    estimated_visit_duration_hours: float = Field(
-        default=2.0, description="Typical visit duration in hours"
-    )
-    estimated_cost: float = Field(default=0.0, description="Estimated entrance fee")
-    opening_hours: str = Field(default="09:00-18:00", description="Opening hours")
 
 
 class AttractionSearchResult(BaseModel):
-    """Search result with list of attractions."""
-
     attractions: list[AttractionDetail] = Field(description="List of attractions found")
 
 
@@ -43,8 +34,8 @@ async def search_attractions_nearby(
     """Search for attractions near a location using gRPC AttractionService.
 
     Arguments:
-        center_latitude: Center point latitude
         center_longitude: Center point longitude
+        center_latitude: Center point latitude
         radius_km: Search radius in kilometers (default: 20km)
         tags: Filter by tags (e.g., ["cultural", "museum", "food"])
         limit: Maximum number of results (default: 50)
@@ -75,9 +66,9 @@ async def search_attractions_nearby(
             latitude=attraction.location.longitude,
             longitude=attraction.location.latitude,
             address=(
-                f"{attraction.address.province} {attraction.address.city} "
-                f"{attraction.address.county} {attraction.address.district} "
-                f"{attraction.address.street}"
+                f"{attraction.address.street}, {attraction.address.district}, "
+                f"{attraction.address.county}, {attraction.address.city}, "
+                f"{attraction.address.province}"
             ),
             tags=list[str](attraction.tags),
         )
@@ -279,9 +270,6 @@ async def get_attraction_details(attraction_id: str) -> AttractionDetail:
             longitude=121.4900,
             address="上海市黄浦区中山东一路",
             tags=["地标", "观光", "历史", "摄影"],
-            estimated_visit_duration_hours=2.0,
-            estimated_cost=0.0,
-            opening_hours="00:00-23:59",
         ),
         "attr_002": AttractionDetail(
             id="attr_002",
@@ -291,9 +279,6 @@ async def get_attraction_details(attraction_id: str) -> AttractionDetail:
             longitude=121.4921,
             address="上海市黄浦区豫园老街279号",
             tags=["文化", "历史", "园林", "古迹"],
-            estimated_visit_duration_hours=2.5,
-            estimated_cost=40.0,
-            opening_hours="08:45-17:00",
         ),
     }
 
@@ -314,6 +299,4 @@ async def get_attraction_details(attraction_id: str) -> AttractionDetail:
         longitude=121.4737,
         address="Shanghai, China",
         tags=["sightseeing"],
-        estimated_visit_duration_hours=2.0,
-        estimated_cost=0.0,
     )

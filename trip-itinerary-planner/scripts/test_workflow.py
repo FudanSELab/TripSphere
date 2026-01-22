@@ -31,7 +31,7 @@ async def test_workflow():
     end_date = start_date + timedelta(days=2)  # 3-day trip
 
     initial_state: PlanningState = {
-        "user_id": "test-user-123",
+        "user_id": "user-123",
         "destination": "Shanghai",
         "start_date": start_date.isoformat(),
         "end_date": end_date.isoformat(),

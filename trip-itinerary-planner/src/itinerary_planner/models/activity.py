@@ -5,8 +5,8 @@ class ActivityLocation(BaseModel):
     """Location information for an activity."""
 
     name: str = Field(description="Location name")
-    latitude: float = Field(default=0.0, description="Latitude coordinate")
     longitude: float = Field(default=0.0, description="Longitude coordinate")
+    latitude: float = Field(default=0.0, description="Latitude coordinate")
     address: str = Field(default="", description="Full address")
 
 

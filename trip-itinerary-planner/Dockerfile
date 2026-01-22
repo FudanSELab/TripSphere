@@ -65,9 +65,12 @@ USER nonroot
 WORKDIR /app
 
 # Default HTTP port
-EXPOSE 24215
+ENV UVICORN_HOST=0.0.0.0
+ENV UVICORN_PORT=24215
 
-# TODO: Run the agent server
-ENTRYPOINT ["opentelemetry-instrument"]
+EXPOSE $UVICORN_PORT
+
+# Run the agent server with uvicorn
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "itinerary_planner.asgi:app"]
 CMD []
 

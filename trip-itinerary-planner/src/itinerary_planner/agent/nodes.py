@@ -28,7 +28,7 @@ chat_model = ChatOpenAI(
 )
 
 
-async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
+async def research_and_plan(state: PlanningState) -> dict[str, Any]:
     """Step 1: Research destination and plan activities."""
     logger.info(
         f"Researching destination and planning activities for {state['destination']}"
@@ -69,15 +69,13 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
             }
         )
         attractions: list[AttractionDetail] = search_result.attractions
-        logger.info(f"Found {len(attractions)} attractions via service")
+        logger.info(f"Found {len(attractions)} attractions via gRPC service")
     except Exception as e:
         logger.error(f"Attraction search failed: {e}")
         attractions = []
 
     # Step 3: Use LLM to create complete itinerary
     class DailyActivity(BaseModel):
-        """Activity for a specific day."""
-
         name: str
         description: str
         category: str
@@ -86,29 +84,23 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
         estimated_cost: float
 
     class DailyPlan(BaseModel):
-        """Plan for a single day."""
-
         day_number: int
         activities: list[DailyActivity]
         notes: str = ""
 
     class CompleteItineraryPlan(BaseModel):
-        """Complete itinerary plan."""
-
         destination_info: str
         day_plans: list[DailyPlan]
         highlights: list[str]
         total_estimated_cost: float
 
     # Format attractions for LLM
-    if attractions:
+    if len(attractions) > 0:
         attractions_text = "\n".join(
             [
                 f"- {attraction.name}: {attraction.description} "
-                f"(Tags: {', '.join(attraction.tags)}, "
-                f"Duration: {attraction.estimated_visit_duration_hours}h, "
-                f"Cost: ¥{attraction.estimated_cost})"
-                for attraction in attractions[:20]  # Limit for token efficiency
+                f"(Tags: {', '.join(attraction.tags)})"
+                for attraction in attractions[:35]  # Limit for token efficiency
             ]
         )
     else:
@@ -121,7 +113,7 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
     pace_activities = {"relaxed": 2, "moderate": 3, "intense": 4}
     activities_per_day = pace_activities.get(pace, 3)
 
-    structured_llm = chat_model.with_structured_output(CompleteItineraryPlan)  # type: ignore
+    structured_llm = chat_model.with_structured_output(CompleteItineraryPlan)  # pyright: ignore
 
     prompt = RESEARCH_AND_PLAN_PROMPT.format(
         num_days=num_days,
@@ -136,7 +128,8 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
     )
 
     try:
-        plan: CompleteItineraryPlan = await structured_llm.ainvoke(prompt)  # type: ignore
+        itinerary_plan = await structured_llm.ainvoke(prompt)  # pyright: ignore
+        itinerary_plan = CompleteItineraryPlan.model_validate(itinerary_plan)
 
         # Store attraction details for coordinate lookup
         attraction_details = {
@@ -145,10 +138,10 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
 
         # Convert to expected format
         daily_schedule = {}
-        for day_plan in plan.day_plans:
+        for day_plan in itinerary_plan.day_plans:
             daily_schedule[day_plan.day_number] = [
                 {
-                    "activity_name": activity.name,
+                    "name": activity.name,
                     "start_time": activity.start_time,
                     "end_time": activity.end_time,
                     "description": activity.description,
@@ -163,8 +156,8 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
         logger.error(f"LLM planning failed: {e}")
         # Create fallback plan
         attraction_details = {}
-        daily_schedule: dict[int, list[dict[str, Any]]] = {}
-        plan = CompleteItineraryPlan(
+        daily_schedule = {}
+        itinerary_plan = CompleteItineraryPlan(
             destination_info=f"General information about {state['destination']}",
             day_plans=[],
             highlights=[f"Explore {state['destination']}", "Experience local culture"],
@@ -180,7 +173,7 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
     )
 
     return {
-        "destination_info": plan.destination_info,
+        "destination_info": itinerary_plan.destination_info,
         "destination_coords": destination_coords,
         "attraction_details": attraction_details,
         "daily_schedule": daily_schedule,
@@ -189,7 +182,36 @@ async def research_and_plan_node(state: PlanningState) -> dict[str, Any]:
     }
 
 
-async def finalize_itinerary_node(state: PlanningState) -> dict[str, Any]:
+def _find_matching_attraction(
+    location_name: str, attraction_details: dict[str, dict[str, Any]]
+) -> dict[str, Any] | None:
+    """Find matching attraction using exact match first, then fuzzy match."""
+    # 1. Exact match
+    if location_name in attraction_details:
+        return attraction_details[location_name]
+
+    # 2. Case-insensitive match
+    location_lower = location_name.lower()
+    for name, details in attraction_details.items():
+        if name.lower() == location_lower:
+            return details
+
+    # 3. Partial match (location_name contains attraction name or vice versa)
+    for name, details in attraction_details.items():
+        if name in location_name or location_name in name:
+            logger.debug(f"Fuzzy matched '{location_name}' -> '{name}'")
+            return details
+
+    # 4. Partial match case-insensitive
+    for name, details in attraction_details.items():
+        if name.lower() in location_lower or location_lower in name.lower():
+            logger.debug(f"Fuzzy matched (case-insensitive) '{location_name}' -> '{name}'")
+            return details
+
+    return None
+
+
+async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
     """Step 2: Finalize the itinerary with proper data structures."""
     logger.info("Finalizing itinerary with proper data structures")
 
@@ -198,7 +220,7 @@ async def finalize_itinerary_node(state: PlanningState) -> dict[str, Any]:
     end = datetime.fromisoformat(state["end_date"])
     num_days = (end - start).days + 1
 
-    attraction_details_map = state.get("attraction_details", {})
+    attraction_details = state.get("attraction_details", {})
     daily_schedule = state.get("daily_schedule", {})
 
     # Build day plans with coordinates
@@ -208,45 +230,36 @@ async def finalize_itinerary_node(state: PlanningState) -> dict[str, Any]:
 
     for day_num in range(1, num_days + 1):
         date = (start + timedelta(days=day_num - 1)).isoformat()
-        activities_data = daily_schedule.get(day_num, [])
+        daily_activities = daily_schedule.get(day_num, [])
 
         formatted_activities: list[Activity] = []
-        for activity_data in activities_data:
-            activity_name = activity_data.get("activity_name", "Activity")
+        for activity_data in daily_activities:
+            activity_name = activity_data.get("name", "Activity")
             location_name = activity_data.get("location", activity_name)
 
-            # Try to get real coordinates from stored attraction details
-            if activity_name in attraction_details_map:
-                attraction_info = attraction_details_map[activity_name]
+            # Try to get real coordinates from stored attraction details (with fuzzy matching)
+            attraction_info = _find_matching_attraction(location_name, attraction_details)
+
+            if attraction_info:
                 location = ActivityLocation(
                     name=location_name,
-                    latitude=attraction_info["latitude"],
                     longitude=attraction_info["longitude"],
+                    latitude=attraction_info["latitude"],
                     address=attraction_info["address"],
                 )
                 attraction_id = attraction_info.get("id")
             else:
-                # Geocode the location
-                try:
-                    geocode_result = await geocoding_tool.ainvoke(  # type: ignore
-                        {"address": state["destination"], "city": state["destination"]}
-                    )
-                    location = ActivityLocation(
-                        name=location_name,
-                        latitude=geocode_result.latitude,
-                        longitude=geocode_result.longitude,
-                        address=geocode_result.address,
-                    )
-                except Exception as e:
-                    logger.warning(f"Geocoding failed for {location_name}: {e}")
-                    # Use destination coordinates as fallback
-                    dest_coords = state.get("destination_coords", {})
-                    location = ActivityLocation(
-                        name=location_name,
-                        latitude=dest_coords.get("latitude", 31.2304),
-                        longitude=dest_coords.get("longitude", 121.4737),
-                        address=dest_coords.get("address", location_name),
-                    )
+                # Fallback: use destination coordinates directly (avoid extra geocoding)
+                logger.info(
+                    f"No matching attraction for '{location_name}', using destination coords"
+                )
+                dest_coords = state.get("destination_coords", {})
+                location = ActivityLocation(
+                    name=location_name,
+                    latitude=dest_coords.get("latitude", 31.2304),
+                    longitude=dest_coords.get("longitude", 121.4737),
+                    address=dest_coords.get("address", location_name),
+                )
                 attraction_id = None
 
             # Calculate cost
@@ -277,14 +290,12 @@ async def finalize_itinerary_node(state: PlanningState) -> dict[str, Any]:
         )
         day_plans.append(day_plan)
 
-    # Generate basic highlights if not provided
-    highlights = state.get("highlights", [])
-    if not highlights:
-        highlights = [
-            f"Explore the best of {state['destination']}",
-            "Experience local culture and cuisine",
-            "Visit iconic landmarks and attractions",
-        ]
+    # Generate basic highlights
+    highlights = [
+        f"Explore the best of {state['destination']}",
+        "Experience local culture and cuisine",
+        "Visit iconic landmarks and attractions",
+    ]
 
     # Create itinerary summary
     summary = ItinerarySummary(

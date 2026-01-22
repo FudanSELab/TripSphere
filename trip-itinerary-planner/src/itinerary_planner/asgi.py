@@ -20,7 +20,7 @@ from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.ai import NacosAI
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.nacos.utils import client_shutdown
-from itinerary_planner.routers.itineraries import itineraries
+from itinerary_planner.routers.planning import planning
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.httpx_client = AsyncClient()
 
     try:
-        # Register with Nacos
         app.state.nacos_naming = await NacosNaming.create_naming(
             service_name=settings.app.name,
             port=settings.uvicorn.port,
@@ -105,7 +104,7 @@ def create_fastapi_app() -> FastAPI:
     )
 
     # Include routers
-    app.include_router(itineraries)
+    app.include_router(planning, prefix="/api/v1")
     return app
 
 
