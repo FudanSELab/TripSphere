@@ -24,6 +24,7 @@ services:
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       mongodb:
         condition: service_started
