@@ -19,7 +19,7 @@ from typing import Any
 
 import grpc
 import httpx
-from pymongo import MongoClient
+from pymongo import MongoClient, InsertOne
 from pymongo.collection import Collection
 from bson import ObjectId
 
@@ -32,10 +32,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FILE_SERVICE_GRPC_ADDRESS = "47.120.37.103:50051"
-FILE_SERVICE_NAME = "trip-attraction-service"
+SERVICE_NAME_OF_FILE = "trip-attraction-service"
 MONGO_URI = "mongodb://root:fudanse@47.120.37.103:27017"
 MONGO_DATABASE = "attraction_db"
-MONGO_COLLECTION = "Attractions"
+MONGO_COLLECTION = "attractions"
 SCRIPT_DIR = Path(__file__).parent
 JSON_FILE = SCRIPT_DIR / "filtered_attractions.json"
 PICTURES_DIR = SCRIPT_DIR / "selected-pictures"
@@ -84,7 +84,7 @@ def upload_image(
         # Create GetUploadSignedUrl request
         # According to API docs: service and path fields are required, others can be omitted or empty
         file_info = file_pb2.File(
-            service=FILE_SERVICE_NAME,
+            service=SERVICE_NAME_OF_FILE,
             path=file_path,
             # Following fields not provided or left empty
             name="",
@@ -156,7 +156,7 @@ def parse_location(location_str: str) -> dict[str, Any] | None:
     """
     if not location_str:
         return None
-    
+
     try:
         parts = location_str.split(",")
         if len(parts) != 2:
@@ -243,7 +243,10 @@ def process_attraction_images(
         logger.warning("Attraction data missing id field")
         return []
 
-    logger.info(f"Uploading attraction images: {attraction_data.get('name')} (MongoDB ID: {mongo_id})")
+    logger.info(
+        f"Uploading attraction images: {attraction_data.get('name')}"
+        f" (MongoDB ID: {mongo_id})"
+    )
 
     # Read image directory (still use original id as directory name)
     image_dir = PICTURES_DIR / attraction_id
@@ -259,7 +262,7 @@ def process_attraction_images(
 
     # Upload all images (use MongoDB ObjectId as attraction_id in path)
     uploaded_image_paths = []
-    for idx, image_path in enumerate(image_files):
+    for idx, image_path in enumerate[Any](image_files):
         file_info = upload_image(
             grpc_client,
             http_client,
@@ -268,7 +271,8 @@ def process_attraction_images(
             idx,
         )
         if file_info and file_info.get("path"):
-            # Construct correct path format: permanent/{service}/attractions/{mongo_id}/{file_name}
+            # Construct correct path format: 
+            # permanent/{service}/attractions/{mongo_id}/{file_name}
             server_path = file_info["path"]
             if server_path.startswith("permanent/"):
                 # If server already returns complete path, use it directly
@@ -276,12 +280,15 @@ def process_attraction_images(
             else:
                 # Manually construct complete path
                 file_name = f"{mongo_id}_{idx}{image_path.suffix.lower()}"
-                final_path = f"permanent/{FILE_SERVICE_NAME}/attractions/{mongo_id}/{file_name}"
+                final_path = f"permanent/{SERVICE_NAME_OF_FILE}/attractions/{mongo_id}/{file_name}"
 
             uploaded_image_paths.append(final_path)
             logger.info(f"Image path: {final_path}")
 
-    logger.info(f"✓ Attraction {attraction_data.get('name')} image upload completed, {len(uploaded_image_paths)} images")
+    logger.info(
+        f"✓ Attraction {attraction_data.get('name')} image upload completed,"
+        f" {len(uploaded_image_paths)} images"
+    )
     return uploaded_image_paths
 
 
@@ -312,7 +319,7 @@ def save_to_mongodb(
     logger.info(f"Saving {len(attractions)} attractions to MongoDB...")
 
     id_mapping = {}
-    for i, attraction in enumerate(attractions):
+    for i, attraction in enumerate[dict[str, Any]](attractions):
         # Generate new ObjectId
         mongo_id = ObjectId()
         attraction["_id"] = mongo_id
@@ -324,18 +331,13 @@ def save_to_mongodb(
             logger.info(f"Mapping: {original_id} -> {mongo_id}")
 
     # Use bulk_write for batch insertion
-    from pymongo import InsertOne
-
     operations = []
     for attraction in attractions:
         operations.append(InsertOne(attraction))
 
     result = collection.bulk_write(operations)
 
-    logger.info(
-        f"✓ MongoDB save completed: "
-        f"inserted {result.inserted_count} documents"
-    )
+    logger.info(f"✓ MongoDB save completed: inserted {result.inserted_count} documents")
 
     return id_mapping
 
@@ -384,6 +386,10 @@ def main() -> None:
             mongo_client.server_info()
             db = mongo_client[MONGO_DATABASE]
             collection = db[MONGO_COLLECTION]
+
+            # Create index
+            collection.create_index([("location", "2dsphere")])
+
             logger.info("✓ MongoDB connection successful")
         except Exception as e:
             logger.error(f"MongoDB connection failed: {e}")
@@ -431,18 +437,28 @@ def main() -> None:
 
             for idx, (original_id, mongo_id) in enumerate(id_mapping.items()):
                 # Find corresponding original data
-                original_data = next((item for item in successful_data if str(item.get("id")) == original_id), None)
+                original_data = next(
+                    (
+                        item
+                        for item in successful_data
+                        if str(item.get("id")) == original_id
+                    ),
+                    None,
+                )
                 if not original_data:
                     continue
 
-                logger.info(f"[{idx+1}/{len(id_mapping)}] Uploading attraction images: {original_data.get('name')}")
+                logger.info(
+                    f"[{idx + 1}/{len(id_mapping)}] Uploading attraction "
+                    f"images: {original_data.get('name')}"
+                )
 
                 # Upload images using MongoDB ObjectId
                 images = process_attraction_images(
                     original_data,
                     mongo_id,
                     grpc_client,
-                    http_client,
+                    http_client
                 )
 
                 if images:
@@ -450,13 +466,18 @@ def main() -> None:
 
                     # Update image information in MongoDB
                     result = collection.update_one(
-                        {"_id": ObjectId(mongo_id)},
-                        {"$set": {"images": images}}
+                        {"_id": ObjectId(mongo_id)}, {"$set": {"images": images}}
                     )
                     if result.modified_count > 0:
-                        logger.info(f"✓ Attraction image info update successful: {original_data.get('name')} ({result.modified_count} documents modified)")
+                        logger.info(
+                            f"✓ Attraction image info update successful: {original_data.get('name')}"
+                            f" ({result.modified_count} documents modified)"
+                        )
                     else:
-                        logger.warning(f"Attraction image info update failed: {original_data.get('name')} ({result.modified_count} documents modified)")
+                        logger.warning(
+                            f"Attraction image info update failed: {original_data.get('name')}"
+                            f" ({result.modified_count} documents modified)"
+                        )
                 else:
                     logger.warning(f"Image upload failed: {original_data.get('name')}")
 
@@ -471,7 +492,9 @@ def main() -> None:
         # Close connection
         mongo_client.close()
 
-        logger.info(f"\n✓ Import completed! Successfully processed {len(processed_attractions)} attractions")
+        logger.info(
+            f"\n✓ Import completed! Successfully processed {len(processed_attractions)} attractions"
+        )
 
     except Exception as e:
         logger.error(f"Error occurred during processing: {e}", exc_info=True)
@@ -485,4 +508,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
