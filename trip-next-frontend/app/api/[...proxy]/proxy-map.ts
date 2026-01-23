@@ -95,9 +95,12 @@ export const grpcProxyMap: RpcProxyMap = {
       });
       const token = loginData?.token;
       if (token) {
+        // Only use secure cookies when HTTPS is enabled
+        // Set COOKIE_SECURE=true in production with HTTPS
+        const isSecure = process.env.COOKIE_SECURE === "true";
         nextResponse.cookies.set("token", token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: isSecure,
           sameSite: "lax",
           maxAge: 60 * 60 * 24 * 7, // 7 days
           path: "/",

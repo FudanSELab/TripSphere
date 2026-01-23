@@ -37,7 +37,9 @@ public class JwtGrpcAuthenticationReader implements GrpcAuthenticationReader {
             // Validate token and extract username
             String username = jwtUtil.extractUsername(token);
             if (username == null || !jwtUtil.validateToken(token, username)) {
-                throw new BadCredentialsException("Invalid JWT token");
+                // Invalid token, return null to allow anonymous access
+                // This allows public endpoints like Login and Register to work
+                return null;
             }
 
             // Extract roles from token
@@ -50,8 +52,9 @@ public class JwtGrpcAuthenticationReader implements GrpcAuthenticationReader {
             // The JwtAuthenticationProvider will handle it if needed
             return jwtAuth;
         } catch (Exception e) {
-            throw new BadCredentialsException(
-                    "Failed to authenticate JWT token: " + e.getMessage(), e);
+            // Token validation failed (e.g., expired, malformed, wrong signature)
+            // Return null to allow anonymous access for public endpoints like Login and Register
+            return null;
         }
     }
 

@@ -26,6 +26,7 @@ COPY lib ./lib
 COPY app ./app
 COPY components ./components
 COPY public ./public
+COPY middleware.ts ./middleware.ts
 
 # Build the application
 RUN bun run build

@@ -169,8 +169,10 @@ async function parseBody(req: NextRequest): Promise<unknown> {
 }
 
 // APIs that don't require calling getCurrentUser separately to get current user data
-const WithoutAuthAPIs: string[] = [];
-// const WithoutAuthAPIs = ['/api/user/login', '/api/user/register']
+const WithoutAuthAPIs: string[] = [
+  "/api/v1/users/login",
+  "/api/v1/users/register",
+];
 
 // Convert all request headers to gRPC metadata
 // 1. Try to extract token from cookie and put it in gRPC metadata["authorization"]
