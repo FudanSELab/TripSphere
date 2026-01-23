@@ -333,17 +333,45 @@ export interface ChatResponse {
   taskId?: string;
 }
 
-// Chat context for contextual conversations
+/**
+ * Chat context for contextual conversations.
+ *
+ * Fields are organized into three categories:
+ * 1. Frontend UI fields - Used for display purposes in ChatSidebar
+ * 2. Auto-send fields - Used for automatic message sending on sidebar open
+ * 3. Backend metadata fields - Sent to trip-chat-service with each message
+ */
 export interface ChatContext {
+  // ============================================
+  // Frontend UI Fields (not sent to backend)
+  // ============================================
+
+  /** Context type - determines UI behavior (welcome message, quick prompts) */
   type: "review-summary" | "attraction" | "hotel" | "itinerary" | "general";
-  targetType?: string;
-  targetId?: string;
-  attractionName?: string;
-  hotelName?: string;
+
+  /** Display name for the entity (shown in welcome message) */
+  displayName?: string;
+
+  // ============================================
+  // Auto-send Fields (frontend only)
+  // ============================================
+
+  /** If set, automatically sends this query when sidebar opens */
   autoSendQuery?: string;
-  autoSendMetadata?: Record<string, unknown>;
+
+  // ============================================
+  // Backend Metadata Fields (sent with messages)
+  // These fields follow snake_case to match backend API conventions
+  // ============================================
+
+  /** Target A2A agent name for direct routing (e.g., "review_summary", "journey_assistant") */
   agent?: string;
-  [key: string]: unknown;
+
+  /** Target entity ID for the agent to process (e.g., attraction ID) */
+  target_id?: string;
+
+  /** Target entity type (e.g., "attraction", "hotel") */
+  target_type?: string;
 }
 
 // Pagination types

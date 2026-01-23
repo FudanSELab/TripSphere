@@ -6,7 +6,9 @@ from functools import lru_cache
 from typing import Any, AsyncGenerator, Self
 
 from a2a.types import AgentCard
+from a2a.types import Message as A2AMessage
 from google.adk.agents import LlmAgent
+from google.adk.agents.invocation_context import InvocationContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.events import Event
 from google.adk.models.lite_llm import LiteLlm
@@ -26,6 +28,21 @@ from chat.prompts.agent import DELEGATOR_INSTRUCTION
 warnings.filterwarnings("ignore", module="google.adk")
 
 logger = logging.getLogger(__name__)
+
+# Session state key for storing A2A request metadata
+A2A_REQUEST_METADATA_KEY = "_a2a_request_metadata"
+
+
+def _a2a_meta_provider(ctx: InvocationContext, _message: A2AMessage) -> dict[str, Any]:
+    """Metadata provider that reads from session state.
+
+    This callback is invoked by RemoteA2aAgent before sending A2A requests.
+    It extracts metadata stored in session state and passes it to the A2A request.
+    """
+    metadata = ctx.session.state.get(A2A_REQUEST_METADATA_KEY, {})
+    if metadata:
+        logger.debug(f"A2A request metadata from session state: {metadata}")
+    return metadata
 
 
 @lru_cache(maxsize=1, typed=True)
@@ -79,7 +96,11 @@ class AgentFacade:
             return None  # Fail silently for now
         self.agent_cards[agent_card.name] = agent_card
         self.remote_a2a_agents[agent_card.name] = RemoteA2aAgent(
-            name=agent_card.name, agent_card=agent_card
+            name=agent_card.name,
+            agent_card=agent_card,
+            # Provide metadata callback to pass target_id
+            # and other context to A2A requests
+            a2a_request_meta_provider=_a2a_meta_provider,
         )
 
     @classmethod
@@ -91,7 +112,7 @@ class AgentFacade:
     ) -> Self:
         instance = cls(httpx_client, nacos_ai, mongo_client)
         # Remote A2A agents discovery through Nacos AI service
-        await instance._post_init(["journey_assistant"])
+        await instance._post_init(["journey_assistant", "review_summary"])
         return instance
 
     async def invoke(self, conversation: Conversation, user_query: Message) -> Message:
@@ -122,6 +143,21 @@ class AgentFacade:
         user_content = types.Content(role="user", parts=[types.Part(text=text_query)])
 
         logger.debug(f"==> Running Query: {text_query}")
+
+        # Extract A2A-relevant metadata (target_id, target_type, etc.) for remote agents
+        # These will be passed to the A2A request via session state
+        a2a_metadata: dict[str, Any] = {}
+        if user_query.metadata:
+            # Only include fields that should be passed to A2A agents
+            for key in ("target_id", "target_type"):
+                if key in user_query.metadata:
+                    a2a_metadata[key] = user_query.metadata[key]
+
+        # Store metadata in session state for the A2A request meta provider
+        if a2a_metadata:
+            logger.debug(f"==> Storing A2A metadata in session state: {a2a_metadata}")
+            session.state[A2A_REQUEST_METADATA_KEY] = a2a_metadata
+            await self.session_service.update_session(session)
 
         # Check if user specified a target agent
         agent = user_query.metadata.get("agent") if user_query.metadata else None

@@ -43,6 +43,25 @@ export function ChatSidebar({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  /**
+   * Extract backend metadata fields from ChatContext.
+   * Only includes fields that should be sent to trip-chat-service.
+   */
+  const extractBackendMetadata = (
+    ctx: ChatContext | null,
+  ): Record<string, unknown> | undefined => {
+    if (!ctx) return undefined;
+
+    const metadata: Record<string, unknown> = {};
+
+    // Only include backend-relevant fields (snake_case convention)
+    if (ctx.agent) metadata.agent = ctx.agent;
+    if (ctx.target_id) metadata.target_id = ctx.target_id;
+    if (ctx.target_type) metadata.target_type = ctx.target_type;
+
+    return Object.keys(metadata).length > 0 ? metadata : undefined;
+  };
+
   // Auto-close sidebar when navigating to /chat page
   useEffect(() => {
     if (pathname === "/chat" && isOpen) {
@@ -98,10 +117,13 @@ export function ChatSidebar({
   const createContextualConversation = async () => {
     if (!initialContext || !auth.user) return;
 
+    // Extract only backend-relevant metadata for the conversation
+    const backendMetadata = extractBackendMetadata(initialContext);
+
     const conversation = await chat.createConversation(
       auth.user.id,
       title,
-      initialContext as Record<string, unknown>,
+      backendMetadata,
     );
 
     if (conversation) {
@@ -110,12 +132,10 @@ export function ChatSidebar({
 
       // Check if we need to auto-send a query
       if (initialContext.autoSendQuery) {
-        // Use autoSendMetadata if provided
-        const metadata = initialContext.autoSendMetadata || initialContext;
         await sendMessageWithMetadata(
           conversation,
           initialContext.autoSendQuery,
-          metadata,
+          backendMetadata,
         );
       }
     }
@@ -125,11 +145,15 @@ export function ChatSidebar({
   const getInitialMessage = (): string => {
     if (!initialContext) return "";
 
+    const name = initialContext.displayName || "this place";
+
     switch (initialContext.type) {
       case "review-summary":
-        return `Hi! I'm here to help you understand the reviews for **${initialContext.attractionName}**. I can summarize what visitors are saying, highlight common themes, or answer specific questions about the reviews. What would you like to know?`;
+        return `Hi! I'm here to help you understand the reviews for **${name}**. I can summarize what visitors are saying, highlight common themes, or answer specific questions about the reviews. What would you like to know?`;
       case "attraction":
-        return `Hello! I'd be happy to tell you more about **${initialContext.attractionName}**. Feel free to ask me anything about this attraction - opening hours, best times to visit, nearby restaurants, or travel tips!`;
+        return `Hello! I'd be happy to tell you more about **${name}**. Feel free to ask me anything about this attraction - opening hours, best times to visit, nearby restaurants, or travel tips!`;
+      case "hotel":
+        return `Hello! I'd be happy to tell you more about **${name}**. Feel free to ask me anything about this hotel - amenities, room types, nearby attractions, or travel tips!`;
       default:
         return "Hello! How can I help you today?";
     }
@@ -176,9 +200,8 @@ export function ChatSidebar({
     setIsStreaming(true);
     setStreamingContent("");
 
-    // Use custom metadata if provided, otherwise use initialContext
-    const metadata =
-      customMetadata || (initialContext as Record<string, unknown> | undefined);
+    // Use custom metadata if provided, otherwise extract from initialContext
+    const metadata = customMetadata || extractBackendMetadata(initialContext);
 
     try {
       await chat.streamMessage(

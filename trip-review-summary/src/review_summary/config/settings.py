@@ -28,7 +28,6 @@ class NacosSettings(BaseModel):
 
 class QdrantSettings(BaseModel):
     url: str = Field(default="http://localhost:6333")
-    database: str = Field(default="review_summary_db")
 
 
 class Neo4jSettings(BaseModel):
