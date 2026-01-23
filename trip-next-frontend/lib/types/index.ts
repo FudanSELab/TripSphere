@@ -313,7 +313,7 @@ export interface Conversation {
   createdAt: string;
 }
 
-// Request for /messages:stream endpoint
+// Request for /messages/stream endpoint
 export interface SendMessageRequest {
   conversation_id: string;
   content: Part[];

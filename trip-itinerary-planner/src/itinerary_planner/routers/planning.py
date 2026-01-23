@@ -99,7 +99,7 @@ async def _stream_events(request: PlanItineraryRequest) -> AsyncGenerator[str, N
         yield encode(event="failed", data=f"Error in planning stream: {e}")
 
 
-@planning.post(":stream", status_code=201)
+@planning.post("/stream", status_code=201)
 async def plan_itinerary_stream(request: PlanItineraryRequest) -> StreamingResponse:
     logger.info(f"Streaming itinerary planning for {request.destination}")
 

@@ -88,9 +88,6 @@ export function useItineraryPlanner() {
   const [currentStep, setCurrentStep] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const baseUrl =
-    process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
-
   /**
    * Plan an itinerary with streaming progress updates
    */
@@ -110,17 +107,14 @@ export function useItineraryPlanner() {
       let finalItinerary: Itinerary | null = null;
 
       try {
-        const response = await fetch(
-          `${baseUrl}/api/v1/itineraries/plannings:stream`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "text/event-stream",
-            },
-            body: JSON.stringify(request),
+        const response = await fetch(`/api/v1/itineraries/plannings/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
           },
-        );
+          body: JSON.stringify(request),
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -213,7 +207,7 @@ export function useItineraryPlanner() {
         setIsGenerating(false);
       }
     },
-    [baseUrl],
+    [],
   );
 
   /**
@@ -227,16 +221,13 @@ export function useItineraryPlanner() {
       setError(null);
 
       try {
-        const response = await fetch(
-          `${baseUrl}/api/v1/itineraries/plannings`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(request),
+        const response = await fetch(`/api/v1/itineraries/plannings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(request),
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -257,7 +248,7 @@ export function useItineraryPlanner() {
         setIsGenerating(false);
       }
     },
-    [baseUrl],
+    [],
   );
 
   /**

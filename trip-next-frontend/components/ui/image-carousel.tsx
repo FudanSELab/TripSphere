@@ -77,6 +77,7 @@ export function ImageCarousel({
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
               priority={index === 0}
+              unoptimized
             />
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />

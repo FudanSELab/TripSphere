@@ -95,6 +95,7 @@ export default function AttractionsPage() {
                           alt={attraction.name}
                           fill
                           className="object-cover"
+                          unoptimized
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center bg-gray-200">

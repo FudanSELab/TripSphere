@@ -155,7 +155,7 @@ def sample_messages() -> list[Message]:
 
 
 class TestStreamMessage:
-    """Test cases for POST /api/v1/messages:stream endpoint."""
+    """Test cases for POST /api/v1/messages/stream endpoint."""
 
     def test_stream_message_conversation_not_found(
         self,
@@ -174,7 +174,7 @@ class TestStreamMessage:
 
         # Act
         response = client.post(
-            "/api/v1/messages:stream",
+            "/api/v1/messages/stream",
             json={
                 "conversation_id": "non-existent",
                 "content": [{"text": "Hello", "kind": "text"}],
@@ -207,7 +207,7 @@ class TestStreamMessage:
 
         # Act
         response = client.post(
-            "/api/v1/messages:stream",
+            "/api/v1/messages/stream",
             json={
                 "conversation_id": "conv-123",
                 "content": [{"text": "Hello", "kind": "text"}],
@@ -235,7 +235,7 @@ class TestStreamMessage:
         """Test streaming message without x-user-id header."""
         # Act
         response = client.post(
-            "/api/v1/messages:stream",
+            "/api/v1/messages/stream",
             json={
                 "conversation_id": "conv-123",
                 "content": [{"text": "Hello", "kind": "text"}],
@@ -264,7 +264,7 @@ class TestStreamMessage:
 
         # Act
         response = client.post(
-            "/api/v1/messages:stream",
+            "/api/v1/messages/stream",
             json={"conversation_id": "conv-123", "content": "invalid"},
             headers={"x-user-id": "user-456"},
         )

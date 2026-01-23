@@ -13,8 +13,6 @@ export const useChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const baseUrl = process.env.HTTP_CHAT_URL || "http://localhost:24210";
-
   /**
    * Helper function to convert text content to Part array
    */
@@ -77,7 +75,7 @@ export const useChat = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${baseUrl}/api/v1/conversations`, {
+      const response = await fetch(`/api/v1/conversations`, {
         method: "POST",
         headers: {
           "X-User-Id": userId,
@@ -138,7 +136,7 @@ export const useChat = () => {
       }
 
       const response = await fetch(
-        `${baseUrl}/api/v1/conversations?${params.toString()}`,
+        `/api/v1/conversations?${params.toString()}`,
         {
           method: "GET",
           headers: {
@@ -203,15 +201,12 @@ export const useChat = () => {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${baseUrl}/api/v1/conversations/${conversationId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-User-Id": userId,
-          },
+      const response = await fetch(`/api/v1/conversations/${conversationId}`, {
+        method: "DELETE",
+        headers: {
+          "X-User-Id": userId,
         },
-      );
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -231,7 +226,7 @@ export const useChat = () => {
   };
 
   /**
-   * Send a chat message with streaming response (using /messages:stream)
+   * Send a chat message with streaming response (using /messages/stream)
    */
   const streamMessage = async (
     userId: string,
@@ -254,7 +249,7 @@ export const useChat = () => {
         metadata,
       };
 
-      const response = await fetch(`${baseUrl}/api/v1/messages:stream`, {
+      const response = await fetch(`/api/v1/messages/stream`, {
         method: "POST",
         headers: {
           "X-User-Id": userId,
@@ -357,15 +352,12 @@ export const useChat = () => {
         params.set("cursor", cursor);
       }
 
-      const response = await fetch(
-        `${baseUrl}/api/v1/messages?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "X-User-Id": userId,
-          },
+      const response = await fetch(`/api/v1/messages?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "X-User-Id": userId,
         },
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to list messages: ${response.statusText}`);
