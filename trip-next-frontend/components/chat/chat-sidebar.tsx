@@ -141,24 +141,6 @@ export function ChatSidebar({
     }
   };
 
-  // Get initial message based on context type
-  const getInitialMessage = (): string => {
-    if (!initialContext) return "";
-
-    const name = initialContext.displayName || "this place";
-
-    switch (initialContext.type) {
-      case "review-summary":
-        return `Hi! I'm here to help you understand the reviews for **${name}**. I can summarize what visitors are saying, highlight common themes, or answer specific questions about the reviews. What would you like to know?`;
-      case "attraction":
-        return `Hello! I'd be happy to tell you more about **${name}**. Feel free to ask me anything about this attraction - opening hours, best times to visit, nearby restaurants, or travel tips!`;
-      case "hotel":
-        return `Hello! I'd be happy to tell you more about **${name}**. Feel free to ask me anything about this hotel - amenities, room types, nearby attractions, or travel tips!`;
-      default:
-        return "Hello! How can I help you today?";
-    }
-  };
-
   // Create a new conversation if needed
   const ensureConversation = async (): Promise<Conversation | null> => {
     if (currentConversation) return currentConversation;
@@ -355,7 +337,7 @@ export function ChatSidebar({
         {/* Messages area */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 space-y-4 overflow-y-auto p-4"
+          className="scrollbar-hide flex-1 space-y-4 overflow-y-auto p-4"
         >
           {/* Empty state */}
           {messages.length === 0 && !isStreaming && (
