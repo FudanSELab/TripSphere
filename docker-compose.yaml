@@ -285,6 +285,7 @@ services:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-consumer
     environment:
+      - OTEL_SERVICE_NAME=trip-review-summary-consumer
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - ROCKETMQ_ENDPOINTS=rmq-proxy:8081
@@ -307,6 +308,7 @@ services:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-worker
     environment:
+      - OTEL_SERVICE_NAME=trip-review-summary-worker
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687

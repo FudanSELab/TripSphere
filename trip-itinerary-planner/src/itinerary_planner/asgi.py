@@ -12,6 +12,7 @@ from a2a.server.tasks import (
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
+from openinference.instrumentation.langchain import LangChainInstrumentor
 
 from itinerary_planner.agent.card import agent_card
 from itinerary_planner.agent.executor import A2aAgentExecutor
@@ -25,6 +26,9 @@ from itinerary_planner.routers.planning import planning
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+# Enable OpenInference instrumentation
+LangChainInstrumentor().instrument()
 
 
 @asynccontextmanager
