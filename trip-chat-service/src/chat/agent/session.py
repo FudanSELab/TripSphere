@@ -220,6 +220,25 @@ class MongoSessionService(BaseSessionService):
         """Deletes a session."""
         await self.sessions.delete_one({"_id": f"{app_name}:{user_id}:{session_id}"})
 
+    async def update_session(self, session: Session) -> None:
+        """Updates session state in MongoDB.
+
+        This method persists the current in-memory session state to the database.
+        Useful for updating state before running agents.
+        """
+        app_name = session.app_name
+        user_id = session.user_id
+        session_id = session.id
+        await self.sessions.update_one(
+            {"_id": f"{app_name}:{user_id}:{session_id}"},
+            {
+                "$set": {
+                    "state": session.state,
+                    "last_update_time": time.time(),
+                }
+            },
+        )
+
     async def append_event(self, session: Session, event: Event) -> Event:
         """Appends an event to a session."""
         if event.partial:

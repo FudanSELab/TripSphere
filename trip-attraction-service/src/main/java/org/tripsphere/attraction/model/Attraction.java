@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @Accessors(chain = true)
 @Data
-@Document("Attractions")
+@Document("attractions")
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class Attraction implements Serializable {
     @Id private String id;
@@ -28,7 +28,7 @@ public class Attraction implements Serializable {
     private Address address;
     private String introduction;
     private List<String> tags;
-    private List<File> images;
+    private List<String> images;
 
     @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
     private GeoJsonPoint location;

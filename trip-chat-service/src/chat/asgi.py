@@ -35,9 +35,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.httpx_client = AsyncClient()
     app.state.mongo_client = AsyncMongoClient[dict[str, Any]](settings.mongo.uri)
     try:
-        app.state.nacos_ai = await NacosAI.create_nacos_ai(
-            server_address=settings.nacos.server_address
-        )
         app.state.nacos_naming = await NacosNaming.create_naming(
             service_name=settings.app.name,
             port=settings.uvicorn.port,
@@ -46,6 +43,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
+
+        app.state.nacos_ai = await NacosAI.create_nacos_ai(
+            server_address=settings.nacos.server_address
+        )
         yield
 
     except Exception as e:
@@ -56,6 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)
+
         await client_shutdown(app.state.nacos_ai, app.state.nacos_naming)
         await app.state.mongo_client.close()
         await app.state.httpx_client.aclose()

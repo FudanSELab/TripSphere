@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.tripsphere.attraction.*;
 import org.tripsphere.attraction.model.Address;
 import org.tripsphere.attraction.model.Attraction;
-import org.tripsphere.attraction.model.File;
 import org.tripsphere.attraction.service.AttractionService;
 
 import io.grpc.stub.StreamObserver;
@@ -47,18 +46,7 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
                         request.getAttraction().getLocation().getLatitude());
         attraction.setLocation(location);
 
-        List<File> images = new ArrayList<>();
-        for (int i = 0; i < request.getAttraction().getImagesCount(); i++) {
-            File file = new File();
-            file.setName(request.getAttraction().getImages(i).getName());
-            file.setContentType(request.getAttraction().getImages(i).getContentType());
-            file.setUrl(request.getAttraction().getImages(i).getUrl());
-            file.setBucket(request.getAttraction().getImages(i).getBucket());
-            file.setService(request.getAttraction().getImages(i).getService());
-            file.setPath(request.getAttraction().getImages(i).getPath());
-            images.add(file);
-        }
-        attraction.setImages(images);
+        attraction.setImages(request.getAttraction().getImagesList());
 
         String id = attractionService.addAttraction(attraction);
 
@@ -104,18 +92,7 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
         String introduction = request.getAttraction().getIntroduction();
         List<String> tags = request.getAttraction().getTagsList();
 
-        List<File> images = new ArrayList<>();
-        for (int i = 0; i < request.getAttraction().getImagesCount(); i++) {
-            File image = new File();
-            image.setName(request.getAttraction().getImages(i).getName());
-            image.setContentType(request.getAttraction().getImages(i).getContentType());
-            image.setUrl(request.getAttraction().getImages(i).getUrl());
-            image.setBucket(request.getAttraction().getImages(i).getBucket());
-            image.setService(request.getAttraction().getImages(i).getService());
-            image.setPath(request.getAttraction().getImages(i).getPath());
-
-            images.add(image);
-        }
+        List<String> images = request.getAttraction().getImagesList();
 
         GeoJsonPoint location =
                 new GeoJsonPoint(
@@ -157,6 +134,13 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
             io.grpc.stub.StreamObserver<org.tripsphere.attraction.FindAttractionByIdResponse>
                     responseObserver) {
         Attraction attraction = attractionService.findAttractionById(request.getId());
+        if (attraction == null) {
+            responseObserver.onError(
+                    io.grpc.Status.NOT_FOUND
+                            .withDescription("Attraction not found with id: " + request.getId())
+                            .asRuntimeException());
+            return;
+        }
         org.tripsphere.attraction.Attraction.Builder attractionBuilder =
                 org.tripsphere.attraction.Attraction.newBuilder()
                         .setId(attraction.getId() == null ? "" : attraction.getId())
@@ -167,6 +151,8 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
                                         : attraction.getIntroduction());
 
         if (attraction.getTags() != null) attractionBuilder.addAllTags(attraction.getTags());
+
+        if (attraction.getImages() != null) attractionBuilder.addAllImages(attraction.getImages());
 
         if (attraction.getLocation() != null) {
             org.tripsphere.common.Location locationProto =
@@ -351,6 +337,9 @@ public class AttractionServiceImpl extends AttractionServiceGrpc.AttractionServi
                                             : attraction.getIntroduction());
 
             if (attraction.getTags() != null) attractionBuilder.addAllTags(attraction.getTags());
+
+            if (attraction.getImages() != null)
+                attractionBuilder.addAllImages(attraction.getImages());
 
             if (attraction.getLocation() != null) {
                 org.tripsphere.common.Location locationProto =

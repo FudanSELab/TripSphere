@@ -22,13 +22,10 @@ public interface AttractionRepository extends MongoRepository<Attraction, String
                   $geometry: { type: 'Point', coordinates: [?0, ?1] },
                   $maxDistance: ?2
                 }
-              },
-              'name': { $regex: ?3, $options: 'i' },
-              'tags': { $all: ?4 }
+              }
             }
             """)
-    List<Attraction> findByLocationNearWithFilters(
-            double lng, double lat, double maxDistanceMeters, String nameRegex, List<String> tags);
+    List<Attraction> findByLocationNear(double lng, double lat, double maxDistanceMeters);
 
     @Query(
             """

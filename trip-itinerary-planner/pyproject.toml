@@ -4,6 +4,7 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "a2a-sdk[http-server,telemetry]>=0.3.22",
     "grpcio>=1.75.1",
     "langgraph>=0.2.55",
     "langchain>=0.3.14",
@@ -14,6 +15,7 @@ dependencies = [
     "opentelemetry-distro[otlp]>=0.58b0",
     "pydantic-settings>=2.11.0",
     "tripsphere>=0.1.0",
+    "uvicorn>=0.40.0",
 ]
 
 [build-system]

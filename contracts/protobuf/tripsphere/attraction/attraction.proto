@@ -3,7 +3,6 @@ syntax = "proto3";
 package tripsphere.attraction;
 
 import "tripsphere/common/geo.proto";
-import "tripsphere/file/file.proto";
 
 option go_package = "tripsphere/attraction";
 option java_multiple_files = true;
@@ -15,7 +14,7 @@ message Attraction {
   tripsphere.common.Address address = 3;
   string introduction = 4;
   repeated string tags = 5;
-  repeated tripsphere.file.File images = 6;
+  repeated string images = 6;
   tripsphere.common.Location location = 7;
 }
 

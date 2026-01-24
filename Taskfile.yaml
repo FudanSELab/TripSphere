@@ -110,11 +110,11 @@ tasks:
       - task: user:build
 
   start:
-    desc: Start all services using Docker Compose
+    desc: Start all services by Docker Compose
     cmds:
       - docker compose up -d --force-recreate --remove-orphans
 
   stop:
-    desc: Stop all services using Docker Compose
+    desc: Stop all services by Docker Compose
     cmds:
-      - echo Not Implemented Yet
+      - docker compose down

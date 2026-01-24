@@ -15,6 +15,44 @@ import { ResponseWrap } from "@/lib/requests/base/request";
 
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+/**
+ * Match route pattern with path parameters
+ * Example: matchRoute("/api/v1/attractions/123", "GET /api/v1/attractions/:id")
+ * Returns: { matched: true, params: { id: "123" } }
+ */
+function matchRoute(
+  pathname: string,
+  pattern: string,
+): { matched: boolean; params: Record<string, string> } {
+  // Remove method prefix if exists (e.g., "GET /api/..." -> "/api/...")
+  const patternPath = pattern.includes(" ") ? pattern.split(" ")[1] : pattern;
+
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const patternSegments = patternPath.split("/").filter(Boolean);
+
+  if (pathSegments.length !== patternSegments.length) {
+    return { matched: false, params: {} };
+  }
+
+  const params: Record<string, string> = {};
+
+  for (let i = 0; i < patternSegments.length; i++) {
+    const patternSegment = patternSegments[i];
+    const pathSegment = pathSegments[i];
+
+    if (patternSegment.startsWith(":")) {
+      // This is a path parameter
+      const paramName = patternSegment.slice(1);
+      params[paramName] = pathSegment;
+    } else if (patternSegment !== pathSegment) {
+      // Static segment doesn't match
+      return { matched: false, params: {} };
+    }
+  }
+
+  return { matched: true, params };
+}
+
 export async function proxyHandler(req: NextRequest): Promise<NextResponse> {
   const pathname = req.nextUrl.pathname;
 
@@ -25,10 +63,27 @@ export async function proxyHandler(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const routeKey = `${req.method.toUpperCase()} ${pathname}`;
-  const rule =
-    grpcProxyMap[routeKey as keyof typeof grpcProxyMap] ??
-    grpcProxyMap[pathname as keyof typeof grpcProxyMap];
+  const method = req.method.toUpperCase();
+
+  // Try exact match first
+  const exactRouteKey = `${method} ${pathname}`;
+  let rule = grpcProxyMap[exactRouteKey as keyof typeof grpcProxyMap];
+  let routeParams: Record<string, string> = {};
+
+  // If no exact match, try pattern matching with path parameters
+  if (!rule) {
+    for (const key of Object.keys(grpcProxyMap)) {
+      const keyMethod = key.split(" ")[0];
+      if (keyMethod !== method) continue;
+
+      const matchResult = matchRoute(pathname, key);
+      if (matchResult.matched) {
+        rule = grpcProxyMap[key as keyof typeof grpcProxyMap];
+        routeParams = matchResult.params;
+        break;
+      }
+    }
+  }
 
   if (!rule) {
     return NextResponse.json(
@@ -41,9 +96,13 @@ export async function proxyHandler(req: NextRequest): Promise<NextResponse> {
     const body = METHODS_WITH_BODY.has(req.method.toUpperCase())
       ? await parseBody(req)
       : undefined;
+
+    // Merge body with route parameters for GET requests
+    const requestData = body || routeParams;
+
     // Type assertion needed because buildRPCRequest signature varies by rule
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const grpcRequest = (rule as any).buildRPCRequest(body);
+    const grpcRequest = (rule as any).buildRPCRequest(requestData);
     const metadata = await buildMetadata(req);
     const grpcResponse = await invokeRPC(rule, grpcRequest, metadata);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,8 +169,10 @@ async function parseBody(req: NextRequest): Promise<unknown> {
 }
 
 // APIs that don't require calling getCurrentUser separately to get current user data
-const WithoutAuthAPIs: string[] = [];
-// const WithoutAuthAPIs = ['/api/user/login', '/api/user/register']
+const WithoutAuthAPIs: string[] = [
+  "/api/v1/users/login",
+  "/api/v1/users/register",
+];
 
 // Convert all request headers to gRPC metadata
 // 1. Try to extract token from cookie and put it in gRPC metadata["authorization"]

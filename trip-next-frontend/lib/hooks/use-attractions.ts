@@ -1,86 +1,123 @@
+import type { Attraction as GrpcAttraction } from "@/lib/grpc/gen/tripsphere/attraction/attraction";
+import {
+  findAttractionById,
+  findAttractionsWithinRadius,
+  type FindAttractionsWithinRadiusRequest,
+} from "@/lib/requests";
 import type { Attraction } from "@/lib/types";
+
+/**
+ * Generate mock rating based on attraction ID for consistency
+ */
+function generateMockRating(id: string): number {
+  // Generate a rating between 4.0 and 5.0 based on ID hash
+  const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return 4.0 + (hash % 11) / 10; // Results in 4.0 to 5.0
+}
+
+/**
+ * Generate mock opening hours based on category
+ */
+function generateMockOpeningHours(category: string): string {
+  const hoursByCategory: Record<string, string> = {
+    Museum: "9:00 AM - 5:00 PM",
+    Park: "24 hours",
+    Temple: "8:00 AM - 6:00 PM",
+    Garden: "8:30 AM - 5:30 PM",
+    Landmark: "24 hours",
+    Historical: "9:00 AM - 5:00 PM",
+    Nature: "24 hours",
+  };
+  return hoursByCategory[category] || "9:00 AM - 6:00 PM";
+}
+
+/**
+ * Generate mock ticket price based on category
+ */
+function generateMockTicketPrice(category: string): string {
+  const pricesByCategory: Record<string, string> = {
+    Museum: "¥40-60",
+    Park: "Free",
+    Temple: "¥30",
+    Garden: "¥40",
+    Landmark: "Free",
+    Historical: "¥60",
+    Nature: "Free",
+  };
+  return pricesByCategory[category] || "¥40";
+}
+
+/**
+ * Convert gRPC Attraction to frontend Attraction type
+ */
+function convertGrpcAttractionToFrontend(
+  grpcAttraction: GrpcAttraction,
+): Attraction {
+  // Add 47.120.37.103:9000/ prefix to image URLs
+  const images =
+    grpcAttraction.images?.map((url) =>
+      url.startsWith("http")
+        ? url
+        : `http://47.120.37.103:9000/${url.replace(/^\//, "")}`,
+    ) || [];
+
+  const category = grpcAttraction.tags?.[0] || "Attraction";
+
+  return {
+    id: grpcAttraction.id,
+    name: grpcAttraction.name,
+    description: grpcAttraction.introduction,
+    address: grpcAttraction.address || {
+      country: "",
+      province: "",
+      city: "",
+      county: "",
+      district: "",
+      street: "",
+    },
+    location: {
+      lng: grpcAttraction.location?.longitude || 0,
+      lat: grpcAttraction.location?.latitude || 0,
+    },
+    category,
+    // Mock data for fields not in gRPC Attraction
+    rating: generateMockRating(grpcAttraction.id),
+    openingHours: generateMockOpeningHours(category),
+    ticketPrice: generateMockTicketPrice(category),
+    images,
+    tags: grpcAttraction.tags || [],
+  };
+}
 
 export function useAttractions() {
   const fetchAttraction = async (id: string): Promise<Attraction | null> => {
     try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_ATTRACTION_SERVICE_URL}/attractions/${id}`)
-      // const data = await response.json()
-      // return data
+      const response = await findAttractionById(id);
 
-      // For now, return mock data based on ID
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      if (!response.data) {
+        console.error("Failed to fetch attraction:", response.msg);
+        return null;
+      }
 
-      // Mock data - in production this would come from the API
-      const mockAttractions: Record<string, Attraction> = {
-        "1": {
-          id: "1",
-          name: "The Bund",
-          description:
-            "The Bund is a waterfront area in central Shanghai, featuring a mix of historical colonial-era buildings and modern skyscrapers. It offers stunning views of the Huangpu River and the futuristic Pudong skyline across the water. A must-visit destination for any traveler to Shanghai, the Bund combines history, architecture, and vibrant city life.",
-          address: {
-            country: "China",
-            province: "Shanghai",
-            city: "Shanghai",
-            county: "Huangpu",
-            district: "",
-            street: "Zhongshan East 1st Road",
-          },
-          location: { lng: 121.4883, lat: 31.2319 },
-          category: "Landmark",
-          rating: 4.8,
-          openingHours: "24 hours",
-          ticketPrice: "Free",
-          images: [
-            "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=1200&h=800&fit=crop",
-            "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=1200&h=800&fit=crop",
-            "https://images.unsplash.com/photo-1538428494232-9c0d8a3ab403?w=1200&h=800&fit=crop",
-          ],
-          tags: ["Historic", "Scenic", "Night View", "Photography"],
-        },
-        "2": {
-          id: "2",
-          name: "Yu Garden",
-          description:
-            "A classical Chinese garden located in the Old City of Shanghai, featuring traditional architecture and landscapes.",
-          address: {
-            country: "China",
-            province: "Shanghai",
-            city: "Shanghai",
-            county: "Huangpu",
-            district: "",
-            street: "Anren Street",
-          },
-          location: { lng: 121.492, lat: 31.227 },
-          category: "Garden",
-          rating: 4.6,
-          openingHours: "8:30 AM - 5:00 PM",
-          ticketPrice: "¥40",
-          images: [
-            "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=600&h=400&fit=crop",
-          ],
-          tags: ["Traditional", "Cultural", "Architecture"],
-        },
-      };
-
-      return mockAttractions[id] || null;
+      return convertGrpcAttractionToFrontend(response.data);
     } catch (error) {
       console.error("Error fetching attraction:", error);
       throw error;
     }
   };
 
-  const fetchAttractions = async (): Promise<Attraction[]> => {
+  const fetchAttractionsNearby = async (
+    request: FindAttractionsWithinRadiusRequest,
+  ): Promise<Attraction[]> => {
     try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_ATTRACTION_SERVICE_URL}/attractions`)
-      // const data = await response.json()
-      // return data
+      const response = await findAttractionsWithinRadius(request);
 
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      if (!response.data) {
+        console.error("Failed to fetch attractions:", response.msg);
+        return [];
+      }
 
-      // Mock data - returning the list from the index page
-      return [];
+      return response.data.map(convertGrpcAttractionToFrontend);
     } catch (error) {
       console.error("Error fetching attractions:", error);
       throw error;
@@ -89,6 +126,6 @@ export function useAttractions() {
 
   return {
     fetchAttraction,
-    fetchAttractions,
+    fetchAttractionsNearby,
   };
 }

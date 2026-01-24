@@ -38,6 +38,11 @@ export default function AttractionDetailPage() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [userReview, setUserReview] = useState<Review | null>(null);
 
+  // Scroll to top when navigating to this page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Fetch attraction data
   useEffect(() => {
     const loadAttraction = async () => {
@@ -144,13 +149,16 @@ export default function AttractionDetailPage() {
   };
 
   const handleAskAboutReviews = () => {
-    // Open chat sidebar with review context
+    // Open chat sidebar with review context, routing to review_summary A2A agent
     if (attraction) {
       const context: ChatContext = {
+        // Frontend UI fields
         type: "review-summary",
-        targetType: "attraction",
-        targetId: attractionId,
-        attractionName: attraction.name,
+        displayName: attraction.name,
+        // Backend metadata fields (sent to trip-chat-service)
+        agent: "review_summary",
+        target_id: attractionId,
+        target_type: "attraction",
       };
       chatSidebar.open(context, `Reviews for ${attraction.name}`);
     }
@@ -162,17 +170,15 @@ export default function AttractionDetailPage() {
     // Prepare the query template with attraction info
     const query = `Please help me check the weather conditions and travel tips for ${attraction.name} located in ${attraction.address.city}, ${attraction.address.country}.`;
 
-    // Set chat context with auto-send configuration
     const context: ChatContext = {
+      // Frontend UI fields
       type: "attraction",
-      targetType: "attraction",
-      targetId: attractionId,
-      attractionName: attraction.name,
-      agent: "journey_assistant", // Route to journey_assistant agent
+      displayName: attraction.name,
       autoSendQuery: query,
-      autoSendMetadata: {
-        agent: "journey_assistant", // This will route to journey_assistant in facade.py
-      },
+      // Backend metadata fields (sent to trip-chat-service)
+      agent: "journey_assistant",
+      target_id: attractionId,
+      target_type: "attraction",
     };
     chatSidebar.open(context, `Weather & Tips: ${attraction.name}`);
   };
@@ -257,8 +263,12 @@ export default function AttractionDetailPage() {
                     <Badge variant="default">{attraction.category}</Badge>
                     {attraction.tags && (
                       <div className="flex gap-2">
-                        {attraction.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary">
+                        {attraction.tags.slice(0, 3).map((tag, index) => (
+                          <Badge
+                            key={`${attraction.id}-tag-${index}`}
+                            variant="secondary"
+                            size="sm"
+                          >
                             {tag}
                           </Badge>
                         ))}

@@ -77,7 +77,7 @@ async def test_create_text_embeddings(
             "vector_dim": 3072,
         }
         config = CreateTextEmbeddingsConfig(
-            embedding_llm_config={"name": "text-embedding-3-large"},
+            embedding_llm_config={"model": "text-embedding-3-large"},
             batch_size=16,
             batch_max_tokens=8191,
             fields_to_embed={"entities": ["description"]},
@@ -150,7 +150,7 @@ async def test_create_text_embeddings_with_multiple_fields(
             "vector_dim": 3072,
         }
         config = CreateTextEmbeddingsConfig(
-            embedding_llm_config={"name": "text-embedding-3-large"},
+            embedding_llm_config={"model": "text-embedding-3-large"},
             batch_size=16,
             batch_max_tokens=8191,
             fields_to_embed={"entities": ["description", "title"]},
@@ -192,7 +192,7 @@ async def test_create_text_embeddings_empty_entities(
             "vector_dim": 3072,
         }
         config = CreateTextEmbeddingsConfig(
-            embedding_llm_config={"name": "text-embedding-3-large"},
+            embedding_llm_config={"model": "text-embedding-3-large"},
             batch_size=16,
             batch_max_tokens=8191,
             fields_to_embed={},  # No fields to embed

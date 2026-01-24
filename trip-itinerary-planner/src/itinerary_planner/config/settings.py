@@ -13,6 +13,16 @@ class AppSettings(BaseModel):
     debug: bool = Field(default=False)
 
 
+class UvicornSettings(BaseModel):
+    """Loaded from environment variables:
+    - UVICORN_HOST
+    - UVICORN_PORT
+    """
+
+    host: str = Field(default="0.0.0.0")
+    port: int = Field(default=24215)
+
+
 class NacosSettings(BaseModel):
     enabled: bool = Field(default=True)
     server_address: str = Field(default="localhost:8848")
@@ -47,6 +57,7 @@ class Settings(BaseSettings):
         env_nested_max_split=1,
     )
     app: AppSettings = Field(default_factory=AppSettings)
+    uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)

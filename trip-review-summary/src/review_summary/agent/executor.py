@@ -5,7 +5,7 @@ from typing import Any
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
-from a2a.types import Part, Task, TaskState, TextPart
+from a2a.types import DataPart, Part, Task, TaskState, TextPart
 from a2a.utils import new_agent_text_message, new_task
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncDriver
@@ -55,28 +55,51 @@ class A2aAgentExecutor(AgentExecutor):
 
         logger.info("A2aAgentExecutor initialized successfully")
 
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
+        """Execute the review summary agent workflow."""
+        task = await self._ensure_task(context, event_queue)
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
+
+        try:
+            query, target_id = self._validate_context(context)
+            result = await self._execute_search(query, target_id, updater)
+            await self._handle_success(result, updater)
+
+        except Exception as e:
+            # Handle any errors that occur during execution
+            await self._handle_error(e, updater)
+
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
+        """Cancel the current task execution."""
+        task = context.current_task
+        if task is None:
+            logger.debug("No active task to cancel")
+            return
+
+        logger.info(f"Cancelling task {task.id}")
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
+        await updater.update_status(
+            TaskState.canceled,
+            new_agent_text_message(
+                "Review summary request cancelled", task.context_id, task.id
+            ),
+            final=True,
+        )
+
     async def _init_vector_stores(
         self,
     ) -> tuple[EntityVectorStore, TextUnitVectorStore]:
-        """Initialize vector stores in parallel for better performance.
-
-        Returns:
-            Tuple of (entity_store, text_unit_store)
-        """
-        logger.debug("Initializing vector stores in parallel")
-        entity_store, textunit_store = await asyncio.gather(
+        """Initialize vector stores concurrently."""
+        logger.debug("Initializing vector stores concurrently")
+        entity_vector_store, text_unit_vector_store = await asyncio.gather(
             EntityVectorStore.create_vector_store(client=self.qdrant_client),
             TextUnitVectorStore.create_vector_store(client=self.qdrant_client),
         )
-        logger.debug("Vector stores initialized successfully")
-        return entity_store, textunit_store
+        logger.debug("Vector stores are initialized successfully")
+        return entity_vector_store, text_unit_vector_store
 
     def _get_chat_model(self) -> ChatOpenAI:
-        """Get or create the chat model instance (lazy initialization).
-
-        Returns:
-            Initialized ChatOpenAI instance
-        """
+        """Get or create the chat model instance (lazy initialization)."""
         if self._chat_model is None:
             logger.debug(f"Initializing ChatOpenAI with model: {self.CHAT_MODEL}")
             self._chat_model = ChatOpenAI(
@@ -88,11 +111,7 @@ class A2aAgentExecutor(AgentExecutor):
         return self._chat_model
 
     def _get_embedding_model(self) -> OpenAIEmbeddings:
-        """Get or create the embedding_model instance (lazy initialization).
-
-        Returns:
-            Initialized OpenAIEmbeddings instance
-        """
+        """Get or create the embedding_model instance (lazy initialization)."""
         if self._embedding_model is None:
             logger.debug(
                 f"Initializing OpenAIEmbeddings with model: {self.EMBEDDING_MODEL}"
@@ -105,35 +124,26 @@ class A2aAgentExecutor(AgentExecutor):
         return self._embedding_model
 
     def _get_tokenizer(self) -> TiktokenTokenizer:
-        """Get or create the tokenizer instance (lazy initialization).
-
-        Returns:
-            Initialized TiktokenTokenizer instance
-        """
+        """Get or create the tokenizer instance (lazy initialization)."""
         if self._tokenizer is None:
             chat_model = self._get_chat_model()
             encoding_name = encoding_name_for_model(chat_model.model_name)
             logger.debug(
-                f"Initializing TiktokenTokenizer with encoding: {encoding_name}"
+                f"Initializing TiktokenTokenizer with encoding_name: {encoding_name}"
             )
             self._tokenizer = TiktokenTokenizer(encoding_name)
         return self._tokenizer
 
     async def _init_search_engine(self) -> LocalSearch:
-        """Initialize or get the cached search instance with all dependencies.
-
-        The search instance is cached after first initialization for better performance.
-        This is safe because the underlying components (vector stores, models) maintain
-        their own connections and state.
-
-        Returns:
-            Initialized LocalSearch instance
-        """
+        """Initialize or get the cached search engine with all dependencies."""
         if self._search_engine is None:
             logger.debug("Initializing LocalSearch with all dependencies")
 
-            # Initialize vector stores in parallel
-            entity_store, textunit_store = await self._init_vector_stores()
+            # Initialize vector stores concurrently
+            (
+                entity_vector_store,
+                text_unit_vector_store,
+            ) = await self._init_vector_stores()
 
             # Get cached model instances (reused across requests for efficiency)
             chat_model = self._get_chat_model()
@@ -142,8 +152,8 @@ class A2aAgentExecutor(AgentExecutor):
 
             # Build context builder
             context_builder = LocalSearchMixedContext(
-                entity_text_embeddings=entity_store,
-                text_unit_store=textunit_store,
+                entity_vector_store=entity_vector_store,
+                text_unit_vector_store=text_unit_vector_store,
                 embedding_model=embedding_model,
                 tokenizer=tokenizer,
                 neo4j_driver=self.neo4j_driver,
@@ -186,15 +196,7 @@ class A2aAgentExecutor(AgentExecutor):
     async def _ensure_task(
         self, context: RequestContext, event_queue: EventQueue
     ) -> Task:
-        """Ensure a task exists for the current execution.
-
-        Arguments:
-            context: The request context
-            event_queue: Event queue for task creation
-
-        Returns:
-            The current or newly created task
-        """
+        """Ensure a task exists for the current execution."""
         task = context.current_task
         if not task:
             task = new_task(context.message)  # type: ignore
@@ -205,26 +207,17 @@ class A2aAgentExecutor(AgentExecutor):
     async def _execute_search(
         self, query: str, target_id: str, updater: TaskUpdater
     ) -> SearchResult:
-        """Execute the search operation with progress updates.
-
-        Arguments:
-            query: User query to search for
-            target_id: ID of the target attraction
-            updater: Task updater for status updates
-
-        Returns:
-            SearchResult containing the response and metadata
-        """
+        """Execute the search operation with progress updates."""
         await updater.update_status(
             TaskState.working,
             new_agent_text_message(
-                text="Finding attraction information...",
+                text="Collecting attraction information...",
                 context_id=updater.context_id,
                 task_id=updater.task_id,
             ),
         )
 
-        # Initialize search components
+        # Initialize search engine
         search = await self._init_search_engine()
 
         await updater.update_status(
@@ -244,16 +237,10 @@ class A2aAgentExecutor(AgentExecutor):
             f"tokens: {result.prompt_tokens + result.output_tokens}, "
             f"time: {result.completion_time:.2f}s"
         )
-
         return result
 
     async def _handle_success(self, result: SearchResult, updater: TaskUpdater) -> None:
-        """Handle successful search result.
-
-        Arguments:
-            result: The search result to process
-            updater: Task updater for status updates
-        """
+        """Handle successful search result."""
         metadata: dict[str, Any] = {
             "completion_time": result.completion_time,
             "llm_calls": result.llm_calls,
@@ -261,22 +248,20 @@ class A2aAgentExecutor(AgentExecutor):
             "output_tokens": result.output_tokens,
         }
 
-        await updater.add_artifact(
-            [Part(root=TextPart(text=str(result.response)))],
-            name="review_summary",
-            metadata=metadata,
-        )
+        if isinstance(result.response, str):
+            parts = [Part(root=TextPart(text=result.response))]
+        elif isinstance(result.response, dict):
+            parts = [Part(root=DataPart(data=result.response))]
+        else:
+            parts = [Part(root=DataPart(data=item)) for item in result.response]
+
+        await updater.add_artifact(parts=parts, metadata=metadata)
         await updater.complete()
         logger.info(f"Task {updater.task_id} completed successfully")
 
     async def _handle_error(self, error: Exception, updater: TaskUpdater) -> None:
-        """Handle execution errors with appropriate logging and user feedback.
+        """Handle execution errors with appropriate logging and user feedback."""
 
-        Arguments:
-            error: The exception that occurred
-            updater: Task updater for status updates
-        """
-        # Format error message - matches original behavior
         error_msg = f"Error processing review summary: {str(error)}"
 
         # Enhanced logging with error categorization for debugging
@@ -291,65 +276,9 @@ class A2aAgentExecutor(AgentExecutor):
         else:
             logger.error(error_msg, exc_info=True)
 
-        # Send failure status with error message (matches original behavior)
+        # Send failure status with error message
         await updater.update_status(
             TaskState.failed,
-            new_agent_text_message(
-                text=error_msg,
-                context_id=updater.context_id,
-                task_id=updater.task_id,
-            ),
-            final=True,
-        )
-
-    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
-        """Execute the review summary agent workflow.
-
-        This method orchestrates the complete process of:
-        1. Validating input
-        2. Initializing components
-        3. Executing search
-        4. Returning results
-
-        Arguments:
-            context: The request context containing user query and metadata
-            event_queue: Event queue for task updates
-        """
-        task = await self._ensure_task(context, event_queue)
-        updater = TaskUpdater(event_queue, task.id, task.context_id)
-
-        try:
-            # Validate and extract input
-            query, target_id = self._validate_context(context)
-
-            # Execute search with progress updates
-            result = await self._execute_search(query, target_id, updater)
-
-            # Handle successful result
-            await self._handle_success(result, updater)
-
-        except Exception as e:
-            # Handle any errors that occur during execution
-            await self._handle_error(e, updater)
-
-    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
-        """Cancel the current task execution.
-
-        Arguments:
-            context: The request context
-            event_queue: Event queue for task updates
-        """
-        task = context.current_task
-        if not task:
-            logger.debug("No active task to cancel")
-            return
-
-        logger.info(f"Cancelling task {task.id}")
-        updater = TaskUpdater(event_queue, task.id, task.context_id)
-        await updater.update_status(
-            TaskState.canceled,
-            new_agent_text_message(
-                "Review summary request cancelled", task.context_id, task.id
-            ),
+            new_agent_text_message(error_msg, updater.context_id, updater.task_id),
             final=True,
         )

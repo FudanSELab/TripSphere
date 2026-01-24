@@ -23,15 +23,13 @@ import { ReviewServiceClient } from "@/lib/grpc/gen/tripsphere/review/review";
 import { UserServiceClient } from "@/lib/grpc/gen/tripsphere/user/user";
 
 // Use environment variables with Docker service names as defaults
-const AttractionUrl =
-  process.env.GRPC_ATTRACTION_URL || "trip-attraction-service:50053";
-const FileUrl = process.env.GRPC_FILE_URL || "trip-file-service:50051";
-const HotelUrl = process.env.GRPC_HOTEL_URL || "trip-hotel-service:50054";
-const ItineraryUrl =
-  process.env.GRPC_ITINERARY_URL || "trip-itinerary-service:50052";
-const NoteUrl = process.env.GRPC_NOTE_URL || "trip-note-service:50055";
-const ReviewUrl = process.env.GRPC_REVIEW_URL || "trip-review-service:50057";
-const UserUrl = process.env.GRPC_USER_URL || "trip-user-service:50056";
+const AttractionUrl = process.env.GRPC_ATTRACTION_URL || "localhost:50053";
+const FileUrl = process.env.GRPC_FILE_URL || "localhost:50051";
+const HotelUrl = process.env.GRPC_HOTEL_URL || "localhost:50054";
+const ItineraryUrl = process.env.GRPC_ITINERARY_URL || "localhost:50052";
+const NoteUrl = process.env.GRPC_NOTE_URL || "localhost:50055";
+const ReviewUrl = process.env.GRPC_REVIEW_URL || "localhost:50057";
+const UserUrl = process.env.GRPC_USER_URL || "localhost:50056";
 
 export class GrpcClient {
   private static instance: GrpcClient;

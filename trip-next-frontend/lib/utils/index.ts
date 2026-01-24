@@ -22,24 +22,6 @@ export function formatDate(
 }
 
 /**
- * Format date time to locale string
- */
-export function formatDateTime(
-  date: string | Date,
-  options?: Intl.DateTimeFormatOptions,
-): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    ...options,
-  });
-}
-
-/**
  * Format relative time (e.g., "2 hours ago")
  */
 export function formatRelativeTime(date: string | Date): string {
@@ -62,14 +44,6 @@ export function formatRelativeTime(date: string | Date): string {
   } else {
     return formatDate(d, { month: "short", day: "numeric" });
   }
-}
-
-/**
- * Truncate text to specified length
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength).trim() + "...";
 }
 
 /**
@@ -113,28 +87,6 @@ export function getInitials(name: string): string {
     .map((part) => part.charAt(0).toUpperCase())
     .slice(0, 2)
     .join("");
-}
-
-/**
- * Debounce function
- */
-export function debounce<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  wait: number,
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-
-  return function (this: unknown, ...args: Parameters<T>) {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-}
-
-/**
- * Sleep for specified milliseconds
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

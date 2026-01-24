@@ -28,9 +28,10 @@ services:
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       mongodb:
-        condition: service_started
+        condition: service_healthy
       nacos:
         condition: service_healthy
     restart: unless-stopped
@@ -53,7 +54,7 @@ services:
       nacos:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   # File Service
@@ -103,7 +104,7 @@ services:
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
     depends_on:
       mongodb:
-        condition: service_started
+        condition: service_healthy
       nacos:
         condition: service_healthy
     restart: unless-stopped
@@ -124,12 +125,6 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "24215"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     restart: unless-stopped
 
   # Itinerary Service
@@ -148,7 +143,7 @@ services:
       nacos:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50052"]
       interval: 30s
@@ -186,12 +181,17 @@ services:
       - "3000:3000"  # HTTP
     environment:
       - NODE_ENV=production
+      - GRPC_ATTRACTION_URL=trip-attraction-service:50053
+      - HTTP_CHAT_URL=http://trip-chat-service:24210
+      - HTTP_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215
       - GRPC_USER_URL=trip-user-service:50056
     depends_on:
       trip-chat-service:
-        condition: service_healthy
+        condition: service_started
+      trip-itinerary-planner:
+        condition: service_started
       trip-user-service:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   # Note Service
@@ -500,6 +500,12 @@ services:
       - "27017:27017"
     volumes:
       - ./volumes/mongodb:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # MySQL
   mysql:

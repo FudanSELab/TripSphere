@@ -65,7 +65,7 @@ def _check_conversation_access(
     return conversation
 
 
-@messages.post(":send")
+@messages.post("/send")
 async def send_message(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)
@@ -118,7 +118,7 @@ async def _stream_events(
             yield encode(data=data, event_id=event.id, comment="google-adk event")
 
 
-@messages.post(":stream")
+@messages.post("/stream")
 async def stream_message(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)
