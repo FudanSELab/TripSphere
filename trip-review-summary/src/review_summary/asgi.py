@@ -19,7 +19,6 @@ from review_summary.agent.card import agent_card
 from review_summary.agent.executor import A2aAgentExecutor
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
-from review_summary.config.telemetry import instrument_fastapi, setup_telemetry
 from review_summary.infra.nacos.ai import NacosAI
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.nacos.utils import client_shutdown
@@ -29,10 +28,6 @@ from review_summary.routers.summaries import summaries
 logger = logging.getLogger(__name__)
 
 setup_logging()
-
-# Initialize OpenTelemetry auto-instrumentation
-# This should be done early, before creating the FastAPI app
-setup_telemetry(service_name="trip-review-summary")
 
 
 @asynccontextmanager
@@ -130,11 +125,6 @@ def create_fastapi_app() -> FastAPI:
     # Include routers
     app.include_router(indices, prefix="/api/v1")
     app.include_router(summaries, prefix="/api/v1")
-
-    # Instrument FastAPI for automatic tracing
-    # This enables auto-extraction of trace context from HTTP headers
-    instrument_fastapi(app)
-
     return app
 
 

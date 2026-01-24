@@ -9,7 +9,6 @@ from pymongo import AsyncMongoClient
 
 from chat.config.logging import setup_logging
 from chat.config.settings import get_settings
-from chat.config.telemetry import instrument_fastapi, setup_telemetry
 from chat.infra.nacos.ai import NacosAI
 from chat.infra.nacos.naming import NacosNaming
 from chat.infra.nacos.utils import client_shutdown
@@ -20,10 +19,6 @@ from chat.routers.message import messages
 logger = logging.getLogger(__name__)
 
 setup_logging()
-
-# Initialize OpenTelemetry auto-instrumentation
-# This should be done early, before creating the FastAPI app
-setup_telemetry(service_name="trip-chat-service")
 
 
 @asynccontextmanager
@@ -77,11 +72,6 @@ def create_app() -> FastAPI:
     app.include_router(conversations, prefix="/api/v1")
     app.include_router(memories, prefix="/api/v1")
     app.include_router(messages, prefix="/api/v1")
-
-    # Instrument FastAPI for automatic tracing
-    # This enables auto-extraction of trace context from HTTP headers
-    instrument_fastapi(app)
-
     return app
 
 

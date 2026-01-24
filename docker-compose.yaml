@@ -11,6 +11,10 @@ configs:
       log_level: INFO
 
 services:
+  # ===================================================================
+  # TripSphere Services & Agents
+  # ===================================================================
+
   # Attraction Service
   trip-attraction-service:
     build:
@@ -356,6 +360,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ===================================================================
+  # TripSphere Middlewares & Databases
+  # ===================================================================
+
   # Nacos
   nacos:
     image: nacos/nacos-server:v3.1.1
@@ -395,7 +403,7 @@ services:
       tempo:
         condition: service_started
 
-  # Tempo - Distributed Tracing Backend
+  # Tempo
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
@@ -409,7 +417,7 @@ services:
       - "4317"       # OTLP gRPC receiver (internal only)
     restart: unless-stopped
 
-  # Grafana - Observability Dashboard
+  # Grafana
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -421,7 +429,7 @@ services:
       - ./grafana/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - ./volumes/grafana:/var/lib/grafana
     ports:
-      - "3001:3000"  # Use port 3001 to avoid conflict with frontend
+      - "13000:3000"  # Use port 13000 to avoid conflict with frontend
     depends_on:
       tempo:
         condition: service_started
