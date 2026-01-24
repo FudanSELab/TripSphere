@@ -78,7 +78,8 @@ async def plan_itinerary(request: PlanItineraryRequest) -> Itinerary:
         return itinerary
     except Exception as e:
         logger.exception(f"Error planning itinerary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 async def _stream_events(request: PlanItineraryRequest) -> AsyncGenerator[str, None]:
     initial_state = request.initial_state()

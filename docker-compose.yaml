@@ -11,6 +11,10 @@ configs:
       log_level: INFO
 
 services:
+  # ===================================================================
+  # TripSphere Services & Agents
+  # ===================================================================
+
   # Attraction Service
   trip-attraction-service:
     build:
@@ -281,6 +285,7 @@ services:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-consumer
     environment:
+      - OTEL_SERVICE_NAME=trip-review-summary-consumer
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - ROCKETMQ_ENDPOINTS=rmq-proxy:8081
@@ -303,6 +308,7 @@ services:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-worker
     environment:
+      - OTEL_SERVICE_NAME=trip-review-summary-worker
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
@@ -356,6 +362,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ===================================================================
+  # TripSphere Middlewares & Databases
+  # ===================================================================
+
   # Nacos
   nacos:
     image: nacos/nacos-server:v3.1.1
@@ -391,6 +401,41 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+    depends_on:
+      tempo:
+        condition: service_started
+
+  # Tempo
+  tempo:
+    image: grafana/tempo:2.8.3
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    user: root  # r/w permissions to the mounted directory
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - ./volumes/tempo:/var/tempo
+    ports:
+      - "3200:3200"  # Tempo HTTP API
+      - "4317"       # OTLP gRPC receiver (internal only)
+    restart: unless-stopped
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: grafana
+    user: root  # r/w permissions to the mounted directory
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./volumes/grafana:/var/lib/grafana
+    ports:
+      - "13000:3000"  # Use port 13000 to avoid conflict with frontend
+    depends_on:
+      tempo:
+        condition: service_started
+    restart: unless-stopped
 
   # RocketMQ Name Server
   rmq-namesrv:
