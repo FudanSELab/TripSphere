@@ -1,6 +1,6 @@
 "use client";
 
-import { ReviewForm } from "@/components/reviews/review-form";
+import { ReviewForm } from "@/components/review-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAttractions } from "@/hooks/use-attractions";

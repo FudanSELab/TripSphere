@@ -1,12 +1,17 @@
 "use client";
 
-import { ChatWindow } from "@/components/chat/chat-window";
+import { ChatWindow } from "@/components/chat-window";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -16,8 +21,11 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/hooks/use-chat";
 import type { Conversation } from "@/lib/types";
-import { Clock, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+// Header height is h-16 = 4rem = 64px
+const HEADER_HEIGHT = "4rem";
 
 export default function ChatPage() {
   const auth = useAuth();
@@ -58,11 +66,7 @@ export default function ChatPage() {
     setSelectedConversation(conversation);
   };
 
-  const deleteConversation = async (
-    conversation: Conversation,
-    e: React.MouseEvent,
-  ) => {
-    e.stopPropagation();
+  const deleteConversation = async (conversation: Conversation) => {
     if (!auth.user) return;
 
     const success = await chat.deleteConversation(
@@ -85,7 +89,7 @@ export default function ChatPage() {
 
   if (!auth.user) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <div className="text-center">
           <MessageSquare className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
           <h2 className="text-foreground mb-2 text-xl font-semibold">
@@ -100,8 +104,15 @@ export default function ChatPage() {
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
+    <SidebarProvider
+      style={
+        {
+          "--header-height": HEADER_HEIGHT,
+        } as React.CSSProperties
+      }
+      className="!min-h-[calc(100vh-var(--header-height))]"
+    >
+      <Sidebar className="!top-[var(--header-height)] !h-[calc(100vh-var(--header-height))]">
         <SidebarHeader className="border-sidebar-border border-b p-4">
           <Button className="w-full justify-center" onClick={createNewChat}>
             <Plus className="mr-2 h-4 w-4" />
@@ -120,26 +131,27 @@ export default function ChatPage() {
                       conversation.conversationId
                     }
                     onClick={() => selectConversation(conversation)}
-                    className="h-auto py-3"
                   >
-                    <MessageSquare className="h-5 w-5 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {conversation.title || "New Chat"}
-                      </p>
-                      <p className="mt-1 flex items-center gap-1 text-xs opacity-70">
-                        <Clock className="h-3 w-3" />
-                        {conversation.createdAt}
-                      </p>
-                    </div>
+                    <p className="truncate">
+                      {conversation.title || "New Chat"}
+                    </p>
                   </SidebarMenuButton>
-                  <SidebarMenuAction
-                    onClick={(e) => deleteConversation(conversation, e)}
-                    className="text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive"
-                    showOnHover
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </SidebarMenuAction>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <SidebarMenuAction showOnHover>
+                        <MoreHorizontal />
+                      </SidebarMenuAction>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="right" align="start">
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => deleteConversation(conversation)}
+                      >
+                        <Trash2 />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -157,13 +169,13 @@ export default function ChatPage() {
         </SidebarContent>
       </Sidebar>
 
-      <SidebarInset>
+      <main className="flex h-[calc(100vh-var(--header-height))] flex-1 flex-col overflow-hidden">
         <ChatWindow
           conversation={selectedConversation}
           fullScreen={true}
           onConversationCreated={handleConversationCreated}
         />
-      </SidebarInset>
+      </main>
     </SidebarProvider>
   );
 }

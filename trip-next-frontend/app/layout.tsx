@@ -1,4 +1,4 @@
-import { ChatSidebar } from "@/components/chat/chat-sidebar";
+import { ChatSidebar } from "@/components/chat-sidebar";
 import { ConditionalFooter } from "@/components/layout/conditional-footer";
 import { Header } from "@/components/layout/header";
 import { AuthProvider } from "@/components/providers/auth-provider";

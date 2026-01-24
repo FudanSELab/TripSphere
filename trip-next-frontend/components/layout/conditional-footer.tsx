@@ -7,7 +7,7 @@ export function ConditionalFooter() {
   const pathname = usePathname();
 
   // These pages do not display Footer
-  const hiddenFooterPaths = ["/chat", "/login", "/register"];
+  const hiddenFooterPaths = ["/chat", "/login", "/signup"];
 
   // Check if pathname is a subpath of hiddenFooterPaths
   const shouldHideFooter = hiddenFooterPaths.includes(pathname);

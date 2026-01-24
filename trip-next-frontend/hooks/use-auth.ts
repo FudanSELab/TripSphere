@@ -4,7 +4,7 @@ import {
   getCurrentUser as getCurrentUserApi,
   login as loginApi,
   logout as logoutApi,
-  register as registerApi,
+  signup as registerApi,
 } from "@/lib/requests/user/user";
 import type { LoginRequest, RegisterRequest, User } from "@/lib/types";
 import { create } from "zustand";

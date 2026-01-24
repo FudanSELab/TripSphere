@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -22,14 +23,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
   const auth = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
   // Username validation: allows letters, numbers, and underscores
   const validateUsername = (value: string): string => {
@@ -77,27 +81,59 @@ export default function LoginPage() {
     setPasswordError(validatePassword(password));
   };
 
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setConfirmPassword(value);
+    if (confirmPasswordError && password) {
+      setConfirmPasswordError(
+        value !== password ? "Passwords do not match" : "",
+      );
+    }
+  };
+
+  const handleConfirmPasswordBlur = () => {
+    if (confirmPassword && password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+    } else {
+      setConfirmPasswordError("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validate username and password
+    // Validate username
     const usernameErr = validateUsername(username);
-    const passwordErr = validatePassword(password);
-
-    setUsernameError(usernameErr);
-    setPasswordError(passwordErr);
-
-    // If validation errors exist, do not proceed with login
-    if (usernameErr || passwordErr) {
+    if (usernameErr) {
+      setUsernameError(usernameErr);
       return;
     }
 
-    const success = await auth.login({ username, password });
+    // Validate password
+    const passwordErr = validatePassword(password);
+    if (passwordErr) {
+      setPasswordError(passwordErr);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+      return;
+    }
+
+    if (!agreed) {
+      setError("Please agree to the Terms of Service and Privacy Policy");
+      return;
+    }
+
+    const success = await auth.register({ username, password });
     if (success) {
-      router.push("/");
+      router.push("/login");
     } else {
-      setError(auth.error || "Login failed. Please try again.");
+      setError(auth.error || "Registration failed. Please try again.");
     }
   };
 
@@ -109,9 +145,9 @@ export default function LoginPage() {
             <div className="bg-primary text-primary-foreground mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-bold">
               T
             </div>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl">Create Account</CardTitle>
             <CardDescription>
-              Sign in to your TripSphere account
+              Join TripSphere and start planning your perfect trip
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -132,7 +168,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={handleUsernameChange}
                     onBlur={handleUsernameBlur}
-                    placeholder="Enter your username"
+                    placeholder="Choose a username"
                     required
                     aria-invalid={!!usernameError}
                   />
@@ -140,31 +176,86 @@ export default function LoginPage() {
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={handlePasswordChange}
-                    onBlur={handlePasswordBlur}
-                    placeholder="Enter your password"
-                    required
-                    aria-invalid={!!passwordError}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <FieldLabel htmlFor="password">Password</FieldLabel>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        onBlur={handlePasswordBlur}
+                        placeholder="Create password"
+                        required
+                        aria-invalid={!!passwordError}
+                      />
+                      {passwordError && (
+                        <FieldError>{passwordError}</FieldError>
+                      )}
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="confirm-password">
+                        Confirm
+                      </FieldLabel>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={handleConfirmPasswordChange}
+                        onBlur={handleConfirmPasswordBlur}
+                        placeholder="Confirm password"
+                        required
+                        aria-invalid={!!confirmPasswordError}
+                      />
+                      {confirmPasswordError && (
+                        <FieldError>{confirmPasswordError}</FieldError>
+                      )}
+                    </Field>
+                  </div>
+                  <FieldDescription>
+                    Must be at least 6 characters, letters and numbers only.
+                  </FieldDescription>
+                </Field>
+
+                <Field orientation="horizontal" className="!items-start">
+                  <Checkbox
+                    id="terms"
+                    checked={agreed}
+                    onCheckedChange={(checked) => setAgreed(checked === true)}
+                    className="mt-1"
                   />
-                  {passwordError && <FieldError>{passwordError}</FieldError>}
+                  <FieldLabel
+                    htmlFor="terms"
+                    className="cursor-pointer text-sm leading-normal font-normal"
+                  >
+                    I agree to the{" "}
+                    <Link
+                      href="/terms"
+                      className="text-primary hover:text-primary/80 underline-offset-4 hover:underline"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      className="text-primary hover:text-primary/80 underline-offset-4 hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </FieldLabel>
                 </Field>
 
                 <Field>
                   <Button type="submit" className="w-full" size="lg">
-                    Sign In
+                    Create Account
                   </Button>
                   <FieldDescription className="text-center">
-                    Don&apos;t have an account?{" "}
+                    Already have an account?{" "}
                     <Link
-                      href="/signup"
+                      href="/login"
                       className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
                     >
-                      Sign up for free
+                      Sign in
                     </Link>
                   </FieldDescription>
                 </Field>

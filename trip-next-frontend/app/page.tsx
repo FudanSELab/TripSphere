@@ -143,7 +143,7 @@ export default function Home() {
             <div className="text-center lg:text-left">
               <span className="bg-primary/10 text-primary mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
-                AI-Powered Travel Platform
+                AI-Native Travel Platform
               </span>
               <h1 className="text-foreground mb-6 text-4xl leading-tight font-bold sm:text-5xl lg:text-6xl">
                 Your Journey Starts with
@@ -175,9 +175,7 @@ export default function Home() {
             {/* Right content - Placeholder for chat preview */}
             <div className="relative hidden lg:block">
               <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-2xl" />
-              <div className="relative">
-                
-              </div>
+              <div className="relative"></div>
             </div>
           </div>
         </div>
@@ -313,7 +311,7 @@ export default function Home() {
               Chat with AI Assistant
             </Link>
             <Link
-              href="/register"
+              href="/signup"
               className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 inline-flex items-center gap-2 rounded-xl border px-8 py-4 text-lg font-semibold transition-all duration-300"
             >
               Create Free Account

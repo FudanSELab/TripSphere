@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Routes that should redirect to home if user is already authenticated
-const guestOnlyRoutes = ["/login", "/register"];
+const guestOnlyRoutes = ["/login", "/signup"];
 
 // Routes that require authentication (redirect to login if not authenticated)
 // Add routes here as needed, e.g., ["/profile", "/settings", "/my-trips"]
 const protectedRoutes: string[] = [];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("token")?.value;
 

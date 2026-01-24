@@ -208,7 +208,7 @@ export function ChatWindow({
     <div
       className={
         fullScreen
-          ? "bg-background flex h-screen flex-col"
+          ? "bg-background flex h-full flex-col"
           : "border-border bg-background flex h-150 flex-col rounded-2xl border shadow-lg"
       }
     >

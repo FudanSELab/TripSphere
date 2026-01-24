@@ -6,7 +6,7 @@ import type {
   User,
 } from "@/lib/types";
 
-export async function register(data: RegisterRequest) {
+export async function signup(data: RegisterRequest) {
   return post<{ message?: string }>("/api/v1/users/register", data);
 }
 

@@ -12,7 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Generated gRPC files
+    // Generated protobuf and gRPC codes
     "lib/grpc/gen/**",
   ]),
 ]);

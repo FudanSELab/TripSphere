@@ -130,7 +130,7 @@ export function Header() {
                   Login
                 </Link>
                 <Link
-                  href="/register"
+                  href="/signup"
                   className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
                 >
                   Sign Up
