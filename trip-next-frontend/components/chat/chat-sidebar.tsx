@@ -1,14 +1,15 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useChat } from "@/lib/hooks/use-chat";
-import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
+import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/hooks/use-chat";
+import { useChatSidebar } from "@/hooks/use-chat-sidebar";
 import type { ChatContext, Conversation, Message } from "@/lib/types";
-import { cn, generateId } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Send, Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { v7 as uuidv7 } from "uuid";
 import { ChatMessage } from "./chat-message";
 
 interface ChatSidebarProps {
@@ -169,7 +170,7 @@ export function ChatSidebar({
 
     // Add user message locally
     const userMessage: Message = {
-      id: generateId(),
+      id: uuidv7(),
       conversationId: conversation.conversationId,
       role: "user",
       content,
@@ -215,7 +216,7 @@ export function ChatSidebar({
           setMessages((prev) => [
             ...prev,
             {
-              id: generateId(),
+              id: uuidv7(),
               conversationId: conversation.conversationId,
               role: "assistant",
               content: "Sorry, I encountered an error. Please try again.",
@@ -229,7 +230,7 @@ export function ChatSidebar({
       setMessages((prev) => [
         ...prev,
         {
-          id: generateId(),
+          id: uuidv7(),
           conversationId: conversation.conversationId,
           role: "assistant",
           content: "Sorry, I encountered an error. Please try again.",
@@ -311,23 +312,25 @@ export function ChatSidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-16 right-0 bottom-0 z-40 flex w-full flex-col border-l border-gray-200 bg-white shadow-2xl transition-transform duration-300 ease-out sm:w-100 lg:w-105",
+          "border-border bg-background fixed top-16 right-0 bottom-0 z-40 flex w-full flex-col border-l shadow-2xl transition-transform duration-300 ease-out sm:w-100 lg:w-105",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
-        <div className="from-primary-50 to-secondary-50 flex shrink-0 items-center justify-between border-b border-gray-100 bg-linear-to-r px-4 py-3">
+        <div className="border-border bg-muted flex shrink-0 items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="from-primary-500 to-secondary-500 flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br">
-              <Sparkles className="h-4 w-4 text-white" />
+            <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+              <Sparkles className="text-primary-foreground h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-              <p className="text-xs text-gray-500">AI Travel Assistant</p>
+              <h2 className="text-foreground text-sm font-semibold">{title}</h2>
+              <p className="text-muted-foreground text-xs">
+                AI Travel Assistant
+              </p>
             </div>
           </div>
           <button
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
             onClick={handleClose}
           >
             <X className="h-5 w-5" />
@@ -342,10 +345,10 @@ export function ChatSidebar({
           {/* Empty state */}
           {messages.length === 0 && !isStreaming && (
             <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-              <div className="from-primary-100 to-secondary-100 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br">
-                <Sparkles className="text-primary-600 h-8 w-8" />
+              <div className="bg-primary/10 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl">
+                <Sparkles className="text-primary h-8 w-8" />
               </div>
-              <p className="mb-4 text-sm text-gray-500">
+              <p className="text-muted-foreground mb-4 text-sm">
                 Ask me anything about this attraction or the reviews!
               </p>
 
@@ -354,7 +357,7 @@ export function ChatSidebar({
                 {quickPrompts.map((prompt) => (
                   <button
                     key={prompt}
-                    className="rounded-full bg-gray-100 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-200"
+                    className="bg-muted text-foreground hover:bg-muted/80 rounded-full px-3 py-1.5 text-xs transition-colors"
                     onClick={() => handleQuickPrompt(prompt)}
                   >
                     {prompt}
@@ -386,12 +389,12 @@ export function ChatSidebar({
 
         {/* Quick prompts when conversation is active */}
         {messages.length > 0 && (
-          <div className="shrink-0 border-t border-gray-100 bg-gray-50 px-4 py-2">
+          <div className="border-border bg-muted shrink-0 border-t px-4 py-2">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {quickPrompts.map((prompt) => (
                 <button
                   key={prompt}
-                  className="hover:border-primary-300 hover:bg-primary-50 shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 transition-colors"
+                  className="border-border bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/5 shrink-0 rounded-full border px-3 py-1 text-xs transition-colors"
                   onClick={() => handleQuickPrompt(prompt)}
                 >
                   {prompt}
@@ -402,7 +405,7 @@ export function ChatSidebar({
         )}
 
         {/* Input area */}
-        <div className="shrink-0 border-t border-gray-100 bg-white p-4">
+        <div className="border-border bg-background shrink-0 border-t p-4">
           <div className="flex items-end gap-3">
             <textarea
               ref={inputRef}
@@ -413,13 +416,12 @@ export function ChatSidebar({
               }}
               onKeyDown={handleKeydown}
               placeholder="Type your question..."
-              className="focus:ring-primary-500 scrollbar-hide flex-1 resize-none overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition-all focus:border-transparent focus:ring-2 focus:outline-none"
+              className="scrollbar-hide border-input bg-muted focus:ring-ring flex-1 resize-none overflow-y-auto rounded-xl border px-4 py-3 text-sm transition-all focus:border-transparent focus:ring-2 focus:outline-none"
               rows={1}
               disabled={isStreaming}
             />
             <Button
               disabled={!inputMessage.trim() || isStreaming}
-              loading={isStreaming}
               className="h-11.5 w-11.5 shrink-0 p-0!"
               onClick={sendMessage}
             >

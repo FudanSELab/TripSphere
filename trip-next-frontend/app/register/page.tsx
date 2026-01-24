@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { AlertCircle, Lock, User } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -87,99 +87,85 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="from-primary-50 to-secondary-50 flex min-h-screen items-center justify-center bg-linear-to-br via-white px-4 py-12 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md" padding="lg">
+    <div className="from-primary/5 to-secondary/5 via-background flex min-h-screen items-center justify-center bg-linear-to-br px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="from-primary-500 to-secondary-500 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br text-2xl font-bold text-white">
+          <div className="bg-primary text-primary-foreground mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-bold">
             T
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
-          <p className="mt-2 text-gray-600">
+          <h2 className="text-foreground text-3xl font-bold">Create Account</h2>
+          <p className="text-muted-foreground mt-2">
             Join TripSphere and start planning your perfect trip
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <div className="border-destructive/20 bg-destructive/10 text-destructive flex items-center gap-2 rounded-lg border p-4 text-sm">
               <AlertCircle className="h-5 w-5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <Input
-            label="Username"
             type="text"
             value={username}
             onChange={handleUsernameChange}
             placeholder="Choose a username"
-            prepend={<User className="h-5 w-5" />}
-            error={usernameError}
             required
           />
 
           <Input
-            label="Password"
             type="password"
             value={password}
             onChange={handlePasswordChange}
             placeholder="Create a password"
-            prepend={<Lock className="h-5 w-5" />}
-            error={passwordError}
-            hint={!passwordError ? "Must be at least 6 characters" : undefined}
             required
           />
 
           <Input
-            label="Confirm Password"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm your password"
-            prepend={<Lock className="h-5 w-5" />}
             required
           />
 
           <div className="flex items-start">
             <input
               type="checkbox"
-              className="text-primary-600 focus:ring-primary-500 mt-1 h-4 w-4 rounded border-gray-300"
+              className="border-border text-primary focus:ring-primary mt-1 h-4 w-4 rounded"
               required
             />
-            <label className="ml-2 text-sm text-gray-600">
+            <label className="text-muted-foreground ml-2 text-sm">
               I agree to the{" "}
               <Link
                 href="/terms"
-                className="text-primary-600 hover:text-primary-700"
+                className="text-primary hover:text-primary/80"
               >
                 Terms of Service
               </Link>{" "}
               and{" "}
               <Link
                 href="/privacy"
-                className="text-primary-600 hover:text-primary-700"
+                className="text-primary hover:text-primary/80"
               >
                 Privacy Policy
               </Link>
             </label>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            loading={auth.isLoading}
-          >
+          <Button type="submit" className="w-full" size="lg">
             Create Account
           </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-muted-foreground text-sm">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-primary hover:text-primary/80 font-medium"
             >
               Sign in
             </Link>

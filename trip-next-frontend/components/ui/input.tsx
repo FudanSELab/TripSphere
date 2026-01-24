@@ -1,60 +1,21 @@
-import { cn } from "@/lib/utils";
 import * as React from "react";
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  error?: string;
-  label?: string;
-  hint?: string;
-  prepend?: React.ReactNode;
-  append?: React.ReactNode;
-}
+import { cn } from "@/lib/utils";
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, label, hint, prepend, append, ...props }, ref) => {
-    return (
-      <div className="w-full">
-        {label && (
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          {prepend && (
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-              {prepend}
-            </div>
-          )}
-          <input
-            type={type}
-            className={cn(
-              "w-full rounded-lg border bg-white px-4 py-2.5 text-gray-900 transition-all duration-200",
-              "placeholder:text-gray-400",
-              "focus:ring-primary-500 focus:border-transparent focus:ring-2 focus:outline-none",
-              "disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500",
-              error
-                ? "border-red-500 focus:ring-red-500"
-                : "border-gray-200 hover:border-gray-300",
-              prepend && "pl-10",
-              append && "pr-10",
-              className,
-            )}
-            ref={ref}
-            {...props}
-          />
-          {append && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-              {append}
-            </div>
-          )}
-        </div>
-        {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
-        {hint && !error && (
-          <p className="mt-1.5 text-sm text-gray-500">{hint}</p>
-        )}
-      </div>
-    );
-  },
-);
-Input.displayName = "Input";
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
 
 export { Input };

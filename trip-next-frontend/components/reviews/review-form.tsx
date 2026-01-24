@@ -144,22 +144,22 @@ export function ReviewForm({
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
-      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+    <div className="border-border bg-muted rounded-lg border p-6">
+      <h3 className="text-foreground mb-4 text-lg font-semibold">
         {existingReview ? "Edit Your Review" : "Write a Review"}
       </h3>
 
       {/* Error message */}
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+        <div className="border-destructive/20 bg-destructive/10 text-destructive mb-4 rounded-lg border p-3 text-sm">
           {error}
         </div>
       )}
 
       {/* Rating */}
       <div className="mb-4">
-        <label className="mb-2 block text-sm font-medium text-gray-700">
-          Rating <span className="text-red-500">*</span>
+        <label className="text-foreground mb-2 block text-sm font-medium">
+          Rating <span className="text-destructive">*</span>
         </label>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -168,8 +168,8 @@ export function ReviewForm({
               type="button"
               className={`transition-colors ${
                 isStarFilled(i - 1)
-                  ? "text-amber-400"
-                  : "text-gray-300 hover:text-amber-300"
+                  ? "text-chart-4"
+                  : "text-muted-foreground/30 hover:text-chart-4/50"
               }`}
               onClick={() => setRating(i)}
             >
@@ -179,7 +179,7 @@ export function ReviewForm({
             </button>
           ))}
         </div>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="text-muted-foreground mt-1 text-xs">
           {rating === 0
             ? "Select a rating"
             : rating <= 2
@@ -194,8 +194,8 @@ export function ReviewForm({
 
       {/* Text content */}
       <div className="mb-4">
-        <label className="mb-2 block text-sm font-medium text-gray-700">
-          Your Review <span className="text-red-500">*</span>
+        <label className="text-foreground mb-2 block text-sm font-medium">
+          Your Review <span className="text-destructive">*</span>
         </label>
         <textarea
           value={text}
@@ -203,16 +203,16 @@ export function ReviewForm({
           rows={6}
           maxLength={MAX_TEXT_LENGTH}
           placeholder="Share your experience at this attraction..."
-          className="focus:ring-primary-500 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2"
+          className="border-input focus:ring-ring w-full resize-none rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2"
         />
-        <p className="mt-1 text-right text-xs text-gray-500">
+        <p className="text-muted-foreground mt-1 text-right text-xs">
           {text.length} / {MAX_TEXT_LENGTH} characters
         </p>
       </div>
 
       {/* Images */}
       <div className="mb-6">
-        <label className="mb-2 block text-sm font-medium text-gray-700">
+        <label className="text-foreground mb-2 block text-sm font-medium">
           Photos (Optional)
         </label>
 
@@ -231,7 +231,7 @@ export function ReviewForm({
                 />
                 <button
                   type="button"
-                  className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  className="bg-destructive text-destructive-foreground absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100"
                   onClick={() => removeImage(index)}
                 >
                   <X className="h-4 w-4" />
@@ -253,12 +253,12 @@ export function ReviewForm({
             />
             <label
               htmlFor={`image-upload-${attractionId}`}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+              className="border-input bg-background text-foreground hover:bg-muted inline-flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 transition-colors"
             >
               <Upload className="h-4 w-4" />
               Add Photos
             </label>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="text-muted-foreground mt-1 text-xs">
               {images.length} / {MAX_IMAGES} photos uploaded
             </p>
           </div>

@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { useAttractions } from "@/lib/hooks/use-attractions";
+import { useAttractions } from "@/hooks/use-attractions";
 import type { Attraction } from "@/lib/types";
 import { Clock, MapPin, Star, Ticket } from "lucide-react";
 import Image from "next/image";
@@ -36,15 +36,15 @@ export default function AttractionsPage() {
     loadAttractions();
   }, []);
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-muted min-h-screen">
       {/* Hero Section */}
-      <section className="from-primary-600 to-secondary-600 bg-linear-to-br pt-32 pb-16 text-white">
+      <section className="bg-primary text-primary-foreground pt-16 pb-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
               Discover Amazing Attractions
             </h1>
-            <p className="mx-auto max-w-2xl text-xl text-white/90">
+            <p className="text-primary-foreground/90 mx-auto max-w-2xl text-xl">
               Explore thousands of must-see destinations around the world with
               personalized recommendations
             </p>
@@ -56,21 +56,21 @@ export default function AttractionsPage() {
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-foreground text-2xl font-bold">
               Popular Attractions
             </h2>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {attractions.length} attractions found
             </p>
           </div>
 
           {loading ? (
             <div className="py-12 text-center">
-              <p className="text-gray-500">Loading attractions...</p>
+              <p className="text-muted-foreground">Loading attractions...</p>
             </div>
           ) : attractions.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 No attractions found in this area. Try adjusting the search
                 radius or location.
               </p>
@@ -82,12 +82,7 @@ export default function AttractionsPage() {
                   key={attraction.id}
                   href={`/attractions/${attraction.id}`}
                 >
-                  <Card
-                    hover
-                    clickable
-                    padding="none"
-                    className="h-full overflow-hidden"
-                  >
+                  <Card className="h-full overflow-hidden">
                     <div className="relative h-48">
                       {attraction.images && attraction.images.length > 0 ? (
                         <Image
@@ -98,16 +93,16 @@ export default function AttractionsPage() {
                           unoptimized
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center bg-gray-200">
-                          <MapPin className="h-12 w-12 text-gray-400" />
+                        <div className="bg-muted flex h-full items-center justify-center">
+                          <MapPin className="text-muted-foreground h-12 w-12" />
                         </div>
                       )}
                       <div className="absolute top-4 right-4">
                         <Badge
                           variant="default"
-                          className="bg-white text-gray-900 shadow-lg"
+                          className="bg-background text-foreground shadow-lg"
                         >
-                          <Star className="mr-1 h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <Star className="fill-chart-4 text-chart-4 mr-1 h-3 w-3" />
                           {attraction.rating?.toFixed(1)}
                         </Badge>
                       </div>
@@ -116,10 +111,10 @@ export default function AttractionsPage() {
                     <div className="p-5">
                       <div className="mb-2 flex items-start justify-between">
                         <div>
-                          <h3 className="mb-1 text-xl font-semibold text-gray-900">
+                          <h3 className="text-foreground mb-1 text-xl font-semibold">
                             {attraction.name}
                           </h3>
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <div className="text-muted-foreground flex items-center gap-1 text-sm">
                             <MapPin className="h-4 w-4" />
                             {attraction.address.city},{" "}
                             {attraction.address.country}
@@ -127,7 +122,7 @@ export default function AttractionsPage() {
                         </div>
                       </div>
 
-                      <p className="mb-4 line-clamp-2 text-sm text-gray-600">
+                      <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">
                         {attraction.description}
                       </p>
 
@@ -137,7 +132,6 @@ export default function AttractionsPage() {
                             <Badge
                               key={`${attraction.id}-tag-${index}`}
                               variant="secondary"
-                              size="sm"
                             >
                               {tag}
                             </Badge>
@@ -145,7 +139,7 @@ export default function AttractionsPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center gap-4 border-t border-gray-100 pt-4 text-sm text-gray-500">
+                      <div className="border-border text-muted-foreground flex items-center gap-4 border-t pt-4 text-sm">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
                           <span className="line-clamp-1">

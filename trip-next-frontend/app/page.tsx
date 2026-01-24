@@ -52,42 +52,36 @@ const features = [
     title: "Discover Attractions",
     description:
       "Explore thousands of attractions with AI-powered recommendations tailored to your interests.",
-    color: "from-rose-500 to-orange-500",
   },
   {
     icon: Hotel,
     title: "Find Perfect Hotels",
     description:
       "Get personalized hotel recommendations based on your preferences, budget, and travel style.",
-    color: "from-blue-500 to-cyan-500",
   },
   {
     icon: Calendar,
     title: "Smart Itinerary Planning",
     description:
       "Let our AI create optimized travel itineraries with intelligent route planning.",
-    color: "from-green-500 to-emerald-500",
   },
   {
     icon: MessageSquare,
     title: "AI Travel Assistant",
     description:
       "Chat with our intelligent assistant for travel advice, recommendations, and planning help.",
-    color: "from-purple-500 to-pink-500",
   },
   {
     icon: FileText,
     title: "Travel Notes",
     description:
       "Create and share beautiful travel stories with our integrated note-taking system.",
-    color: "from-amber-500 to-yellow-500",
   },
   {
     icon: Sparkles,
     title: "AI-Powered Reviews",
     description:
       "Get intelligent summaries of reviews to make informed decisions quickly.",
-    color: "from-indigo-500 to-violet-500",
   },
 ];
 
@@ -133,30 +127,30 @@ export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative flex h-screen items-center overflow-hidden bg-white">
+      <section className="bg-background relative flex items-center overflow-hidden">
         {/* Background gradient */}
-        <div className="from-primary-50 to-secondary-50 absolute inset-0 bg-linear-to-br via-white" />
+        <div className="from-primary/5 to-secondary/5 via-background absolute inset-0 bg-linear-to-br" />
 
         {/* Background shapes */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="bg-primary-200 absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
-          <div className="bg-secondary-200 absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
-          <div className="bg-accent-200 absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 mix-blend-multiply blur-3xl filter" />
+          <div className="bg-primary/20 absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
+          <div className="bg-secondary/20 absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-50 mix-blend-multiply blur-3xl filter" />
+          <div className="bg-accent/20 absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 mix-blend-multiply blur-3xl filter" />
         </div>
 
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-32">
           <div className="grid items-center gap-16 lg:grid-cols-[450px_1fr]">
             {/* Left content */}
             <div className="text-center lg:text-left">
-              <span className="bg-primary-100 text-primary-700 mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
+              <span className="bg-primary/10 text-primary mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
                 AI-Powered Travel Platform
               </span>
-              <h1 className="mb-6 text-4xl leading-tight font-bold text-gray-900 sm:text-5xl lg:text-6xl">
+              <h1 className="text-foreground mb-6 text-4xl leading-tight font-bold sm:text-5xl lg:text-6xl">
                 Your Journey Starts with
                 <span className="gradient-text block">TripSphere</span>
               </h1>
-              <p className="mx-auto mb-8 max-w-md text-xl text-gray-600 lg:mx-0">
+              <p className="text-muted-foreground mx-auto mb-8 max-w-md text-xl lg:mx-0">
                 Experience the future of travel planning with our intelligent AI
                 assistant. Discover attractions, find hotels, and create
                 unforgettable memories.
@@ -164,14 +158,14 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
                 <Link
                   href="/chat"
-                  className="from-primary-600 to-secondary-600 inline-flex items-center gap-2 rounded-xl bg-linear-to-r px-8 py-4 text-lg font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 >
                   <MessageSquare className="h-5 w-5" />
                   Start Planning
                 </Link>
                 <Link
                   href="/attractions"
-                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-4 text-lg font-semibold text-gray-700 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  className="border-border bg-background text-foreground inline-flex items-center gap-2 rounded-xl border px-8 py-4 text-lg font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 >
                   Explore
                   <ArrowRight className="h-5 w-5" />
@@ -181,7 +175,7 @@ export default function Home() {
 
             {/* Right content - Placeholder for chat preview */}
             <div className="relative hidden lg:block">
-              <div className="from-primary-500/20 to-secondary-500/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-2xl" />
+              <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-2xl" />
               <div className="relative">
                 <ImageCarousel images={heroImages} autoPlayInterval={4000} />
               </div>
@@ -191,17 +185,17 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="bg-gray-50 py-20 lg:py-32">
+      <section id="features" className="bg-muted py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
-            <span className="bg-secondary-100 text-secondary-700 mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
+            <span className="bg-secondary/10 text-secondary-foreground mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
               <Zap className="h-4 w-4" />
               Features
             </span>
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 sm:text-4xl">
+            <h2 className="text-foreground mb-4 text-3xl font-bold sm:text-4xl">
               Everything You Need for Perfect Travels
             </h2>
-            <p className="mx-auto max-w-2xl text-xl text-gray-600">
+            <p className="text-muted-foreground mx-auto max-w-2xl text-xl">
               Our AI-powered platform provides all the tools you need to plan,
               book, and enjoy your perfect trip.
             </p>
@@ -212,16 +206,16 @@ export default function Home() {
               const Icon = feature.icon;
               return (
                 <div key={feature.title}>
-                  <Card hover className="h-full">
-                    <div
-                      className={`h-14 w-14 rounded-2xl bg-linear-to-br ${feature.color} mb-4 flex items-center justify-center`}
-                    >
-                      <Icon className="h-7 w-7 text-white" />
+                  <Card className="h-full">
+                    <div className="bg-primary mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
+                      <Icon className="text-primary-foreground h-7 w-7" />
                     </div>
-                    <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                    <h3 className="text-foreground mb-2 text-xl font-semibold">
                       {feature.title}
                     </h3>
-                    <p className="text-gray-600">{feature.description}</p>
+                    <p className="text-muted-foreground">
+                      {feature.description}
+                    </p>
                   </Card>
                 </div>
               );
@@ -231,21 +225,21 @@ export default function Home() {
       </section>
 
       {/* Destinations Section */}
-      <section className="bg-white py-20 lg:py-32">
+      <section className="bg-background py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 flex items-center justify-between">
             <div>
-              <span className="bg-accent-100 text-accent-700 mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
+              <span className="bg-accent/10 text-accent-foreground mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
                 <Globe className="h-4 w-4" />
                 Popular Destinations
               </span>
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+              <h2 className="text-foreground text-3xl font-bold sm:text-4xl">
                 Explore Amazing Places
               </h2>
             </div>
             <Link
               href="/attractions"
-              className="text-primary-600 hover:text-primary-700 hidden items-center gap-2 font-medium transition-colors sm:inline-flex"
+              className="text-primary hover:text-primary/80 hidden items-center gap-2 font-medium transition-colors sm:inline-flex"
             >
               View All
               <ArrowRight className="h-4 w-4" />
@@ -287,7 +281,7 @@ export default function Home() {
           <div className="mt-8 text-center sm:hidden">
             <Link
               href="/attractions"
-              className="text-primary-600 inline-flex items-center gap-2 font-medium"
+              className="text-primary inline-flex items-center gap-2 font-medium"
             >
               View All Destinations
               <ArrowRight className="h-4 w-4" />
@@ -297,7 +291,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="from-primary-600 to-secondary-600 bg-linear-to-br py-20 text-white lg:py-32">
+      <section className="bg-primary text-primary-foreground py-20 lg:py-32">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div>
             <h2 className="mb-6 text-3xl font-bold sm:text-4xl lg:text-5xl">
@@ -305,7 +299,7 @@ export default function Home() {
             </h2>
           </div>
           <div>
-            <p className="mb-10 text-xl text-white/80">
+            <p className="text-primary-foreground/80 mb-10 text-xl">
               Join thousands of travelers who use TripSphere to plan their
               perfect trips. Our AI assistant is ready to help you discover
               amazing destinations.
@@ -314,14 +308,14 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/chat"
-              className="text-primary-600 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="bg-background text-foreground inline-flex items-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
               <MessageSquare className="h-5 w-5" />
               Chat with AI Assistant
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-8 py-4 text-lg font-semibold text-white transition-all duration-300 hover:bg-white/20"
+              className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 inline-flex items-center gap-2 rounded-xl border px-8 py-4 text-lg font-semibold transition-all duration-300"
             >
               Create Free Account
             </Link>

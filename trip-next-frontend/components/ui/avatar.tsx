@@ -1,4 +1,4 @@
-import { cn, getAvatarColor, getInitials } from "@/lib/utils";
+import { cn, getAvatarColorClass, getInitials } from "@/lib/utils";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import * as React from "react";
 
@@ -24,13 +24,13 @@ const Avatar = React.forwardRef<
   AvatarProps
 >(({ className, src, alt, name, size = "md", ...props }, ref) => {
   const initials = name ? getInitials(name) : "?";
-  const bgColor = name ? getAvatarColor(name) : "bg-gray-400";
+  const bgColor = name ? getAvatarColorClass(name) : "bg-muted";
 
   return (
     <AvatarPrimitive.Root
       ref={ref}
       className={cn(
-        "relative flex items-center justify-center overflow-hidden rounded-full font-semibold text-white",
+        "text-primary-foreground relative flex items-center justify-center overflow-hidden rounded-full font-semibold",
         sizeClasses[size],
         bgColor,
         className,

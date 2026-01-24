@@ -54,7 +54,7 @@ export function ImageCarousel({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-3xl bg-gray-100 shadow-2xl",
+        "group bg-muted relative overflow-hidden rounded-3xl shadow-2xl",
         className,
       )}
       onMouseEnter={() => setIsAutoPlaying(false)}
@@ -95,14 +95,14 @@ export function ImageCarousel({
       {/* Navigation arrows */}
       <button
         onClick={goToPrevious}
-        className="absolute top-1/2 left-4 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-800 opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100 hover:bg-white"
+        className="bg-background/90 text-foreground hover:bg-background absolute top-1/2 left-4 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100"
         aria-label="Previous image"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
       <button
         onClick={goToNext}
-        className="absolute top-1/2 right-4 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-800 opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100 hover:bg-white"
+        className="bg-background/90 text-foreground hover:bg-background absolute top-1/2 right-4 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100"
         aria-label="Next image"
       >
         <ChevronRight className="h-6 w-6" />

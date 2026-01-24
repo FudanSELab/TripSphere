@@ -42,18 +42,20 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-card text-card-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 lg:gap-12">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br text-xl font-bold text-white">
+              <div className="bg-primary text-primary-foreground flex h-10 w-10 items-center justify-center rounded-xl text-xl font-bold">
                 T
               </div>
-              <span className="text-xl font-bold text-white">TripSphere</span>
+              <span className="text-foreground text-xl font-bold">
+                TripSphere
+              </span>
             </Link>
-            <p className="mt-4 max-w-xs text-sm text-gray-400">
+            <p className="text-muted-foreground mt-4 max-w-xs text-sm">
               Your intelligent travel companion. Plan, explore, and create
               unforgettable memories with AI-powered assistance.
             </p>
@@ -64,7 +66,7 @@ export function Footer() {
                   <a
                     key={social.name}
                     href={social.href}
-                    className="hover:bg-primary-600 flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 text-gray-400 transition-all duration-200 hover:text-white"
+                    className="bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200"
                     title={social.name}
                   >
                     <Icon className="h-5 w-5" />
@@ -76,7 +78,7 @@ export function Footer() {
 
           {/* Product Links */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wider text-white uppercase">
+            <h3 className="text-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
               Product
             </h3>
             <ul className="space-y-3">
@@ -84,7 +86,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-gray-400 transition-colors hover:text-white"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -95,7 +97,7 @@ export function Footer() {
 
           {/* Resources Links */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wider text-white uppercase">
+            <h3 className="text-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
               Resources
             </h3>
             <ul className="space-y-3">
@@ -103,7 +105,7 @@ export function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 transition-colors hover:text-white"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
                     {link.name}
                   </a>
@@ -114,7 +116,7 @@ export function Footer() {
 
           {/* Company Links */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wider text-white uppercase">
+            <h3 className="text-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
               Company
             </h3>
             <ul className="space-y-3">
@@ -122,7 +124,7 @@ export function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 transition-colors hover:text-white"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
                     {link.name}
                   </a>
@@ -133,7 +135,7 @@ export function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wider text-white uppercase">
+            <h3 className="text-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
               Legal
             </h3>
             <ul className="space-y-3">
@@ -141,7 +143,7 @@ export function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 transition-colors hover:text-white"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
                     {link.name}
                   </a>
@@ -152,14 +154,15 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 border-t border-gray-800 pt-8">
+        <div className="border-border mt-12 border-t pt-8">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <p className="text-sm text-gray-400">
+            <p className="text-muted-foreground text-sm">
               &copy; {currentYear} TripSphere. All rights reserved.
             </p>
-            <p className="flex items-center gap-1 text-sm text-gray-400">
-              Made with <Heart className="h-4 w-4 fill-red-500 text-red-500" />{" "}
-              by the TripSphere Team
+            <p className="text-muted-foreground flex items-center gap-1 text-sm">
+              Made with{" "}
+              <Heart className="fill-destructive text-destructive h-4 w-4" /> by
+              the TripSphere Team
             </p>
           </div>
         </div>

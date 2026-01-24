@@ -1,7 +1,7 @@
 "use client";
 
 import { Message } from "@/lib/types";
-import { cn, formatRelativeTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Bot, User } from "lucide-react";
 import Markdown from "react-markdown";
 
@@ -22,15 +22,13 @@ export function ChatMessage({
       <div
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-          isUser
-            ? "bg-primary-600"
-            : "from-secondary-500 to-accent-500 bg-linear-to-br",
+          isUser ? "bg-primary" : "bg-secondary",
         )}
       >
         {isUser ? (
-          <User className="h-5 w-5 text-white" />
+          <User className="text-primary-foreground h-5 w-5" />
         ) : (
-          <Bot className="h-5 w-5 text-white" />
+          <Bot className="text-secondary-foreground h-5 w-5" />
         )}
       </div>
 
@@ -39,8 +37,8 @@ export function ChatMessage({
         className={cn(
           "max-w-[75%] rounded-2xl px-4 py-3",
           isUser
-            ? "bg-primary-600 rounded-tr-none text-white"
-            : "rounded-tl-none bg-gray-100 text-gray-900",
+            ? "bg-primary text-primary-foreground rounded-tr-none"
+            : "bg-muted text-foreground rounded-tl-none",
         )}
       >
         {/* Message text */}
@@ -77,13 +75,13 @@ export function ChatMessage({
                   const isInline = !className;
                   if (isInline) {
                     return (
-                      <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs text-gray-800">
+                      <code className="bg-muted-foreground/20 rounded px-1.5 py-0.5 font-mono text-xs">
                         {children}
                       </code>
                     );
                   }
                   return (
-                    <code className="block overflow-x-auto rounded-lg bg-gray-800 p-3 font-mono text-xs text-gray-100">
+                    <code className="bg-card text-card-foreground block overflow-x-auto rounded-lg p-3 font-mono text-xs">
                       {children}
                     </code>
                   );
@@ -94,7 +92,7 @@ export function ChatMessage({
                   </pre>
                 ),
                 blockquote: ({ children }) => (
-                  <blockquote className="my-2 border-l-4 border-gray-300 pl-3 text-gray-600 italic last:mb-0">
+                  <blockquote className="border-border text-muted-foreground my-2 border-l-4 pl-3 italic last:mb-0">
                     {children}
                   </blockquote>
                 ),
@@ -103,7 +101,7 @@ export function ChatMessage({
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-700 underline"
+                    className="text-primary hover:text-primary/80 underline"
                   >
                     {children}
                   </a>
@@ -112,7 +110,7 @@ export function ChatMessage({
                   <strong className="font-semibold">{children}</strong>
                 ),
                 em: ({ children }) => <em className="italic">{children}</em>,
-                hr: () => <hr className="my-3 border-gray-300" />,
+                hr: () => <hr className="border-border my-3" />,
               }}
             >
               {message.content}
@@ -121,9 +119,9 @@ export function ChatMessage({
           {/* Typing indicator for streaming */}
           {isStreaming && !message.content && (
             <span className="typing-indicator inline-flex gap-1">
-              <span className="h-2 w-2 rounded-full bg-gray-400" />
-              <span className="h-2 w-2 rounded-full bg-gray-400" />
-              <span className="h-2 w-2 rounded-full bg-gray-400" />
+              <span className="bg-muted-foreground h-2 w-2 rounded-full" />
+              <span className="bg-muted-foreground h-2 w-2 rounded-full" />
+              <span className="bg-muted-foreground h-2 w-2 rounded-full" />
             </span>
           )}
           {isStreaming && message.content && (
@@ -135,10 +133,10 @@ export function ChatMessage({
         <div
           className={cn(
             "mt-1 text-xs",
-            isUser ? "text-primary-200" : "text-gray-400",
+            isUser ? "text-primary-foreground/60" : "text-muted-foreground",
           )}
         >
-          {formatRelativeTime(message.createdAt)}
+          {message.createdAt}
         </div>
       </div>
     </div>

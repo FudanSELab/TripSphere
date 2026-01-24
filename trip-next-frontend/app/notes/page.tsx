@@ -2,9 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import type { Note } from "@/lib/types";
-import { formatRelativeTime } from "@/lib/utils";
 import {
   Clock,
   Edit3,
@@ -145,15 +144,15 @@ export default function NotesPage() {
   }, [searchQuery, selectedTag]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-muted min-h-screen">
       {/* Hero section */}
-      <div className="bg-linear-to-br from-amber-500 to-orange-500 pt-32 pb-16 text-white">
+      <div className="bg-primary text-primary-foreground pt-16 pb-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
               Travel Stories
             </h1>
-            <p className="mx-auto mb-8 max-w-2xl text-xl text-white/80">
+            <p className="text-primary-foreground/80 mx-auto mb-8 max-w-2xl text-xl">
               Share your adventures and discover inspiring travel stories from
               fellow explorers.
             </p>
@@ -161,18 +160,18 @@ export default function NotesPage() {
             {/* Search bar */}
             <div className="mx-auto flex max-w-2xl gap-3">
               <div className="relative flex-1">
-                <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Search className="text-muted-foreground absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   type="text"
                   placeholder="Search travel stories..."
-                  className="w-full rounded-xl bg-white py-4 pr-4 pl-12 text-gray-900 shadow-lg transition-all focus:ring-4 focus:ring-white/30 focus:outline-none"
+                  className="bg-background text-foreground focus:ring-ring/30 w-full rounded-xl py-4 pr-4 pl-12 shadow-lg transition-all focus:ring-4 focus:outline-none"
                 />
               </div>
               <Link
                 href="/notes/new"
-                className="flex items-center gap-2 rounded-xl bg-white px-6 py-4 font-semibold text-amber-600 transition-all hover:shadow-lg"
+                className="bg-background text-primary flex items-center gap-2 rounded-xl px-6 py-4 font-semibold transition-all hover:shadow-lg"
               >
                 <Plus className="h-5 w-5" />
                 Write
@@ -187,10 +186,10 @@ export default function NotesPage() {
         {myNotes.length > 0 && (
           <section className="mb-12">
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">My Notes</h2>
+              <h2 className="text-foreground text-2xl font-bold">My Notes</h2>
               <Link
                 href="/notes/my"
-                className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-sm font-medium"
+                className="text-primary hover:text-primary/80 flex items-center gap-1 text-sm font-medium"
               >
                 View All
                 <svg
@@ -212,7 +211,7 @@ export default function NotesPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               {myNotes.map((note) => (
                 <div key={note.id}>
-                  <Card padding="none" hover>
+                  <Card>
                     <div className="flex">
                       {/* Image */}
                       <div className="aspect-square w-1/3">
@@ -224,24 +223,24 @@ export default function NotesPage() {
                       </div>
                       {/* Content */}
                       <div className="flex flex-1 flex-col p-4">
-                        <h3 className="mb-2 line-clamp-1 font-semibold text-gray-900">
+                        <h3 className="text-foreground mb-2 line-clamp-1 font-semibold">
                           {note.title}
                         </h3>
-                        <p className="line-clamp-2 flex-1 text-sm text-gray-500">
+                        <p className="text-muted-foreground line-clamp-2 flex-1 text-sm">
                           {note.content}
                         </p>
-                        <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-                          <span className="text-xs text-gray-400">
-                            {formatRelativeTime(note.updatedAt)}
+                        <div className="border-border mt-3 flex items-center justify-between border-t pt-3">
+                          <span className="text-muted-foreground text-xs">
+                            {note.updatedAt}
                           </span>
                           <div className="flex gap-2">
                             <Link
                               href={`/notes/${note.id}/edit`}
-                              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg p-1.5"
                             >
                               <Edit3 className="h-4 w-4" />
                             </Link>
-                            <button className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600">
+                            <button className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-lg p-1.5">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -260,8 +259,8 @@ export default function NotesPage() {
           <button
             className={`rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
               !selectedTag
-                ? "bg-amber-500 text-white shadow-md"
-                : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "border-border bg-background text-foreground hover:bg-muted border"
             }`}
             onClick={() => setSelectedTag(null)}
           >
@@ -272,8 +271,8 @@ export default function NotesPage() {
               key={tag}
               className={`rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
                 selectedTag === tag
-                  ? "bg-amber-500 text-white shadow-md"
-                  : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "border-border bg-background text-foreground hover:bg-muted border"
               }`}
               onClick={() => setSelectedTag(tag)}
             >
@@ -283,7 +282,7 @@ export default function NotesPage() {
         </div>
 
         {/* Results count */}
-        <p className="mb-6 text-gray-600">
+        <p className="text-muted-foreground mb-6">
           {filteredNotes.length} stories found
         </p>
 
@@ -291,7 +290,7 @@ export default function NotesPage() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredNotes.map((note) => (
             <Link key={note.id} href={`/notes/${note.id}`} className="group">
-              <Card padding="none" hover clickable>
+              <Card>
                 {/* Cover image */}
                 <div className="relative aspect-4/3 overflow-hidden rounded-t-xl">
                   <img
@@ -306,8 +305,7 @@ export default function NotesPage() {
                     {note.tags?.slice(0, 2).map((tag) => (
                       <Badge
                         key={tag}
-                        className="bg-white/90 text-gray-700"
-                        size="sm"
+                        className="bg-background/90 text-foreground"
                       >
                         {tag}
                       </Badge>
@@ -318,23 +316,23 @@ export default function NotesPage() {
                 {/* Content */}
                 <div className="p-5">
                   {/* Title */}
-                  <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-gray-900 transition-colors group-hover:text-amber-600">
+                  <h3 className="text-foreground group-hover:text-primary mb-2 line-clamp-2 text-lg font-semibold transition-colors">
                     {note.title}
                   </h3>
 
                   {/* Excerpt */}
-                  <p className="mb-4 line-clamp-2 text-sm text-gray-500">
+                  <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">
                     {note.content}
                   </p>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                    <div className="flex items-center gap-1 text-sm text-gray-400">
+                  <div className="border-border flex items-center justify-between border-t pt-4">
+                    <div className="text-muted-foreground flex items-center gap-1 text-sm">
                       <Clock className="h-4 w-4" />
-                      {formatRelativeTime(note.createdAt)}
+                      {note.createdAt}
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1 text-sm text-gray-500">
+                      <span className="text-muted-foreground flex items-center gap-1 text-sm">
                         <Heart className="h-4 w-4" />
                         {note.likes}
                       </span>
@@ -349,16 +347,16 @@ export default function NotesPage() {
         {/* Empty state */}
         {filteredNotes.length === 0 && (
           <div className="py-16 text-center">
-            <FileText className="mx-auto mb-4 h-16 w-16 text-gray-300" />
-            <h3 className="mb-2 text-xl font-semibold text-gray-900">
+            <FileText className="text-muted-foreground/30 mx-auto mb-4 h-16 w-16" />
+            <h3 className="text-foreground mb-2 text-xl font-semibold">
               No stories found
             </h3>
-            <p className="mb-6 text-gray-500">
+            <p className="text-muted-foreground mb-6">
               Try adjusting your search or filters
             </p>
             <Link
               href="/notes/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-3 font-medium text-white transition-colors hover:bg-amber-600"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium transition-colors"
             >
               <Plus className="h-5 w-5" />
               Write Your Story

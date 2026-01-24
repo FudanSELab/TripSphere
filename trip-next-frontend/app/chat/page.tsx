@@ -2,12 +2,22 @@
 
 import { ChatWindow } from "@/components/chat/chat-window";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useChat } from "@/lib/hooks/use-chat";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/hooks/use-chat";
 import type { Conversation } from "@/lib/types";
-import { formatRelativeTime } from "@/lib/utils";
 import { Clock, MessageSquare, Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ChatPage() {
   const auth = useAuth();
@@ -16,7 +26,6 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
-  const [showSidebar, setShowSidebar] = useState(true);
   const hasLoadedRef = useRef(false);
 
   // Load conversations on mount
@@ -33,15 +42,6 @@ export default function ChatPage() {
       };
 
       void loadData();
-    }
-  }, [auth.user, chat]);
-
-  const loadConversations = useCallback(async () => {
-    if (!auth.user) return;
-
-    const result = await chat.listConversations(auth.user.id);
-    if (result) {
-      setConversations(result.items);
     }
   }, [auth.user, chat]);
 
@@ -87,11 +87,11 @@ export default function ChatPage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <MessageSquare className="mx-auto mb-4 h-16 w-16 text-gray-400" />
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">
+          <MessageSquare className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+          <h2 className="text-foreground mb-2 text-xl font-semibold">
             Please log in
           </h2>
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             You need to be logged in to access the chat
           </p>
         </div>
@@ -100,75 +100,70 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      {showSidebar && (
-        <aside className="flex w-80 flex-col border-r border-gray-200 bg-gray-50 transition-all duration-300">
-          {/* New chat button */}
-          <div className="border-b border-gray-200 p-4">
-            <Button className="w-full justify-center" onClick={createNewChat}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Chat
-            </Button>
-          </div>
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader className="border-sidebar-border border-b p-4">
+          <Button className="w-full justify-center" onClick={createNewChat}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Chat
+          </Button>
+        </SidebarHeader>
 
-          {/* Conversation list */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="space-y-1 p-2">
+        <SidebarContent>
+          {conversations.length > 0 ? (
+            <SidebarMenu className="p-2">
               {conversations.map((conversation) => (
-                <button
-                  key={conversation.conversationId}
-                  type="button"
-                  className={`group flex w-full cursor-pointer items-start gap-3 rounded-lg p-3 text-left transition-colors ${
-                    selectedConversation?.conversationId ===
-                    conversation.conversationId
-                      ? "bg-primary-100 text-primary-900"
-                      : "hover:bg-gray-100"
-                  }`}
-                  onClick={() => selectConversation(conversation)}
-                >
-                  <MessageSquare className="mt-0.5 h-5 w-5 shrink-0 text-gray-500" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {conversation.title || "New Chat"}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-                      <Clock className="h-3 w-3" />
-                      {formatRelativeTime(conversation.createdAt)}
-                    </p>
-                  </div>
-                  <span
-                    className="rounded-lg p-1.5 text-gray-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-100 hover:text-red-600"
+                <SidebarMenuItem key={conversation.conversationId}>
+                  <SidebarMenuButton
+                    isActive={
+                      selectedConversation?.conversationId ===
+                      conversation.conversationId
+                    }
+                    onClick={() => selectConversation(conversation)}
+                    className="h-auto py-3"
+                  >
+                    <MessageSquare className="h-5 w-5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {conversation.title || "New Chat"}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-xs opacity-70">
+                        <Clock className="h-3 w-3" />
+                        {conversation.createdAt}
+                      </p>
+                    </div>
+                  </SidebarMenuButton>
+                  <SidebarMenuAction
                     onClick={(e) => deleteConversation(conversation, e)}
+                    className="text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive"
+                    showOnHover
                   >
                     <Trash2 className="h-4 w-4" />
-                  </span>
-                </button>
+                  </SidebarMenuAction>
+                </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+              <MessageSquare className="text-sidebar-foreground/30 mb-3 h-12 w-12" />
+              <p className="text-sidebar-foreground/70 text-sm">
+                No conversations yet
+              </p>
+              <p className="text-sidebar-foreground/50 mt-1 text-xs">
+                Start a new chat to begin
+              </p>
             </div>
+          )}
+        </SidebarContent>
+      </Sidebar>
 
-            {/* Empty state */}
-            {conversations.length === 0 && (
-              <div className="p-6 text-center">
-                <MessageSquare className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-                <p className="text-sm text-gray-500">No conversations yet</p>
-                <p className="mt-1 text-xs text-gray-400">
-                  Start a new chat to begin
-                </p>
-              </div>
-            )}
-          </div>
-        </aside>
-      )}
-
-      {/* Main chat area */}
-      <main className="flex flex-1 flex-col bg-white">
+      <SidebarInset>
         <ChatWindow
           conversation={selectedConversation}
           fullScreen={true}
           onConversationCreated={handleConversationCreated}
         />
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

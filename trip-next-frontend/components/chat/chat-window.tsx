@@ -1,12 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useChat } from "@/lib/hooks/use-chat";
+import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/hooks/use-chat";
 import { Conversation, Message } from "@/lib/types";
-import { generateId } from "@/lib/utils";
 import { Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { v7 as uuidv7 } from "uuid";
 import { ChatMessage } from "./chat-message";
 
 interface ChatWindowProps {
@@ -113,7 +113,7 @@ export function ChatWindow({
 
     // Add user message locally
     const userMessage: Message = {
-      id: generateId(),
+      id: uuidv7(),
       conversationId: conv.conversationId,
       role: "user",
       content,
@@ -156,7 +156,7 @@ export function ChatWindow({
           setMessages((prev) => [
             ...prev,
             {
-              id: generateId(),
+              id: uuidv7(),
               conversationId: conv.conversationId,
               role: "assistant",
               content: "Sorry, I encountered an error. Please try again.",
@@ -170,7 +170,7 @@ export function ChatWindow({
       setMessages((prev) => [
         ...prev,
         {
-          id: generateId(),
+          id: uuidv7(),
           conversationId: conv.conversationId,
           role: "assistant",
           content: "Sorry, I encountered an error. Please try again.",
@@ -208,21 +208,10 @@ export function ChatWindow({
     <div
       className={
         fullScreen
-          ? "flex h-screen flex-col bg-white"
-          : "flex h-150 flex-col rounded-2xl border border-gray-100 bg-white shadow-lg"
+          ? "bg-background flex h-screen flex-col"
+          : "border-border bg-background flex h-150 flex-col rounded-2xl border shadow-lg"
       }
     >
-      {/* Header */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-6 py-4">
-        <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br">
-          <Sparkles className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h2 className="font-semibold text-gray-900">AI Travel Assistant</h2>
-          <p className="text-sm text-gray-500">Powered by TripSphere</p>
-        </div>
-      </div>
-
       {/* Messages area */}
       <div
         ref={messagesContainerRef}
@@ -231,13 +220,13 @@ export function ChatWindow({
         {/* Empty state with suggestions */}
         {messages.length === 0 && !isStreaming && (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="from-primary-100 to-secondary-100 mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br">
-              <Sparkles className="text-primary-600 h-10 w-10" />
+            <div className="bg-primary/10 mb-6 flex h-20 w-20 items-center justify-center rounded-2xl">
+              <Sparkles className="text-primary h-10 w-10" />
             </div>
-            <h3 className="mb-2 text-xl font-semibold text-gray-900">
+            <h3 className="text-foreground mb-2 text-xl font-semibold">
               Welcome to TripSphere AI!
             </h3>
-            <p className="mb-8 max-w-md text-gray-500">
+            <p className="text-muted-foreground mb-8 max-w-md">
               I&apos;m your intelligent travel assistant. Ask me anything about
               destinations, hotels, attractions, or let me help you plan your
               perfect trip.
@@ -248,11 +237,11 @@ export function ChatWindow({
               {suggestedPrompts.map((prompt) => (
                 <button
                   key={prompt.text}
-                  className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100"
+                  className="bg-muted hover:bg-muted/80 flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors"
                   onClick={() => handleSuggestedPrompt(prompt.text)}
                 >
                   <span className="text-xl">{prompt.icon}</span>
-                  <span className="text-sm text-gray-700">{prompt.text}</span>
+                  <span className="text-foreground text-sm">{prompt.text}</span>
                 </button>
               ))}
             </div>
@@ -280,7 +269,7 @@ export function ChatWindow({
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 border-t border-gray-100 p-4">
+      <div className="border-border shrink-0 border-t p-4">
         <div className="flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -291,7 +280,7 @@ export function ChatWindow({
             }}
             onKeyDown={handleKeyDown}
             placeholder="Ask me anything about travel..."
-            className="focus:ring-primary-500 scrollbar-hide flex-1 resize-none overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 transition-all focus:border-transparent focus:ring-2 focus:outline-none"
+            className="scrollbar-hide border-input bg-muted focus:ring-ring flex-1 resize-none overflow-y-auto rounded-xl border px-4 py-3 transition-all focus:border-transparent focus:ring-2 focus:outline-none"
             rows={1}
             disabled={isStreaming}
           />
@@ -304,7 +293,7 @@ export function ChatWindow({
             <Send className="h-5 w-5" />
           </Button>
         </div>
-        <p className="mt-2 text-center text-xs text-gray-400">
+        <p className="text-muted-foreground mt-2 text-center text-xs">
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>

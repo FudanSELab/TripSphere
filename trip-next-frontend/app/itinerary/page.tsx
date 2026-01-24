@@ -3,8 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useItineraryPlanner } from "@/lib/hooks/use-itinerary-planner";
+import { useAuth } from "@/hooks/use-auth";
+import { useItineraryPlanner } from "@/hooks/use-itinerary-planner";
 import type { Itinerary } from "@/lib/types";
 import {
   Calendar,
@@ -123,32 +123,32 @@ export default function ItineraryPage() {
     });
   };
 
-  // Get activity category color
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      sightseeing: "bg-blue-100 text-blue-700",
-      dining: "bg-orange-100 text-orange-700",
-      transportation: "bg-gray-100 text-gray-700",
-      shopping: "bg-pink-100 text-pink-700",
-      entertainment: "bg-purple-100 text-purple-700",
+  // Get activity category style
+  const getCategoryStyle = (category: string) => {
+    const styles: Record<string, string> = {
+      sightseeing: "bg-primary/10 text-primary",
+      dining: "bg-secondary/10 text-secondary-foreground",
+      transportation: "bg-muted text-muted-foreground",
+      shopping: "bg-accent/10 text-accent-foreground",
+      entertainment: "bg-primary/20 text-primary",
     };
-    return colors[category] || "bg-gray-100 text-gray-700";
+    return styles[category] || "bg-muted text-muted-foreground";
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-muted min-h-screen">
       {/* Hero section */}
-      <div className="bg-linear-to-br from-green-600 to-emerald-600 pt-32 pb-16 text-white">
+      <div className="bg-primary text-primary-foreground pt-16 pb-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium">
+            <span className="bg-primary-foreground/20 mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium">
               <Sparkles className="h-4 w-4" />
               AI-Powered Planning
             </span>
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
               Plan Your Perfect Trip
             </h1>
-            <p className="mx-auto max-w-2xl text-xl text-white/80">
+            <p className="text-primary-foreground/80 mx-auto max-w-2xl text-xl">
               Let our AI create a personalized itinerary based on your
               preferences, interests, and travel style.
             </p>
@@ -161,7 +161,7 @@ export default function ItineraryPage() {
           {/* Planning form */}
           <div className="lg:col-span-1">
             <Card className="sticky top-24">
-              <h2 className="mb-6 text-xl font-semibold text-gray-900">
+              <h2 className="text-foreground mb-6 text-xl font-semibold">
                 Trip Details
               </h2>
 
@@ -174,16 +174,16 @@ export default function ItineraryPage() {
               >
                 {/* Destination */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="text-foreground mb-2 block text-sm font-medium">
                     Destination
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                    <MapPin className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
                     <input
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
                       placeholder="e.g., Shanghai, China"
-                      className="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-10 focus:border-transparent focus:ring-2 focus:ring-green-500"
+                      className="border-input focus:ring-primary w-full rounded-lg border py-2 pr-4 pl-10 focus:border-transparent focus:ring-2"
                     />
                   </div>
                 </div>
@@ -191,25 +191,25 @@ export default function ItineraryPage() {
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                    <label className="text-foreground mb-2 block text-sm font-medium">
                       Start Date
                     </label>
                     <input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-green-500"
+                      className="border-input focus:ring-primary w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2"
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                    <label className="text-foreground mb-2 block text-sm font-medium">
                       End Date
                     </label>
                     <input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-green-500"
+                      className="border-input focus:ring-primary w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2"
                     />
                   </div>
                 </div>
@@ -222,15 +222,15 @@ export default function ItineraryPage() {
                     onClick={() => setShowPreferences(!showPreferences)}
                   >
                     <div className="flex items-center gap-2">
-                      <Settings className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-900">
+                      <Settings className="text-muted-foreground h-4 w-4" />
+                      <span className="text-foreground text-sm font-medium">
                         Preferences
                       </span>
                     </div>
                     {showPreferences ? (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                      <ChevronDown className="text-muted-foreground h-4 w-4" />
                     ) : (
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                      <ChevronUp className="text-muted-foreground h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -240,7 +240,7 @@ export default function ItineraryPage() {
                   <div className="space-y-4">
                     {/* Travel Interests */}
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                      <label className="text-foreground mb-2 block text-sm font-medium">
                         Travel Interests
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -250,8 +250,8 @@ export default function ItineraryPage() {
                             type="button"
                             className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all ${
                               interests.includes(interest.id)
-                                ? "bg-green-600 text-white shadow-sm"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
                             }`}
                             onClick={() => toggleInterest(interest.id)}
                           >
@@ -264,7 +264,7 @@ export default function ItineraryPage() {
 
                     {/* Pace Selection */}
                     <div>
-                      <label className="mt-6 mb-2 block text-sm font-medium text-gray-700">
+                      <label className="text-foreground mt-6 mb-2 block text-sm font-medium">
                         Trip Pace
                       </label>
                       <div className="grid grid-cols-3 gap-2">
@@ -274,8 +274,8 @@ export default function ItineraryPage() {
                             type="button"
                             className={`rounded-lg border p-3 text-center transition-all ${
                               pace === option.value
-                                ? "border-green-500 bg-green-50 text-green-700"
-                                : "border-gray-200 hover:border-gray-300"
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border hover:border-border/80"
                             }`}
                             onClick={() =>
                               setPace(
@@ -289,7 +289,7 @@ export default function ItineraryPage() {
                             <div className="text-sm font-medium">
                               {option.label}
                             </div>
-                            <div className="mt-1 text-xs text-gray-500">
+                            <div className="text-muted-foreground mt-1 text-xs">
                               {option.description}
                             </div>
                           </button>
@@ -299,9 +299,9 @@ export default function ItineraryPage() {
 
                     {/* Additional Preferences */}
                     <div>
-                      <label className="mt-6 mb-2 block text-sm font-medium text-gray-700">
+                      <label className="text-foreground mt-6 mb-2 block text-sm font-medium">
                         Additional Notes
-                        <span className="ml-1 text-xs font-normal text-gray-500">
+                        <span className="text-muted-foreground ml-1 text-xs font-normal">
                           (Optional)
                         </span>
                       </label>
@@ -312,7 +312,7 @@ export default function ItineraryPage() {
                         }
                         placeholder="E.g., prefer less crowded places, want to visit local markets..."
                         rows={3}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-green-500"
+                        className="border-input focus:ring-primary w-full rounded-lg border px-3 py-2 text-sm focus:border-transparent focus:ring-2"
                       />
                     </div>
                   </div>
@@ -351,35 +351,37 @@ export default function ItineraryPage() {
             {/* Loading state */}
             {planner.isGenerating && (
               <div className="py-16 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-                  <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+                <div className="bg-primary/10 mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full">
+                  <Loader2 className="text-primary h-10 w-10 animate-spin" />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                <h3 className="text-foreground mb-2 text-xl font-semibold">
                   {planner.statusMessage || "Planning your trip..."}
                 </h3>
-                <div className="mx-auto h-2 w-64 overflow-hidden rounded-full bg-gray-200">
+                <div className="bg-muted mx-auto h-2 w-64 overflow-hidden rounded-full">
                   <div
-                    className="h-full rounded-full bg-green-600 transition-all duration-500"
+                    className="bg-primary h-full rounded-full transition-all duration-500"
                     style={{ width: `${planner.progress}%` }}
                   />
                 </div>
-                <p className="mt-2 text-sm text-gray-400">
+                <p className="text-muted-foreground mt-2 text-sm">
                   {planner.progress}% complete
                 </p>
-                <p className="mt-4 text-gray-500">This may take a moment...</p>
+                <p className="text-muted-foreground mt-4">
+                  This may take a moment...
+                </p>
               </div>
             )}
 
             {/* Error state */}
             {planner.error && !planner.isGenerating && (
               <div className="py-16 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+                <div className="bg-destructive/10 mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full">
                   <span className="text-3xl">❌</span>
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                <h3 className="text-foreground mb-2 text-xl font-semibold">
                   Planning Failed
                 </h3>
-                <p className="mx-auto max-w-md text-gray-500">
+                <p className="text-muted-foreground mx-auto max-w-md">
                   {planner.error}
                 </p>
                 <Button
@@ -395,13 +397,13 @@ export default function ItineraryPage() {
             {/* Empty state */}
             {!planner.isGenerating && !planner.error && !itinerary && (
               <div className="py-16 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-                  <Calendar className="h-10 w-10 text-green-600" />
+                <div className="bg-primary/10 mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full">
+                  <Calendar className="text-primary h-10 w-10" />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                <h3 className="text-foreground mb-2 text-xl font-semibold">
                   Ready to plan your trip?
                 </h3>
-                <p className="mx-auto max-w-md text-gray-500">
+                <p className="text-muted-foreground mx-auto max-w-md">
                   Fill in your trip details on the left and let our AI create a
                   personalized itinerary just for you.
                 </p>
@@ -414,28 +416,30 @@ export default function ItineraryPage() {
                 {/* Summary card */}
                 <Card>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-foreground text-2xl font-bold">
                       {itinerary.destination}
                     </h2>
-                    <p className="mt-1 text-gray-500">
+                    <p className="text-muted-foreground mt-1">
                       {formatDayDate(itinerary.startDate)} -{" "}
                       {formatDayDate(itinerary.endDate)}
                     </p>
                   </div>
 
                   {/* Summary stats */}
-                  <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-6">
+                  <div className="border-border mt-6 grid grid-cols-2 gap-4 border-t pt-6">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-foreground text-2xl font-bold">
                         {itinerary.dayPlans.length}
                       </div>
-                      <div className="text-sm text-gray-500">Days</div>
+                      <div className="text-muted-foreground text-sm">Days</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-foreground text-2xl font-bold">
                         {itinerary.summary?.totalActivities}
                       </div>
-                      <div className="text-sm text-gray-500">Activities</div>
+                      <div className="text-muted-foreground text-sm">
+                        Activities
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -443,31 +447,31 @@ export default function ItineraryPage() {
                 {/* Day by day itinerary */}
                 <div className="space-y-4">
                   {itinerary.dayPlans.map((day) => (
-                    <Card key={day.dayNumber} padding="none">
+                    <Card key={day.dayNumber}>
                       {/* Day header */}
                       <button
-                        className="flex w-full items-center justify-between p-5 transition-colors hover:bg-gray-50"
+                        className="hover:bg-muted/50 flex w-full items-center justify-between p-5 transition-colors"
                         onClick={() => toggleDay(day.dayNumber)}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 font-bold text-green-600">
+                          <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-xl font-bold">
                             {day.dayNumber}
                           </div>
                           <div className="text-left">
-                            <h3 className="font-semibold text-gray-900">
+                            <h3 className="text-foreground font-semibold">
                               Day {day.dayNumber}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-muted-foreground text-sm">
                               {formatDayDate(day.date)}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-gray-500">
+                          <span className="text-muted-foreground text-sm">
                             {day.activities.length} activities
                           </span>
                           <ChevronDown
-                            className={`h-5 w-5 text-gray-400 transition-transform ${
+                            className={`text-muted-foreground h-5 w-5 transition-transform ${
                               expandedDays.includes(day.dayNumber)
                                 ? "rotate-180"
                                 : ""
@@ -478,19 +482,19 @@ export default function ItineraryPage() {
 
                       {/* Day activities */}
                       {expandedDays.includes(day.dayNumber) && (
-                        <div className="border-t border-gray-100">
+                        <div className="border-border border-t">
                           <div className="space-y-4 p-5">
                             {day.activities.map((activity) => (
                               <div
                                 key={activity.id}
-                                className="flex gap-4 rounded-xl bg-gray-50 p-4"
+                                className="bg-muted/50 flex gap-4 rounded-xl p-4"
                               >
                                 {/* Time */}
                                 <div className="shrink-0 text-center">
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className="text-foreground text-sm font-medium">
                                     {activity.startTime}
                                   </div>
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-muted-foreground text-xs">
                                     {activity.endTime}
                                   </div>
                                 </div>
@@ -499,24 +503,23 @@ export default function ItineraryPage() {
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-start justify-between gap-2">
                                     <div>
-                                      <h4 className="font-medium text-gray-900">
+                                      <h4 className="text-foreground font-medium">
                                         {activity.name}
                                       </h4>
-                                      <p className="mt-1 text-sm text-gray-500">
+                                      <p className="text-muted-foreground mt-1 text-sm">
                                         {activity.description}
                                       </p>
                                     </div>
                                     <Badge
-                                      className={getCategoryColor(
+                                      className={getCategoryStyle(
                                         activity.category,
                                       )}
-                                      size="sm"
                                     >
                                       {activity.category}
                                     </Badge>
                                   </div>
 
-                                  <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
+                                  <div className="text-muted-foreground mt-3 flex items-center gap-4 text-sm">
                                     <span className="flex items-center gap-1">
                                       <MapPin className="h-4 w-4" />
                                       {activity.location.name}
@@ -533,8 +536,8 @@ export default function ItineraryPage() {
 
                             {/* Day notes */}
                             {day.notes && (
-                              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-                                <p className="text-sm text-amber-800">
+                              <div className="border-primary/20 bg-primary/5 rounded-xl border p-4">
+                                <p className="text-primary text-sm">
                                   <strong>Note:</strong> {day.notes}
                                 </p>
                               </div>

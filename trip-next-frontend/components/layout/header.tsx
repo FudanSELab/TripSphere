@@ -1,8 +1,8 @@
 "use client";
 
 import { Avatar } from "@/components/ui/avatar";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
+import { useAuth } from "@/hooks/use-auth";
+import { useChatSidebar } from "@/hooks/use-chat-sidebar";
 import {
   Bot,
   Calendar,
@@ -44,12 +44,12 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 z-40 bg-white shadow-sm">
+    <header className="bg-background sticky top-0 right-0 left-0 z-50 w-full shadow-sm">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="group flex items-center gap-2">
-            <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br text-xl font-bold text-white shadow-lg transition-transform group-hover:scale-105">
+            <div className="bg-primary text-primary-foreground flex h-10 w-10 items-center justify-center rounded-xl text-xl font-bold shadow-lg transition-transform group-hover:scale-105">
               T
             </div>
             <span className="gradient-text text-xl font-bold">TripSphere</span>
@@ -65,8 +65,8 @@ export function Header() {
                   href={link.path}
                   className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
                     isActive(link.path)
-                      ? "bg-primary-100 text-primary-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -81,7 +81,7 @@ export function Header() {
             {/* Chat button - hidden on /chat page */}
             {pathname !== "/chat" && (
               <button
-                className="from-primary-500 to-secondary-500 flex items-center gap-2 rounded-lg bg-linear-to-r px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                className="bg-primary text-primary-foreground flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
                 onClick={openAiAssistant}
               >
                 <MessageSquare className="h-4 w-4" />
@@ -92,26 +92,26 @@ export function Header() {
             {/* User menu */}
             {auth.isAuthenticated ? (
               <div className="group relative">
-                <button className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-gray-100">
+                <button className="hover:bg-muted flex items-center gap-2 rounded-lg p-1.5 transition-colors">
                   <Avatar name={auth.user?.username} size="sm" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-foreground text-sm font-medium">
                     {auth.user?.username}
                   </span>
                 </button>
 
                 {/* Dropdown */}
-                <div className="invisible absolute top-full right-0 mt-2 w-48 rounded-xl border border-gray-100 bg-white opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="border-border bg-background invisible absolute top-full right-0 mt-2 w-48 rounded-xl border opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:opacity-100">
                   <div className="p-2">
                     <Link
                       href="/profile"
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                      className="text-foreground hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
                     >
                       <User className="h-4 w-4" />
                       Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+                      className="text-destructive hover:bg-destructive/10 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
                       Logout
@@ -123,13 +123,13 @@ export function Header() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:text-gray-900"
+                  className="text-foreground hover:text-foreground/80 px-4 py-2 text-sm font-medium transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="bg-primary-600 hover:bg-primary-700 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
                 >
                   Sign Up
                 </Link>

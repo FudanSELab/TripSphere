@@ -3,8 +3,8 @@
 import { ReviewForm } from "@/components/reviews/review-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAttractions } from "@/lib/hooks/use-attractions";
-import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
+import { useAttractions } from "@/hooks/use-attractions";
+import { useChatSidebar } from "@/hooks/use-chat-sidebar";
 import type { Attraction, ChatContext, Review } from "@/lib/types";
 import {
   ChevronLeft,
@@ -202,18 +202,16 @@ export default function AttractionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-muted min-h-screen">
       {/* Back button */}
-      <div className="pt-16">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <Link
-            href="/attractions"
-            className="inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            Back to Attractions
-          </Link>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <Link
+          href="/attractions"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Back to Attractions
+        </Link>
       </div>
 
       {/* Main content */}
@@ -222,7 +220,7 @@ export default function AttractionDetailPage() {
           {/* Left column - Main content */}
           <div className="space-y-6 lg:col-span-2">
             {/* Image gallery */}
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+            <div className="bg-background overflow-hidden rounded-xl shadow-sm">
               <div className="relative aspect-video">
                 <img
                   src={attraction.images?.[selectedImageIndex]}
@@ -238,8 +236,8 @@ export default function AttractionDetailPage() {
                         key={index}
                         className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                           selectedImageIndex === index
-                            ? "border-primary-600 ring-primary-600/20 ring-2"
-                            : "border-gray-200 hover:border-gray-300"
+                            ? "border-primary ring-primary/20 ring-2"
+                            : "border-border hover:border-border/80"
                         }`}
                         onClick={() => setSelectedImageIndex(index)}
                       >
@@ -256,7 +254,7 @@ export default function AttractionDetailPage() {
             </div>
 
             {/* Basic info */}
-            <div className="rounded-xl bg-white p-6 shadow-sm">
+            <div className="bg-background rounded-xl p-6 shadow-sm">
               <div className="mb-4 flex items-start justify-between">
                 <div>
                   <div className="mb-2 flex items-center gap-2">
@@ -267,7 +265,6 @@ export default function AttractionDetailPage() {
                           <Badge
                             key={`${attraction.id}-tag-${index}`}
                             variant="secondary"
-                            size="sm"
                           >
                             {tag}
                           </Badge>
@@ -275,18 +272,18 @@ export default function AttractionDetailPage() {
                       </div>
                     )}
                   </div>
-                  <h1 className="mb-2 text-3xl font-bold text-gray-900">
+                  <h1 className="text-foreground mb-2 text-3xl font-bold">
                     {attraction.name}
                   </h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="text-muted-foreground flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
                       {attraction.address.city}, {attraction.address.country}
                     </div>
                     {attraction.rating && (
-                      <div className="flex items-center gap-1 text-amber-500">
+                      <div className="text-chart-4 flex items-center gap-1">
                         <Star className="h-4 w-4 fill-current" />
-                        <span className="font-medium text-gray-900">
+                        <span className="text-foreground font-medium">
                           {attraction.rating}
                         </span>
                       </div>
@@ -295,13 +292,13 @@ export default function AttractionDetailPage() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200"
+                    className="bg-muted text-muted-foreground hover:bg-muted/80 flex h-10 w-10 items-center justify-center rounded-full transition-colors"
                     title="Share"
                   >
                     <Share2 className="h-5 w-5" />
                   </button>
                   <button
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex h-10 w-10 items-center justify-center rounded-full transition-colors"
                     title="Add to favorites"
                   >
                     <Heart className="h-5 w-5" />
@@ -309,20 +306,20 @@ export default function AttractionDetailPage() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
-                <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              <div className="border-border border-t pt-4">
+                <h2 className="text-foreground mb-3 text-lg font-semibold">
                   About
                 </h2>
-                <p className="leading-relaxed text-gray-600">
+                <p className="text-muted-foreground leading-relaxed">
                   {attraction.description}
                 </p>
               </div>
 
-              <div className="mt-6 border-t border-gray-100 pt-6">
-                <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              <div className="border-border mt-6 border-t pt-6">
+                <h2 className="text-foreground mb-4 text-lg font-semibold">
                   Address
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   {attraction.address.street}
                   <br />
                   {attraction.address.county}, {attraction.address.city}
@@ -333,9 +330,12 @@ export default function AttractionDetailPage() {
             </div>
 
             {/* Reviews Section */}
-            <div id="reviews" className="rounded-xl bg-white p-6 shadow-sm">
+            <div
+              id="reviews"
+              className="bg-background rounded-xl p-6 shadow-sm"
+            >
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Reviews</h2>
+                <h2 className="text-foreground text-2xl font-bold">Reviews</h2>
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={handleAskAboutReviews}>
                     <MessageCircle className="mr-2 h-4 w-4" />
@@ -365,11 +365,11 @@ export default function AttractionDetailPage() {
               {/* User's own review (shown at top) */}
               {userReview && !showReviewForm && (
                 <div className="mb-6">
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
                     <div className="mb-3 flex items-start justify-between">
                       <div>
                         <div className="mb-1 flex items-center gap-2">
-                          <span className="font-semibold text-gray-900">
+                          <span className="text-foreground font-semibold">
                             Your Review
                           </span>
                           <div className="flex gap-0.5">
@@ -377,13 +377,13 @@ export default function AttractionDetailPage() {
                               (filled, index) => (
                                 <Star
                                   key={index}
-                                  className={`h-4 w-4 ${filled ? "fill-current text-amber-400" : "text-gray-300"}`}
+                                  className={`h-4 w-4 ${filled ? "text-chart-4 fill-current" : "text-muted-foreground/30"}`}
                                 />
                               ),
                             )}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-muted-foreground text-sm">
                           {formatDate(userReview.createdAt)}
                         </p>
                       </div>
@@ -404,7 +404,7 @@ export default function AttractionDetailPage() {
                         </Button>
                       </div>
                     </div>
-                    <p className="mb-3 text-gray-700">{userReview.text}</p>
+                    <p className="text-foreground mb-3">{userReview.text}</p>
                     {userReview.images.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {userReview.images.map((image, index) => (
@@ -424,11 +424,11 @@ export default function AttractionDetailPage() {
               {/* Other reviews */}
               {reviewsLoading ? (
                 <div className="py-8 text-center">
-                  <p className="text-gray-500">Loading reviews...</p>
+                  <p className="text-muted-foreground">Loading reviews...</p>
                 </div>
               ) : reviews.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-gray-500">
+                  <p className="text-muted-foreground">
                     No reviews yet. Be the first to review!
                   </p>
                 </div>
@@ -439,17 +439,17 @@ export default function AttractionDetailPage() {
                     .map((review) => (
                       <div
                         key={review.id}
-                        className="border-b border-gray-100 pb-6 last:border-0"
+                        className="border-border border-b pb-6 last:border-0"
                       >
                         <div className="flex items-start gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
-                            <span className="text-sm font-medium text-gray-600">
+                          <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
+                            <span className="text-muted-foreground text-sm font-medium">
                               U
                             </span>
                           </div>
                           <div className="flex-1">
                             <div className="mb-1 flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">
+                              <span className="text-foreground font-semibold">
                                 User {review.userId.slice(-1)}
                               </span>
                               <div className="flex gap-0.5">
@@ -457,16 +457,18 @@ export default function AttractionDetailPage() {
                                   (filled, index) => (
                                     <Star
                                       key={index}
-                                      className={`h-4 w-4 ${filled ? "fill-current text-amber-400" : "text-gray-300"}`}
+                                      className={`h-4 w-4 ${filled ? "text-chart-4 fill-current" : "text-muted-foreground/30"}`}
                                     />
                                   ),
                                 )}
                               </div>
                             </div>
-                            <p className="mb-3 text-sm text-gray-500">
+                            <p className="text-muted-foreground mb-3 text-sm">
                               {formatDate(review.createdAt)}
                             </p>
-                            <p className="mb-3 text-gray-700">{review.text}</p>
+                            <p className="text-foreground mb-3">
+                              {review.text}
+                            </p>
                             {review.images.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {review.images.map((image, index) => (
@@ -490,37 +492,37 @@ export default function AttractionDetailPage() {
 
           {/* Right column - Sidebar info */}
           <div className="lg:col-span-1">
-            <div className="sticky top-22 rounded-xl bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+            <div className="bg-background sticky top-22 rounded-xl p-6 shadow-sm">
+              <h3 className="text-foreground mb-4 text-lg font-semibold">
                 Visit Information
               </h3>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Clock className="mt-0.5 h-5 w-5 text-gray-400" />
+                  <Clock className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
-                    <p className="font-medium text-gray-900">Opening Hours</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-foreground font-medium">Opening Hours</p>
+                    <p className="text-muted-foreground text-sm">
                       {attraction.openingHours}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Ticket className="mt-0.5 h-5 w-5 text-gray-400" />
+                  <Ticket className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
-                    <p className="font-medium text-gray-900">Ticket Price</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-foreground font-medium">Ticket Price</p>
+                    <p className="text-muted-foreground text-sm">
                       {attraction.ticketPrice}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 h-5 w-5 text-gray-400" />
+                  <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
-                    <p className="font-medium text-gray-900">Location</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-foreground font-medium">Location</p>
+                    <p className="text-muted-foreground text-sm">
                       {attraction.location.lat.toFixed(4)},{" "}
                       {attraction.location.lng.toFixed(4)}
                     </p>
@@ -529,19 +531,21 @@ export default function AttractionDetailPage() {
 
                 <div
                   onClick={handleWeatherAndTips}
-                  className="-mx-3 flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50"
+                  className="hover:bg-muted -mx-3 flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition-colors"
                 >
-                  <Cloud className="mt-0.5 h-5 w-5 text-gray-400" />
+                  <Cloud className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
-                    <p className="font-medium text-gray-900">Weather & Tips</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-foreground font-medium">
+                      Weather & Tips
+                    </p>
+                    <p className="text-muted-foreground text-sm">
                       Check weather and travel tips
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 border-t border-gray-100 pt-6">
+              <div className="border-border mt-6 border-t pt-6">
                 <Button variant="default" className="w-full">
                   Get Directions
                 </Button>

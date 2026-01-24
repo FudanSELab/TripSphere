@@ -282,15 +282,15 @@ export default function HotelsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-muted min-h-screen">
       {/* Hero section */}
-      <div className="from-secondary-600 to-accent-600 bg-linear-to-br pt-32 pb-16 text-white">
+      <div className="bg-primary text-primary-foreground pt-16 pb-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
               Find Your Perfect Stay
             </h1>
-            <p className="mx-auto mb-8 max-w-2xl text-xl text-white/80">
+            <p className="text-primary-foreground/80 mx-auto mb-8 max-w-2xl text-xl">
               Discover handpicked hotels with AI-powered recommendations for
               your ideal trip.
             </p>
@@ -298,13 +298,13 @@ export default function HotelsPage() {
             {/* Search bar */}
             <div className="mx-auto max-w-2xl">
               <div className="relative">
-                <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Search className="text-muted-foreground absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   type="text"
                   placeholder="Search hotels, cities, or amenities..."
-                  className="w-full rounded-xl bg-white py-4 pr-4 pl-12 text-gray-900 shadow-lg transition-all focus:ring-4 focus:ring-white/30 focus:outline-none"
+                  className="bg-background text-foreground focus:ring-ring/30 w-full rounded-xl py-4 pr-4 pl-12 shadow-lg transition-all focus:ring-4 focus:outline-none"
                 />
               </div>
             </div>
@@ -324,8 +324,8 @@ export default function HotelsPage() {
                 className={`rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
                   (category === "All" && !selectedCategory) ||
                   selectedCategory === category
-                    ? "bg-secondary-600 text-white shadow-md"
-                    : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "border-border bg-background text-foreground hover:bg-muted border"
                 }`}
                 onClick={() => selectCategory(category)}
               >
@@ -336,7 +336,7 @@ export default function HotelsPage() {
 
           {/* Filter button */}
           <button
-            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+            className="border-border bg-background text-foreground hover:bg-muted flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors"
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="h-4 w-4" />
@@ -348,7 +348,7 @@ export default function HotelsPage() {
         </div>
 
         {/* Results count */}
-        <p className="mb-6 text-gray-600">
+        <p className="text-muted-foreground mb-6">
           {filteredHotels.length} hotels found
         </p>
 
@@ -356,7 +356,7 @@ export default function HotelsPage() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredHotels.map((hotel) => (
             <Link key={hotel.id} href={`/hotels/${hotel.id}`} className="group">
-              <Card padding="none" hover clickable>
+              <Card>
                 {/* Image */}
                 <div className="relative aspect-4/3 overflow-hidden rounded-t-xl">
                   <img
@@ -366,23 +366,23 @@ export default function HotelsPage() {
                   />
                   {/* Overlay badges */}
                   <div className="absolute top-3 left-3 flex gap-2">
-                    <Badge variant="secondary" size="sm">
-                      {hotel.tags?.[0]}
-                    </Badge>
+                    <Badge variant="secondary">{hotel.tags?.[0]}</Badge>
                   </div>
                   {/* Like button */}
                   <button
-                    className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-600 transition-all hover:bg-white hover:text-red-500"
+                    className="bg-background/90 text-muted-foreground hover:bg-background hover:text-destructive absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full transition-all"
                     onClick={(e) => e.preventDefault()}
                   >
                     <Heart className="h-5 w-5" />
                   </button>
                   {/* Price badge */}
-                  <div className="absolute right-3 bottom-3 rounded-lg bg-white/95 px-3 py-1.5 shadow-lg">
-                    <span className="text-secondary-600 text-sm font-bold">
+                  <div className="bg-background/95 absolute right-3 bottom-3 rounded-lg px-3 py-1.5 shadow-lg">
+                    <span className="text-primary text-sm font-bold">
                       From {getLowestPrice(hotel)}
                     </span>
-                    <span className="text-xs text-gray-500">/night</span>
+                    <span className="text-muted-foreground text-xs">
+                      /night
+                    </span>
                   </div>
                 </div>
 
@@ -390,40 +390,40 @@ export default function HotelsPage() {
                 <div className="p-5">
                   {/* Title and rating */}
                   <div className="mb-2 flex items-start justify-between gap-2">
-                    <h3 className="group-hover:text-secondary-600 text-lg font-semibold text-gray-900 transition-colors">
+                    <h3 className="text-foreground group-hover:text-primary text-lg font-semibold transition-colors">
                       {hotel.name}
                     </h3>
-                    <div className="flex items-center gap-1 text-amber-500">
+                    <div className="text-chart-4 flex items-center gap-1">
                       <Star className="h-4 w-4 fill-current" />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-foreground text-sm font-medium">
                         {hotel.rating}
                       </span>
                     </div>
                   </div>
 
                   {/* Location */}
-                  <p className="mb-3 flex items-center gap-1 text-sm text-gray-500">
+                  <p className="text-muted-foreground mb-3 flex items-center gap-1 text-sm">
                     <MapPin className="h-4 w-4" />
                     {hotel.address.city}, {hotel.address.country}
                   </p>
 
                   {/* Description */}
-                  <p className="mb-4 line-clamp-2 text-sm text-gray-600">
+                  <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">
                     {hotel.introduction}
                   </p>
 
                   {/* Tags */}
                   <div className="mb-4 flex flex-wrap gap-2">
                     {hotel.tags?.slice(1, 4).map((tag) => (
-                      <Badge key={tag} variant="outline" size="sm">
+                      <Badge key={tag} variant="outline">
                         {tag}
                       </Badge>
                     ))}
                   </div>
 
                   {/* Room info */}
-                  <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                    <div className="text-sm text-gray-500">
+                  <div className="border-border flex items-center justify-between border-t pt-4">
+                    <div className="text-muted-foreground text-sm">
                       {hotel.rooms?.length || 0} room types available
                     </div>
                     <Button variant="ghost" size="sm">
@@ -439,11 +439,11 @@ export default function HotelsPage() {
         {/* Empty state */}
         {filteredHotels.length === 0 && (
           <div className="py-16 text-center">
-            <Hotel className="mx-auto mb-4 h-16 w-16 text-gray-300" />
-            <h3 className="mb-2 text-xl font-semibold text-gray-900">
+            <Hotel className="text-muted-foreground/30 mx-auto mb-4 h-16 w-16" />
+            <h3 className="text-foreground mb-2 text-xl font-semibold">
               No hotels found
             </h3>
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               Try adjusting your search or filters
             </p>
           </div>
