@@ -880,6 +880,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "nacos-sdk-python" },
+    { name = "openinference-instrumentation-langchain" },
     { name = "opentelemetry-distro", extra = ["otlp"] },
     { name = "pydantic-settings" },
     { name = "tripsphere" },
@@ -904,6 +905,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=0.2.14" },
     { name = "langgraph", specifier = ">=0.2.55" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
+    { name = "openinference-instrumentation-langchain", specifier = ">=0.1.58" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.58b0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "tripsphere", editable = "libs/tripsphere" },
@@ -1461,6 +1463,47 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/94/f4/4690ecb5d70023ce6bfcfeabfe717020f654bde59a775058ec6ac4692463/openai-2.15.0.tar.gz", hash = "sha256:42eb8cbb407d84770633f31bf727d4ffb4138711c670565a41663d9439174fba", size = 627383, upload-time = "2026-01-09T22:10:08.603Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/df/c306f7375d42bafb379934c2df4c2fa3964656c8c782bac75ee10c102818/openai-2.15.0-py3-none-any.whl", hash = "sha256:6ae23b932cd7230f7244e52954daa6602716d6b9bf235401a107af731baea6c3", size = 1067879, upload-time = "2026-01-09T22:10:06.446Z" },
+]
+
+[[package]]
+name = "openinference-instrumentation"
+version = "0.1.42"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openinference-semantic-conventions" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/d0/b19061a21fd6127d2857c77744a36073bba9c1502d1d5e8517b708eb8b7c/openinference_instrumentation-0.1.42.tar.gz", hash = "sha256:2275babc34022e151b5492cfba41d3b12e28377f8e08cb45e5d64fe2d9d7fe37", size = 23954, upload-time = "2025-11-05T01:37:46.869Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/71/43ee4616fc95dbd2f560550f199c6652a5eb93f84e8aa0039bc95c19cfe0/openinference_instrumentation-0.1.42-py3-none-any.whl", hash = "sha256:e7521ff90833ef7cc65db526a2f59b76a496180abeaaee30ec6abbbc0b43f8ec", size = 30086, upload-time = "2025-11-05T01:37:43.866Z" },
+]
+
+[[package]]
+name = "openinference-instrumentation-langchain"
+version = "0.1.58"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openinference-instrumentation" },
+    { name = "openinference-semantic-conventions" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7b/f7/ed82c3d146ca6f1b62dabb2e01fbee782a75245d694b23bc90232366dac7/openinference_instrumentation_langchain-0.1.58.tar.gz", hash = "sha256:36a1b1ad162c4e356bd28257173ee3171ad7788a96089553512c6288fa9a0f1c", size = 75239, upload-time = "2026-01-06T23:50:16.243Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/10/df4805c99e9b17fdd4496b080788340dd09ebc436dd5073e54a1c2633a04/openinference_instrumentation_langchain-0.1.58-py3-none-any.whl", hash = "sha256:9dd2e0b201131e53d9e520624ef4eea6268c08faab1dc10d64b52c60b5169d91", size = 24396, upload-time = "2026-01-06T23:50:14.022Z" },
+]
+
+[[package]]
+name = "openinference-semantic-conventions"
+version = "0.1.25"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/68/81c8a0b90334ff11e4f285e4934c57f30bea3ef0c0b9f99b65e7b80fae3b/openinference_semantic_conventions-0.1.25.tar.gz", hash = "sha256:f0a8c2cfbd00195d1f362b4803518341e80867d446c2959bf1743f1894fce31d", size = 12767, upload-time = "2025-11-05T01:37:45.89Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/3d/dd14ee2eb8a3f3054249562e76b253a1545c76adbbfd43a294f71acde5c3/openinference_semantic_conventions-0.1.25-py3-none-any.whl", hash = "sha256:3814240f3bd61f05d9562b761de70ee793d55b03bca1634edf57d7a2735af238", size = 10395, upload-time = "2025-11-05T01:37:43.697Z" },
 ]
 
 [[package]]

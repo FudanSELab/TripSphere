@@ -421,6 +421,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    user: root  # r/w permissions to the mounted directory
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
