@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useChatSidebar } from "@/hooks/use-chat-sidebar";
 import {
@@ -93,7 +93,9 @@ export function Header() {
             {auth.isAuthenticated ? (
               <div className="group relative">
                 <button className="hover:bg-muted flex items-center gap-2 rounded-lg p-1.5 transition-colors">
-                  <Avatar name={auth.user?.username} size="sm" />
+                  <Avatar>
+                    <AvatarImage src="https://i.pravatar.cc/300" />
+                  </Avatar>
                   <span className="text-foreground text-sm font-medium">
                     {auth.user?.username}
                   </span>

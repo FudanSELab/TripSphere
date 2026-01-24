@@ -1,7 +1,6 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { ImageCarousel } from "@/components/ui/image-carousel";
 import {
   ArrowRight,
   Calendar,
@@ -177,7 +176,7 @@ export default function Home() {
             <div className="relative hidden lg:block">
               <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-2xl" />
               <div className="relative">
-                <ImageCarousel images={heroImages} autoPlayInterval={4000} />
+                
               </div>
             </div>
           </div>
