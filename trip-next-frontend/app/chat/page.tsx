@@ -110,9 +110,9 @@ export default function ChatPage() {
           "--header-height": HEADER_HEIGHT,
         } as React.CSSProperties
       }
-      className="!min-h-[calc(100vh-var(--header-height))]"
+      className="min-h-[calc(100vh-var(--header-height))]!"
     >
-      <Sidebar className="!top-[var(--header-height)] !h-[calc(100vh-var(--header-height))]">
+      <Sidebar className="top-(--header-height)! h-[calc(100vh-var(--header-height))]!">
         <SidebarHeader className="border-sidebar-border border-b p-4">
           <Button className="w-full justify-center" onClick={createNewChat}>
             <Plus className="mr-2 h-4 w-4" />
