@@ -38,7 +38,7 @@ export default function AttractionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="from-primary-600 to-secondary-600 bg-linear-to-br pt-32 pb-16 text-white">
+      <section className="from-primary-600 to-secondary-600 bg-linear-to-br pt-16 pb-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">

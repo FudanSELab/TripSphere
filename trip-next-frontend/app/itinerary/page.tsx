@@ -138,7 +138,7 @@ export default function ItineraryPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
-      <div className="bg-linear-to-br from-green-600 to-emerald-600 pt-32 pb-16 text-white">
+      <div className="bg-linear-to-br from-green-600 to-emerald-600 pt-16 pb-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium">

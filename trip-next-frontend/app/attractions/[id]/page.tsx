@@ -204,16 +204,14 @@ export default function AttractionDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back button */}
-      <div className="pt-16">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <Link
-            href="/attractions"
-            className="inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            Back to Attractions
-          </Link>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <Link
+          href="/attractions"
+          className="inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Back to Attractions
+        </Link>
       </div>
 
       {/* Main content */}

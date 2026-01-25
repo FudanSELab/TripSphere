@@ -77,7 +77,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="from-primary-50 to-secondary-50 flex min-h-screen items-center justify-center bg-linear-to-br via-white px-4 py-12 sm:px-6 lg:px-8">
+    <div className="from-primary-50 to-secondary-50 flex min-h-[calc(100vh-4rem)] items-center justify-center bg-linear-to-br via-white px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md" padding="lg">
         <div className="mb-8 text-center">
           <div className="from-primary-500 to-secondary-500 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br text-2xl font-bold text-white">

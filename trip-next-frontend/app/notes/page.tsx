@@ -147,7 +147,7 @@ export default function NotesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero section */}
-      <div className="bg-linear-to-br from-amber-500 to-orange-500 pt-32 pb-16 text-white">
+      <div className="bg-linear-to-br from-amber-500 to-orange-500 pt-16 pb-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold sm:text-5xl">
