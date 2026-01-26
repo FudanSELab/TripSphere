@@ -62,6 +62,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
     try:
         search_result = await search_attractions_nearby.ainvoke(  # pyright: ignore
             {
+                "nacos_naming": state["nacos_naming"],
                 "center_longitude": destination_coords["longitude"],
                 "center_latitude": destination_coords["latitude"],
                 "radius_km": 25.0,
@@ -205,7 +206,9 @@ def _find_matching_attraction(
     # 4. Partial match case-insensitive
     for name, details in attraction_details.items():
         if name.lower() in location_lower or location_lower in name.lower():
-            logger.debug(f"Fuzzy matched (case-insensitive) '{location_name}' -> '{name}'")
+            logger.debug(
+                f"Fuzzy matched (case-insensitive) '{location_name}' -> '{name}'"
+            )
             return details
 
     return None
@@ -237,8 +240,11 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
             activity_name = activity_data.get("name", "Activity")
             location_name = activity_data.get("location", activity_name)
 
-            # Try to get real coordinates from stored attraction details (with fuzzy matching)
-            attraction_info = _find_matching_attraction(location_name, attraction_details)
+            # Try to get real coordinates from
+            # stored attraction details (with fuzzy matching)
+            attraction_info = _find_matching_attraction(
+                location_name, attraction_details
+            )
 
             if attraction_info:
                 location = ActivityLocation(
@@ -251,7 +257,8 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
             else:
                 # Fallback: use destination coordinates directly (avoid extra geocoding)
                 logger.info(
-                    f"No matching attraction for '{location_name}', using destination coords"
+                    f"No matching attraction for '{location_name}',"
+                    " using destination coords"
                 )
                 dest_coords = state.get("destination_coords", {})
                 location = ActivityLocation(

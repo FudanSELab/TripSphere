@@ -2,6 +2,8 @@ import logging
 import warnings
 
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
+from openinference.instrumentation.google_adk import GoogleADKInstrumentor
+from openinference.instrumentation.litellm import LiteLLMInstrumentor
 from starlette.applications import Starlette
 
 from journey_assistant.agent import agent_card, get_root_agent
@@ -11,6 +13,10 @@ from journey_assistant.nacos.ai import NacosAI
 warnings.filterwarnings("ignore")  # Suppress ADK Experimental Warnings
 
 logger = logging.getLogger(__name__)
+
+# Enable OpenInference instrumentation
+LiteLLMInstrumentor().instrument()
+GoogleADKInstrumentor().instrument()
 
 
 def create_app() -> Starlette:

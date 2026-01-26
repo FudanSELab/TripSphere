@@ -464,7 +464,7 @@
                 "deprecated": false
             }
         },
-        "/api/v1/messages:send": {
+        "/api/v1/messages/send": {
             "post": {
                 "tags": [
                     "Messages"

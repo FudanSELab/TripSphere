@@ -65,7 +65,7 @@ def _check_conversation_access(
     return conversation
 
 
-@messages.post(":send")
+@messages.post("/send")
 async def send_message(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)

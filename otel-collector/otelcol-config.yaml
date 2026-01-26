@@ -8,17 +8,28 @@ receivers:
 
 processors:
   batch:
+    timeout: 1s
+    send_batch_size: 1024
 
 exporters:
+  # Export traces to Tempo
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  
+  # Keep debug exporter for troubleshooting
   debug:
     verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [otlp/tempo, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]

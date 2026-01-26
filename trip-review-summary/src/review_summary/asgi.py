@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
 from neo4j import AsyncDriver, AsyncGraphDatabase
+from openinference.instrumentation.langchain import LangChainInstrumentor
 from qdrant_client import AsyncQdrantClient
 
 from review_summary.agent.card import agent_card
@@ -28,6 +29,9 @@ from review_summary.routers.summaries import summaries
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+# Enable OpenInference instrumentation
+LangChainInstrumentor().instrument()
 
 
 @asynccontextmanager

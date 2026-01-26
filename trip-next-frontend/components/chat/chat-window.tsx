@@ -208,21 +208,10 @@ export function ChatWindow({
     <div
       className={
         fullScreen
-          ? "flex h-screen flex-col bg-white"
+          ? "flex h-full flex-col bg-white"
           : "flex h-150 flex-col rounded-2xl border border-gray-100 bg-white shadow-lg"
       }
     >
-      {/* Header */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-6 py-4">
-        <div className="from-primary-500 to-secondary-500 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br">
-          <Sparkles className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h2 className="font-semibold text-gray-900">AI Travel Assistant</h2>
-          <p className="text-sm text-gray-500">Powered by TripSphere</p>
-        </div>
-      </div>
-
       {/* Messages area */}
       <div
         ref={messagesContainerRef}

@@ -5,6 +5,8 @@ from typing import Any, AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
+from openinference.instrumentation.google_adk import GoogleADKInstrumentor
+from openinference.instrumentation.litellm import LiteLLMInstrumentor
 from pymongo import AsyncMongoClient
 
 from chat.config.logging import setup_logging
@@ -19,6 +21,10 @@ from chat.routers.message import messages
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+# Enable OpenInference instrumentation
+LiteLLMInstrumentor().instrument()
+GoogleADKInstrumentor().instrument()
 
 
 @asynccontextmanager

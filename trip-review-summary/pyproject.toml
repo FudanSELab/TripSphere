@@ -13,6 +13,7 @@ dependencies = [
     "langchain-openai>=1.1.6",
     "nacos-sdk-python>=3.0.3",
     "networkx>=3.6.1",
+    "openinference-instrumentation-langchain>=0.1.58",
     "opentelemetry-distro[otlp]>=0.60b1",
     "pydantic-settings>=2.12.0",
     "qdrant-client>=1.16.2",

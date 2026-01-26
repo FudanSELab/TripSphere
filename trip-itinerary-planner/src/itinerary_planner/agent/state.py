@@ -4,9 +4,13 @@ from typing import Annotated, Any, TypedDict
 from itinerary_planner.models.activity import ActivitySuggestion
 from itinerary_planner.models.itinerary import Itinerary, TravelInterest, TripPace
 from itinerary_planner.models.planning import PlanningProgressEvent
+from itinerary_planner.nacos.naming import NacosNaming
 
 
 class PlanningState(TypedDict):
+    # Nacos naming service instance
+    nacos_naming: NacosNaming
+
     # Input parameters
     user_id: str
     destination: str
