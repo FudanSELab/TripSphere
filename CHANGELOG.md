@@ -4,9 +4,12 @@ Please update changelog as part of any significant pull request. Place short des
 
 ## Unreleased
 
-- trip-chat-service:
-  - Universal conversation and message management
-  - A2A agent integration based on Google ADK
-- trip-review-summary:
-  - RocketMQ consumer for creating text units from reviews
-  - Celery tasks for running GraphRAG indexing pipeline
+- Placeholder
+
+## 0.1.0
+
+- [attraction] Attraction geo-spatial search
+- [chat] Conversation management and A2A integration via Google ADK
+- [itinerary-planner] Itinerary planner built with LangGraph
+- [journey-assistant] Journey assistant built with Google ADK
+- [review-summary] GraphRAG-based review summary
