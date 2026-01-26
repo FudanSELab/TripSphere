@@ -184,11 +184,14 @@ services:
       - GRPC_ATTRACTION_URL=trip-attraction-service:50053
       - HTTP_CHAT_URL=http://trip-chat-service:24210
       - HTTP_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215
+      - GRPC_REVIEW_URL=trip-review-service:50057
       - GRPC_USER_URL=trip-user-service:50056
     depends_on:
       trip-chat-service:
         condition: service_started
       trip-itinerary-planner:
+        condition: service_started
+      trip-review-service:
         condition: service_started
       trip-user-service:
         condition: service_started

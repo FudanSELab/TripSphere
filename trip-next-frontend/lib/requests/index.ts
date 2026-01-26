@@ -10,4 +10,5 @@ export {
 } from "./base/request";
 
 export * from "./attraction/attraction";
+export * from "./review/review";
 export * from "./user/user";

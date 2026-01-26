@@ -7,6 +7,17 @@ import {
   FindAttractionsWithinRadiusResponse,
 } from "@/lib/grpc/gen/tripsphere/attraction/attraction";
 import {
+  CreateReviewRequest,
+  CreateReviewResponse,
+  DeleteReviewRequest,
+  DeleteReviewResponse,
+  GetReviewByTargetIDRequest,
+  GetReviewByTargetIDResponse,
+  Review,
+  UpdateReviewRequest,
+  UpdateReviewResponse,
+} from "@/lib/grpc/gen/tripsphere/review/review";
+import {
   GetCurrentUserRequest,
   GetCurrentUserResponse,
   LoginRequest,
@@ -74,6 +85,39 @@ export interface RpcProxyMap {
     FindAttractionsWithinRadiusResponse,
     FindAttractionsWithinRadiusRequest,
     Attraction[]
+  >;
+
+  // ============================================================================
+  // Review APIs
+  // ============================================================================
+  "GET /api/v1/reviews": RpcProxyRule<
+    GetReviewByTargetIDRequest,
+    GetReviewByTargetIDResponse,
+    {
+      targetType: string;
+      targetId: string;
+      pageNumber: number;
+      pageSize: number;
+    },
+    { reviews: Review[]; totalReviews: number }
+  >;
+  "POST /api/v1/reviews": RpcProxyRule<
+    CreateReviewRequest,
+    CreateReviewResponse,
+    CreateReviewRequest,
+    { id: string; status: boolean }
+  >;
+  "PUT /api/v1/reviews/:id": RpcProxyRule<
+    UpdateReviewRequest,
+    UpdateReviewResponse,
+    UpdateReviewRequest,
+    { status: boolean }
+  >;
+  "DELETE /api/v1/reviews/:id": RpcProxyRule<
+    DeleteReviewRequest,
+    DeleteReviewResponse,
+    { id: string },
+    { status: boolean }
   >;
 }
 
@@ -153,5 +197,49 @@ export const grpcProxyMap: RpcProxyMap = {
     buildHttpResponse: (response: FindAttractionsWithinRadiusResponse) => {
       return response.content;
     },
+  },
+  "GET /api/v1/reviews": {
+    method: grpcClient.review.getReviewByTargetId.bind(grpcClient.review),
+    buildRPCRequest: (request: {
+      targetType: string;
+      targetId: string;
+      pageNumber: number;
+      pageSize: number;
+    }) =>
+      GetReviewByTargetIDRequest.create({
+        targetType: request.targetType,
+        targetId: request.targetId,
+        pageNumber: request.pageNumber || 1,
+        pageSize: request.pageSize || 20,
+      }),
+    buildHttpResponse: (response: GetReviewByTargetIDResponse) => ({
+      reviews: response.reviews,
+      totalReviews: response.totalReviews,
+    }),
+  },
+  "POST /api/v1/reviews": {
+    method: grpcClient.review.createReview.bind(grpcClient.review),
+    buildRPCRequest: (request: CreateReviewRequest) =>
+      CreateReviewRequest.create(request),
+    buildHttpResponse: (response: CreateReviewResponse) => ({
+      id: response.id,
+      status: response.status,
+    }),
+  },
+  "PUT /api/v1/reviews/:id": {
+    method: grpcClient.review.updateReview.bind(grpcClient.review),
+    buildRPCRequest: (request: UpdateReviewRequest) =>
+      UpdateReviewRequest.create(request),
+    buildHttpResponse: (response: UpdateReviewResponse) => ({
+      status: response.status,
+    }),
+  },
+  "DELETE /api/v1/reviews/:id": {
+    method: grpcClient.review.deleteReview.bind(grpcClient.review),
+    buildRPCRequest: (request: { id: string }) =>
+      DeleteReviewRequest.create({ id: request.id }),
+    buildHttpResponse: (response: DeleteReviewResponse) => ({
+      status: response.status,
+    }),
   },
 };

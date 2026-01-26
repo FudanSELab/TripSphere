@@ -1,11 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type {
-  CreateReviewRequest,
-  Review,
-  UpdateReviewRequest,
-} from "@/lib/types";
+import { useReviews } from "@/lib/hooks/use-reviews";
+import type { Review } from "@/lib/types";
 import { Star, Upload, X } from "lucide-react";
 import { useState } from "react";
 
@@ -24,6 +21,8 @@ export function ReviewForm({
   onSubmit,
   onCancel,
 }: ReviewFormProps) {
+  const { createReview: createReviewAPI, updateReview: updateReviewAPI } =
+    useReviews();
   const [rating, setRating] = useState(existingReview?.rating || 0);
   const [text, setText] = useState(existingReview?.text || "");
   const [images, setImages] = useState<string[]>(existingReview?.images || []);
@@ -93,40 +92,30 @@ export function ReviewForm({
     try {
       if (existingReview) {
         // Update existing review
-        const updateRequest: UpdateReviewRequest = {
+        const result = await updateReviewAPI({
           id: existingReview.id,
           rating: rating,
           text: text,
           images: images,
-        };
+        });
 
-        // Call update API
-        // await fetch(`${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews/${existingReview.id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(updateRequest),
-        // })
-
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+        if (!result.status) {
+          throw new Error("Failed to update review");
+        }
       } else {
         // Create new review
-        const createRequest: CreateReviewRequest = {
+        const result = await createReviewAPI({
           userId: userId,
           targetType: "attraction",
           targetId: attractionId,
           rating: rating,
           text: text,
           images: images,
-        };
+        });
 
-        // Call create API
-        // await fetch(`${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(createRequest),
-        // })
-
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+        if (!result.status) {
+          throw new Error("Failed to create review");
+        }
       }
 
       onSubmit();

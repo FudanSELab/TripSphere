@@ -1,8 +1,13 @@
-import type {
-  CreateReviewRequest,
-  GetReviewsResponse,
-  UpdateReviewRequest,
-} from "@/lib/types";
+import type { Review as GrpcReview } from "@/lib/grpc/gen/tripsphere/review/review";
+import {
+  createReview as createReviewApi,
+  deleteReview as deleteReviewApi,
+  getReviewsByTarget,
+  updateReview as updateReviewApi,
+  type CreateReviewRequest,
+  type GetReviewsResponse,
+  type UpdateReviewRequest,
+} from "@/lib/requests";
 import { useState } from "react";
 
 export function useReviews() {
@@ -12,33 +17,42 @@ export function useReviews() {
   const fetchReviews = async (
     targetType: "attraction" | "hotel",
     targetId: string,
-    cursor?: string,
-    limit: number = 20,
-  ): Promise<GetReviewsResponse> => {
+    pageNumber: number = 1,
+    pageSize: number = 20,
+  ): Promise<GetReviewsResponse & { status: boolean }> => {
     setLoading(true);
     setError(null);
     try {
-      // In production, this would call the actual API
-      // const response = await fetch(
-      //   `${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews?targetType=${targetType}&targetId=${targetId}&cursor=${cursor || ''}&limit=${limit}`
-      // )
-      // const data = await response.json()
-      // return data
+      const response = await getReviewsByTarget({
+        targetType,
+        targetId,
+        pageNumber,
+        pageSize,
+      });
 
-      // For now, return mock data
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      if (response.data) {
+        return {
+          reviews: response.data.reviews || [],
+          totalReviews: response.data.totalReviews || 0,
+          status: true,
+        };
+      }
 
+      // If no data, return empty result
       return {
         reviews: [],
         totalReviews: 0,
-        status: true,
-        nextCursor: "",
+        status: false,
       };
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to fetch reviews";
       setError(message);
-      throw err;
+      return {
+        reviews: [],
+        totalReviews: 0,
+        status: false,
+      };
     } finally {
       setLoading(false);
     }
@@ -50,21 +64,18 @@ export function useReviews() {
     setLoading(true);
     setError(null);
     try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(request),
-      // })
-      // const data = await response.json()
-      // return data
+      const response = await createReviewApi(request);
 
-      // For now, return mock response
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (response.data) {
+        return {
+          id: response.data.id,
+          status: response.data.status,
+        };
+      }
 
       return {
-        id: `review-${Date.now()}`,
-        status: true,
+        id: "",
+        status: false,
       };
     } catch (err) {
       const message =
@@ -82,20 +93,16 @@ export function useReviews() {
     setLoading(true);
     setError(null);
     try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews/${request.id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(request),
-      // })
-      // const data = await response.json()
-      // return data
+      const response = await updateReviewApi(request);
 
-      // For now, return mock response
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (response.data) {
+        return {
+          status: response.data.status,
+        };
+      }
 
       return {
-        status: true,
+        status: false,
       };
     } catch (err) {
       const message =
@@ -113,18 +120,16 @@ export function useReviews() {
     setLoading(true);
     setError(null);
     try {
-      // In production, this would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews/${reviewId}`, {
-      //   method: 'DELETE',
-      // })
-      // const data = await response.json()
-      // return data
+      const response = await deleteReviewApi(reviewId);
 
-      // For now, return mock response
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (response.data) {
+        return {
+          status: response.data.status,
+        };
+      }
 
       return {
-        status: true,
+        status: false,
       };
     } catch (err) {
       const message =
@@ -145,3 +150,6 @@ export function useReviews() {
     deleteReview,
   };
 }
+
+// Export GrpcReview type for use in components
+export type { GrpcReview };

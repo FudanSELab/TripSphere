@@ -59,6 +59,10 @@ WORKDIR /app
 # Copy binary from build stage
 COPY --from=builder /build/trip-review-service .
 
+# Create directories for RocketMQ and Nacos logs with proper permissions
+RUN mkdir -p /logs /tmp/nacos/log /tmp/nacos/cache && \
+    chown -R appuser:appuser /logs /tmp/nacos
+
 # Change file ownership
 RUN chown -R appuser:appuser /app
 

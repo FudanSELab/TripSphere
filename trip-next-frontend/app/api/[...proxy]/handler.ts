@@ -97,8 +97,23 @@ export async function proxyHandler(req: NextRequest): Promise<NextResponse> {
       ? await parseBody(req)
       : undefined;
 
-    // Merge body with route parameters for GET requests
-    const requestData = body || routeParams;
+    // For GET requests, parse query parameters and merge with route params
+    let requestData: Record<string, unknown> = { ...routeParams };
+    if (req.method.toUpperCase() === "GET") {
+      const queryParams = Object.fromEntries(
+        req.nextUrl.searchParams.entries(),
+      );
+      // Convert numeric string values to numbers for pagination
+      for (const [key, value] of Object.entries(queryParams)) {
+        if (key === "pageNumber" || key === "pageSize" || key === "limit") {
+          requestData[key] = parseInt(value as string, 10) || 0;
+        } else {
+          requestData[key] = value;
+        }
+      }
+    } else if (body) {
+      requestData = { ...(body as Record<string, unknown>), ...routeParams };
+    }
 
     // Type assertion needed because buildRPCRequest signature varies by rule
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

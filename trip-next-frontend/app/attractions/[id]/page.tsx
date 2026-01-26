@@ -4,7 +4,9 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAttractions } from "@/lib/hooks/use-attractions";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { useChatSidebar } from "@/lib/hooks/use-chat-sidebar";
+import { useReviews, type GrpcReview } from "@/lib/hooks/use-reviews";
 import type { Attraction, ChatContext, Review } from "@/lib/types";
 import {
   ChevronLeft,
@@ -21,14 +23,28 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// Helper to convert GrpcReview to Review type
+function convertGrpcReviewToReview(grpcReview: GrpcReview): Review {
+  return {
+    id: grpcReview.id,
+    userId: grpcReview.userId,
+    targetType: grpcReview.targetType,
+    targetId: grpcReview.targetId,
+    rating: grpcReview.rating,
+    text: grpcReview.text,
+    images: grpcReview.images || [],
+    createdAt: grpcReview.createdAt * 1000, // Convert seconds to milliseconds
+    updatedAt: grpcReview.updatedAt * 1000,
+  };
+}
+
 export default function AttractionDetailPage() {
   const params = useParams();
   const attractionId = params.id as string;
   const { fetchAttraction } = useAttractions();
+  const { fetchReviews: fetchReviewsFromAPI } = useReviews();
   const chatSidebar = useChatSidebar();
-
-  // TODO: Replace with real authentication when user service is integrated
-  const currentUser = { id: "user-1", username: "Demo User" };
+  const { user: currentUser, isAuthenticated } = useAuth();
 
   // State
   const [attraction, setAttraction] = useState<Attraction | null>(null);
@@ -37,6 +53,7 @@ export default function AttractionDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [userReview, setUserReview] = useState<Review | null>(null);
+  const [realReviewsCount, setRealReviewsCount] = useState(0);
 
   // Scroll to top when navigating to this page
   useEffect(() => {
@@ -57,19 +74,14 @@ export default function AttractionDetailPage() {
     loadAttraction();
   }, [attractionId]);
 
-  // Fetch reviews
+  // Fetch reviews - combines real reviews from API with mock reviews
   const fetchReviews = async () => {
     setReviewsLoading(true);
     try {
-      // This would call the actual API
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL}/reviews?targetType=attraction&targetId=${attractionId}`)
-      // For now, using mock data
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Mock reviews data
+      // Mock reviews data - always shown as baseline
       const mockReviews: Review[] = [
         {
-          id: "review-1",
+          id: "mock-review-1",
           userId: "user-2",
           targetType: "attraction",
           targetId: attractionId,
@@ -82,7 +94,7 @@ export default function AttractionDetailPage() {
           updatedAt: Date.now() - 86400000 * 2,
         },
         {
-          id: "review-2",
+          id: "mock-review-2",
           userId: "user-3",
           targetType: "attraction",
           targetId: attractionId,
@@ -93,7 +105,7 @@ export default function AttractionDetailPage() {
           updatedAt: Date.now() - 86400000 * 5,
         },
         {
-          id: "review-3",
+          id: "mock-review-3",
           userId: "user-4",
           targetType: "attraction",
           targetId: attractionId,
@@ -108,12 +120,38 @@ export default function AttractionDetailPage() {
         },
       ];
 
-      setReviews(mockReviews);
+      // Try to fetch real reviews from review-service
+      let realReviews: Review[] = [];
+      try {
+        const response = await fetchReviewsFromAPI(
+          "attraction",
+          attractionId,
+          1,
+          20,
+        );
+        if (response.status && response.reviews.length > 0) {
+          realReviews = response.reviews.map(convertGrpcReviewToReview);
+          setRealReviewsCount(response.totalReviews);
+        }
+      } catch (error) {
+        console.warn(
+          "Failed to fetch reviews from review-service, using mock data only:",
+          error,
+        );
+      }
 
-      // Check if current user has reviewed
-      setUserReview(
-        mockReviews.find((r) => r.userId === currentUser.id) || null,
-      );
+      // Combine real reviews (first) with mock reviews
+      const allReviews = [...realReviews, ...mockReviews];
+      setReviews(allReviews);
+
+      // Check if current user has reviewed (only if logged in)
+      if (currentUser?.id) {
+        setUserReview(
+          allReviews.find((r) => r.userId === currentUser.id) || null,
+        );
+      } else {
+        setUserReview(null);
+      }
     } finally {
       setReviewsLoading(false);
     }
@@ -121,7 +159,7 @@ export default function AttractionDetailPage() {
 
   useEffect(() => {
     fetchReviews();
-  }, [attractionId]);
+  }, [attractionId, currentUser?.id]);
 
   const handleReviewSubmit = () => {
     setShowReviewForm(false);
@@ -333,13 +371,20 @@ export default function AttractionDetailPage() {
             {/* Reviews Section */}
             <div id="reviews" className="rounded-xl bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Reviews</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-gray-900">Reviews</h2>
+                  {realReviewsCount > 0 && (
+                    <Badge variant="secondary" size="sm">
+                      {realReviewsCount} from users
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={handleAskAboutReviews}>
                     <MessageCircle className="mr-2 h-4 w-4" />
                     Ask About Reviews
                   </Button>
-                  {!userReview && (
+                  {isAuthenticated && !userReview && (
                     <Button variant="default" onClick={openReviewForm}>
                       Write a Review
                     </Button>
@@ -348,7 +393,7 @@ export default function AttractionDetailPage() {
               </div>
 
               {/* Review Form */}
-              {showReviewForm && (
+              {showReviewForm && currentUser && (
                 <div className="mb-6">
                   <ReviewForm
                     attractionId={attractionId}
@@ -433,54 +478,79 @@ export default function AttractionDetailPage() {
               ) : (
                 <div className="space-y-6">
                   {reviews
-                    .filter((r) => r.userId !== currentUser.id)
-                    .map((review) => (
-                      <div
-                        key={review.id}
-                        className="border-b border-gray-100 pb-6 last:border-0"
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
-                            <span className="text-sm font-medium text-gray-600">
-                              U
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="mb-1 flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">
-                                User {review.userId.slice(-1)}
+                    .filter((r) => !currentUser || r.userId !== currentUser.id)
+                    .map((review) => {
+                      const isMockReview = review.id.startsWith("mock-");
+                      return (
+                        <div
+                          key={review.id}
+                          className="border-b border-gray-100 pb-6 last:border-0"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div
+                              className={`flex h-10 w-10 items-center justify-center rounded-full ${isMockReview ? "bg-gray-200" : "bg-blue-100"}`}
+                            >
+                              <span
+                                className={`text-sm font-medium ${isMockReview ? "text-gray-600" : "text-blue-600"}`}
+                              >
+                                {isMockReview ? "M" : "U"}
                               </span>
-                              <div className="flex gap-0.5">
-                                {getRatingStars(review.rating).map(
-                                  (filled, index) => (
-                                    <Star
-                                      key={index}
-                                      className={`h-4 w-4 ${filled ? "fill-current text-amber-400" : "text-gray-300"}`}
-                                    />
-                                  ),
-                                )}
-                              </div>
                             </div>
-                            <p className="mb-3 text-sm text-gray-500">
-                              {formatDate(review.createdAt)}
-                            </p>
-                            <p className="mb-3 text-gray-700">{review.text}</p>
-                            {review.images.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {review.images.map((image, index) => (
-                                  <img
-                                    key={index}
-                                    src={image}
-                                    alt={`Review image ${index + 1}`}
-                                    className="h-24 w-24 rounded-lg object-cover"
-                                  />
-                                ))}
+                            <div className="flex-1">
+                              <div className="mb-1 flex items-center gap-2">
+                                <span className="font-semibold text-gray-900">
+                                  {isMockReview
+                                    ? `Sample User ${review.userId.slice(-1)}`
+                                    : `User ${review.userId.slice(0, 6)}...`}
+                                </span>
+                                {!isMockReview && (
+                                  <Badge
+                                    variant="default"
+                                    size="sm"
+                                    className="bg-blue-500"
+                                  >
+                                    Real
+                                  </Badge>
+                                )}
+                                {isMockReview && (
+                                  <Badge variant="secondary" size="sm">
+                                    Sample
+                                  </Badge>
+                                )}
+                                <div className="flex gap-0.5">
+                                  {getRatingStars(review.rating).map(
+                                    (filled, index) => (
+                                      <Star
+                                        key={index}
+                                        className={`h-4 w-4 ${filled ? "fill-current text-amber-400" : "text-gray-300"}`}
+                                      />
+                                    ),
+                                  )}
+                                </div>
                               </div>
-                            )}
+                              <p className="mb-3 text-sm text-gray-500">
+                                {formatDate(review.createdAt)}
+                              </p>
+                              <p className="mb-3 text-gray-700">
+                                {review.text}
+                              </p>
+                              {review.images.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {review.images.map((image, index) => (
+                                    <img
+                                      key={index}
+                                      src={image}
+                                      alt={`Review image ${index + 1}`}
+                                      className="h-24 w-24 rounded-lg object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               )}
             </div>
