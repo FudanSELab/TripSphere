@@ -1,14 +1,16 @@
 import logging
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.agent.workflow import create_planning_workflow
+from itinerary_planner.common.deps import provide_nacos_naming
 from itinerary_planner.models.itinerary import Itinerary, TravelInterest, TripPace
 from itinerary_planner.models.planning import PlanningProgressEvent
+from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.utils.sse import encode
 
 logger = logging.getLogger(__name__)
@@ -32,37 +34,43 @@ class PlanItineraryRequest(BaseModel):
         default="", description="Additional preferences"
     )
 
-    def initial_state(self) -> PlanningState:
-        """Convert request to initial PlanningState for workflow."""
-        return PlanningState(
-            user_id=self.user_id,
-            destination=self.destination,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            interests=self.interests,
-            pace=self.pace,
-            additional_preferences=self.additional_preferences,
-            # Initialize working data fields
-            destination_info="",
-            destination_coords={},
-            activity_suggestions=[],
-            attraction_details={},
-            daily_schedule={},
-            # Initialize output fields
-            itinerary=None,
-            error=None,
-            events=[],
-        )
-
 
 planning = APIRouter(prefix="/itineraries/plannings", tags=["Itineraries Plannings"])
 
 
+def get_initial_state(
+    request: PlanItineraryRequest, nacos_naming: NacosNaming
+) -> PlanningState:
+    return PlanningState(
+        nacos_naming=nacos_naming,
+        user_id=request.user_id,
+        destination=request.destination,
+        start_date=request.start_date,
+        end_date=request.end_date,
+        interests=request.interests,
+        pace=request.pace,
+        additional_preferences=request.additional_preferences,
+        # Initialize working data fields
+        destination_info="",
+        destination_coords={},
+        activity_suggestions=[],
+        attraction_details={},
+        daily_schedule={},
+        # Initialize output fields
+        itinerary=None,
+        error=None,
+        events=[],
+    )
+
+
 @planning.post("", status_code=201)
-async def plan_itinerary(request: PlanItineraryRequest) -> Itinerary:
+async def plan_itinerary(
+    request: PlanItineraryRequest,
+    nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
+) -> Itinerary:
     logger.info(f"Planning itinerary for {request.destination}")
 
-    initial_state = request.initial_state()
+    initial_state: PlanningState = get_initial_state(request, nacos_naming)
 
     try:
         # Run workflow to completion
@@ -81,9 +89,7 @@ async def plan_itinerary(request: PlanItineraryRequest) -> Itinerary:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-async def _stream_events(request: PlanItineraryRequest) -> AsyncGenerator[str, None]:
-    initial_state = request.initial_state()
-
+async def _stream_events(initial_state: PlanningState) -> AsyncGenerator[str, None]:
     try:
         async for chunk in _workflow.astream(initial_state, stream_mode="updates"):  # pyright: ignore
             # Chunk is a dict with node name as key
@@ -101,7 +107,14 @@ async def _stream_events(request: PlanItineraryRequest) -> AsyncGenerator[str, N
 
 
 @planning.post("/stream", status_code=201)
-async def plan_itinerary_stream(request: PlanItineraryRequest) -> StreamingResponse:
+async def plan_itinerary_stream(
+    request: PlanItineraryRequest,
+    nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
+) -> StreamingResponse:
     logger.info(f"Streaming itinerary planning for {request.destination}")
 
-    return StreamingResponse(_stream_events(request), media_type="text/event-stream")
+    initial_state: PlanningState = get_initial_state(request, nacos_naming)
+
+    return StreamingResponse(
+        _stream_events(initial_state), media_type="text/event-stream"
+    )

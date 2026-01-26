@@ -1,10 +1,12 @@
 import logging
 
 import grpc
-from langchain_core.tools import tool  # pyright: ignore
+from langchain.tools import tool  # pyright: ignore
 from pydantic import BaseModel, Field
 from tripsphere.attraction import attraction_pb2, attraction_pb2_grpc
 from tripsphere.common import geo_pb2
+
+from itinerary_planner.nacos.naming import NacosNaming
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,7 @@ class AttractionSearchResult(BaseModel):
 
 @tool
 async def search_attractions_nearby(
+    nacos_naming: NacosNaming,
     center_longitude: float,
     center_latitude: float,
     radius_km: float = 20.0,
@@ -48,11 +51,15 @@ async def search_attractions_nearby(
         f"within {radius_km}km, tags: {tags}, limit: {limit}"
     )
 
+    instance = await nacos_naming.get_service_instance("trip-attraction-service")
+    ip = instance.ip
+    port = instance.metadata["gRPC_port"]  # pyright: ignore
+
     location = geo_pb2.Location(latitude=center_latitude, longitude=center_longitude)
     request = attraction_pb2.FindAttractionsWithinRadiusRequest(
         location=location, radius_km=radius_km
     )
-    async with grpc.aio.insecure_channel("localhost:50053") as channel:
+    async with grpc.aio.insecure_channel(f"{ip}:{port}") as channel:
         stub = attraction_pb2_grpc.AttractionServiceStub(channel)
         response = await stub.FindAttractionsWithinRadius(request)
 

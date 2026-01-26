@@ -62,6 +62,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
     try:
         search_result = await search_attractions_nearby.ainvoke(  # pyright: ignore
             {
+                "nacos_naming": state["nacos_naming"],
                 "center_longitude": destination_coords["longitude"],
                 "center_latitude": destination_coords["latitude"],
                 "radius_km": 25.0,
