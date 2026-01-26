@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 
 import pytest
 from fastapi import FastAPI
@@ -41,12 +42,12 @@ def mock_conversation_repository(app: FastAPI, mocker: MockerFixture) -> AsyncMo
     mock_conversation_repository = mocker.AsyncMock(spec=ConversationRepository)
 
     def override_provide_conversation_repository() -> AsyncMockType:
-        return mock_conversation_repository
+        return cast(AsyncMockType, mock_conversation_repository)
 
     app.dependency_overrides[provide_conversation_repository] = (
         override_provide_conversation_repository
     )
-    return mock_conversation_repository
+    return cast(AsyncMockType, mock_conversation_repository)
 
 
 @pytest.fixture
@@ -55,12 +56,12 @@ def mock_message_repository(app: FastAPI, mocker: MockerFixture) -> AsyncMockTyp
     mock_message_repository = mocker.AsyncMock(spec=MessageRepository)
 
     def override_provide_message_repository() -> AsyncMockType:
-        return mock_message_repository
+        return cast(AsyncMockType, mock_message_repository)
 
     app.dependency_overrides[provide_message_repository] = (
         override_provide_message_repository
     )
-    return mock_message_repository
+    return cast(AsyncMockType, mock_message_repository)
 
 
 @pytest.fixture
@@ -69,12 +70,12 @@ def mock_conversation_manager(app: FastAPI, mocker: MockerFixture) -> AsyncMockT
     mock_conversation_manager = mocker.AsyncMock(spec=ConversationManager)
 
     def override_provide_conversation_manager() -> AsyncMockType:
-        return mock_conversation_manager
+        return cast(AsyncMockType, mock_conversation_manager)
 
     app.dependency_overrides[provide_conversation_manager] = (
         override_provide_conversation_manager
     )
-    return mock_conversation_manager
+    return cast(AsyncMockType, mock_conversation_manager)
 
 
 @pytest.fixture
@@ -83,10 +84,10 @@ def mock_httpx_client(app: FastAPI, mocker: MockerFixture) -> AsyncMockType:
     mock_client = mocker.AsyncMock()
 
     def override_provide_httpx_client() -> AsyncMockType:
-        return mock_client
+        return cast(AsyncMockType, mock_client)
 
     app.dependency_overrides[provide_httpx_client] = override_provide_httpx_client
-    return mock_client
+    return cast(AsyncMockType, mock_client)
 
 
 @pytest.fixture
@@ -95,10 +96,10 @@ def mock_mongo_client(app: FastAPI, mocker: MockerFixture) -> AsyncMockType:
     mock_client = mocker.AsyncMock()
 
     def override_provide_mongo_client() -> AsyncMockType:
-        return mock_client
+        return cast(AsyncMockType, mock_client)
 
     app.dependency_overrides[provide_mongo_client] = override_provide_mongo_client
-    return mock_client
+    return cast(AsyncMockType, mock_client)
 
 
 @pytest.fixture
@@ -107,10 +108,10 @@ def mock_nacos_naming(app: FastAPI, mocker: MockerFixture) -> AsyncMockType:
     mock_naming = mocker.AsyncMock()
 
     def override_provide_nacos_ai() -> AsyncMockType:
-        return mock_naming
+        return cast(AsyncMockType, mock_naming)
 
     app.dependency_overrides[provide_nacos_ai] = override_provide_nacos_ai
-    return mock_naming
+    return cast(AsyncMockType, mock_naming)
 
 
 @pytest.fixture

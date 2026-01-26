@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, cast
 
 from a2a.types import AgentCard
 from v2.nacos import ClientConfigBuilder  # type: ignore
@@ -29,9 +29,10 @@ class NacosAI:
     ) -> AgentCard:
         if self.ai_service is None:
             raise RuntimeError("Nacos AI service is not initialized")
-        return await self.ai_service.get_agent_card(
+        agent_card = await self.ai_service.get_agent_card(
             GetAgentCardParam(agent_name=agent_name, version=version)
         )
+        return cast(AgentCard, agent_card)
 
     async def shutdown(self) -> None:
         if self.ai_service is None:
