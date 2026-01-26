@@ -14,7 +14,13 @@
     <artifactId>hotel</artifactId>
     <version>0.1.0</version>
     <name>trip-hotel-service</name>
-    <description>trip-hotel-service</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <protobuf.version>3.23.4</protobuf.version>
+        <protobuf-plugin.version>0.6.1</protobuf-plugin.version>
+        <grpc.version>1.58.0</grpc.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -27,13 +33,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <properties>
-        <java.version>17</java.version>
-        <protobuf.version>3.23.4</protobuf.version>
-        <protobuf-plugin.version>0.6.1</protobuf-plugin.version>
-        <grpc.version>1.58.0</grpc.version>
-    </properties>
 
     <dependencies>
         <dependency>
