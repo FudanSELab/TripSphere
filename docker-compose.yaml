@@ -404,6 +404,7 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+      - "8889:8889"
     depends_on:
       tempo:
         condition: service_started
@@ -421,6 +422,19 @@ services:
       - "3200:3200"  # Tempo HTTP API
       - "4317"       # OTLP gRPC receiver (internal only)
     restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./volumes/prometheus:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.path=/prometheus'
 
   # Grafana
   grafana:

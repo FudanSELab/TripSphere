@@ -18,6 +18,10 @@ exporters:
     tls:
       insecure: true
   
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: otel-collector
+
   # Keep debug exporter for troubleshooting
   debug:
     verbosity: detailed
@@ -33,7 +37,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [debug, prometheus]
     logs:
       receivers: [otlp]
       processors: [batch]
