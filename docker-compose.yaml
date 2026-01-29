@@ -49,7 +49,7 @@ services:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress-gateway:8080/v1}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
       nacos:
         condition: service_healthy
@@ -121,7 +121,7 @@ services:
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress-gateway:8080/v1}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
       nacos:
         condition: service_healthy
@@ -164,7 +164,7 @@ services:
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress-gateway:8080/v1}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
       nacos:
         condition: service_healthy
@@ -271,7 +271,7 @@ services:
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=fudanse@fudan.edu.cn
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress-gateway:8080/v1}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     command:
       - uvicorn
       - review_summary.asgi:app
@@ -282,7 +282,7 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
-      higress-gateway:
+      higress:
         condition: service_started
 
   # Review Summary RocketMQ Consumer
@@ -295,7 +295,7 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - ROCKETMQ_ENDPOINTS=rmq-proxy:8081
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress-gateway:8080/v1}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     command:
       - python
       - -m
@@ -325,7 +325,7 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress-gateway:8080/v1}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     command:
       - celery
       - -A
@@ -605,13 +605,14 @@ services:
       timeout: 3s
       retries: 5
 
-  higress-gateway:
+  # Higress
+  higress:
     image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
-    container_name: higress-gateway
+    container_name: higress
     ports:
-      - "10080:8001" # console
-      - "10081:8080" # HTTP 
-      - "10082:8443" # HTTPS 
+      - "18001:8001" # Console
+      - "28080:8080" # HTTP
+      - "18443:8443" # HTTPS
     volumes:
-      - ./higress-configs:/etc/higress/config:ro
+      - ./higress:/etc/higress/config:ro
     restart: unless-stopped
