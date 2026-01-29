@@ -610,9 +610,9 @@ services:
     image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.9
     container_name: higress
     ports:
-      - "18001:8001" # Console
+      - "8001:8001" # Console
       - "28080:8080" # HTTP
-      - "18443:8443" # HTTPS
+      - "8443:8443" # HTTPS
     volumes:
       - ./higress:/etc/higress/config:ro
     restart: unless-stopped
