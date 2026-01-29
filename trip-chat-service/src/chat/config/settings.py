@@ -29,6 +29,10 @@ class NacosSettings(BaseModel):
     group_name: str = Field(default="DEFAULT_GROUP")
 
 
+class QdrantSettings(BaseModel):
+    url: str = Field(default="http://localhost:6333")
+
+
 class MongoSettings(BaseModel):
     uri: str = Field(default="mongodb://localhost:27017")
     database: str = Field(default="chat_db")
@@ -63,6 +67,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
+    qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)

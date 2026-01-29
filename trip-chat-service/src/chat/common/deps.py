@@ -2,6 +2,7 @@ from typing import Annotated, Any, cast
 
 from fastapi import Depends, Request
 from httpx import AsyncClient
+from mem0 import AsyncMemory  # type: ignore
 from pymongo import AsyncMongoClient
 
 from chat.config.settings import get_settings
@@ -27,7 +28,7 @@ def provide_nacos_ai(request: Request) -> NacosAI:
     return cast(NacosAI, request.app.state.nacos_ai)
 
 
-async def provide_conversation_repository(
+def provide_conversation_repository(
     mongo_client: Annotated[
         AsyncMongoClient[dict[str, Any]], Depends(provide_mongo_client)
     ],
@@ -39,7 +40,7 @@ async def provide_conversation_repository(
     )
 
 
-async def provide_message_repository(
+def provide_message_repository(
     mongo_client: Annotated[
         AsyncMongoClient[dict[str, Any]], Depends(provide_mongo_client)
     ],
@@ -51,7 +52,7 @@ async def provide_message_repository(
     )
 
 
-async def provide_conversation_manager(
+def provide_conversation_manager(
     conversation_repository: Annotated[
         ConversationRepository, Depends(provide_conversation_repository)
     ],
@@ -60,3 +61,7 @@ async def provide_conversation_manager(
     ],
 ) -> ConversationManager:
     return ConversationManager(conversation_repository, message_repository)
+
+
+def provide_memory_engine(request: Request) -> AsyncMemory:
+    return cast(AsyncMemory, request.app.state.memory_engine)

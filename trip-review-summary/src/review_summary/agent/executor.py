@@ -1,12 +1,14 @@
 import asyncio
+import base64
+import json
 import logging
 from typing import Any
 
+import a2a.types
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
-from a2a.types import DataPart, Part, Task, TaskState, TextPart
-from a2a.utils import new_agent_text_message, new_task
+from a2a.utils import get_file_parts, new_agent_text_message, new_task
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncDriver
 from qdrant_client import AsyncQdrantClient
@@ -79,7 +81,7 @@ class A2aAgentExecutor(AgentExecutor):
         logger.info(f"Cancelling task {task.id}")
         updater = TaskUpdater(event_queue, task.id, task.context_id)
         await updater.update_status(
-            TaskState.canceled,
+            a2a.types.TaskState.canceled,
             new_agent_text_message(
                 "Review summary request cancelled", task.context_id, task.id
             ),
@@ -181,12 +183,24 @@ class A2aAgentExecutor(AgentExecutor):
             Tuple of (query, target_id)
 
         Raises:
-            KeyError: If target_id is missing from metadata
+            RuntimeError: If target_id is missing from message
         """
         query = context.get_user_input()
-
-        # Access metadata["target_id"] directly to maintain KeyError behavior if missing
-        target_id = context.metadata["target_id"]
+        target_id: str | None = None
+        if context.message is not None:
+            file_parts = get_file_parts(context.message.parts)
+            for file_part in file_parts:
+                if (
+                    isinstance(file_part, a2a.types.FileWithBytes)
+                    and file_part.mime_type == "application/json"
+                ):
+                    data = base64.b64decode(file_part.bytes.encode("utf-8"))
+                    inline_data = json.loads(data)
+                    if "target_id" in inline_data:
+                        target_id = inline_data["target_id"]
+                        break
+        if target_id is None:
+            raise RuntimeError("target_id is missing from message")
 
         logger.debug(
             f"Context validated - query length: {len(query)}, target_id: {target_id}"
@@ -195,7 +209,7 @@ class A2aAgentExecutor(AgentExecutor):
 
     async def _ensure_task(
         self, context: RequestContext, event_queue: EventQueue
-    ) -> Task:
+    ) -> a2a.types.Task:
         """Ensure a task exists for the current execution."""
         task = context.current_task
         if not task:
@@ -209,7 +223,7 @@ class A2aAgentExecutor(AgentExecutor):
     ) -> SearchResult:
         """Execute the search operation with progress updates."""
         await updater.update_status(
-            TaskState.working,
+            a2a.types.TaskState.working,
             new_agent_text_message(
                 text="Collecting attraction information...",
                 context_id=updater.context_id,
@@ -221,7 +235,7 @@ class A2aAgentExecutor(AgentExecutor):
         search = await self._init_search_engine()
 
         await updater.update_status(
-            TaskState.working,
+            a2a.types.TaskState.working,
             new_agent_text_message(
                 "Searching reviews for attraction...",
                 updater.context_id,
@@ -249,11 +263,14 @@ class A2aAgentExecutor(AgentExecutor):
         }
 
         if isinstance(result.response, str):
-            parts = [Part(root=TextPart(text=result.response))]
+            parts = [a2a.types.Part(root=a2a.types.TextPart(text=result.response))]
         elif isinstance(result.response, dict):
-            parts = [Part(root=DataPart(data=result.response))]
+            parts = [a2a.types.Part(root=a2a.types.DataPart(data=result.response))]
         else:
-            parts = [Part(root=DataPart(data=item)) for item in result.response]
+            parts = [
+                a2a.types.Part(root=a2a.types.DataPart(data=item))
+                for item in result.response
+            ]
 
         await updater.add_artifact(parts=parts, metadata=metadata)
         await updater.complete()
@@ -278,7 +295,7 @@ class A2aAgentExecutor(AgentExecutor):
 
         # Send failure status with error message
         await updater.update_status(
-            TaskState.failed,
+            a2a.types.TaskState.failed,
             new_agent_text_message(error_msg, updater.context_id, updater.task_id),
             final=True,
         )

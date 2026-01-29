@@ -1,22 +1,25 @@
 import asyncio
+import json
 import logging
 import os
 import warnings
 from functools import lru_cache
 from typing import Any, AsyncGenerator, Self
 
-from a2a.types import AgentCard
-from a2a.types import Message as A2AMessage
+import a2a.types
 from google.adk.agents import LlmAgent
-from google.adk.agents.invocation_context import InvocationContext
+from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.events import Event
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
+from google.adk.tools.load_memory_tool import load_memory_tool
 from google.genai import types
 from httpx import AsyncClient
+from mem0 import AsyncMemory  # type: ignore
 from pymongo import AsyncMongoClient
 
+from chat.agent.memory import Mem0MemoryService
 from chat.agent.session import MongoSessionService
 from chat.common.parts import Part
 from chat.config.settings import get_settings
@@ -29,20 +32,9 @@ warnings.filterwarnings("ignore", module="google.adk")
 
 logger = logging.getLogger(__name__)
 
-# Session state key for storing A2A request metadata
-A2A_REQUEST_METADATA_KEY = "_a2a_request_metadata"
 
-
-def _a2a_meta_provider(ctx: InvocationContext, _message: A2AMessage) -> dict[str, Any]:
-    """Metadata provider that reads from session state.
-
-    This callback is invoked by RemoteA2aAgent before sending A2A requests.
-    It extracts metadata stored in session state and passes it to the A2A request.
-    """
-    metadata = ctx.session.state.get(A2A_REQUEST_METADATA_KEY, {})
-    if metadata:
-        logger.debug(f"A2A request metadata from session state: {metadata}")
-    return metadata
+async def _add_session_to_memory_callback(callback_context: CallbackContext) -> None:
+    await callback_context.add_session_to_memory()
 
 
 @lru_cache(maxsize=1, typed=True)
@@ -54,7 +46,11 @@ def get_root_agent(model: str = "openai/gpt-4o-mini") -> LlmAgent:
         os.environ["OPENAI_BASE_URL"] = openai_settings.base_url
 
     return LlmAgent(
-        name="agent_facade", model=LiteLlm(model), instruction=DELEGATOR_INSTRUCTION
+        name="agent_facade",
+        model=LiteLlm(model=model),
+        instruction=DELEGATOR_INSTRUCTION,
+        tools=[load_memory_tool],
+        after_agent_callback=_add_session_to_memory_callback,
     )
 
 
@@ -66,12 +62,14 @@ class AgentFacade:
         httpx_client: AsyncClient,
         nacos_ai: NacosAI,
         mongo_client: AsyncMongoClient[dict[str, Any]],
+        memory_engine: AsyncMemory,
     ) -> None:
         self.httpx_client = httpx_client
         self.nacos_ai = nacos_ai
         self.remote_a2a_agents: dict[str, RemoteA2aAgent] = {}
-        self.agent_cards: dict[str, AgentCard] = {}
+        self.agent_cards: dict[str, a2a.types.AgentCard] = {}
         self.session_service = MongoSessionService(mongo_client)
+        self.memory_service = Mem0MemoryService(memory_engine)
         self.default_runner: Runner | None = None
         self.app_name = get_settings().app.name
 
@@ -86,6 +84,7 @@ class AgentFacade:
                 {"sub_agents": list[RemoteA2aAgent](self.remote_a2a_agents.values())}
             ),
             session_service=self.session_service,
+            memory_service=self.memory_service,
         )
 
     async def _resolve_agent_name(self, agent_name: str) -> None:
@@ -98,9 +97,8 @@ class AgentFacade:
         self.remote_a2a_agents[agent_card.name] = RemoteA2aAgent(
             name=agent_card.name,
             agent_card=agent_card,
-            # Provide metadata callback to pass target_id
-            # and other context to A2A requests
-            a2a_request_meta_provider=_a2a_meta_provider,
+            httpx_client=self.httpx_client,
+            after_agent_callback=_add_session_to_memory_callback,
         )
 
     @classmethod
@@ -109,8 +107,9 @@ class AgentFacade:
         httpx_client: AsyncClient,
         nacos_ai: NacosAI,
         mongo_client: AsyncMongoClient[dict[str, Any]],
+        memory_engine: AsyncMemory,
     ) -> Self:
-        instance = cls(httpx_client, nacos_ai, mongo_client)
+        instance = cls(httpx_client, nacos_ai, mongo_client, memory_engine)
         # Remote A2A agents discovery through Nacos AI service
         await instance._post_init(["journey_assistant", "review_summary"])
         return instance
@@ -139,25 +138,26 @@ class AgentFacade:
                 session_id=conversation.conversation_id,
             )
 
-        text_query = user_query.text_content()
-        user_content = types.Content(role="user", parts=[types.Part(text=text_query)])
-
-        logger.debug(f"==> Running Query: {text_query}")
-
-        # Extract A2A-relevant metadata (target_id, target_type, etc.) for remote agents
-        # These will be passed to the A2A request via session state
-        a2a_metadata: dict[str, Any] = {}
+        # Extract metadata (target_id, target_type, etc.) for A2A agents
+        metadata: dict[str, Any] = {}
         if user_query.metadata:
-            # Only include fields that should be passed to A2A agents
             for key in ("target_id", "target_type"):
                 if key in user_query.metadata:
-                    a2a_metadata[key] = user_query.metadata[key]
+                    metadata[key] = user_query.metadata[key]
+        part = types.Part(
+            text=user_query.text_content(),
+            inline_data=(
+                types.Blob(
+                    data=json.dumps(metadata).encode("utf-8"),
+                    mime_type="application/json",
+                )
+                if metadata
+                else None
+            ),
+        )
+        user_content = types.Content(role="user", parts=[part])
 
-        # Store metadata in session state for the A2A request meta provider
-        if a2a_metadata:
-            logger.debug(f"==> Storing A2A metadata in session state: {a2a_metadata}")
-            session.state[A2A_REQUEST_METADATA_KEY] = a2a_metadata
-            await self.session_service.update_session(session)
+        logger.debug(f"==> Running Query: {user_content.model_dump()}")
 
         # Check if user specified a target agent
         agent = user_query.metadata.get("agent") if user_query.metadata else None
@@ -168,6 +168,7 @@ class AgentFacade:
                 app_name=self.app_name,
                 agent=self.remote_a2a_agents[agent],
                 session_service=self.session_service,
+                memory_service=self.memory_service,
             )
         else:
             # Normal facade orchestration through root agent
