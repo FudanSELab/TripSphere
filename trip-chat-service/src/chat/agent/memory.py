@@ -30,7 +30,7 @@ class Mem0MemoryService(BaseMemoryService):
                     "content": event.content.model_dump(mode="json", exclude_none=True),
                 }
             )
-        if messages:
+        if len(messages) > 0:
             result = await self.memory_engine.add(messages=messages, user_id=user_id)  # pyright: ignore
             logger.info("Added session to memory")
             logger.debug(f"Memory engine add response: {result}")
@@ -47,19 +47,14 @@ class Mem0MemoryService(BaseMemoryService):
             return SearchMemoryResponse(memories=[])
         memory_entries: list[MemoryEntry] = []
         for retrieved_result in retrieved_results:
-            memory_entries.append(
-                MemoryEntry(
-                    id=retrieved_result["id"],
-                    content=types.Content(
-                        parts=[types.Part(text=retrieved_result["memory"])]
-                    ),
-                    timestamp=retrieved_result["created_at"],
-                    custom_metadata={
-                        "user_id": retrieved_result["user_id"],
-                        "categories": retrieved_result["categories"],
-                        "updated_at": retrieved_result["updated_at"],
-                        **retrieved_result["metadata"],
-                    },
-                )
+            metadata: dict[str, Any] = retrieved_result.pop("metadata", None) or {}
+            memory_entry = MemoryEntry(
+                id=retrieved_result.pop("id"),
+                content=types.Content(
+                    parts=[types.Part(text=retrieved_result.pop("memory"))]
+                ),
+                timestamp=retrieved_result.pop("created_at"),
+                custom_metadata={**retrieved_result, **metadata},
             )
+            memory_entries.append(memory_entry)
         return SearchMemoryResponse(memories=memory_entries)

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class EntityVectorStore:
-    COLLECTION_NAME = "review_summary_entity_embeddings"
+    COLLECTION_NAME = "review_summary_entities"
 
     def __init__(self, client: AsyncQdrantClient):
         self.client = client

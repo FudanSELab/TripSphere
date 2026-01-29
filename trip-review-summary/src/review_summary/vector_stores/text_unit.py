@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class TextUnitVectorStore:
-    COLLECTION_NAME = "review_summary_text_unit_embeddings"
+    COLLECTION_NAME = "review_summary_text_units"
 
     def __init__(self, client: AsyncQdrantClient):
         self.client = client

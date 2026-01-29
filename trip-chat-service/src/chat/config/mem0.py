@@ -9,7 +9,7 @@ def get_mem0_config() -> dict[str, Any]:
         "vector_store": {
             "provider": "qdrant",
             "config": {
-                "collection_name": "chat_memory",
+                "collection_name": "chat_memories",
                 "url": settings.qdrant.url,
             },
         },

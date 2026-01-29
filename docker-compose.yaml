@@ -47,6 +47,7 @@ services:
       - "24210:24210"  # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
@@ -55,6 +56,10 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      qdrant:
+        condition: service_started
+      otel-collector:
+        condition: service_started
     restart: unless-stopped
 
   # File Service
@@ -282,6 +287,8 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+      neo4j:
+        condition: service_started
       higress:
         condition: service_started
 
@@ -607,7 +614,7 @@ services:
 
   # Higress
   higress:
-    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.9
+    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one
     container_name: higress
     ports:
       - "8001:8001" # Console
