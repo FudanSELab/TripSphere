@@ -607,7 +607,7 @@ services:
 
   # Higress
   higress:
-    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
+    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.9
     container_name: higress
     ports:
       - "18001:8001" # Console
