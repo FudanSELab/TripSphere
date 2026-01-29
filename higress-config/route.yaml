@@ -1,0 +1,31 @@
+apiVersion: gateway.higress.io/v1alpha1
+kind: Upstream
+metadata:
+  name: ai-backend
+spec:
+  type: cluster
+  endpoints:
+    - host: api.zhizengzeng.com
+      port: 443
+      weight: 100
+  hostRewrite: api.zhizengzeng.com
+  tls:
+    insecureSkipVerify: true
+---
+apiVersion: gateway.higress.io/v1alpha1
+kind: Route
+metadata:
+  name: zhizengzeng-proxy-route
+spec:
+  gateway: higress-gateway
+  match:
+    paths:
+      - prefix: /v1
+    hosts:
+      - "*"
+  backend:
+    upstream:
+      name: ai-backend
+  pathRewrite:
+    pattern: ^/v1/(.*) $ 
+    replacement: /v1/ $ 1
