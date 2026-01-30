@@ -391,8 +391,8 @@ services:
     environment:
       - PREFER_HOST_MODE=hostname
       - MODE=standalone
-      - NACOS_AUTH_IDENTITY_KEY=root
-      - NACOS_AUTH_IDENTITY_VALUE=fudanse
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity
+      - NACOS_AUTH_IDENTITY_VALUE=security
       - NACOS_AUTH_TOKEN=VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=
     ports:
       - "18080:8080"  # Console
@@ -411,14 +411,14 @@ services:
 
   # OpenTelemetry Collector
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.86.0
+    image: otel/opentelemetry-collector-contrib:0.144.0
     container_name: otel-collector
-    command: ["--config=/etc/otelcol-config.yaml"]
     volumes:
-      - ./otel-collector/otelcol-config.yaml:/etc/otelcol-config.yaml
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml
     ports:
-      - "4317:4317"
-      - "4318:4318"
+      - "4317:4317"  # OTLP gRPC receiver
+      - "4318:4318"  # OTLP HTTP receiver
+      - "8889:8889"  # Prometheus exporter metrics
     depends_on:
       tempo:
         condition: service_started
@@ -437,6 +437,20 @@ services:
       - "4317"       # OTLP gRPC receiver (internal only)
     restart: unless-stopped
 
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./volumes/prometheus:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.path=/prometheus'
+
   # Grafana
   grafana:
     image: grafana/grafana:12.3.1
@@ -453,6 +467,12 @@ services:
     depends_on:
       tempo:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # RocketMQ Name Server
