@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 
-// 酒店相关的 POI 类型码
+// POI type codes related to hotels
 const hotelTypeCodes = [
-    '100000', // 住宿服务大类
+    '100000', // Accommodation services major category
     '100100',
     '100101',
     '100102',
@@ -19,43 +19,43 @@ interface POI {
 }
 
 function isHotelPOI(poi: POI): boolean {
-    // 检查 typecode 是否以 '100' 开头（住宿服务大类）
+    // Check if typecode starts with '100' (Accommodation services major category)
     return typeof poi.typecode === 'string' && poi.typecode.startsWith('100');
 }
 
 function main() {
-    console.log('开始统计 JSON 文件中的 POI 数据...\n');
+    console.log('Starting statistics on POI data in JSON file...\n');
     
-    // 读取 JSON 文件
+    // Read JSON file
     const filePath = './json-results-merge.json';
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const pois: POI[] = JSON.parse(fileContent);
     
-    // 统计总数
+    // Total count
     const totalCount = pois.length;
     
-    // 统计酒店 POI
+    // Hotel POI count
     const hotelPOIs = pois.filter(isHotelPOI);
     const hotelCount = hotelPOIs.length;
     
-    // 按类型码统计酒店 POI
+    // Hotel POI count by type code
     const hotelByType: Record<string, number> = {};
     hotelPOIs.forEach(poi => {
         const typeCode = typeof poi.typecode === 'string' ? poi.typecode : 'unknown';
         hotelByType[typeCode] = (hotelByType[typeCode] || 0) + 1;
     });
     
-    // 输出统计结果
+    // Output statistical results
     console.log('='.repeat(50));
-    console.log('统计结果');
+    console.log('Statistical Results');
     console.log('='.repeat(50));
-    console.log(`总 POI 数量: ${totalCount.toLocaleString()}`);
-    console.log(`酒店 POI 数量: ${hotelCount.toLocaleString()}`);
-    console.log(`酒店 POI 占比: ${((hotelCount / totalCount) * 100).toFixed(2)}%`);
-    console.log('\n酒店 POI 按类型码分布:');
+    console.log(`Total POI Count: ${totalCount.toLocaleString()}`);
+    console.log(`Hotel POI Count: ${hotelCount.toLocaleString()}`);
+    console.log(`Hotel POI Ratio: ${((hotelCount / totalCount) * 100).toFixed(2)}%`);
+    console.log('\nHotel POI Distribution by Type Code:');
     console.log('-'.repeat(50));
     
-    // 按数量排序输出
+    // Sort by count and output
     const sortedTypes = Object.entries(hotelByType)
         .sort((a, b) => b[1] - a[1]);
     

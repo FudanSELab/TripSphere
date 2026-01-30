@@ -2,38 +2,38 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from './types';
 
-// JSON结果目录
+// JSON results directory
 const RESULTS_DIR = './json-results';
-// 输出文件
+// Output file
 const OUTPUT_FILE = './json-results-merge.json';
 
 /**
- * 主函数：合并所有JSON文件
+ * Main function: Merge all JSON files
  */
 function main() {
-    console.log('=== 开始合并 JSON 文件 ===\n');
+    console.log('=== Start merging JSON files ===\n');
     
-    // 检查目录是否存在
+    // Check if directory exists
     if (!fs.existsSync(RESULTS_DIR)) {
-        console.error(`错误: 目录 ${RESULTS_DIR} 不存在`);
+        console.error(`Error: Directory ${RESULTS_DIR} does not exist`);
         process.exit(1);
     }
     
-    // 读取所有JSON文件
+    // Read all JSON files
     const files = fs.readdirSync(RESULTS_DIR)
         .filter(file => file.endsWith('.json'))
         .map(file => path.join(RESULTS_DIR, file))
-        .sort(); // 排序以确保顺序一致
+        .sort(); // Sort to ensure consistent order
     
     if (files.length === 0) {
-        console.log(`警告: 在 ${RESULTS_DIR} 目录下没有找到JSON文件`);
+        console.log(`Warning: No JSON files found in ${RESULTS_DIR} directory`);
         process.exit(0);
     }
     
-    console.log(`找到 ${files.length} 个JSON文件\n`);
+    console.log(`Found ${files.length} JSON files\n`);
     
-    // 合并所有POI数据：从每个JSON文件中提取pois数组，打平为一个大的POI数组
-    // 使用Map根据poi.id进行去重
+    // Merge all POI data: Extract pois array from each JSON file and flatten into a large POI array
+    // Use Map to de-duplicate based on poi.id
     const poiMap = new Map<string, any>();
     let processedFiles = 0;
     let errorFiles = 0;
@@ -45,9 +45,9 @@ function main() {
             const fileContent = fs.readFileSync(file, 'utf-8');
             const data: Response = JSON.parse(fileContent);
             
-            // 只处理成功的请求
+            // Process only successful requests
             if (data.status === '1' && data.infocode === '10000' && data.pois) {
-                // 提取pois数组并打平到poiMap中（每个元素是一个POI对象）
+                // Extract pois array and flatten into poiMap (each element is a POI object)
                 const pois = data.pois;
                 for (const poi of pois) {
                     if (poi.id) {
@@ -61,38 +61,38 @@ function main() {
                 }
                 processedFiles++;
             } else {
-                console.warn(`跳过文件 ${path.basename(file)}: 状态=${data.status}, 错误码=${data.infocode}`);
+                console.warn(`Skip file ${path.basename(file)}: status=${data.status}, infocode=${data.infocode}`);
                 errorFiles++;
             }
         } catch (error) {
-            console.error(`解析文件失败 ${path.basename(file)}: ${error instanceof Error ? error.message : String(error)}`);
+            console.error(`Failed to parse file ${path.basename(file)}: ${error instanceof Error ? error.message : String(error)}`);
             errorFiles++;
         }
     }
     
-    // 将Map转换为数组
+    // Convert Map to array
     const allPois = Array.from(poiMap.values());
     
-    console.log(`处理完成:`);
-    console.log(`  成功处理: ${processedFiles} 个文件`);
-    console.log(`  跳过/错误: ${errorFiles} 个文件`);
-    console.log(`  总POI数量: ${totalPois}`);
-    console.log(`  去重后POI数量: ${allPois.length}`);
-    console.log(`  重复POI数量: ${duplicateCount}\n`);
+    console.log(`Processing complete:`);
+    console.log(`  Successfully processed: ${processedFiles} files`);
+    console.log(`  Skipped/Error: ${errorFiles} files`);
+    console.log(`  Total POI Count: ${totalPois}`);
+    console.log(`  De-duplicated POI Count: ${allPois.length}`);
+    console.log(`  Duplicate POI Count: ${duplicateCount}\n`);
     
-    // 写入合并后的文件
+    // Write merged file
     try {
         const outputData = JSON.stringify(allPois, null, 2);
         fs.writeFileSync(OUTPUT_FILE, outputData, 'utf-8');
-        console.log(`✓ 合并结果已保存到: ${OUTPUT_FILE}`);
-        console.log(`  文件大小: ${(outputData.length / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`✓ Merged results saved to: ${OUTPUT_FILE}`);
+        console.log(`  File size: ${(outputData.length / 1024 / 1024).toFixed(2)} MB`);
     } catch (error) {
-        console.error(`写入文件失败: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`Failed to write file: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
     }
     
-    console.log('\n=== 合并完成 ===');
+    console.log('\n=== Merging complete ===');
 }
 
-// 运行主函数
+// Run main function
 main();

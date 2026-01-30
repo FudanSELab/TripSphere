@@ -3,7 +3,7 @@ import * as path from 'path';
 import { createHash } from 'crypto';
 import { Response, SearchParams } from './types';
 
-// 各区 adcode
+// adcode for each region
 const adcodes = [
     '310000',
     '310101',
@@ -24,7 +24,7 @@ const adcodes = [
     '310151',
 ]
 
-// POI类型码映射
+// POI category code mapping
 const poiHotel = [
     '100100',
     '100101',
@@ -70,7 +70,7 @@ const poiSciences = [
     '140800',
 ]
 
-// 关键词映射
+// Keyword mapping
 const keywordMap: Record<string, string> = {
     '酒店': '酒店',
     '景点': '景点',
@@ -84,28 +84,28 @@ const keywordMap: Record<string, string> = {
     '140800': '文化宫',
 }
 
-// 配置
+// Configuration
 const API_KEY = process.env.AMAP_API_KEY || '';
 const API_SECRET = process.env.AMAP_SECRET || '';
 const API_BASE_URL = 'https://restapi.amap.com/v5/place/text';
-const QPS = 2; // 每秒2个请求
+const QPS = 2; // 2 requests per second
 const REQUEST_INTERVAL = 1000 / QPS; // 500ms
-const MAX_PAGES = 8; // 最多8页，每页25个，共200个
+const MAX_PAGES = 8; // Max 8 pages, 25 items per page, total 200
 const PAGE_SIZE = 25;
 const SHOW_FIELDS = 'children,business,indoor,navi,photos';
 
-// 日志文件路径
+// Log file path
 const LOG_FILE = 'amap.log';
-// 结果保存目录
+// Results directory
 const RESULTS_DIR = './json-results';
 
-// 确保目录存在
+// Ensure directory exists
 if (!fs.existsSync(RESULTS_DIR)) {
     fs.mkdirSync(RESULTS_DIR, { recursive: true });
 }
 
 /**
- * 写入日志
+ * Write log
  */
 function log(message: string) {
     const timestamp = new Date().toISOString();
@@ -115,10 +115,10 @@ function log(message: string) {
 }
 
 /**
- * 生成签名
+ * Generate signature
  */
 function generateSig(params: Record<string, string | number | boolean>): string {
-    // 按key排序
+    // Sort by key
     const sortedKeys = Object.keys(params).sort();
     const queryString = sortedKeys
         .map(key => `${key}=${params[key]}`)
@@ -129,14 +129,14 @@ function generateSig(params: Record<string, string | number | boolean>): string 
 }
 
 /**
- * 延迟函数
+ * Delay function
  */
 function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * 发送API请求
+ * Send API request
  */
 async function fetchPOIData(
     keyword: string,
@@ -156,7 +156,7 @@ async function fetchPOIData(
         key: API_KEY,
     };
 
-    // 如果有secret，生成签名
+    // Generate signature if secret is present
     if (API_SECRET) {
         const sigParams: Record<string, string | number | boolean> = {
             keywords: params.keywords,
@@ -177,7 +177,7 @@ async function fetchPOIData(
 
     const url = `${API_BASE_URL}?${queryString}`;
     
-    log(`请求: ${keyword} | ${types} | ${region} | 页码: ${pageNum}`);
+    log(`Request: ${keyword} | ${types} | ${region} | Page: ${pageNum}`);
     
     try {
         const response = await fetch(url);
@@ -185,37 +185,37 @@ async function fetchPOIData(
         
         if (data.status === '1' && data.infocode === '10000') {
             const count = parseInt(data.count || '0', 10);
-            log(`成功: 返回 ${count} 条数据`);
+            log(`Success: returned ${count} items`);
             return data;
         } else {
-            log(`错误: ${data.info || '未知错误'} (${data.infocode || 'N/A'})`);
-            throw new Error(data.info || 'API请求失败');
+            log(`Error: ${data.info || 'Unknown error'} (${data.infocode || 'N/A'})`);
+            throw new Error(data.info || 'API request failed');
         }
     } catch (error) {
-        log(`异常: ${error instanceof Error ? error.message : String(error)}`);
+        log(`Exception: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
     }
 }
 
 /**
- * 保存数据到文件
+ * Save data to file
  */
 function saveData(keyword: string, types: string, region: string, pageNum: number, data: Response) {
     const filename = `${keyword}_${types}_${region}_page${pageNum}.json`;
     const filepath = path.join(RESULTS_DIR, filename);
     fs.writeFileSync(filepath, JSON.stringify(data, null, 2), 'utf-8');
-    log(`保存: ${filepath}`);
+    log(`Saved: ${filepath}`);
 }
 
 /**
- * 抓取单个关键词和类型的所有数据
+ * Scrape all data for a single keyword and type
  */
 async function scrapeKeywordAndType(
     keyword: string,
     types: string,
     region: string
 ): Promise<void> {
-    log(`开始抓取: 关键词=${keyword}, 类型=${types}, 区域=${region}`);
+    log(`Start scraping: keyword=${keyword}, types=${types}, region=${region}`);
     
     let pageNum = 1;
     let hasMore = true;
@@ -223,7 +223,7 @@ async function scrapeKeywordAndType(
 
     // while (hasMore) {
     while (hasMore && pageNum <= MAX_PAGES) {
-        // QPS控制：等待间隔
+        // QPS Control: Wait interval
         if (pageNum > 1) {
             await delay(REQUEST_INTERVAL);
         }
@@ -235,7 +235,7 @@ async function scrapeKeywordAndType(
                 saveData(keyword, types, region, pageNum, response);
                 totalCount += response.pois.length;
                 
-                // 如果返回的数据少于page_size，说明没有更多数据了
+                // If returned data is less than page_size, no more data
                 if (response.pois.length < PAGE_SIZE) {
                     hasMore = false;
                 }
@@ -245,35 +245,35 @@ async function scrapeKeywordAndType(
             
             pageNum++;
         } catch (error) {
-            log(`抓取失败，跳过: ${error instanceof Error ? error.message : String(error)}`);
-            // 如果出错，继续下一页（可能是网络问题）
+            log(`Scrape failed, skipping: ${error instanceof Error ? error.message : String(error)}`);
+            // If error, continue to next page (could be network issue)
             pageNum++;
-            // 如果连续失败，停止
+            // If continuous failure, stop
             if (pageNum > MAX_PAGES) {
                 hasMore = false;
             }
         }
     }
 
-    log(`完成抓取: 关键词=${keyword}, 类型=${types}, 区域=${region}, 共 ${totalCount} 条数据`);
+    log(`Finish scraping: keyword=${keyword}, types=${types}, region=${region}, total ${totalCount} items`);
 }
 
 /**
- * 主函数：抓取所有数据
+ * Main function: Scrape all data
  */
 async function main() {
-    log('=== 开始数据抓取任务 ===');
+    log('=== Start data scraping task ===');
     
     if (!API_KEY) {
-        log('错误: 未设置 AMAP_API_KEY 环境变量');
+        log('Error: AMAP_API_KEY environment variable not set');
         process.exit(1);
     }
 
-    // 构建抓取任务列表
+    // Build scraping task list
     const tasks: Array<{ keyword: string; types: string; region: string }> = [];
 
     
-    // 2. 景点
+    // 2. Attraction
     for (const region of adcodes) {
         for (const type of poiAttractions) {
             tasks.push({ keyword: '景点', types: type, region });
@@ -281,7 +281,7 @@ async function main() {
     }
 
 
-    // 3. 科教文化服务
+    // 3. Cultural and Educational Services
     for (const region of adcodes) {
         for (const type of poiSciences) {
             const keyword = keywordMap[type] || type;
@@ -289,35 +289,35 @@ async function main() {
         }
     }
     
-    // 1. 酒店
+    // 1. Hotel
     for (const region of adcodes) {
         for (const type of poiHotel) {
             tasks.push({ keyword: '酒店', types: type, region });
         }
     }
 
-    log(`总共 ${tasks.length} 个抓取任务`);
+    log(`Total ${tasks.length} scraping tasks`);
 
-    // 执行所有任务
+    // Execute all tasks
     for (let i = 0; i < tasks.length; i++) {
-        // 503 任务需要重试
+        // Task 503 needs retry
         if(i + 1 != 503) continue;
-        // if(i + 1 < 19) continue; // 跳过前19个任务
+        // if(i + 1 < 19) continue; // Skip first 19 tasks
         const task = tasks[i];
-        log(`进度: ${i + 1}/${tasks.length}`);
+        log(`Progress: ${i + 1}/${tasks.length}`);
         await scrapeKeywordAndType(task.keyword, task.types, task.region);
         
-        // 任务之间的延迟
+        // Delay between tasks
         if (i < tasks.length - 1) {
             await delay(REQUEST_INTERVAL);
         }
     }
 
-    log('=== 数据抓取任务完成 ===');
+    log('=== Data scraping task complete ===');
 }
 
-// 运行主函数
+// Run main function
 main().catch(error => {
-    log(`致命错误: ${error instanceof Error ? error.message : String(error)}`);
+    log(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
 });

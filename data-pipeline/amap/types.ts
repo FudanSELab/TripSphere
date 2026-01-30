@@ -1,258 +1,259 @@
 /**
- * 高德地图API响应类型定义
+ * Amap Map API response type definitions
  */
 export interface Response {
     /**
-     * 单次请求返回的实际poi点的个数
+     * Number of POIs returned in a single request
      */
     count?: string;
     /**
-     *
-     * 访问状态值的说明，如果成功返回"ok"，失败返回错误原因，具体见[错误码说明](https://lbs.amap.com/api/webservice/guide/tools/info)。
+     * Description of the access status value. 
+     * If successful, returns "ok"; if failed, returns the reason for failure. 
+     * See [Error Code Description](https://lbs.amap.com/api/webservice/guide/tools/info) for details.
      */
     info?: string;
     /**
-     * 返回状态说明,10000代表正确,详情参阅info状态表
+     * Return status description, 10000 represents success, see info status table for details
      */
     infocode?: string;
     /**
-     * 返回的poi完整集合
+     * Full collection of returned POIs
      */
     pois?: Pois[];
     /**
-     * 本次API访问状态，如果成功返回1，如果失败返回0。
+     * Access status of this API call, 1 for success, 0 for failure.
      */
     status?: string;
     [property: string]: any;
 }
 
 /**
- * 返回的poi完整集合
+ * Full collection of returned POIs
  */
 export interface Pois {
     /**
-     * poi所属区域编码
+     * Region code of the POI
      */
     adcode?: string;
     /**
-     * poi详细地址
+     * Detailed address of the POI
      */
     address?: string;
     /**
-     * poi所属区县
+     * District/County name of the POI
      */
     adname?: string;
     /**
-     * 设置后返回子POI信息
+     * If set, returns sub-POI information
      */
     children?: Children[];
     /**
-     * poi所属城市编码
+     * City code of the POI
      */
     citycode?: string;
     /**
-     * poi所属城市
+     * City name of the POI
      */
     cityname?: string;
     /**
-     * poi唯一标识
+     * Unique identifier of the POI
      */
     id?: string;
     /**
-     * poi经纬度
+     * Longitude and latitude of the POI
      */
     location?: string;
     /**
-     * poi名称
+     * Name of the POI
      */
     name?: string;
     /**
-     * poi所属省份编码
+     * Province code of the POI
      */
     pcode?: string;
     /**
-     * poi所属省份
+     * Province name of the POI
      */
     pname?: string;
     /**
-     * 单个poi内包含的完整返回数据
+     * Complete return data contained within a single POI
      */
     poi?: string;
     /**
-     * poi所属类型
+     * Type of the POI
      */
     type?: string;
     /**
-     * poi分类编码
+     * Type code of the POI
      */
     typecode?: string;
     [property: string]: any;
 }
 
 /**
- * 设置后返回子POI信息
+ * If set, returns sub-POI information
  */
 export interface Children {
     /**
-     * 子poi详细地址
+     * Detailed address of the sub-POI
      */
     address?: string;
     /**
-     * 设置后返回poi商业信息
+     * If set, returns business information of the POI
      */
     business?: Business;
     /**
-     * 子poi唯一标识
+     * Unique identifier of the sub-POI
      */
     id?: string;
     /**
-     * 子poi经纬度
+     * Longitude and latitude of the sub-POI
      */
     location?: string;
     /**
-     * 子poi名称
+     * Name of the sub-POI
      */
     name?: string;
     /**
-     * 子poi所属类型
+     * Sub-type of the sub-POI
      */
     subtype?: string;
     /**
-     * 子poi分类编码
+     * Category code of the sub-POI
      */
     typecode?: string;
     [property: string]: any;
 }
 
 /**
- * 设置后返回poi商业信息
+ * If set, returns business information of the POI
  */
 export interface Business {
     /**
-     * poi的别名，无别名时不返回
+     * Alias of the POI, not returned if there is no alias
      */
     alias?: string;
     /**
-     * poi所属商圈
+     * Business area of the POI
      */
     business_area?: string;
     /**
-     * poi人均消费，目前仅在餐饮、酒店、景点、影院类POI下返回
+     * Per capita consumption, currently only returned for food, hotel, attraction, and cinema POIs
      */
     cost?: string;
     /**
-     * 设置后返回室内相关信息
+     * If set, returns indoor-related information
      */
     indoor?: Indoor;
     /**
-     * poi今日营业时间，如 08:30-17:30 08:30-09:00 12:00-13:30 09:00-13:00
+     * Today's business hours, e.g., 08:30-17:30 08:30-09:00 12:00-13:30 09:00-13:00
      */
     opentime_today?: string;
     /**
-     * poi营业时间描述，如
-     * 周一至周五:08:30-17:30(延时服务时间:08:30-09:00；12:00-13:30)；周六延时服务时间:09:00-13:00(法定节假日除外)
+     * Business hours description, e.g., 
+     * Monday to Friday: 08:30-17:30 (Delay service: 08:30-09:00; 12:00-13:30); Saturday delay service: 09:00-13:00 (except statutory holidays)
      */
     opentime_week?: string;
     /**
-     * 停车场类型（地下、地面、路边），目前仅在停车场类POI下返回
+     * Parking type (underground, ground, roadside), currently only returned for parking lot POIs
      */
     parking_type?: string;
     /**
-     * poi评分，目前仅在餐饮、酒店、景点、影院类POI下返回
+     * POI rating, currently only returned for food, hotel, attraction, and cinema POIs
      */
     rating?: string;
     /**
-     * poi特色内容，目前仅在美食poi下返回
+     * Featured content, currently only returned for gourmet POIs
      */
     tag?: string;
     /**
-     * poi的联系电话
+     * Contact phone number of the POI
      */
     tel?: string;
     [property: string]: any;
 }
 
 /**
- * 设置后返回室内相关信息
+ * If set, returns indoor-related information
  */
 export interface Indoor {
     /**
-     * 是否有室内地图标志，1为有，0为没有
+     * Indoor map flag, 1 for yes, 0 for no
      */
     indoor_map?: string;
     /**
-     * 如果当前POI为建筑物类POI，则cpid为自身POI ID；如果当前POI为商铺类POI，则cpid为其所在建筑物的POI ID。  indoor_map为0时不返回
+     * If the current POI is a building POI, cpid is its own POI ID; if it's a shop POI, cpid is the POI ID of the building it's in. Not returned if indoor_map is 0.
      */
     cpid?: string;
     /**
-     * 楼层索引，一般会用数字表示，例如8；indoor_map为0时不返回
+     * Floor index, usually represented by a number, e.g., 8; not returned if indoor_map is 0.
      */
     floor?: string;
     /**
-     * 设置后返回导航位置相关信息
+     * If set, returns navigation location information
      */
     navi?: Navi;
     /**
-     * 所在楼层，一般会带有字母，例如F8；indoor_map为0时不返回
+     * Floor location, usually with a letter, e.g., F8; not returned if indoor_map is 0.
      */
     truefloor?: string;
     [property: string]: any;
 }
 
 /**
- * 设置后返回导航位置相关信息
+ * If set, returns navigation location information
  */
 export interface Navi {
     /**
-     * poi的入口经纬度坐标
+     * Latitude and longitude of the POI entrance
      */
     entr_location?: string;
     /**
-     * poi的出口经纬度坐标
+     * Latitude and longitude of the POI exit
      */
     exit_location?: string;
     /**
-     * poi的地理格id
+     * Grid code ID of the POI
      */
     gridcode?: string;
     /**
-     * poi对应的导航引导点坐标。大型面状POI的导航引导点，一般为各类出入口，方便结合导航、路线规划等服务使用
+     * Navigation guidance coordinates. For large area POIs, these are usually various entrances/exits, convenient for use with navigation and route planning.
      */
     navi_poiid?: string;
     /**
-     * 设置后返回poi图片相关信息
+     * If set, returns POI photo information
      */
     photos?: Photos[];
     [property: string]: any;
 }
 
 /**
- * 设置后返回poi图片相关信息
+ * If set, returns POI photo information
  */
 export interface Photos {
     /**
-     * poi的图片介绍
+     * Photo title/description of the POI
      */
     title?: string;
     /**
-     * poi图片的下载链接
+     * Download URL for the POI photo
      */
     url?: string;
     [property: string]: any;
 }
 
 /**
- * API请求参数
+ * API request parameters
  */
 export interface SearchParams {
     keywords: string;
-    types: string; // POI 分类码
-    region: string; // adcode 区域码
+    types: string; // POI Category Code
+    region: string; // adcode Region Code
     city_limit: boolean;
-    show_fields: string; // 确定需要的字段
+    show_fields: string; // Fields to return
     page_size: number; // 1-25
     page_num: number; // 1-100
-    sig?: string; // 数字签名
+    sig?: string; // Digital signature
     output: string;
     callback?: string;
     key: string; // API Key
