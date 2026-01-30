@@ -17,6 +17,7 @@ from chat.infra.nacos.ai import NacosAI
 from chat.infra.nacos.naming import NacosNaming
 from chat.infra.nacos.utils import client_shutdown
 from chat.routers.conversation import conversations
+from chat.routers.health import health
 from chat.routers.memory import memories
 from chat.routers.message import messages
 
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
     )
 
     # Include routers
+    app.include_router(health)
     app.include_router(conversations, prefix="/api/v1")
     app.include_router(memories, prefix="/api/v1")
     app.include_router(messages, prefix="/api/v1")

@@ -60,6 +60,12 @@ services:
         condition: service_started
       otel-collector:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:24210/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # File Service
@@ -614,12 +620,13 @@ services:
 
   # Higress
   higress:
-    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one
+    image: |
+      higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
     container_name: higress
     ports:
-      - "8001:8001" # Console
-      - "28080:8080" # HTTP
-      - "8443:8443" # HTTPS
+      - "8001:8001"  # Console
+      - "28080:8080"  # HTTP
+      - "8443:8443"  # HTTPS
     volumes:
       - ./higress:/etc/higress/config:ro
     restart: unless-stopped
