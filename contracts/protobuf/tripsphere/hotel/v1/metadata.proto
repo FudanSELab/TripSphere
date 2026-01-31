@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package tripsphere.itinerary;
+package tripsphere.hotel.v1;
 
-option go_package = "tripsphere/itinerary";
+option go_package = "tripsphere/hotel/v1";
 option java_multiple_files = true;
-option java_package = "org.tripsphere.itinerary";
+option java_package = "org.tripsphere.hotel.v1";
 
 service MetadataService {
-  // Get the version of itinerary service.
+  // Get the version of hotel service.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 }
 

@@ -1,12 +1,37 @@
 syntax = "proto3";
 
-package tripsphere.hotel;
+package tripsphere.hotel.v1;
 
-import "tripsphere/common/geo.proto";
+import "tripsphere/common/v1/geo.proto";
 
-option go_package = "tripsphere/hotel";
+option go_package = "tripsphere/hotel/v1";
 option java_multiple_files = true;
-option java_package = "org.tripsphere.hotel";
+option java_package = "org.tripsphere.hotel.v1";
+
+service HotelService {
+  rpc AddHotel(AddHotelRequest) returns (AddHotelResponse);
+
+  rpc DeleteHotel(DeleteHotelRequest) returns (DeleteHotelResponse);
+
+  rpc ChangeHotel(ChangeHotelRequest) returns (ChangeHotelResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  //and list them in order from near to far, and result has been paginated
+  rpc FindHotelWithinRadiusPage(FindHotelWithinRadiusPageRequest) returns (FindHotelWithinRadiusPageResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  //and result has been paginated
+  rpc FindHotelsWithinCirclePage(FindHotelsWithinCirclePageRequest) returns (FindHotelsWithinCirclePageResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  //and list them in order from near to far
+  rpc FindHotelWithinRadius(FindHotelWithinRadiusRequest) returns (FindHotelWithinRadiusResponse);
+
+  //Find hotels located at the specified location and within the specified distance range
+  rpc FindHotelsWithinCircle(FindHotelsWithinCircleRequest) returns (FindHotelsWithinCircleResponse);
+
+  rpc FindHotelById(FindHotelByIdRequest) returns (FindHotelByIdResponse);
+}
 
 message Room {
   string name = 1;
@@ -24,11 +49,11 @@ message Room {
 message Hotel {
   string id = 1;
   string name = 2;
-  tripsphere.common.Address address = 3;
+  tripsphere.common.v1.Address address = 3;
   string introduction = 4;
   repeated string tags = 5;
   repeated Room rooms = 6;
-  tripsphere.common.Location location = 7;
+  tripsphere.common.v1.Location location = 7;
 }
 
 message AddHotelRequest {
@@ -67,7 +92,7 @@ message HotelPage {
 }
 
 message FindHotelWithinRadiusPageRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   int32 number = 3; // page number
   int32 size = 4; // page size
@@ -80,7 +105,7 @@ message FindHotelWithinRadiusPageResponse {
 }
 
 message FindHotelsWithinCirclePageRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   int32 number = 3; // page number
   int32 size = 4; // page size
@@ -93,7 +118,7 @@ message FindHotelsWithinCirclePageResponse {
 }
 
 message FindHotelWithinRadiusRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
@@ -104,7 +129,7 @@ message FindHotelWithinRadiusResponse {
 }
 
 message FindHotelsWithinCircleRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
@@ -120,29 +145,4 @@ message FindHotelByIdRequest {
 
 message FindHotelByIdResponse {
   Hotel hotel = 1;
-}
-
-service HotelService {
-  rpc AddHotel(AddHotelRequest) returns (AddHotelResponse);
-
-  rpc DeleteHotel(DeleteHotelRequest) returns (DeleteHotelResponse);
-
-  rpc ChangeHotel(ChangeHotelRequest) returns (ChangeHotelResponse);
-
-  //Find hotels located at the specified location and within the specified distance range
-  //and list them in order from near to far, and result has been paginated
-  rpc FindHotelWithinRadiusPage(FindHotelWithinRadiusPageRequest) returns (FindHotelWithinRadiusPageResponse);
-
-  //Find hotels located at the specified location and within the specified distance range
-  //and result has been paginated
-  rpc FindHotelsWithinCirclePage(FindHotelsWithinCirclePageRequest) returns (FindHotelsWithinCirclePageResponse);
-
-  //Find hotels located at the specified location and within the specified distance range
-  //and list them in order from near to far
-  rpc FindHotelWithinRadius(FindHotelWithinRadiusRequest) returns (FindHotelWithinRadiusResponse);
-
-  //Find hotels located at the specified location and within the specified distance range
-  rpc FindHotelsWithinCircle(FindHotelsWithinCircleRequest) returns (FindHotelsWithinCircleResponse);
-
-  rpc FindHotelById(FindHotelByIdRequest) returns (FindHotelByIdResponse);
 }

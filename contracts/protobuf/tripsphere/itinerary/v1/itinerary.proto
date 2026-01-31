@@ -1,19 +1,41 @@
 syntax = "proto3";
 
-package tripsphere.itinerary;
+package tripsphere.itinerary.v1;
 
 import "google/protobuf/struct.proto";
-import "tripsphere/common/geo.proto";
+import "tripsphere/common/v1/geo.proto";
 
-option go_package = "tripsphere/itinerary";
+option go_package = "tripsphere/itinerary/v1";
 option java_multiple_files = true;
-option java_package = "org.tripsphere.itinerary";
+option java_package = "org.tripsphere.itinerary.v1";
+
+// ========== Service interfaces ==========
+
+service ItineraryService {
+  // Itinerary CRUD
+  rpc CreateItinerary(CreateItineraryRequest) returns (CreateItineraryResponse);
+  rpc GetItinerary(GetItineraryRequest) returns (GetItineraryResponse);
+  rpc UpdateItinerary(UpdateItineraryRequest) returns (UpdateItineraryResponse);
+  rpc DeleteItinerary(DeleteItineraryRequest) returns (DeleteItineraryResponse);
+  rpc ListUserItineraries(ListUserItinerariesRequest) returns (ListUserItinerariesResponse);
+
+  // DayPlan operations
+  rpc AddDayPlan(AddDayPlanRequest) returns (AddDayPlanResponse);
+  rpc UpdateDayPlan(UpdateDayPlanRequest) returns (UpdateDayPlanResponse);
+  rpc DeleteDayPlan(DeleteDayPlanRequest) returns (DeleteDayPlanResponse);
+
+  // Activity operations
+  rpc AddActivity(AddActivityRequest) returns (AddActivityResponse);
+  rpc UpdateActivity(UpdateActivityRequest) returns (UpdateActivityResponse);
+  rpc DeleteActivity(DeleteActivityRequest) returns (DeleteActivityResponse);
+  rpc ReorderActivities(ReorderActivitiesRequest) returns (ReorderActivitiesResponse);
+}
 
 // ========== Helper message types ==========
 
 message ActivityLocation {
   string name = 1;
-  tripsphere.common.Location coordinates = 2;
+  tripsphere.common.v1.Location location = 2;
   string address = 3;
 }
 
@@ -106,28 +128,6 @@ message Itinerary {
 
   // Extension fields
   google.protobuf.Struct metadata = 14;
-}
-
-// ========== Service interfaces ==========
-
-service ItineraryService {
-  // Itinerary CRUD
-  rpc CreateItinerary(CreateItineraryRequest) returns (CreateItineraryResponse);
-  rpc GetItinerary(GetItineraryRequest) returns (GetItineraryResponse);
-  rpc UpdateItinerary(UpdateItineraryRequest) returns (UpdateItineraryResponse);
-  rpc DeleteItinerary(DeleteItineraryRequest) returns (DeleteItineraryResponse);
-  rpc ListUserItineraries(ListUserItinerariesRequest) returns (ListUserItinerariesResponse);
-
-  // DayPlan operations
-  rpc AddDayPlan(AddDayPlanRequest) returns (AddDayPlanResponse);
-  rpc UpdateDayPlan(UpdateDayPlanRequest) returns (UpdateDayPlanResponse);
-  rpc DeleteDayPlan(DeleteDayPlanRequest) returns (DeleteDayPlanResponse);
-
-  // Activity operations
-  rpc AddActivity(AddActivityRequest) returns (AddActivityResponse);
-  rpc UpdateActivity(UpdateActivityRequest) returns (UpdateActivityResponse);
-  rpc DeleteActivity(DeleteActivityRequest) returns (DeleteActivityResponse);
-  rpc ReorderActivities(ReorderActivitiesRequest) returns (ReorderActivitiesResponse);
 }
 
 // ========== Request/Response messages ==========

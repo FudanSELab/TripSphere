@@ -1,21 +1,46 @@
 syntax = "proto3";
 
-package tripsphere.attraction;
+package tripsphere.attraction.v1;
 
-import "tripsphere/common/geo.proto";
+import "tripsphere/common/v1/geo.proto";
 
-option go_package = "tripsphere/attraction";
+option go_package = "tripsphere/attraction/v1";
 option java_multiple_files = true;
-option java_package = "org.tripsphere.attraction";
+option java_package = "org.tripsphere.attraction.v1";
+
+service AttractionService {
+  rpc AddAttraction(AddAttractionRequest) returns (AddAttractionResponse);
+
+  rpc DeleteAttraction(DeleteAttractionRequest) returns (DeleteAttractionResponse);
+
+  rpc ChangeAttraction(ChangeAttractionRequest) returns (ChangeAttractionResponse);
+
+  rpc FindAttractionById(FindAttractionByIdRequest) returns (FindAttractionByIdResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  //and list them in order from near to far, and result has been paginated
+  rpc FindAttractionsWithinRadiusPage(FindAttractionsWithinRadiusPageRequest) returns (FindAttractionsWithinRadiusPageResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  //and result has been paginated
+  rpc FindAttractionsWithinCirclePage(FindAttractionsWithinCirclePageRequest) returns (FindAttractionsWithinCirclePageResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  //and list them in order from near to far
+  rpc FindAttractionsWithinRadius(FindAttractionsWithinRadiusRequest) returns (FindAttractionsWithinRadiusResponse);
+
+  //Find attractions located at the specified location and within the specified distance range
+  rpc FindAttractionsWithinCircle(FindAttractionsWithinCircleRequest) returns (FindAttractionsWithinCircleResponse);
+}
 
 message Attraction {
   string id = 1;
   string name = 2;
-  tripsphere.common.Address address = 3;
+  tripsphere.common.v1.Address address = 3;
   string introduction = 4;
   repeated string tags = 5;
   repeated string images = 6;
-  tripsphere.common.Location location = 7;
+  tripsphere.common.v1.Location location = 7;
 }
 
 message AddAttractionRequest {
@@ -70,7 +95,7 @@ message AttractionPage {
 }
 
 message FindAttractionsWithinRadiusPageRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   int32 number = 3; // page number
   int32 size = 4; // page size
@@ -83,7 +108,7 @@ message FindAttractionsWithinRadiusPageResponse {
 }
 
 message FindAttractionsWithinCirclePageRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   int32 number = 3; // page number
   int32 size = 4; // page size
@@ -96,7 +121,7 @@ message FindAttractionsWithinCirclePageResponse {
 }
 
 message FindAttractionsWithinRadiusRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
@@ -107,7 +132,7 @@ message FindAttractionsWithinRadiusResponse {
 }
 
 message FindAttractionsWithinCircleRequest {
-  tripsphere.common.Location location = 1;
+  tripsphere.common.v1.Location location = 1;
   double radius_km = 2;
   string name = 3;
   repeated string tags = 4;
@@ -115,26 +140,4 @@ message FindAttractionsWithinCircleRequest {
 
 message FindAttractionsWithinCircleResponse {
   repeated Attraction content = 1;
-}
-
-service AttractionService {
-  rpc AddAttraction(AddAttractionRequest) returns (AddAttractionResponse);
-  rpc DeleteAttraction(DeleteAttractionRequest) returns (DeleteAttractionResponse);
-  rpc ChangeAttraction(ChangeAttractionRequest) returns (ChangeAttractionResponse);
-  rpc FindIdByName(FindIdByNameRequest) returns (FindIdByNameResponse);
-  rpc FindAttractionById(FindAttractionByIdRequest) returns (FindAttractionByIdResponse);
-  //Find attractions located at the specified location and within the specified distance range
-  //and list them in order from near to far, and result has been paginated
-  rpc FindAttractionsWithinRadiusPage(FindAttractionsWithinRadiusPageRequest) returns (FindAttractionsWithinRadiusPageResponse);
-
-  //Find attractions located at the specified location and within the specified distance range
-  //and result has been paginated
-  rpc FindAttractionsWithinCirclePage(FindAttractionsWithinCirclePageRequest) returns (FindAttractionsWithinCirclePageResponse);
-
-  //Find attractions located at the specified location and within the specified distance range
-  //and list them in order from near to far
-  rpc FindAttractionsWithinRadius(FindAttractionsWithinRadiusRequest) returns (FindAttractionsWithinRadiusResponse);
-
-  //Find attractions located at the specified location and within the specified distance range
-  rpc FindAttractionsWithinCircle(FindAttractionsWithinCircleRequest) returns (FindAttractionsWithinCircleResponse);
 }

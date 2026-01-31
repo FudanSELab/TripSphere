@@ -1,10 +1,33 @@
 syntax = "proto3";
 
-package tripsphere.file;
+package tripsphere.file.v1;
 
-option go_package = "tripsphere/file";
+option go_package = "tripsphere/file/v1";
 option java_multiple_files = true;
-option java_package = "org.tripsphere.file";
+option java_package = "org.tripsphere.file.v1";
+
+service FileService {
+  // GetUploadSignedUrl gets a signed URL for permanent file upload, used for frontend to upload a permanent file
+  rpc GetUploadSignedUrl(GetUploadSignedUrlRequest) returns (GetUploadSignedUrlResponse);
+
+  // GetTempUploadSignedUrl gets a signed URL for temporary file upload, used for frontend to upload a temporary file
+  rpc GetTempUploadSignedUrl(GetTempUploadSignedUrlRequest) returns (GetTempUploadSignedUrlResponse);
+
+  // GetDownloadSignedUrls gets signed URLs for a batch of files, used for frontend to display files
+  rpc GetDownloadSignedUrls(GetDownloadSignedUrlsRequest) returns (GetDownloadSignedUrlsResponse);
+
+  // CopyFiles copies a batch of files to new locations
+  rpc CopyFiles(CopyFilesRequest) returns (CopyFilesResponse);
+
+  // DeleteFiles deletes one or more files
+  rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
+
+  // CopyToPermanent copies files from temp bucket to permanent bucket
+  // Files that are already in permanent bucket will be ignored
+  // Since the caller needs to save the new file object array back to database after calling this interface,
+  // which may fail, the copied files will not be deleted immediately to allow the caller to retry
+  rpc CopyToPermanent(CopyToPermanentRequest) returns (CopyToPermanentResponse);
+}
 
 // File represents a file resource
 message File {
@@ -80,28 +103,4 @@ message CopyToPermanentRequest {
 // CopyToPermanent response
 message CopyToPermanentResponse {
   repeated File files = 1; // New file objects (files already in permanent bucket will be ignored)
-}
-
-// FileService provides file-related services
-service FileService {
-  // GetUploadSignedUrl gets a signed URL for permanent file upload, used for frontend to upload a permanent file
-  rpc GetUploadSignedUrl(GetUploadSignedUrlRequest) returns (GetUploadSignedUrlResponse);
-
-  // GetTempUploadSignedUrl gets a signed URL for temporary file upload, used for frontend to upload a temporary file
-  rpc GetTempUploadSignedUrl(GetTempUploadSignedUrlRequest) returns (GetTempUploadSignedUrlResponse);
-
-  // GetDownloadSignedUrls gets signed URLs for a batch of files, used for frontend to display files
-  rpc GetDownloadSignedUrls(GetDownloadSignedUrlsRequest) returns (GetDownloadSignedUrlsResponse);
-
-  // CopyFiles copies a batch of files to new locations
-  rpc CopyFiles(CopyFilesRequest) returns (CopyFilesResponse);
-
-  // DeleteFiles deletes one or more files
-  rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
-
-  // CopyToPermanent copies files from temp bucket to permanent bucket
-  // Files that are already in permanent bucket will be ignored
-  // Since the caller needs to save the new file object array back to database after calling this interface,
-  // which may fail, the copied files will not be deleted immediately to allow the caller to retry
-  rpc CopyToPermanent(CopyToPermanentRequest) returns (CopyToPermanentResponse);
 }
