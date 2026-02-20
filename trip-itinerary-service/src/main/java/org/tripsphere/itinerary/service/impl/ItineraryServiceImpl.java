@@ -187,48 +187,53 @@ public class ItineraryServiceImpl implements ItineraryService {
     }
 
     @Override
-    public Activity updateActivity(String itineraryId, String dayPlanId, Activity activity) {
-        log.debug(
-                "Updating activity {} in day plan {} in itinerary {}",
-                activity.getId(),
-                dayPlanId,
-                itineraryId);
+    public Activity updateActivity(Activity activity) {
+        String activityId = activity.getId();
+        log.debug("Updating activity {}", activityId);
 
-        if (activity.getId().isEmpty()) {
+        if (activityId.isEmpty()) {
             throw InvalidArgumentException.required("activity.id");
         }
 
-        ItineraryDoc doc = getItineraryDoc(itineraryId);
-        DayPlanDoc dayPlanDoc = findDayPlan(doc, dayPlanId);
+        ItineraryDoc doc =
+                itineraryRepository
+                        .findByActivityId(activityId)
+                        .orElseThrow(() -> new NotFoundException("Activity", activityId));
+
+        DayPlanDoc dayPlanDoc =
+                doc.getDayPlans().stream()
+                        .filter(
+                                dp ->
+                                        dp.getActivities() != null
+                                                && dp.getActivities().stream()
+                                                        .anyMatch(a -> a.getId().equals(activityId)))
+                        .findFirst()
+                        .orElseThrow(() -> new NotFoundException("Activity", activityId));
 
         List<ActivityDoc> activities = dayPlanDoc.getActivities();
-        if (activities == null || activities.isEmpty()) {
-            throw new NotFoundException("Activity", activity.getId());
-        }
-
         int index = -1;
         for (int i = 0; i < activities.size(); i++) {
-            if (activities.get(i).getId().equals(activity.getId())) {
+            if (activities.get(i).getId().equals(activityId)) {
                 index = i;
                 break;
             }
-        }
-
-        if (index == -1) {
-            throw new NotFoundException("Activity", activity.getId());
         }
 
         ActivityDoc updatedDoc = activityMapper.toDoc(activity);
         activities.set(index, updatedDoc);
 
         itineraryRepository.save(doc);
-        log.info(
-                "Updated activity {} in day plan {} in itinerary {}",
-                activity.getId(),
-                dayPlanId,
-                itineraryId);
+        log.info("Updated activity {} in itinerary {}", activityId, doc.getId());
 
         return activityMapper.toProto(updatedDoc);
+    }
+
+    @Override
+    public String findItineraryIdByActivityId(String activityId) {
+        return itineraryRepository
+                .findByActivityId(activityId)
+                .map(ItineraryDoc::getId)
+                .orElseThrow(() -> new NotFoundException("Activity", activityId));
     }
 
     @Override

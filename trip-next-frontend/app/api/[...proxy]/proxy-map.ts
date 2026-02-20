@@ -1,20 +1,21 @@
 import { grpcClient } from "@/lib/grpc/client";
 import {
   Attraction,
-  FindAttractionByIdRequest,
-  FindAttractionByIdResponse,
-  FindAttractionsLocationNearRequest,
-  FindAttractionsLocationNearResponse,
+  GetAttractionByIdRequest,
+  GetAttractionByIdResponse,
+  GetAttractionsNearbyRequest,
+  GetAttractionsNearbyResponse,
 } from "@/lib/grpc/gen/tripsphere/attraction/v1/attraction";
 import {
-  CreateReviewRequest,
+  CreateReviewRequest as GrpcCreateReviewRequest,
   CreateReviewResponse,
   DeleteReviewRequest,
   DeleteReviewResponse,
-  GetReviewByTargetIDRequest,
-  GetReviewByTargetIDResponse,
+  EntityType,
+  ListReviewsByEntityRequest,
+  ListReviewsByEntityResponse,
   Review,
-  UpdateReviewRequest,
+  UpdateReviewRequest as GrpcUpdateReviewRequest,
   UpdateReviewResponse,
 } from "@/lib/grpc/gen/tripsphere/review/v1/review";
 import {
@@ -75,15 +76,15 @@ export interface RpcProxyMap {
   // Attraction APIs
   // ============================================================================
   "GET /api/v1/attractions/:id": RpcProxyRule<
-    FindAttractionByIdRequest,
-    FindAttractionByIdResponse,
+    GetAttractionByIdRequest,
+    GetAttractionByIdResponse,
     { id: string },
     Attraction
   >;
   "POST /api/v1/attractions/nearby": RpcProxyRule<
-    FindAttractionsLocationNearRequest,
-    FindAttractionsLocationNearResponse,
-    FindAttractionsLocationNearRequest,
+    GetAttractionsNearbyRequest,
+    GetAttractionsNearbyResponse,
+    GetAttractionsNearbyRequest,
     Attraction[]
   >;
 
@@ -91,8 +92,8 @@ export interface RpcProxyMap {
   // Review APIs
   // ============================================================================
   "GET /api/v1/reviews": RpcProxyRule<
-    GetReviewByTargetIDRequest,
-    GetReviewByTargetIDResponse,
+    ListReviewsByEntityRequest,
+    ListReviewsByEntityResponse,
     {
       targetType: string;
       targetId: string;
@@ -102,15 +103,22 @@ export interface RpcProxyMap {
     { reviews: Review[]; totalReviews: number }
   >;
   "POST /api/v1/reviews": RpcProxyRule<
-    CreateReviewRequest,
+    GrpcCreateReviewRequest,
     CreateReviewResponse,
-    CreateReviewRequest,
+    {
+      userId: string;
+      targetType: string;
+      targetId: string;
+      rating: number;
+      text: string;
+      images?: string[];
+    },
     { id: string; status: boolean }
   >;
   "PUT /api/v1/reviews/:id": RpcProxyRule<
-    UpdateReviewRequest,
+    GrpcUpdateReviewRequest,
     UpdateReviewResponse,
-    UpdateReviewRequest,
+    { id: string; rating: number; text: string; images?: string[] },
     { status: boolean }
   >;
   "DELETE /api/v1/reviews/:id": RpcProxyRule<
@@ -176,12 +184,12 @@ export const grpcProxyMap: RpcProxyMap = {
     },
   },
   "GET /api/v1/attractions/:id": {
-    method: grpcClient.attraction.findAttractionById.bind(
+    method: grpcClient.attraction.getAttractionById.bind(
       grpcClient.attraction,
     ),
     buildRPCRequest: (request: { id: string }) =>
-      FindAttractionByIdRequest.create({ id: request.id }),
-    buildHttpResponse: (response: FindAttractionByIdResponse) => {
+      GetAttractionByIdRequest.create({ id: request.id }),
+    buildHttpResponse: (response: GetAttractionByIdResponse) => {
       if (!response.attraction) {
         throw new Error("Attraction not found in response");
       }
@@ -189,56 +197,89 @@ export const grpcProxyMap: RpcProxyMap = {
     },
   },
   "POST /api/v1/attractions/nearby": {
-    method: grpcClient.attraction.findAttractionsLocationNear.bind(
+    method: grpcClient.attraction.getAttractionsNearby.bind(
       grpcClient.attraction,
     ),
-    buildRPCRequest: (request: FindAttractionsLocationNearRequest) =>
-      FindAttractionsLocationNearRequest.create(request),
-    buildHttpResponse: (response: FindAttractionsLocationNearResponse) => {
+    buildRPCRequest: (request: GetAttractionsNearbyRequest) =>
+      GetAttractionsNearbyRequest.create(request),
+    buildHttpResponse: (response: GetAttractionsNearbyResponse) => {
       return response.attractions;
     },
   },
   "GET /api/v1/reviews": {
-    method: grpcClient.review.getReviewByTargetId.bind(grpcClient.review),
+    method: grpcClient.review.listReviewsByEntity.bind(grpcClient.review),
     buildRPCRequest: (request: {
       targetType: string;
       targetId: string;
       pageNumber: number;
       pageSize: number;
     }) =>
-      GetReviewByTargetIDRequest.create({
-        targetType: request.targetType,
-        targetId: request.targetId,
-        pageNumber: request.pageNumber || 1,
+      ListReviewsByEntityRequest.create({
+        entityType:
+          request.targetType === "attraction"
+            ? EntityType.ENTITY_TYPE_ATTRACTION
+            : EntityType.ENTITY_TYPE_HOTEL,
+        entityId: request.targetId,
         pageSize: request.pageSize || 20,
       }),
-    buildHttpResponse: (response: GetReviewByTargetIDResponse) => ({
+    buildHttpResponse: (response: ListReviewsByEntityResponse) => ({
       reviews: response.reviews,
-      totalReviews: response.totalReviews,
+      totalReviews: response.reviews.length,
     }),
   },
   "POST /api/v1/reviews": {
     method: grpcClient.review.createReview.bind(grpcClient.review),
-    buildRPCRequest: (request: CreateReviewRequest) =>
-      CreateReviewRequest.create(request),
+    buildRPCRequest: (request: {
+      userId: string;
+      targetType: string;
+      targetId: string;
+      rating: number;
+      text: string;
+      images?: string[];
+    }) =>
+      GrpcCreateReviewRequest.create({
+        review: {
+          userId: request.userId,
+          entityType:
+            request.targetType === "attraction"
+              ? EntityType.ENTITY_TYPE_ATTRACTION
+              : EntityType.ENTITY_TYPE_HOTEL,
+          entityId: request.targetId,
+          rating: request.rating,
+          content: request.text,
+          images: request.images || [],
+        },
+      }),
     buildHttpResponse: (response: CreateReviewResponse) => ({
-      id: response.id,
-      status: response.status,
+      id: response.review?.id || "",
+      status: true,
     }),
   },
   "PUT /api/v1/reviews/:id": {
     method: grpcClient.review.updateReview.bind(grpcClient.review),
-    buildRPCRequest: (request: UpdateReviewRequest) =>
-      UpdateReviewRequest.create(request),
-    buildHttpResponse: (response: UpdateReviewResponse) => ({
-      status: response.status,
+    buildRPCRequest: (request: {
+      id: string;
+      rating: number;
+      text: string;
+      images?: string[];
+    }) =>
+      GrpcUpdateReviewRequest.create({
+        review: {
+          id: request.id,
+          rating: request.rating,
+          content: request.text,
+          images: request.images || [],
+        },
+      }),
+    buildHttpResponse: (_response: UpdateReviewResponse) => ({
+      status: true,
     }),
   },
   "DELETE /api/v1/reviews/:id": {
     method: grpcClient.review.deleteReview.bind(grpcClient.review),
     buildRPCRequest: (request: { id: string }) =>
       DeleteReviewRequest.create({ id: request.id }),
-    buildHttpResponse: (response: DeleteReviewResponse) => ({
+    buildHttpResponse: (_response: DeleteReviewResponse) => ({
       status: true,
     }),
   },

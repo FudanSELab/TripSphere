@@ -22,40 +22,14 @@ const mockHotels: HotelType[] = [
     id: "1",
     name: "The Peninsula Shanghai",
     address: {
-      country: "China",
       province: "Shanghai",
       city: "Shanghai",
-      county: "Huangpu",
-      district: "",
-      street: "No. 32 Zhongshan East 1st Road",
+      district: "Huangpu",
+      detailed: "No. 32 Zhongshan East 1st Road",
     },
     introduction:
       "A luxurious 5-star hotel overlooking the historic Bund and the modern Pudong skyline.",
     tags: ["Luxury", "5-Star", "River View", "Spa", "Restaurant"],
-    rooms: [
-      {
-        name: "Deluxe Room",
-        totalNumber: 50,
-        remainingNumber: 10,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 55,
-        maxArea: 60,
-        peopleNumber: 2,
-        tags: ["City View"],
-      },
-      {
-        name: "Premier Suite",
-        totalNumber: 20,
-        remainingNumber: 5,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 88,
-        maxArea: 95,
-        peopleNumber: 2,
-        tags: ["River View", "Living Room"],
-      },
-    ],
     location: { lng: 121.4883, lat: 31.2365 },
     rating: 4.9,
     priceRange: "¥3,500 - ¥15,000",
@@ -67,40 +41,14 @@ const mockHotels: HotelType[] = [
     id: "2",
     name: "Hyatt on the Bund",
     address: {
-      country: "China",
       province: "Shanghai",
       city: "Shanghai",
-      county: "Hongkou",
-      district: "",
-      street: "No. 199 Huangpu Road",
+      district: "Hongkou",
+      detailed: "No. 199 Huangpu Road",
     },
     introduction:
       "Modern luxury hotel with stunning views of the Huangpu River and city skyline.",
     tags: ["Business", "5-Star", "River View", "Pool", "Gym"],
-    rooms: [
-      {
-        name: "Grand Room",
-        totalNumber: 80,
-        remainingNumber: 25,
-        bedWidth: 1.8,
-        bedNumber: 1,
-        minArea: 40,
-        maxArea: 45,
-        peopleNumber: 2,
-        tags: ["City View"],
-      },
-      {
-        name: "River View Suite",
-        totalNumber: 30,
-        remainingNumber: 8,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 65,
-        maxArea: 75,
-        peopleNumber: 2,
-        tags: ["River View"],
-      },
-    ],
     location: { lng: 121.4928, lat: 31.2456 },
     rating: 4.7,
     priceRange: "¥1,800 - ¥6,500",
@@ -112,40 +60,14 @@ const mockHotels: HotelType[] = [
     id: "3",
     name: "Mandarin Oriental Pudong",
     address: {
-      country: "China",
       province: "Shanghai",
       city: "Shanghai",
-      county: "Pudong",
-      district: "",
-      street: "No. 111 Pudong South Road",
+      district: "Pudong",
+      detailed: "No. 111 Pudong South Road",
     },
     introduction:
       "Elegant hotel in the heart of Lujiazui financial district with world-class amenities.",
     tags: ["Luxury", "5-Star", "Spa", "Fine Dining", "Business Center"],
-    rooms: [
-      {
-        name: "Superior Room",
-        totalNumber: 100,
-        remainingNumber: 30,
-        bedWidth: 1.8,
-        bedNumber: 1,
-        minArea: 45,
-        maxArea: 50,
-        peopleNumber: 2,
-        tags: ["City View"],
-      },
-      {
-        name: "Club Suite",
-        totalNumber: 25,
-        remainingNumber: 7,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 80,
-        maxArea: 90,
-        peopleNumber: 2,
-        tags: ["Club Access", "River View"],
-      },
-    ],
     location: { lng: 121.5032, lat: 31.2308 },
     rating: 4.8,
     priceRange: "¥2,500 - ¥12,000",
@@ -157,40 +79,14 @@ const mockHotels: HotelType[] = [
     id: "4",
     name: "Four Seasons Hangzhou",
     address: {
-      country: "China",
       province: "Zhejiang",
       city: "Hangzhou",
-      county: "",
       district: "",
-      street: "No. 5 Lingyin Road",
+      detailed: "No. 5 Lingyin Road",
     },
     introduction:
       "A tranquil retreat nestled beside West Lake with traditional Chinese architecture.",
     tags: ["Resort", "5-Star", "Lake View", "Spa", "Garden"],
-    rooms: [
-      {
-        name: "Garden View Room",
-        totalNumber: 60,
-        remainingNumber: 15,
-        bedWidth: 1.8,
-        bedNumber: 1,
-        minArea: 50,
-        maxArea: 55,
-        peopleNumber: 2,
-        tags: ["Garden View"],
-      },
-      {
-        name: "West Lake Suite",
-        totalNumber: 15,
-        remainingNumber: 3,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 100,
-        maxArea: 120,
-        peopleNumber: 2,
-        tags: ["Lake View", "Balcony"],
-      },
-    ],
     location: { lng: 120.1285, lat: 30.2521 },
     rating: 4.9,
     priceRange: "¥3,200 - ¥18,000",
@@ -202,40 +98,14 @@ const mockHotels: HotelType[] = [
     id: "5",
     name: "Waldorf Astoria Beijing",
     address: {
-      country: "China",
       province: "Beijing",
       city: "Beijing",
-      county: "Dongcheng",
-      district: "",
-      street: "No. 5-15 Jinyu Hutong",
+      district: "Dongcheng",
+      detailed: "No. 5-15 Jinyu Hutong",
     },
     introduction:
       "Historic Art Deco hotel offering exceptional service in the heart of Beijing.",
     tags: ["Historic", "5-Star", "Central Location", "Restaurant", "Bar"],
-    rooms: [
-      {
-        name: "Deluxe King",
-        totalNumber: 70,
-        remainingNumber: 20,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 52,
-        maxArea: 58,
-        peopleNumber: 2,
-        tags: ["City View"],
-      },
-      {
-        name: "Hutong Suite",
-        totalNumber: 12,
-        remainingNumber: 2,
-        bedWidth: 2.0,
-        bedNumber: 1,
-        minArea: 110,
-        maxArea: 130,
-        peopleNumber: 2,
-        tags: ["Hutong View", "Living Room"],
-      },
-    ],
     location: { lng: 116.4142, lat: 39.9149 },
     rating: 4.8,
     priceRange: "¥2,800 - ¥20,000",
@@ -404,7 +274,7 @@ export default function HotelsPage() {
                   {/* Location */}
                   <p className="mb-3 flex items-center gap-1 text-sm text-gray-500">
                     <MapPin className="h-4 w-4" />
-                    {hotel.address.city}, {hotel.address.country}
+                    {hotel.address.city}, {hotel.address.province}
                   </p>
 
                   {/* Description */}
@@ -421,11 +291,7 @@ export default function HotelsPage() {
                     ))}
                   </div>
 
-                  {/* Room info */}
-                  <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                    <div className="text-sm text-gray-500">
-                      {hotel.rooms?.length || 0} room types available
-                    </div>
+                  <div className="flex items-center justify-end border-t border-gray-100 pt-4">
                     <Button variant="ghost" size="sm">
                       View Details
                     </Button>

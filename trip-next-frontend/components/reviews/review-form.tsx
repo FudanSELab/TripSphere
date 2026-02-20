@@ -24,7 +24,7 @@ export function ReviewForm({
   const { createReview: createReviewAPI, updateReview: updateReviewAPI } =
     useReviews();
   const [rating, setRating] = useState(existingReview?.rating || 0);
-  const [text, setText] = useState(existingReview?.text || "");
+  const [text, setText] = useState(existingReview?.content || "");
   const [images, setImages] = useState<string[]>(existingReview?.images || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");

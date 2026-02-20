@@ -25,6 +25,7 @@ COPY postcss.config.mjs eslint.config.mjs ./
 COPY lib ./lib
 COPY app ./app
 COPY components ./components
+COPY hooks ./hooks
 COPY public ./public
 COPY proxy.ts ./proxy.ts
 

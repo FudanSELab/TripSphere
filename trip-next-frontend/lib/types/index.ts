@@ -34,12 +34,10 @@ export type {
 } from "@/lib/grpc/gen/tripsphere/user/v1/user";
 
 // Hotel types
-import type {
-  Hotel as GrpcHotel,
-  Room,
-} from "@/lib/grpc/gen/tripsphere/hotel/v1/hotel";
+import type { Hotel as GrpcHotel } from "@/lib/grpc/gen/tripsphere/hotel/v1/hotel";
 
-export type { GrpcHotel, Room };
+export type { GrpcHotel };
+
 
 // Attraction types
 export type { Attraction as GrpcAttraction } from "@/lib/grpc/gen/tripsphere/attraction/v1/attraction";
@@ -61,14 +59,12 @@ export type { Address, GrpcLocation };
 
 // Review types
 import type {
-  GetReviewByTargetIDWithCursorResponse,
   CreateReviewRequest as GrpcCreateReviewRequest,
   Review as GrpcReview,
   UpdateReviewRequest as GrpcUpdateReviewRequest,
 } from "@/lib/grpc/gen/tripsphere/review/v1/review";
 
 export type {
-  GetReviewByTargetIDWithCursorResponse,
   GrpcCreateReviewRequest,
   GrpcReview,
   GrpcUpdateReviewRequest,
@@ -154,7 +150,7 @@ export interface Hotel {
   address: Address;
   introduction: string;
   tags: string[];
-  rooms: Room[];
+
   location: Location;
   rating?: number;
   priceRange?: string;
@@ -434,7 +430,6 @@ export interface UploadSignedUrlResponse {
 export type Review = GrpcReview;
 export type CreateReviewRequest = GrpcCreateReviewRequest;
 export type UpdateReviewRequest = GrpcUpdateReviewRequest;
-export type GetReviewsResponse = GetReviewByTargetIDWithCursorResponse;
 
 export interface ReviewStats {
   goodReviewCount: number;

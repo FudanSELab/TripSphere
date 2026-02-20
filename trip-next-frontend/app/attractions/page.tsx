@@ -23,7 +23,7 @@ export default function AttractionsPage() {
             latitude: 31.2304, // Default: Shanghai
             longitude: 121.4737,
           },
-          radiusKm: 50, // 50km radius
+          radius_km: 50, // 50km radius
         });
         setAttractions(data);
       } catch (error) {
@@ -122,7 +122,7 @@ export default function AttractionsPage() {
                           <div className="flex items-center gap-1 text-sm text-gray-500">
                             <MapPin className="h-4 w-4" />
                             {attraction.address.city},{" "}
-                            {attraction.address.country}
+                            {attraction.address.province}
                           </div>
                         </div>
                       </div>

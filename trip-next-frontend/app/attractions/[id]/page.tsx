@@ -23,19 +23,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Helper to convert GrpcReview to Review type
+// GrpcReview is the same type as Review (Review = GrpcReview in lib/types)
 function convertGrpcReviewToReview(grpcReview: GrpcReview): Review {
-  return {
-    id: grpcReview.id,
-    userId: grpcReview.userId,
-    targetType: grpcReview.targetType,
-    targetId: grpcReview.targetId,
-    rating: grpcReview.rating,
-    text: grpcReview.text,
-    images: grpcReview.images || [],
-    createdAt: grpcReview.createdAt * 1000, // Convert seconds to milliseconds
-    updatedAt: grpcReview.updatedAt * 1000,
-  };
+  return grpcReview;
 }
 
 export default function AttractionDetailPage() {
@@ -83,40 +73,43 @@ export default function AttractionDetailPage() {
         {
           id: "mock-review-1",
           userId: "user-2",
-          targetType: "attraction",
-          targetId: attractionId,
+          entityType: 2 as Review["entityType"], // EntityType.ENTITY_TYPE_ATTRACTION
+          entityId: attractionId,
           rating: 5,
-          text: "Absolutely stunning views, especially at night! The historic buildings are beautifully preserved and the modern skyline across the river is breathtaking.",
+          content: "Absolutely stunning views, especially at night! The historic buildings are beautifully preserved and the modern skyline across the river is breathtaking.",
           images: [
             "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=400&h=300&fit=crop",
           ],
-          createdAt: Date.now() - 86400000 * 2,
-          updatedAt: Date.now() - 86400000 * 2,
+          dimensions: {},
+          createdAt: new Date(Date.now() - 86400000 * 2),
+          updatedAt: new Date(Date.now() - 86400000 * 2),
         },
         {
           id: "mock-review-2",
           userId: "user-3",
-          targetType: "attraction",
-          targetId: attractionId,
+          entityType: 2 as Review["entityType"], // EntityType.ENTITY_TYPE_ATTRACTION
+          entityId: attractionId,
           rating: 4,
-          text: "Great place for a walk along the waterfront. Very crowded during weekends and holidays though.",
+          content: "Great place for a walk along the waterfront. Very crowded during weekends and holidays though.",
           images: [],
-          createdAt: Date.now() - 86400000 * 5,
-          updatedAt: Date.now() - 86400000 * 5,
+          dimensions: {},
+          createdAt: new Date(Date.now() - 86400000 * 5),
+          updatedAt: new Date(Date.now() - 86400000 * 5),
         },
         {
           id: "mock-review-3",
           userId: "user-4",
-          targetType: "attraction",
-          targetId: attractionId,
+          entityType: 2 as Review["entityType"], // EntityType.ENTITY_TYPE_ATTRACTION
+          entityId: attractionId,
           rating: 5,
-          text: "Perfect spot for photography! Visited during sunset and the golden hour lighting was amazing.",
+          content: "Perfect spot for photography! Visited during sunset and the golden hour lighting was amazing.",
           images: [
             "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=400&h=300&fit=crop",
             "https://images.unsplash.com/photo-1538428494232-9c0d8a3ab403?w=400&h=300&fit=crop",
           ],
-          createdAt: Date.now() - 86400000 * 7,
-          updatedAt: Date.now() - 86400000 * 7,
+          dimensions: {},
+          createdAt: new Date(Date.now() - 86400000 * 7),
+          updatedAt: new Date(Date.now() - 86400000 * 7),
         },
       ];
 
@@ -206,7 +199,7 @@ export default function AttractionDetailPage() {
     if (!attraction) return;
 
     // Prepare the query template with attraction info
-    const query = `Please help me check the weather conditions and travel tips for ${attraction.name} located in ${attraction.address.city}, ${attraction.address.country}.`;
+    const query = `Please help me check the weather conditions and travel tips for ${attraction.name} located in ${attraction.address.city}, ${attraction.address.province}.`;
 
     const context: ChatContext = {
       // Frontend UI fields
@@ -221,8 +214,9 @@ export default function AttractionDetailPage() {
     chatSidebar.open(context, `Weather & Tips: ${attraction.name}`);
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return "";
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -317,7 +311,7 @@ export default function AttractionDetailPage() {
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
-                      {attraction.address.city}, {attraction.address.country}
+                      {attraction.address.city}, {attraction.address.province}
                     </div>
                     {attraction.rating && (
                       <div className="flex items-center gap-1 text-amber-500">
@@ -359,11 +353,11 @@ export default function AttractionDetailPage() {
                   Address
                 </h2>
                 <p className="text-gray-600">
-                  {attraction.address.street}
+                  {attraction.address.detailed}
                   <br />
-                  {attraction.address.county}, {attraction.address.city}
+                  {attraction.address.district}, {attraction.address.city}
                   <br />
-                  {attraction.address.province}, {attraction.address.country}
+                  {attraction.address.province}
                 </p>
               </div>
             </div>
@@ -447,7 +441,7 @@ export default function AttractionDetailPage() {
                         </Button>
                       </div>
                     </div>
-                    <p className="mb-3 text-gray-700">{userReview.text}</p>
+                    <p className="mb-3 text-gray-700">{userReview.content}</p>
                     {userReview.images.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {userReview.images.map((image, index) => (
@@ -532,7 +526,7 @@ export default function AttractionDetailPage() {
                                 {formatDate(review.createdAt)}
                               </p>
                               <p className="mb-3 text-gray-700">
-                                {review.text}
+                                {review.content}
                               </p>
                               {review.images.length > 0 && (
                                 <div className="flex flex-wrap gap-2">

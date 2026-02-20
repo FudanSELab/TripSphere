@@ -1,4 +1,4 @@
-import type { Review as GrpcReview } from "@/lib/grpc/gen/tripsphere/review/review";
+import type { Review as GrpcReview } from "@/lib/grpc/gen/tripsphere/review/v1/review";
 import {
   createReview as createReviewApi,
   deleteReview as deleteReviewApi,

@@ -2,6 +2,7 @@ package org.tripsphere.itinerary.repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -26,4 +27,7 @@ public interface ItineraryRepository extends MongoRepository<ItineraryDoc, Strin
             String userId, Instant cursorCreatedAt, String cursorId, Pageable pageable);
 
     List<ItineraryDoc> findByUserIdOrderByCreatedAtDescIdDesc(String userId, Pageable pageable);
+
+    @Query("{ 'dayPlans.activities.id': ?0 }")
+    Optional<ItineraryDoc> findByActivityId(String activityId);
 }
