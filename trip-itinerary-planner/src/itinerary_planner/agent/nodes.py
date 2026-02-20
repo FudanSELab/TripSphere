@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
-from itinerary_planner.models.itinerary import DayPlan, Itinerary, ItinerarySummary
+from itinerary_planner.models.itinerary import DayPlan, Itinerary
 from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
 from itinerary_planner.prompts.workflow import RESEARCH_AND_PLAN_PROMPT
 from itinerary_planner.tools.attractions import (
@@ -17,6 +17,7 @@ from itinerary_planner.tools.attractions import (
     search_attractions_nearby,
 )
 from itinerary_planner.tools.geocoding import GeocodeResult, geocoding_tool
+from itinerary_planner.tools.itinerary import save_itinerary
 
 logger = logging.getLogger(__name__)
 
@@ -297,21 +298,6 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         )
         day_plans.append(day_plan)
 
-    # Generate basic highlights
-    highlights = [
-        f"Explore the best of {state['destination']}",
-        "Experience local culture and cuisine",
-        "Visit iconic landmarks and attractions",
-    ]
-
-    # Create itinerary summary
-    summary = ItinerarySummary(
-        total_estimated_cost=round(total_cost, 2),
-        currency="CNY",
-        total_activities=total_activities,
-        highlights=highlights,
-    )
-
     # Create final itinerary
     itinerary = Itinerary(
         id=str(uuid.uuid4()),
@@ -319,8 +305,14 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         start_date=state["start_date"],
         end_date=state["end_date"],
         day_plans=day_plans,
-        summary=summary,
     )
+
+    logger.info(
+        "Itinerary finalized: %d days, %d activities", len(day_plans), total_activities
+    )
+
+    # Persist to trip-itinerary-service; on failure the original itinerary is returned
+    itinerary = await save_itinerary(state["nacos_naming"], state["user_id"], itinerary)
 
     # Create final progress event
     progress_event = PlanningProgressEvent(
@@ -328,10 +320,6 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         status_message=f"Your {num_days}-day trip to {state['destination']} is ready!",
         current_step=PlanningStep.FINALIZING,
         itinerary=itinerary,
-    )
-
-    logger.info(
-        f"Itinerary finalized: {len(day_plans)} days, {total_activities} activities"
     )
 
     return {
