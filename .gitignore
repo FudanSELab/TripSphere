@@ -13,3 +13,9 @@ Thumbs.db
 
 # Docker volumes
 volumes/
+
+# Generated protobuf / gRPC stubs
+# Python (pb2, pb2_grpc, pyi) — shared lib used by multiple services
+*/libs/tripsphere/
+# TypeScript (protobuf-ts codegen)
+trip-next-frontend/lib/grpc/gen/

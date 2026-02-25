@@ -11,6 +11,7 @@ class PlanningStep(StrEnum):
     FINDING_ATTRACTIONS = "finding_attractions"
     OPTIMIZING_ROUTE = "optimizing_route"
     FINALIZING = "finalizing"
+    PERSISTING = "persisting"
 
 
 class PlanningProgressEvent(BaseModel):

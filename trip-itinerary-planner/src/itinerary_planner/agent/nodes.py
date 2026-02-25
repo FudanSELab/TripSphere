@@ -322,9 +322,9 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         summary=summary,
     )
 
-    # Create final progress event
+    # Create progress event (90% — persistence still pending)
     progress_event = PlanningProgressEvent(
-        progress_percentage=100,
+        progress_percentage=90,
         status_message=f"Your {num_days}-day trip to {state['destination']} is ready!",
         current_step=PlanningStep.FINALIZING,
         itinerary=itinerary,
@@ -336,7 +336,57 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
 
     return {
         "itinerary": itinerary,
-        "progress_percentage": 100,
+        "progress_percentage": 90,
         "events": [progress_event],
         "error": None,
     }
+
+
+async def persist_itinerary(state: PlanningState) -> dict[str, Any]:
+    """Step 3: Persist the itinerary to trip-itinerary-service via gRPC."""
+    from itinerary_planner.clients.itinerary import create_itinerary_grpc
+
+    itinerary = state.get("itinerary")
+    if itinerary is None:
+        logger.warning("No itinerary to persist — skipping")
+        return {"events": []}
+
+    try:
+        persisted_id = await create_itinerary_grpc(
+            nacos_naming=state["nacos_naming"],
+            user_id=state["user_id"],
+            itinerary=itinerary,
+        )
+
+        # Update itinerary with server-assigned ID
+        itinerary = itinerary.model_copy(update={"id": persisted_id})
+
+        progress_event = PlanningProgressEvent(
+            progress_percentage=100,
+            status_message="Itinerary saved successfully!",
+            current_step=PlanningStep.PERSISTING,
+            itinerary=itinerary,
+        )
+
+        logger.info("Itinerary persisted with id: %s", persisted_id)
+        return {
+            "itinerary": itinerary,
+            "events": [progress_event],
+            "error": None,
+        }
+
+    except Exception as e:
+        logger.error("Failed to persist itinerary: %s", e, exc_info=True)
+
+        progress_event = PlanningProgressEvent(
+            progress_percentage=100,
+            status_message="Itinerary generated but could not be saved. "
+            "You can still view it below.",
+            current_step=PlanningStep.PERSISTING,
+            itinerary=itinerary,
+        )
+
+        return {
+            "events": [progress_event],
+            "error": f"Persistence failed: {e}",
+        }
