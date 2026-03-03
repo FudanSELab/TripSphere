@@ -11,7 +11,10 @@ from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
 from itinerary_planner.models.itinerary import DayPlan, Itinerary, ItinerarySummary
 from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
-from itinerary_planner.prompts.workflow import RESEARCH_AND_PLAN_PROMPT
+from itinerary_planner.prompts.workflow import (
+    MARKDOWN_GENERATION_PROMPT,
+    RESEARCH_AND_PLAN_PROMPT,
+)
 from itinerary_planner.tools.attractions import (
     AttractionDetail,
     search_attractions_nearby,
@@ -340,3 +343,81 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         "events": [progress_event],
         "error": None,
     }
+
+
+async def generate_markdown(state: PlanningState) -> dict[str, Any]:
+    """Step 3: Generate natural-language Markdown from the structured itinerary."""
+    logger.info("Generating Markdown itinerary content")
+
+    itinerary = state.get("itinerary")
+    if itinerary is None:
+        return {"markdown_content": "", "events": []}
+
+    itinerary_json = itinerary.model_dump_json(indent=2)
+
+    prompt = MARKDOWN_GENERATION_PROMPT.format(itinerary_json=itinerary_json)
+
+    try:
+        result = await chat_model.ainvoke(prompt)
+        markdown_content = str(result.content)
+    except Exception as e:
+        logger.error(f"Markdown generation failed: {e}")
+        markdown_content = _build_fallback_markdown(itinerary)
+
+    progress_event = PlanningProgressEvent(
+        progress_percentage=90,
+        status_message="生成行程文案中……",
+        current_step=PlanningStep.OPTIMIZING_ROUTE,
+        itinerary=None,
+    )
+
+    return {"markdown_content": markdown_content, "events": [progress_event]}
+
+
+def _build_fallback_markdown(itinerary: Itinerary) -> str:
+    """Build a simple Markdown fallback when LLM generation fails."""
+    lines: list[str] = [
+        f"# {itinerary.destination} 旅行计划",
+        f"\n**日期**: {itinerary.start_date} ~ {itinerary.end_date}\n",
+    ]
+    for day in itinerary.day_plans:
+        lines.append(f"## 第{day.day_number}天 ({day.date})\n")
+        for act in day.activities:
+            lines.append(
+                f"- **{act.start_time}-{act.end_time}** {act.name}  "
+                f"\n  {act.description}"
+            )
+        lines.append("")
+    return "\n".join(lines)
+
+
+async def generate_conversation_context(state: PlanningState) -> dict[str, Any]:
+    """Step 4: Build initial conversation messages for the Deep Agent handoff."""
+    logger.info("Generating conversation context for Deep Agent")
+
+    itinerary = state.get("itinerary")
+    markdown = state.get("markdown_content", "")
+
+    system_msg = (
+        "你是 TripSphere 的 AI 行程规划助手。"
+        "用户已经生成了一份初始行程，你的任务是帮助用户修改和优化这份行程。\n\n"
+        "当前行程内容如下：\n\n" + markdown
+    )
+
+    ai_msg = (
+        f"我已经为您规划了一份{itinerary.destination}的旅行行程"
+        if itinerary
+        else "行程已生成"
+    ) + "，您可以告诉我任何想要调整的地方，例如：\n" + (
+        "- 「第二天太赶了，删掉一个景点」\n"
+        "- 「把第三天改成轻松一点」\n"
+        "- 「加入一个当地特色美食」\n"
+        "- 「帮我重新规划第一天」"
+    )
+
+    conversation_messages: list[dict[str, str]] = [
+        {"role": "system", "content": system_msg},
+        {"role": "assistant", "content": ai_msg},
+    ]
+
+    return {"conversation_messages": conversation_messages, "events": []}

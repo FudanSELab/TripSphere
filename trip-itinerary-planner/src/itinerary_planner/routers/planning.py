@@ -35,6 +35,14 @@ class PlanItineraryRequest(BaseModel):
     )
 
 
+class PlanItineraryResponse(BaseModel):
+    itinerary: Itinerary = Field(description="Structured itinerary data")
+    markdown_content: str = Field(description="Natural-language Markdown itinerary")
+    conversation_messages: list[dict[str, str]] = Field(
+        description="Initial conversation messages for Deep Agent handoff"
+    )
+
+
 planning = APIRouter(prefix="/itineraries/plannings", tags=["Itineraries Plannings"])
 
 
@@ -50,14 +58,14 @@ def get_initial_state(
         interests=request.interests,
         pace=request.pace,
         additional_preferences=request.additional_preferences,
-        # Initialize working data fields
         destination_info="",
         destination_coords={},
         activity_suggestions=[],
         attraction_details={},
         daily_schedule={},
-        # Initialize output fields
         itinerary=None,
+        markdown_content="",
+        conversation_messages=[],
         error=None,
         events=[],
     )
@@ -67,13 +75,12 @@ def get_initial_state(
 async def plan_itinerary(
     request: PlanItineraryRequest,
     nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
-) -> Itinerary:
+) -> PlanItineraryResponse:
     logger.info(f"Planning itinerary for {request.destination}")
 
     initial_state: PlanningState = get_initial_state(request, nacos_naming)
 
     try:
-        # Run workflow to completion
         final_state = await _workflow.ainvoke(initial_state)  # pyright: ignore
 
         if final_state.get("error"):
@@ -83,7 +90,11 @@ async def plan_itinerary(
         if itinerary is None:
             raise HTTPException(status_code=500, detail="Failed to generate itinerary")
 
-        return itinerary
+        return PlanItineraryResponse(
+            itinerary=itinerary,
+            markdown_content=final_state.get("markdown_content", ""),
+            conversation_messages=final_state.get("conversation_messages", []),
+        )
     except Exception as e:
         logger.exception(f"Error planning itinerary: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -92,13 +103,11 @@ async def plan_itinerary(
 async def _stream_events(initial_state: PlanningState) -> AsyncGenerator[str, None]:
     try:
         async for chunk in _workflow.astream(initial_state, stream_mode="updates"):  # pyright: ignore
-            # Chunk is a dict with node name as key
             for _, node_state in chunk.items():
                 events: list[PlanningProgressEvent] = node_state.get("events", [])
                 if len(events) > 0:
                     yield encode(data=events[0].model_dump_json())
 
-        # Send completion event after workflow finishes
         yield encode(event="completed", data="")
 
     except Exception as e:

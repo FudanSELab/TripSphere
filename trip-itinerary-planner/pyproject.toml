@@ -5,11 +5,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "a2a-sdk[http-server,telemetry]>=0.3.22",
+    "ag-ui-adk>=0.4.2",
+    "google-adk[a2a]>=1.20.0",
     "grpcio>=1.75.1",
     "langgraph>=0.2.55",
     "langchain>=0.3.14",
     "langchain-core>=0.3.28",
     "langchain-openai>=0.2.14",
+    "litellm>=1.80.5",
     "nacos-sdk-python>=3.0.3",
     "openinference-instrumentation-langchain>=0.1.58",
     "opentelemetry-distro[otlp]>=0.58b0",
