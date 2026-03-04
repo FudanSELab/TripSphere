@@ -11,8 +11,8 @@ PoiDoc field mapping:
   images      <- photos[].url
 
 Standalone usage (converts and saves result to a file):
-    uv run python -m initializer.convert /path/to/pois.json
-    uv run python -m initializer.convert /path/to/pois.json --output /path/to/pois_converted.json
+    uv run -m initializer.convert data/amap_pois.json
+    uv run -m initializer.convert data/amap_pois.json --output data/pois_converted.json
 """
 
 import argparse
@@ -97,7 +97,7 @@ def convert_all(raw_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def load_and_convert(filepath: str) -> list[dict[str, Any]]:
-    """Load a raw pois.json file and return a list of converted PoiDoc-compatible dicts."""
+    """Load a raw amap_pois.json file and return a list of converted PoiDoc-compatible dicts."""
     print(f"[INFO] Reading {filepath} ...")
     with open(filepath, encoding="utf-8") as f:
         raw_list: list[dict[str, Any]] = json.load(f)
@@ -126,7 +126,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Convert raw Amap POI JSON to PoiDoc format and save to a file."
     )
-    parser.add_argument("filepath", help="Path to the raw pois.json from Amap")
+    parser.add_argument("filepath", help="Path to the raw amap_pois.json from Amap")
     parser.add_argument(
         "--output",
         default=None,
