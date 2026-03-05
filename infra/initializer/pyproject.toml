@@ -1,0 +1,16 @@
+[project]
+name = "initializer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "SenyuXie", email = "senyuxie@qq.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pymongo>=4.16.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.8,<0.11.0"]
+build-backend = "uv_build"

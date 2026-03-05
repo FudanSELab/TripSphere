@@ -1,4 +1,3 @@
-import logging
 from typing import Self
 
 from a2a.types import AgentCard
@@ -10,13 +9,7 @@ from v2.nacos.ai.nacos_ai_service import (  # type: ignore
     ReleaseAgentCardParam,
 )
 
-from journey_assistant.config.settings import get_settings
 from journey_assistant.nacos.utils import get_local_ip
-
-logger = logging.getLogger(__name__)
-
-_NACOS_ENABLED = get_settings().nacos.enabled
-_STATIC_AI_ADDRESSES: dict[str, str] = {}
 
 
 class NacosAI:
@@ -35,20 +28,12 @@ class NacosAI:
         cls, agent_name: str, port: int, server_address: str
     ) -> Self:
         instance = cls(agent_name, port, server_address)
-        if not _NACOS_ENABLED:
-            logger.info(
-                "Nacos is not enabled, "
-                "returning instance without Nacos AI service initialization"
-            )
-            return instance
         instance.ai_service = await NacosAIService.create_ai_service(
             client_config=instance.client_config
         )
         return instance
 
     async def release_agent_card(self, agent_card: AgentCard) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.ai_service is None:
             raise RuntimeError("Nacos AI service is not initialized")
         await self.ai_service.release_agent_card(
@@ -56,8 +41,6 @@ class NacosAI:
         )
 
     async def register(self, version: str) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.ai_service is None:
             raise RuntimeError("Nacos AI service is not initialized")
         await self.ai_service.register_agent_endpoint(
@@ -70,8 +53,6 @@ class NacosAI:
         )
 
     async def deregister(self, version: str) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.ai_service is None:
             raise RuntimeError("Nacos AI service is not initialized")
         await self.ai_service.deregister_agent_endpoint(
@@ -84,8 +65,6 @@ class NacosAI:
         )
 
     async def shutdown(self) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.ai_service is None:
             raise RuntimeError("Nacos AI service is not initialized")
         await self.ai_service.shutdown()

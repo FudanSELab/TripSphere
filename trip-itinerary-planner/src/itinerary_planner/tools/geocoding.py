@@ -1,7 +1,7 @@
 import logging
 
 from httpx import AsyncClient
-from langchain_core.tools import tool  # pyright: ignore
+from langchain.tools import tool  # pyright: ignore
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)

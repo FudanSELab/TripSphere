@@ -127,6 +127,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  trip-inventory-service:
+    build:
+      context: trip-inventory-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-inventory-service:latest
+    container_name: trip-inventory-service
+    logging: *default-logging
+    ports:
+      - "24221:24221" # HTTP
+      - "50061:50061" # gRPC
+    environment:
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - SPRING_DATA_REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   trip-itinerary-planner:
     build:
       context: trip-itinerary-planner
@@ -222,6 +247,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  trip-order-service:
+    build:
+      context: trip-order-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-order-service:latest
+    container_name: trip-order-service
+    logging: *default-logging
+    ports:
+      - "24222:24222" # HTTP
+      - "50062:50062" # gRPC
+    environment:
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - SPRING_DATA_REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   trip-poi-service:
     build:
       context: trip-poi-service
@@ -258,18 +308,11 @@ services:
       - NACOS_GROUP=DEFAULT_GROUP
       - NACOS_USERNAME=nacos
       - NACOS_PASSWORD=nacos
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=fudanse
-      - MYSQL_MAX_OPEN_CONN=100
-      - MYSQL_MAX_IDLE_CONN=10
-      - MYSQL_CONN_MAX_LIFETIME=1h
       - ROCKETMQ_ENDPOINT=rmq-proxy:8081
     depends_on:
       nacos:
         condition: service_healthy
-      mysql:
+      mongodb:
         condition: service_healthy
       rmq-proxy:
         condition: service_started
@@ -359,12 +402,12 @@ services:
       - "50056:50056" # gRPC
       - "24217:24217" # HTTP
     environment:
-      - "SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
-      - SPRING_DATASOURCE_USERNAME=root
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
+      - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -529,24 +572,19 @@ services:
       retries: 5
       start_period: 30s
 
-  mysql:
-    image: mysql:8.4.7
-    container_name: mysql
+  postgres:
+    image: postgres:16.13-alpine
+    container_name: postgres
     logging: *default-logging
     environment:
-      MYSQL_ROOT_PASSWORD: fudanse
-      TZ: Asia/Shanghai
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --default-time-zone=+08:00
+      POSTGRES_PASSWORD: fudanse
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - ./volumes/mysql:/var/lib/mysql
-      - ./infra/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./volumes/postgres:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: mysql --user=root --password=fudanse --execute="SHOW DATABASES;"
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 30s
       timeout: 5s
       retries: 5

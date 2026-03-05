@@ -23,6 +23,11 @@ includes:
     dir: trip-hotel-service
     internal: true
 
+  inventory:
+    taskfile: trip-inventory-service/Taskfile.yaml
+    dir: trip-inventory-service
+    internal: true
+
   itinerary-planner:
     taskfile: trip-itinerary-planner/Taskfile.yaml
     dir: trip-itinerary-planner
@@ -46,6 +51,21 @@ includes:
   note:
     taskfile: trip-note-service/Taskfile.yaml
     dir: trip-note-service
+    internal: true
+
+  order:
+    taskfile: trip-order-service/Taskfile.yaml
+    dir: trip-order-service
+    internal: true
+  
+  poi:
+    taskfile: trip-poi-service/Taskfile.yaml
+    dir: trip-poi-service
+    internal: true
+
+  product:
+    taskfile: trip-product-service/Taskfile.yaml
+    dir: trip-product-service
     internal: true
 
   review:
@@ -84,11 +104,15 @@ tasks:
       - task: chat:gen-proto
       - task: file:gen-proto
       - task: hotel:gen-proto
+      - task: inventory:gen-proto
       - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: journey-assistant:gen-proto
       - task: next-frontend:gen-proto
       - task: note:gen-proto
+      - task: order:gen-proto
+      - task: poi:gen-proto
+      - task: product:gen-proto
       - task: review:gen-proto
       - task: review-summary:gen-proto
       - task: user:gen-proto
@@ -100,11 +124,15 @@ tasks:
       - task: chat:build
       - task: file:build
       - task: hotel:build
+      - task: inventory:build
       - task: itinerary-planner:build
       - task: itinerary:build
       - task: journey-assistant:build
       - task: next-frontend:build
       - task: note:build
+      - task: order:build
+      - task: poi:build
+      - task: product:build
       - task: review:build
       - task: review-summary:build
       - task: user:build

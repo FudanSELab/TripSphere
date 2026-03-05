@@ -1,4 +1,3 @@
-import logging
 from typing import Self
 
 from v2.nacos import (  # type: ignore
@@ -8,17 +7,7 @@ from v2.nacos import (  # type: ignore
     RegisterInstanceParam,
 )  # pyright: ignore[reportMissingTypeStubs]
 
-from journey_assistant.config.settings import get_settings
 from journey_assistant.nacos.utils import get_local_ip
-
-logger = logging.getLogger(__name__)
-
-_NACOS_ENABLED = get_settings().nacos.enabled
-_STATIC_NAMING_ADDRESSES: dict[str, str] = {
-    "trip-order-service": "http://localhost:50062",
-    "trip-product-service": "http://localhost:50060",
-    "trip-inventory-service": "http://localhost:50061",
-}
 
 
 class NacosNaming:
@@ -43,20 +32,12 @@ class NacosNaming:
         cls, service_name: str, port: int, server_address: str, namespace_id: str
     ) -> Self:
         instance = cls(service_name, port, server_address, namespace_id)
-        if not _NACOS_ENABLED:
-            logger.info(
-                "Nacos is not enabled, "
-                "returning instance without Nacos naming service initialization"
-            )
-            return instance
         instance.naming_service = await NacosNamingService.create_naming_service(
             client_config=instance.client_config
         )
         return instance
 
     async def register(self, ephemeral: bool = True) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.naming_service is None:
             raise RuntimeError("Nacos naming service is not initialized")
         await self.naming_service.register_instance(
@@ -69,8 +50,6 @@ class NacosNaming:
         )
 
     async def deregister(self, ephemeral: bool = True) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.naming_service is None:
             raise RuntimeError("Nacos naming service is not initialized")
         await self.naming_service.deregister_instance(
@@ -83,8 +62,6 @@ class NacosNaming:
         )
 
     async def shutdown(self) -> None:
-        if not _NACOS_ENABLED:
-            return
         if self.naming_service is None:
             raise RuntimeError("Nacos naming service is not initialized")
         await self.naming_service.shutdown()

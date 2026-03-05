@@ -93,6 +93,10 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               )}
             </Field>
 
+            {state?.message && (
+              <p className="text-destructive text-sm">{state.message}</p>
+            )}
+
             <FieldGroup>
               <Field>
                 <Button type="submit" disabled={pending}>

@@ -3,11 +3,8 @@ import logging
 import grpc
 from langchain.tools import tool  # pyright: ignore
 from pydantic import BaseModel, Field
-from tripsphere.attraction.v1 import (  # pyright: ignore
-    attraction_pb2,
-    attraction_pb2_grpc,
-)
-from tripsphere.common.v1 import map_pb2  # pyright: ignore
+from tripsphere.attraction.v1 import attraction_pb2, attraction_pb2_grpc
+from tripsphere.common.v1 import map_pb2
 
 from itinerary_planner.nacos.naming import NacosNaming
 
@@ -59,12 +56,12 @@ async def search_attractions_nearby(
     port = instance.metadata["gRPC_port"]  # pyright: ignore
 
     location = map_pb2.GeoPoint(latitude=center_latitude, longitude=center_longitude)
-    request = attraction_pb2.FindAttractionsLocationNearRequest(
-        location=location, radius_km=radius_km
+    request = attraction_pb2.GetAttractionsNearbyRequest(
+        location=location, radius_meters=radius_km * 1000
     )
     async with grpc.aio.insecure_channel(f"{ip}:{port}") as channel:
         stub = attraction_pb2_grpc.AttractionServiceStub(channel)
-        response = await stub.FindAttractionsLocationNear(request)
+        response = await stub.GetAttractionsNearby(request)
 
     attractions = response.attractions
     attraction_details: list[AttractionDetail] = []
@@ -73,8 +70,8 @@ async def search_attractions_nearby(
             id=attraction.id,
             name=attraction.name,
             description=attraction.introduction,
-            latitude=attraction.location.longitude,
-            longitude=attraction.location.latitude,
+            latitude=attraction.location.latitude,
+            longitude=attraction.location.longitude,
             address=(
                 f"{attraction.address.province}, "
                 f"{attraction.address.city}, {attraction.address.district}, "

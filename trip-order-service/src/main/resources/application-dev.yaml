@@ -6,10 +6,10 @@ spring:
         namespace: public
         group: DEFAULT_GROUP
   datasource:
-    url: jdbc:mysql://localhost:3306/order_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
+    url: jdbc:postgresql://localhost:5432/order_db
+    username: postgres
     password: fudanse
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update

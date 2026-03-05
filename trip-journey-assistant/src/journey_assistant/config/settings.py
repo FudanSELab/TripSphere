@@ -24,7 +24,6 @@ class UvicornSettings(BaseModel):
 
 
 class NacosSettings(BaseModel):
-    enabled: bool = Field(default=True)
     server_address: str = Field(default="localhost:8848")
     namespace_id: str = Field(default="public")
     group_name: str = Field(default="DEFAULT_GROUP")
