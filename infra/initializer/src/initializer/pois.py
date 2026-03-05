@@ -43,6 +43,7 @@ import argparse
 import json
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from bson import ObjectId
@@ -58,6 +59,16 @@ DEFAULT_COLLECTION = "pois"
 DEFAULT_BATCH_SIZE = 1000
 
 
+def _parse_iso_datetime(value: str | None) -> datetime | None:
+    """Parse an ISO-8601 datetime string back to a datetime object."""
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 def load_converted(filepath: str) -> list[dict]:
     """
     Load a pre-converted PoiDoc JSON file.
@@ -65,6 +76,9 @@ def load_converted(filepath: str) -> list[dict]:
     If the documents contain an ``_id`` field (i.e. the file was produced by
     ``export_pois``), each ``_id`` string is converted back to
     ``bson.ObjectId`` so MongoDB restores the exact same IDs on re-import.
+
+    ISO-8601 timestamp strings (``createdAt``, ``updatedAt``) are converted
+    back to ``datetime`` objects for proper MongoDB Date storage.
     """
     print(f"[INFO] Loading pre-converted data from {filepath} ...")
     with open(filepath, encoding="utf-8") as f:
@@ -72,13 +86,24 @@ def load_converted(filepath: str) -> list[dict]:
     print(f"[INFO] Loaded {len(docs)} records.")
 
     # Detect whether this is a seeded dump (contains _id fields)
-    if docs and "_id" in docs[0]:
-        for doc in docs:
+    is_seeded = docs and "_id" in docs[0]
+
+    for doc in docs:
+        # _id: string → ObjectId
+        if is_seeded:
             raw_id = doc.get("_id")
             if isinstance(raw_id, str):
                 doc["_id"] = ObjectId(raw_id)
+
+        # Timestamps: ISO string → datetime
+        for ts_field in ("createdAt", "updatedAt"):
+            parsed = _parse_iso_datetime(doc.get(ts_field))
+            if parsed:
+                doc[ts_field] = parsed
+
+    if is_seeded:
         print(
-            f"[INFO] Detected seeded dump — converted {len(docs)} _id strings to ObjectId."
+            f"[INFO] Detected seeded dump — restored _id and timestamps for {len(docs)} docs."
         )
 
     return docs
@@ -108,6 +133,13 @@ def export_pois(
     docs = []
     for doc in collection.find({}):
         doc["_id"] = str(doc["_id"])  # ObjectId → 24-char hex string
+
+        # datetime → ISO-8601 string (JSON serialisable)
+        for ts_field in ("createdAt", "updatedAt"):
+            ts_val = doc.get(ts_field)
+            if isinstance(ts_val, datetime):
+                doc[ts_field] = ts_val.isoformat()
+
         docs.append(doc)
 
     client.close()
@@ -134,6 +166,18 @@ def import_pois(
     if not docs:
         print("[WARN] No valid documents to import. Exiting.")
         return
+
+    # ── Add timestamps if missing (Spring Data @CreatedDate / @LastModifiedDate) ─
+    now = datetime.now(timezone.utc)
+    ts_added = 0
+    for doc in docs:
+        if doc.get("createdAt") is None:
+            doc["createdAt"] = now
+            ts_added += 1
+        if doc.get("updatedAt") is None:
+            doc["updatedAt"] = now
+    if ts_added:
+        print(f"[INFO] Added createdAt/updatedAt timestamps to {ts_added} documents.")
 
     # ── Connect ──────────────────────────────────────────────────────────────
     print(f"[INFO] Connecting to MongoDB at {mongo_uri} ...")
