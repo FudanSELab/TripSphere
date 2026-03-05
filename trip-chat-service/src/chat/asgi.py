@@ -18,9 +18,9 @@ from chat.agent.session import MongoSessionService
 from chat.config.logging import setup_logging
 from chat.config.mem0 import get_mem0_config
 from chat.config.settings import get_settings
-from chat.infra.nacos.ai import NacosAI
-from chat.infra.nacos.naming import NacosNaming
-from chat.infra.nacos.utils import client_shutdown
+from chat.nacos.ai import NacosAI
+from chat.nacos.naming import NacosNaming
+from chat.nacos.utils import client_shutdown
 from chat.routers.health import health
 
 logger = logging.getLogger(__name__)

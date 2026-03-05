@@ -1729,6 +1729,9 @@ dependencies = [
 dev = [
     { name = "mypy" },
     { name = "pyright" },
+    { name = "types-grpcio" },
+    { name = "types-grpcio-status" },
+    { name = "types-protobuf" },
 ]
 
 [package.metadata]
@@ -1750,6 +1753,9 @@ requires-dist = [
 dev = [
     { name = "mypy", specifier = ">=1.19.1" },
     { name = "pyright", specifier = ">=1.1.408" },
+    { name = "types-grpcio", specifier = ">=1.0.0.20251009" },
+    { name = "types-grpcio-status", specifier = ">=1.0.0.20250506" },
+    { name = "types-protobuf", specifier = ">=6.32.1.20260221" },
 ]
 
 [[package]]
@@ -3790,6 +3796,36 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/17/d4/064570dec6358aa9049d4708e4a10407d74c99258f8b2136bb8702303f1a/typer_slim-0.21.1.tar.gz", hash = "sha256:73495dd08c2d0940d611c5a8c04e91c2a0a98600cbd4ee19192255a233b6dbfd", size = 110478, upload-time = "2026-01-06T11:21:11.176Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/0a/4aca634faf693e33004796b6cee0ae2e1dba375a800c16ab8d3eff4bb800/typer_slim-0.21.1-py3-none-any.whl", hash = "sha256:6e6c31047f171ac93cc5a973c9e617dbc5ab2bddc4d0a3135dc161b4e2020e0d", size = 47444, upload-time = "2026-01-06T11:21:12.441Z" },
+]
+
+[[package]]
+name = "types-grpcio"
+version = "1.0.0.20251009"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/93/78aa083216853c667c9412df4ef8284b2a68c6bcd2aef833f970b311f3c1/types_grpcio-1.0.0.20251009.tar.gz", hash = "sha256:a8f615ea7a47b31f10da028ab5258d4f1611fbd70719ca450fc0ab3fb9c62b63", size = 14479, upload-time = "2025-10-09T02:54:14.539Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/93/66d28f41b16bb4e6b611bd608ef28dffc740facec93250b30cf83138da21/types_grpcio-1.0.0.20251009-py3-none-any.whl", hash = "sha256:112ac4312a5b0a273a4c414f7f2c7668f342990d9c6ab0f647391c36331f95ed", size = 15208, upload-time = "2025-10-09T02:54:13.588Z" },
+]
+
+[[package]]
+name = "types-grpcio-status"
+version = "1.0.0.20250506"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "types-grpcio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/6f/db00e8766e8f4326ac2fb0aace3f843e5b85b6acd7434c8554e78ae1130e/types_grpcio_status-1.0.0.20250506.tar.gz", hash = "sha256:1926eed7056c79da3a4b6a32ee1556f1a322dd0042e45586cc83deace0b0f7e3", size = 7069, upload-time = "2025-05-06T03:03:26.205Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/05/a3b6cbb18ddbdf01e12ceee17c0b267af9d029fa1d55149efe3e561507fc/types_grpcio_status-1.0.0.20250506-py3-none-any.whl", hash = "sha256:467b4956d11716fb29208989fc592a89f0fb6de47a24671902011a46400027cb", size = 7893, upload-time = "2025-05-06T03:03:24.832Z" },
+]
+
+[[package]]
+name = "types-protobuf"
+version = "6.32.1.20260221"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/e2/9aa4a3b2469508bd7b4e2ae11cbedaf419222a09a1b94daffcd5efca4023/types_protobuf-6.32.1.20260221.tar.gz", hash = "sha256:6d5fb060a616bfb076cbb61b4b3c3969f5fc8bec5810f9a2f7e648ee5cbcbf6e", size = 64408, upload-time = "2026-02-21T03:55:13.916Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/e8/1fd38926f9cf031188fbc5a96694203ea6f24b0e34bd64a225ec6f6291ba/types_protobuf-6.32.1.20260221-py3-none-any.whl", hash = "sha256:da7cdd947975964a93c30bfbcc2c6841ee646b318d3816b033adc2c4eb6448e4", size = 77956, upload-time = "2026-02-21T03:55:12.894Z" },
 ]
 
 [[package]]

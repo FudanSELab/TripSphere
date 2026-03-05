@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package tripsphere.hotel.v1;
 
-import "tripsphere/common/v1/date.proto";
 import "tripsphere/common/v1/map.proto";
 import "tripsphere/common/v1/money.proto";
 import "tripsphere/common/v1/timeofday.proto";
@@ -29,19 +28,23 @@ message Hotel {
   string poi_id = 3;
   tripsphere.common.v1.Address address = 4;
   tripsphere.common.v1.GeoPoint location = 5;
-  string introduction = 6;
   // Suggested for soft tags, e.g., ["拍照出片", "氛围浪漫"]
-  repeated string tags = 7;
-  repeated string images = 8;
-  tripsphere.common.v1.Date opening_date = 9;
-  string phone_number = 10;
-  int32 room_count = 11;
-  // Estimated price for a night.
-  // Only used for display and rough sorting, and must never be used for pricing.
-  tripsphere.common.v1.Money estimated_price = 12;
-  HotelPolicy policy = 13;
+  repeated string tags = 6;
+  repeated string images = 7;
+  HotelInformation information = 8;
+  // Estimated price for a night. Must never be used for pricing.
+  tripsphere.common.v1.Money estimated_price = 9;
+  HotelPolicy policy = 10;
   // For example, ["健身房", "游泳池", "免费停车场"]
-  repeated string amenities = 14;
+  repeated string amenities = 11;
+}
+
+message HotelInformation {
+  // The year the hotel was opened. For example, 2017.
+  int32 opening_since = 1;
+  string phone_number = 2;
+  int32 room_count = 3;
+  string introduction = 4;
 }
 
 message HotelPolicy {

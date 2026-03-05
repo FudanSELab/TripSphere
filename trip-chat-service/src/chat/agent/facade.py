@@ -12,7 +12,7 @@ from google.adk.tools.load_memory_tool import load_memory_tool
 from httpx import AsyncClient
 
 from chat.config.settings import get_settings
-from chat.infra.nacos.ai import NacosAI
+from chat.nacos.ai import NacosAI
 from chat.prompts.agent import DELEGATOR_INSTRUCTION
 
 # Suppress ADK Experimental Warnings

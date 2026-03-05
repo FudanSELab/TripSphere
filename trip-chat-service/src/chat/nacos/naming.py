@@ -7,7 +7,7 @@ from v2.nacos import (  # type: ignore
     RegisterInstanceParam,
 )  # pyright: ignore[reportMissingTypeStubs]
 
-from chat.infra.nacos.utils import get_local_ip
+from chat.nacos.utils import get_local_ip
 
 
 class NacosNaming:
