@@ -33,6 +33,7 @@ message Attraction {
   OpeningHours opening_hours = 9;
   bool temporarily_closed = 10;
   TicketInfo ticket_info = 11;
+  RecommendTime recommend_time = 12;
 }
 
 message OpeningHours {
@@ -56,6 +57,11 @@ message TimeRange {
 message TicketInfo {
   tripsphere.common.v1.Money estimated_price = 1;
   google.protobuf.Struct metadata = 2;
+}
+
+message RecommendTime {
+  double min_hours = 1;
+  double max_hours = 2;
 }
 
 message GetAttractionByIdRequest {

@@ -2,6 +2,9 @@ package org.tripsphere.attraction.api.grpc;
 
 import io.grpc.stub.StreamObserver;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.tripsphere.attraction.exception.InvalidArgumentException;
@@ -56,8 +59,22 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
 
         List<Attraction> attractions = attractionService.findAllByIds(ids);
 
+        Map<String, Attraction> attractionsById =
+                attractions.stream()
+                        .collect(Collectors.toMap(Attraction::getId, Function.identity()));
+
+        List<String> missingIds =
+                ids.stream().filter(id -> !attractionsById.containsKey(id)).toList();
+        if (!missingIds.isEmpty()) {
+            throw new NotFoundException("Attractions with IDs " + missingIds + " not found");
+        }
+
+        List<Attraction> orderedAttractions = ids.stream().map(attractionsById::get).toList();
+
         responseObserver.onNext(
-                BatchGetAttractionsResponse.newBuilder().addAllAttractions(attractions).build());
+                BatchGetAttractionsResponse.newBuilder()
+                        .addAllAttractions(orderedAttractions)
+                        .build());
         responseObserver.onCompleted();
     }
 

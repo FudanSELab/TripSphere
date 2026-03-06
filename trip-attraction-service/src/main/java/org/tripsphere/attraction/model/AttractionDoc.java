@@ -35,6 +35,7 @@ public class AttractionDoc {
     private OpeningHours openingHours;
     private boolean temporarilyClosed;
     private TicketInfo ticketInfo;
+    private RecommendTime recommendTime;
     @CreatedDate private Instant createdAt;
     @LastModifiedDate private Instant updatedAt;
 }
