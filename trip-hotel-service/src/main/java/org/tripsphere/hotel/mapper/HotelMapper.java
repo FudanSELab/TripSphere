@@ -1,6 +1,5 @@
 package org.tripsphere.hotel.mapper;
 
-import java.time.Year;
 import java.util.List;
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
@@ -29,22 +28,4 @@ public interface HotelMapper {
     HotelInformation toHotelInformation(org.tripsphere.hotel.v1.HotelInformation proto);
 
     org.tripsphere.hotel.v1.HotelInformation toHotelInformationProto(HotelInformation doc);
-
-    // ===================================================================
-    // Year <-> int Mappings
-    // ===================================================================
-
-    default Year toYear(int year) {
-        if (year <= 0) {
-            return null;
-        }
-        return Year.of(year);
-    }
-
-    default int toYearInt(Year year) {
-        if (year == null) {
-            return 0;
-        }
-        return year.getValue();
-    }
 }

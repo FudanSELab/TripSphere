@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export interface HotelCardData {
   id: string;
   name: string;
-  image: string;
+  image: string | null;
   stars: number;
   rating: number;
   reviews: number;
@@ -38,15 +38,40 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
       className="group flex w-full flex-col overflow-hidden rounded-xl border bg-white"
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden">
-        <Image
-          src={hotel.image}
-          alt={hotel.name}
-          fill
-          unoptimized
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 25vw"
-        />
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
+        {hotel.image ? (
+          <Image
+            src={hotel.image}
+            alt={hotel.name}
+            fill
+            unoptimized
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 25vw"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-gray-300">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="size-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M9 22V12h6v10"
+              />
+            </svg>
+          </div>
+        )}
         {/* Rating overlay */}
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
           <Badge className="rounded-md bg-blue-600 px-1.5 py-0.5 text-xs font-bold text-white">

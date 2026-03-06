@@ -67,7 +67,7 @@ export function HotelCardList({
             hotel={{
               id: hotel.id,
               name: hotel.name,
-              image: hotel.images[0] ?? "",
+              image: hotel.images[0] ?? null,
               stars: 4,
               rating: 4.5,
               reviews: 0,

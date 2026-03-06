@@ -1,5 +1,6 @@
 package org.tripsphere.poi.service.impl;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -90,7 +91,7 @@ public class PoiServiceImpl implements PoiService {
 
         PoiDoc poiDoc = poiMapper.toDoc(poi);
         // Server generates the ID, ignore any client-provided ID
-        poiDoc.setId(null);
+        poiDoc.setId(UuidCreator.getTimeOrderedEpoch().toString());
 
         PoiDoc saved = poiDocRepository.save(poiDoc);
         log.info("Created POI with id: {}", saved.getId());
@@ -102,9 +103,12 @@ public class PoiServiceImpl implements PoiService {
     public List<Poi> batchCreatePois(List<Poi> pois) {
         log.debug("Batch creating {} POIs", pois.size());
 
-        // Convert to docs and clear IDs (server generates them)
+        // Convert to docs and assign server-generated UUIDs
         List<PoiDoc> toSave =
-                pois.stream().map(poiMapper::toDoc).peek(doc -> doc.setId(null)).toList();
+                pois.stream()
+                        .map(poiMapper::toDoc)
+                        .peek(doc -> doc.setId(UuidCreator.getTimeOrderedEpoch().toString()))
+                        .toList();
 
         List<PoiDoc> saved = poiDocRepository.saveAll(toSave);
         log.info("Batch created {} POIs", saved.size());

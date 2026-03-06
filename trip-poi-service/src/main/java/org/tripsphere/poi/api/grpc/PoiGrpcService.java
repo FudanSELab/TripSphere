@@ -2,6 +2,9 @@ package org.tripsphere.poi.api.grpc;
 
 import io.grpc.stub.StreamObserver;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.tripsphere.poi.exception.InvalidArgumentException;
@@ -60,7 +63,17 @@ public class PoiGrpcService extends PoiServiceGrpc.PoiServiceImplBase {
 
         List<Poi> pois = poiService.findAllByIds(ids);
 
-        responseObserver.onNext(BatchGetPoisResponse.newBuilder().addAllPois(pois).build());
+        Map<String, Poi> poisById =
+                pois.stream().collect(Collectors.toMap(Poi::getId, Function.identity()));
+
+        List<String> missingIds = ids.stream().filter(id -> !poisById.containsKey(id)).toList();
+        if (!missingIds.isEmpty()) {
+            throw new NotFoundException("POIs with IDs " + missingIds + " not found");
+        }
+
+        List<Poi> orderedPois = ids.stream().map(poisById::get).toList();
+
+        responseObserver.onNext(BatchGetPoisResponse.newBuilder().addAllPois(orderedPois).build());
         responseObserver.onCompleted();
     }
 

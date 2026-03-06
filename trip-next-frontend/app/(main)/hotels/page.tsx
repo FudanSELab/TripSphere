@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function HotelPage() {
   const today = new Date().toISOString().split("T")[0];
-  const { hotels, nextPageToken } = await listHotels("上海");
+  const { hotels, nextPageToken } = await listHotels("上海市");
 
   return (
     <div className="flex flex-col gap-10">
