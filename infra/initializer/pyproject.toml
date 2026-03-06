@@ -9,6 +9,8 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "pymongo>=4.16.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.32.5",
 ]
 
 [build-system]

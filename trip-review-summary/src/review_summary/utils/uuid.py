@@ -24,7 +24,7 @@ _last_counter_v7: int = 0  # 42-bit counter
 
 
 def _uuid7_get_counter_and_tail() -> tuple[int, int]:
-    rand = int.from_bytes(os.urandom(10))
+    rand = int.from_bytes(os.urandom(10), "big")
     # 42-bit counter with MSB set to 0
     counter = (rand >> 32) & 0x1FF_FFFF_FFFF
     # 32-bit random data
@@ -69,7 +69,7 @@ def uuid7() -> UUID:
             counter, tail = _uuid7_get_counter_and_tail()
         else:
             # 32-bit random data
-            tail = int.from_bytes(os.urandom(4))
+            tail = int.from_bytes(os.urandom(4), "big")
 
     unix_ts_ms = timestamp_ms & 0xFFFF_FFFF_FFFF
     counter_msbs = counter >> 30

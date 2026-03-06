@@ -1,326 +1,672 @@
 """
-Import / export POI data for the trip-poi-service MongoDB collection.
+POI Data Importer Module
 
-File naming convention
-----------------------
-  amap_pois.json         Raw POI data scraped from Amap (original source)
-  pois_converted.json    Cleaned PoiDoc format, no _id (intermediate)
-  pois.json              Canonical version with stable _id values (source of truth)
+This module provides functionality to import POI (Point of Interest) data
+into MongoDB for the trip-poi-service. It supports multiple import modes
+and ensures data integrity with proper error handling.
 
-Subcommands
------------
+Usage:
+    from initializer.pois import PoiImporter
 
-import
-    Import POI documents into MongoDB.  Three input flavours are supported:
-
-    a) Raw Amap JSON (default conversion):
-           uv run -m initializer.pois import data/amap_pois.json
-
-    b) Pre-converted PoiDoc JSON (--no-convert):
-           uv run -m initializer.pois import data/pois_converted.json --no-convert
-
-    c) Canonical pois.json with ``_id`` (--no-convert, recommended):
-       ``_id`` strings are automatically converted to bson.ObjectId so the
-       exact same IDs are restored in MongoDB.
-           uv run -m initializer.pois import data/pois.json --no-convert
-
-export
-    Dump poi_db.pois to a JSON file, serialising ObjectId ``_id`` as 24-char
-    hex strings.  The output (default: data/pois.json) becomes the canonical
-    source-of-truth: re-importing it always restores identical IDs, so other
-    seed files (hotels.json) can safely hardcode ``poiId`` references.
-
-        uv run -m initializer.pois export
-        uv run -m initializer.pois export --output data/pois.json
-
-Options shared by both subcommands:
-    --uri         MongoDB connection URI  (default: mongodb://root:fudanse@localhost:27017)
-    --db          Database name          (default: poi_db)
-    --collection  Collection name        (default: pois)
+    importer = PoiImporter(mongo_uri="mongodb://localhost:27017", database="poi_db")
+    importer.import_from_file("path/to/pois.json", mode=ImportMode.REPLACE)
 """
 
-import argparse
 import json
-import os
-import time
-from datetime import datetime, timezone
+import logging
+from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
+from typing import Any, Iterator, Sequence
 
-from bson import ObjectId
-from pymongo import MongoClient
-from pymongo.errors import BulkWriteError
+from pymongo import MongoClient, UpdateOne
+from pymongo.collection import Collection
+from pymongo.database import Database
+from pymongo.errors import BulkWriteError, PyMongoError
 
-from initializer.convert import load_and_convert
-
-# ── Defaults (match trip-poi-service application.yaml) ─────────────────────
-DEFAULT_MONGO_URI = "mongodb://root:fudanse@localhost:27017"
-DEFAULT_DB = "poi_db"
-DEFAULT_COLLECTION = "pois"
-DEFAULT_BATCH_SIZE = 1000
+logger = logging.getLogger(__name__)
 
 
-def _parse_iso_datetime(value: str | None) -> datetime | None:
-    """Parse an ISO-8601 datetime string back to a datetime object."""
-    if not value or not isinstance(value, str):
-        return None
-    try:
-        return datetime.fromisoformat(value)
-    except ValueError:
-        return None
-
-
-def load_converted(filepath: str) -> list[dict]:
+class ImportMode(Enum):
     """
-    Load a pre-converted PoiDoc JSON file.
+    Import mode enumeration for POI data import operations.
 
-    If the documents contain an ``_id`` field (i.e. the file was produced by
-    ``export_pois``), each ``_id`` string is converted back to
-    ``bson.ObjectId`` so MongoDB restores the exact same IDs on re-import.
-
-    ISO-8601 timestamp strings (``createdAt``, ``updatedAt``) are converted
-    back to ``datetime`` objects for proper MongoDB Date storage.
+    - REPLACE: Drop existing collection and insert all new data
+    - UPSERT: Update existing documents or insert new ones (by _id)
+    - INSERT_ONLY: Only insert new documents, skip existing ones
+    - CLEAR: Drop the collection without inserting any data
     """
-    print(f"[INFO] Loading pre-converted data from {filepath} ...")
-    with open(filepath, encoding="utf-8") as f:
-        docs: list[dict] = json.load(f)
-    print(f"[INFO] Loaded {len(docs)} records.")
 
-    # Detect whether this is a seeded dump (contains _id fields)
-    is_seeded = docs and "_id" in docs[0]
+    REPLACE = "replace"
+    UPSERT = "upsert"
+    INSERT_ONLY = "insert_only"
+    CLEAR = "clear"
 
-    for doc in docs:
-        # _id: string → ObjectId
-        if is_seeded:
-            raw_id = doc.get("_id")
-            if isinstance(raw_id, str):
-                doc["_id"] = ObjectId(raw_id)
 
-        # Timestamps: ISO string → datetime
-        for ts_field in ("createdAt", "updatedAt"):
-            parsed = _parse_iso_datetime(doc.get(ts_field))
-            if parsed:
-                doc[ts_field] = parsed
+@dataclass
+class ImportStats:
+    """
+    Statistics container for import operations.
 
-    if is_seeded:
-        print(
-            f"[INFO] Detected seeded dump — restored _id and timestamps for {len(docs)} docs."
+    Attributes:
+        total: Total number of POIs processed
+        inserted: Number of newly inserted documents
+        updated: Number of updated documents
+        skipped: Number of skipped documents
+        errors: Number of documents with errors
+        error_details: List of error messages
+    """
+
+    total: int = 0
+    inserted: int = 0
+    updated: int = 0
+    skipped: int = 0
+    errors: int = 0
+    error_details: list[str] = field(default_factory=list)
+
+    def __str__(self) -> str:
+        return (
+            f"总计: {self.total}, 插入: {self.inserted}, "
+            f"更新: {self.updated}, 跳过: {self.skipped}, 错误: {self.errors}"
         )
 
-    return docs
 
-
-def export_pois(
-    output_path: str,
-    mongo_uri: str = DEFAULT_MONGO_URI,
-    db_name: str = DEFAULT_DB,
-    collection_name: str = DEFAULT_COLLECTION,
-) -> None:
+@dataclass
+class PoiImporterConfig:
     """
-    Dump poi_db.pois to a JSON file with ``_id`` serialised as hex strings.
+    Configuration for POI importer.
 
-    The resulting file can be re-imported via ``import_pois(..., no_convert=True)``
-    to restore the exact same ObjectId values, making cross-deployment
-    references (e.g. hotels.json → poiId) stable.
+    Attributes:
+        mongo_uri: MongoDB connection URI
+        database: Database name
+        collection: Collection name
+        batch_size: Number of documents to process in each batch
+        create_indexes: Whether to create indexes after import
     """
-    print(f"[INFO] Connecting to MongoDB at {mongo_uri} ...")
-    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=10_000)
-    client.admin.command("ping")
 
-    collection = client[db_name][collection_name]
-    total = collection.count_documents({})
-    print(f"[INFO] Exporting {total} documents from {db_name}.{collection_name} ...")
-
-    docs = []
-    for doc in collection.find({}):
-        doc["_id"] = str(doc["_id"])  # ObjectId → 24-char hex string
-
-        # datetime → ISO-8601 string (JSON serialisable)
-        for ts_field in ("createdAt", "updatedAt"):
-            ts_val = doc.get(ts_field)
-            if isinstance(ts_val, datetime):
-                doc[ts_field] = ts_val.isoformat()
-
-        docs.append(doc)
-
-    client.close()
-
-    print(f"[INFO] Writing to {output_path} ...")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(docs, f, ensure_ascii=False, separators=(",", ":"), indent=4)
-
-    size_mb = Path(output_path).stat().st_size / 1024 / 1024
-    print(f"[DONE] Exported {len(docs)} documents → {output_path} ({size_mb:.1f} MB)")
+    mongo_uri: str = "mongodb://root:fudanse@localhost:27017"
+    database: str = "poi_db"
+    collection: str = "pois"
+    batch_size: int = 500
+    create_indexes: bool = True
 
 
-def import_pois(
-    filepath: str,
-    mongo_uri: str = DEFAULT_MONGO_URI,
-    db_name: str = DEFAULT_DB,
-    collection_name: str = DEFAULT_COLLECTION,
-    batch_size: int = DEFAULT_BATCH_SIZE,
-    clear: bool = False,
-    no_convert: bool = False,
-) -> None:
-    # ── Load (and optionally convert) ────────────────────────────────────────
-    docs = load_converted(filepath) if no_convert else load_and_convert(filepath)
-    if not docs:
-        print("[WARN] No valid documents to import. Exiting.")
-        return
+class PoiImporter:
+    """
+    POI data importer for MongoDB.
 
-    # ── Add timestamps if missing (Spring Data @CreatedDate / @LastModifiedDate) ─
-    now = datetime.now(timezone.utc)
-    ts_added = 0
-    for doc in docs:
-        if doc.get("createdAt") is None:
-            doc["createdAt"] = now
-            ts_added += 1
-        if doc.get("updatedAt") is None:
-            doc["updatedAt"] = now
-    if ts_added:
-        print(f"[INFO] Added createdAt/updatedAt timestamps to {ts_added} documents.")
+    This class handles the import of POI data from JSON files or Python objects
+    into MongoDB. It supports multiple import modes and provides detailed
+    statistics about the import process.
 
-    # ── Connect ──────────────────────────────────────────────────────────────
-    print(f"[INFO] Connecting to MongoDB at {mongo_uri} ...")
-    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=10_000)
-    # Trigger a round-trip to catch connection errors early
-    client.admin.command("ping")
-    print("[INFO] Connected.")
+    Example:
+        >>> config = PoiImporterConfig(mongo_uri="mongodb://localhost:27017")
+        >>> importer = PoiImporter(config)
+        >>> stats = importer.import_from_file("pois.json", mode=ImportMode.UPSERT)
+        >>> print(stats)
+    """
 
-    collection = client[db_name][collection_name]
+    def __init__(self, config: PoiImporterConfig | None = None, **kwargs: Any):
+        """
+        Initialize the POI importer.
 
-    if clear:
-        deleted = collection.delete_many({}).deleted_count
-        print(
-            f"[INFO] Cleared {deleted} existing documents from {db_name}.{collection_name}."
+        Args:
+            config: PoiImporterConfig instance. If None, uses default config.
+            **kwargs: Override config values (mongo_uri, database, collection, etc.)
+        """
+        if config is None:
+            config = PoiImporterConfig()
+
+        # Allow kwargs to override config values
+        self._mongo_uri = kwargs.get("mongo_uri", config.mongo_uri)
+        self._database_name = kwargs.get("database", config.database)
+        self._collection_name = kwargs.get("collection", config.collection)
+        self._batch_size = kwargs.get("batch_size", config.batch_size)
+        self._should_create_indexes = kwargs.get(
+            "create_indexes", config.create_indexes
         )
 
-    # ── Batch insert ─────────────────────────────────────────────────────────
-    total_inserted = 0
-    total_errors = 0
-    start = time.perf_counter()
+        self._client: MongoClient | None = None
+        self._db: Database | None = None
+        self._collection: Collection | None = None
 
-    for batch_idx, offset in enumerate(range(0, len(docs), batch_size), start=1):
-        batch = docs[offset : offset + batch_size]
-        try:
-            result = collection.insert_many(batch, ordered=False)
-            total_inserted += len(result.inserted_ids)
-        except BulkWriteError as exc:
-            inserted_in_batch = exc.details.get("nInserted", 0)
-            total_inserted += inserted_in_batch
-            total_errors += len(exc.details.get("writeErrors", []))
-            # Log only the first error per batch to avoid log flooding
-            first_err = exc.details["writeErrors"][0]
-            print(
-                f"[WARN] Batch {batch_idx}: inserted {inserted_in_batch}, "
-                f"{len(exc.details['writeErrors'])} error(s) — "
-                f"first: code={first_err['code']} {first_err['errmsg'][:120]}"
+    def _connect(self) -> None:
+        """Establish MongoDB connection."""
+        if self._client is None:
+            logger.info(f"正在连接 MongoDB: {self._mongo_uri}")
+            self._client = MongoClient(self._mongo_uri)
+            self._db = self._client[self._database_name]
+            self._collection = self._db[self._collection_name]
+            logger.info(
+                f"已连接到数据库: {self._database_name}.{self._collection_name}"
             )
 
-        processed = min(offset + batch_size, len(docs))
-        elapsed = time.perf_counter() - start
-        rate = processed / elapsed if elapsed > 0 else 0
-        print(
-            f"[INFO] Progress: {processed}/{len(docs)} "
-            f"({processed / len(docs) * 100:.1f}%) | "
-            f"{rate:.0f} docs/s"
-        )
+    def _disconnect(self) -> None:
+        """Close MongoDB connection."""
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+            self._db = None
+            self._collection = None
+            logger.info("已断开 MongoDB 连接")
 
-    elapsed_total = time.perf_counter() - start
-    print(
-        f"\n[DONE] Import complete in {elapsed_total:.1f}s — "
-        f"inserted: {total_inserted}, errors: {total_errors}, "
-        f"target: {db_name}.{collection_name}"
-    )
-    client.close()
+    @property
+    def collection(self) -> Collection:
+        """Get the MongoDB collection, connecting if necessary."""
+        if self._collection is None:
+            self._connect()
+        assert self._collection is not None
+        return self._collection
+
+    def _create_geospatial_index(self) -> None:
+        """Create 2dsphere index on location field for geospatial queries."""
+        logger.info("正在创建地理空间索引...")
+        self.collection.create_index([("location", "2dsphere")])
+        logger.info("地理空间索引创建完成")
+
+    def _create_text_index(self) -> None:
+        """Create text index on name field for text search."""
+        logger.info("正在创建文本索引...")
+        self.collection.create_index([("name", "text")])
+        logger.info("文本索引创建完成")
+
+    def _create_indexes(self) -> None:
+        """Create all necessary indexes for the POI collection."""
+        self._create_geospatial_index()
+        self._create_text_index()
+        # Create additional indexes for common query patterns
+        self.collection.create_index("amapId", sparse=True)
+        self.collection.create_index("adcode", sparse=True)
+        self.collection.create_index("categories", sparse=True)
+        logger.info("所有索引创建完成")
+
+    @staticmethod
+    def _validate_poi(poi: dict[str, Any]) -> list[str]:
+        """
+        Validate a single POI document.
+
+        Accepts documents with either '_id' (preferred, native MongoDB format)
+        or the legacy 'id' field for backwards compatibility.
+
+        Args:
+            poi: POI document to validate
+
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+
+        # Accept '_id' (preferred) or legacy 'id' field
+        if not poi.get("_id") and not poi.get("id"):
+            errors.append("缺少必需字段: _id")
+        if not poi.get("name"):
+            errors.append("缺少必需字段: name")
+
+        # Location validation
+        location = poi.get("location")
+        if not location:
+            errors.append("缺少必需字段: location")
+        elif not isinstance(location, dict):
+            errors.append("location 必须是对象类型")
+        else:
+            if location.get("type") != "Point":
+                errors.append("location.type 必须是 'Point'")
+            coords = location.get("coordinates")
+            if not coords or len(coords) != 2:
+                errors.append("location.coordinates 必须包含 [lng, lat]")
+            elif not all(isinstance(c, (int, float)) for c in coords):
+                errors.append("location.coordinates 必须是数值类型")
+
+        return errors
+
+    @staticmethod
+    def _transform_poi(poi: dict[str, Any]) -> dict[str, Any]:
+        """
+        Prepare a POI document for MongoDB storage.
+
+        Documents using the native '_id' field are passed through unchanged.
+        The legacy 'id' field is renamed to '_id' for backwards compatibility.
+
+        Args:
+            poi: Original POI document
+
+        Returns:
+            Document ready for MongoDB insertion
+        """
+        if "_id" in poi:
+            # Already in the correct format — return a shallow copy
+            return dict(poi)
+        doc = dict(poi)
+        # Backwards-compat: rename 'id' → '_id'
+        if "id" in doc:
+            doc["_id"] = doc.pop("id")
+        return doc
+
+    def _batch_iterator(
+        self, pois: Sequence[dict[str, Any]]
+    ) -> Iterator[list[dict[str, Any]]]:
+        """
+        Yield batches of POIs for bulk operations.
+
+        Args:
+            pois: Sequence of POI documents
+
+        Yields:
+            Batches of POI documents
+        """
+        for i in range(0, len(pois), self._batch_size):
+            yield list(pois[i : i + self._batch_size])
+
+    def _import_clear(self) -> ImportStats:
+        """
+        Clear the collection without inserting any data (CLEAR mode).
+
+        Drops the entire collection, which also removes all indexes.
+        Indexes will be recreated afterwards if ``create_indexes`` is enabled.
+
+        Returns:
+            ImportStats with total=0 and no insertions
+        """
+        logger.info("CLEAR 模式: 正在删除集合...")
+        self.collection.drop()
+        logger.info("集合已清空")
+        return ImportStats()
+
+    def _import_replace(self, pois: Sequence[dict[str, Any]]) -> ImportStats:
+        """
+        Import POIs using REPLACE mode (drop and insert).
+
+        Args:
+            pois: Sequence of POI documents
+
+        Returns:
+            Import statistics
+        """
+        stats = ImportStats(total=len(pois))
+
+        logger.info("REPLACE 模式: 正在清空现有数据...")
+        self.collection.drop()
+
+        logger.info(f"正在插入 {len(pois)} 条 POI 数据...")
+
+        for batch in self._batch_iterator(pois):
+            docs = []
+            for poi in batch:
+                validation_errors = self._validate_poi(poi)
+                if validation_errors:
+                    stats.errors += 1
+                    stats.error_details.append(
+                        f"POI '{poi.get('name', 'unknown')}': {', '.join(validation_errors)}"
+                    )
+                    continue
+                docs.append(self._transform_poi(poi))
+
+            if docs:
+                try:
+                    result = self.collection.insert_many(docs, ordered=False)
+                    stats.inserted += len(result.inserted_ids)
+                except BulkWriteError as e:
+                    stats.inserted += e.details.get("nInserted", 0)
+                    stats.errors += len(e.details.get("writeErrors", []))
+                    for error in e.details.get("writeErrors", []):
+                        stats.error_details.append(
+                            f"批量写入错误: {error.get('errmsg')}"
+                        )
+
+        return stats
+
+    def _import_upsert(self, pois: Sequence[dict[str, Any]]) -> ImportStats:
+        """
+        Import POIs using UPSERT mode (update or insert).
+
+        Args:
+            pois: Sequence of POI documents
+
+        Returns:
+            Import statistics
+        """
+        stats = ImportStats(total=len(pois))
+
+        logger.info(f"UPSERT 模式: 正在处理 {len(pois)} 条 POI 数据...")
+
+        for batch in self._batch_iterator(pois):
+            operations = []
+            for poi in batch:
+                validation_errors = self._validate_poi(poi)
+                if validation_errors:
+                    stats.errors += 1
+                    stats.error_details.append(
+                        f"POI '{poi.get('name', 'unknown')}': {', '.join(validation_errors)}"
+                    )
+                    continue
+
+                doc = self._transform_poi(poi)
+                doc_id = doc.pop("_id")
+                operations.append(
+                    UpdateOne({"_id": doc_id}, {"$set": doc}, upsert=True)
+                )
+
+            if operations:
+                try:
+                    result = self.collection.bulk_write(operations, ordered=False)
+                    stats.inserted += result.upserted_count
+                    stats.updated += result.modified_count
+                except BulkWriteError as e:
+                    details = e.details
+                    stats.inserted += details.get("nUpserted", 0)
+                    stats.updated += details.get("nModified", 0)
+                    stats.errors += len(details.get("writeErrors", []))
+                    for error in details.get("writeErrors", []):
+                        stats.error_details.append(
+                            f"批量写入错误: {error.get('errmsg')}"
+                        )
+
+        return stats
+
+    def _import_insert_only(self, pois: Sequence[dict[str, Any]]) -> ImportStats:
+        """
+        Import POIs using INSERT_ONLY mode (skip existing).
+
+        Args:
+            pois: Sequence of POI documents
+
+        Returns:
+            Import statistics
+        """
+        stats = ImportStats(total=len(pois))
+
+        logger.info(f"INSERT_ONLY 模式: 正在处理 {len(pois)} 条 POI 数据...")
+
+        for batch in self._batch_iterator(pois):
+            docs = []
+            for poi in batch:
+                validation_errors = self._validate_poi(poi)
+                if validation_errors:
+                    stats.errors += 1
+                    stats.error_details.append(
+                        f"POI '{poi.get('name', 'unknown')}': {', '.join(validation_errors)}"
+                    )
+                    continue
+
+                doc = self._transform_poi(poi)
+                # Check if document already exists
+                if self.collection.find_one({"_id": doc["_id"]}, {"_id": 1}):
+                    stats.skipped += 1
+                    continue
+                docs.append(doc)
+
+            if docs:
+                try:
+                    result = self.collection.insert_many(docs, ordered=False)
+                    stats.inserted += len(result.inserted_ids)
+                except BulkWriteError as e:
+                    stats.inserted += e.details.get("nInserted", 0)
+                    # Duplicate key errors are expected, count as skipped
+                    for error in e.details.get("writeErrors", []):
+                        if error.get("code") == 11000:  # Duplicate key
+                            stats.skipped += 1
+                        else:
+                            stats.errors += 1
+                            stats.error_details.append(
+                                f"批量写入错误: {error.get('errmsg')}"
+                            )
+
+        return stats
+
+    def import_data(
+        self,
+        pois: Sequence[dict[str, Any]] = (),
+        mode: ImportMode = ImportMode.UPSERT,
+    ) -> ImportStats:
+        """
+        Import POI data into MongoDB.
+
+        For CLEAR mode, ``pois`` is not required and will be ignored.
+
+        Args:
+            pois: Sequence of POI documents to import (ignored for CLEAR mode)
+            mode: Import mode (REPLACE, UPSERT, INSERT_ONLY, or CLEAR)
+
+        Returns:
+            ImportStats with details about the operation
+        """
+        logger.info(f"开始操作 (模式: {mode.value})")
+
+        try:
+            if mode is ImportMode.CLEAR:
+                stats = self._import_clear()
+            else:
+                logger.info(f"待处理记录数: {len(pois)}")
+                data_methods = {
+                    ImportMode.REPLACE: self._import_replace,
+                    ImportMode.UPSERT: self._import_upsert,
+                    ImportMode.INSERT_ONLY: self._import_insert_only,
+                }
+                stats = data_methods[mode](pois)
+
+            # Create indexes after the operation if configured.
+            # For CLEAR mode this recreates the indexes on an empty collection,
+            # which is intentional so the service starts with a consistent schema.
+            if self._should_create_indexes:
+                self._create_indexes()
+
+            logger.info(f"操作完成: {stats}")
+            return stats
+
+        except PyMongoError as e:
+            logger.error(f"MongoDB 操作失败: {e}")
+            raise
+
+    def import_from_file(
+        self,
+        file_path: str | Path,
+        mode: ImportMode = ImportMode.UPSERT,
+        encoding: str = "utf-8",
+    ) -> ImportStats:
+        """
+        Import POI data from a JSON file.
+
+        Args:
+            file_path: Path to the JSON file containing POI data
+            mode: Import mode (REPLACE, UPSERT, INSERT_ONLY, or CLEAR).
+                  For CLEAR mode the file is not read; pass any valid path.
+            encoding: File encoding (default: utf-8)
+
+        Returns:
+            ImportStats with details about the operation
+
+        Raises:
+            FileNotFoundError: If the file does not exist (non-CLEAR modes)
+            json.JSONDecodeError: If the file contains invalid JSON
+        """
+        # CLEAR mode does not require reading any file
+        if mode is ImportMode.CLEAR:
+            return self.import_data(mode=mode)
+
+        file_path = Path(file_path)
+        logger.info(f"正在读取文件: {file_path}")
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"文件不存在: {file_path}")
+
+        with open(file_path, "r", encoding=encoding) as f:
+            pois = json.load(f)
+
+        if not isinstance(pois, list):
+            raise ValueError("JSON 文件必须包含 POI 数组")
+
+        logger.info(f"已加载 {len(pois)} 条 POI 记录")
+        return self.import_data(pois, mode=mode)
+
+    def get_stats(self) -> dict[str, Any]:
+        """
+        Get current collection statistics.
+
+        Returns:
+            Dictionary containing collection stats
+        """
+        count = self.collection.count_documents({})
+        indexes = list(self.collection.list_indexes())
+        return {
+            "database": self._database_name,
+            "collection": self._collection_name,
+            "document_count": count,
+            "indexes": [idx["name"] for idx in indexes],
+        }
+
+    def close(self) -> None:
+        """Close the MongoDB connection."""
+        self._disconnect()
+
+    def __enter__(self) -> "PoiImporter":
+        """Context manager entry."""
+        self._connect()
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Context manager exit."""
+        self.close()
 
 
-def _add_common_args(parser: argparse.ArgumentParser) -> None:
-    """Attach --uri / --db / --collection to a (sub)parser."""
-    parser.add_argument(
-        "--uri",
-        default=os.getenv("MONGO_URI", DEFAULT_MONGO_URI),
-        help=f"MongoDB URI (env: MONGO_URI, default: {DEFAULT_MONGO_URI})",
-    )
-    parser.add_argument(
-        "--db",
-        default=DEFAULT_DB,
-        help=f"Database name (default: {DEFAULT_DB})",
-    )
-    parser.add_argument(
-        "--collection",
-        default=DEFAULT_COLLECTION,
-        help=f"Collection name (default: {DEFAULT_COLLECTION})",
-    )
+def import_shanghai_pois(
+    mode: ImportMode = ImportMode.UPSERT,
+    config: PoiImporterConfig | None = None,
+) -> ImportStats:
+    """
+    Convenience function to import Shanghai POI data.
+
+    This function imports the pre-seeded Shanghai POI data from the
+    standard location in the data directory.
+
+    Args:
+        mode: Import mode (default: UPSERT)
+        config: Optional custom configuration
+
+    Returns:
+        ImportStats with details about the operation
+    """
+    # Determine data file path
+    base_dir = Path(__file__).resolve().parent.parent.parent
+    data_file = base_dir / "data" / "seeded" / "shanghai" / "pois.json"
+
+    with PoiImporter(config) as importer:
+        return importer.import_from_file(data_file, mode=mode)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Import / export POI data for trip-poi-service MongoDB."
-    )
-    subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
+    """
+    Main entry point for command-line execution.
+    """
+    import argparse
+    import sys
 
-    # ── import subcommand ────────────────────────────────────────────────────
-    import_parser = subparsers.add_parser(
-        "import", help="Import POI JSON into MongoDB."
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
-    import_parser.add_argument(
-        "filepath",
+
+    parser = argparse.ArgumentParser(
+        description="POI 数据导入工具 - 将 POI 数据导入到 MongoDB"
+    )
+    parser.add_argument(
+        "file",
+        nargs="?",
+        help="POI JSON 文件路径 (默认: data/seeded/shanghai/pois.json)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["replace", "upsert", "insert_only", "clear"],
+        default="upsert",
         help=(
-            "Input file. Accepts: raw pois.json, pois_converted.json (--no-convert), "
-            "or pois.json with _id (--no-convert, IDs restored automatically)."
+            "操作模式: replace(替换), upsert(更新或插入), "
+            "insert_only(仅插入新数据), clear(仅清空集合)"
         ),
     )
-    _add_common_args(import_parser)
-    import_parser.add_argument(
+    parser.add_argument(
+        "--uri",
+        default="mongodb://root:fudanse@localhost:27017",
+        help="MongoDB 连接 URI",
+    )
+    parser.add_argument("--database", default="poi_db", help="数据库名称")
+    parser.add_argument("--collection", default="pois", help="集合名称")
+    parser.add_argument(
         "--batch-size",
         type=int,
-        default=DEFAULT_BATCH_SIZE,
-        help=f"Documents per batch insert (default: {DEFAULT_BATCH_SIZE})",
+        default=500,
+        help="批量操作大小",
     )
-    import_parser.add_argument(
-        "--no-convert",
+    parser.add_argument(
+        "--no-indexes",
         action="store_true",
-        help="Skip Amap→PoiDoc conversion; input is already in PoiDoc format.",
-    )
-    import_parser.add_argument(
-        "--clear",
-        action="store_true",
-        help="Delete existing documents before importing.",
-    )
-
-    # ── export subcommand ────────────────────────────────────────────────────
-    export_parser = subparsers.add_parser(
-        "export",
-        help="Export poi_db.pois to a JSON file with _id preserved as hex strings.",
-    )
-    _add_common_args(export_parser)
-    export_parser.add_argument(
-        "--output",
-        default="data/pois.json",
-        help="Output file path (default: data/pois.json)",
+        help="跳过索引创建",
     )
 
     args = parser.parse_args()
 
-    if args.command == "export":
-        export_pois(
-            output_path=args.output,
-            mongo_uri=args.uri,
-            db_name=args.db,
-            collection_name=args.collection,
-        )
-    elif args.command == "import":
-        import_pois(
-            filepath=args.filepath,
-            mongo_uri=args.uri,
-            db_name=args.db,
-            collection_name=args.collection,
-            batch_size=args.batch_size,
-            clear=args.clear,
-            no_convert=args.no_convert,
-        )
-    else:
-        parser.print_help()
+    # Determine import mode
+    mode_map = {
+        "replace": ImportMode.REPLACE,
+        "upsert": ImportMode.UPSERT,
+        "insert_only": ImportMode.INSERT_ONLY,
+        "clear": ImportMode.CLEAR,
+    }
+    mode = mode_map[args.mode]
+
+    # Create configuration
+    config = PoiImporterConfig(
+        mongo_uri=args.uri,
+        database=args.database,
+        collection=args.collection,
+        batch_size=args.batch_size,
+        create_indexes=not args.no_indexes,
+    )
+
+    print("=" * 60)
+    print("POI 数据导入工具")
+    print("=" * 60)
+    print(f"  数据库: {config.database}")
+    print(f"  集合: {config.collection}")
+    print(f"  导入模式: {mode.value}")
+    print("=" * 60)
+
+    try:
+        with PoiImporter(config) as importer:
+            if mode is ImportMode.CLEAR:
+                # CLEAR mode does not require a data file
+                stats = importer.import_data(mode=mode)
+            elif args.file:
+                stats = importer.import_from_file(args.file, mode=mode)
+            else:
+                # Use default Shanghai POI file
+                base_dir = Path(__file__).resolve().parent.parent.parent
+                data_file = base_dir / "data" / "seeded" / "shanghai" / "pois.json"
+                stats = importer.import_from_file(data_file, mode=mode)
+
+            # Print results
+            print("\n" + "=" * 60)
+            print("导入完成!")
+            print(f"  {stats}")
+
+            if stats.errors > 0:
+                print("\n错误详情 (前10条):")
+                for error in stats.error_details[:10]:
+                    print(f"  - {error}")
+
+            # Print collection stats
+            collection_stats = importer.get_stats()
+            print("\n集合统计:")
+            print(f"  文档总数: {collection_stats['document_count']}")
+            print(f"  索引: {', '.join(collection_stats['indexes'])}")
+            print("=" * 60)
+
+    except FileNotFoundError as e:
+        print(f"错误: {e}")
+        sys.exit(1)
+    except PyMongoError as e:
+        print(f"数据库错误: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
