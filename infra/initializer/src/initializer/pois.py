@@ -337,8 +337,9 @@ class PoiImporter:
                 validation_errors = self._validate_poi(poi)
                 if validation_errors:
                     stats.errors += 1
+                    name = poi.get("name", "unknown")
                     stats.error_details.append(
-                        f"POI '{poi.get('name', 'unknown')}': {', '.join(validation_errors)}"
+                        f"POI '{name}': {', '.join(validation_errors)}"
                     )
                     continue
                 docs.append(self._transform_poi(poi))
@@ -377,8 +378,9 @@ class PoiImporter:
                 validation_errors = self._validate_poi(poi)
                 if validation_errors:
                     stats.errors += 1
+                    name = poi.get("name", "unknown")
                     stats.error_details.append(
-                        f"POI '{poi.get('name', 'unknown')}': {', '.join(validation_errors)}"
+                        f"POI '{name}': {', '.join(validation_errors)}"
                     )
                     continue
 
@@ -437,8 +439,9 @@ class PoiImporter:
                 validation_errors = self._validate_poi(poi)
                 if validation_errors:
                     stats.errors += 1
+                    name = poi.get("name", "unknown")
                     stats.error_details.append(
-                        f"POI '{poi.get('name', 'unknown')}': {', '.join(validation_errors)}"
+                        f"POI '{name}': {', '.join(validation_errors)}"
                     )
                     continue
 

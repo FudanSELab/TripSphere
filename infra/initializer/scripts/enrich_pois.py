@@ -2,8 +2,9 @@
 """
 POI Enrichment Script
 
-Starting from original POI data (poi.json), uses pre-scraped Amap data (amap_pois.json) or Amap API
-to enrich POI information and generate complete POI data conforming to PoiDoc structure.
+Starting from original POI data (poi.json), uses pre-scraped Amap data (amap_pois.json)
+or Amap API to enrich POI information and generate complete POI data conforming to
+PoiDoc structure.
 
 Output structure:
 {
@@ -32,7 +33,6 @@ import requests
 from dotenv import load_dotenv
 
 from initializer.utils.uuid import uuid7
-
 
 # Path configuration
 BASE_DIR = Path(__file__).resolve().parent.parent

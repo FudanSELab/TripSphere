@@ -434,7 +434,9 @@ class HotelImporter:
         return stats
 
     def _import_insert_only(self, hotels: Sequence[dict[str, Any]]) -> ImportStats:
-        """Insert only new documents, skipping those that already exist (INSERT_ONLY mode)."""
+        """Insert only new documents,
+        skipping those that already exist (INSERT_ONLY mode).
+        """
         stats = ImportStats(total=len(hotels))
 
         logger.info(f"INSERT_ONLY 模式: 正在处理 {len(hotels)} 条酒店数据…")
