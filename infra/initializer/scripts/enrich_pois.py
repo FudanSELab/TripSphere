@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
 """
 POI Enrichment Script
 
@@ -7,14 +7,16 @@ to enrich POI information and generate complete POI data conforming to PoiDoc st
 
 Output structure:
 {
-    "id": str (UUID7),
+    "_id": str (UUID7),
     "name": str,
     "location": {"type": "Point", "coordinates": [lng, lat]},
     "address": {"province": str, "city": str, "district": str, "detailed": str},
     "adcode": str,
     "amapId": str,
     "categories": [str],
-    "images": [str]
+    "images": [str],
+    "createdAt": str (ISO-8601 UTC),
+    "updatedAt": str (ISO-8601 UTC)
 }
 """
 
@@ -22,6 +24,7 @@ import json
 import os
 import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -67,7 +70,7 @@ def save_json(data: Any, file_path: Path):
     """Save JSON file"""
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=4)
     print(f"已保存: {file_path}")
 
 
@@ -311,7 +314,13 @@ def generate_id() -> str:
 
 def convert_to_poi_doc(original_poi: dict, amap_poi: dict | None) -> dict:
     """
-    Convert original POI and Amap data to PoiDoc format
+    Convert original POI and Amap data to PoiDoc format.
+
+    The 'createdAt' and 'updatedAt' fields are set to the current UTC time so
+    that the document is consistent with Spring Data's @CreatedDate /
+    @LastModifiedDate semantics even when inserted directly via Python.
+    Both are stored as ISO-8601 strings; pois.py converts them to BSON Dates
+    at import time.
     """
     name = original_poi.get("name", "")
     original_position = original_poi.get("position", [])
@@ -321,6 +330,9 @@ def convert_to_poi_doc(original_poi: dict, amap_poi: dict | None) -> dict:
         lat, lng = original_position[0], original_position[1]
     else:
         lat, lng = 0, 0
+
+    # Timestamps — use the same instant for both fields on first creation
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
     # Base structure, generate ID using UUID7.
     # Use '_id' directly as the field name so the document can be inserted
@@ -337,6 +349,8 @@ def convert_to_poi_doc(original_poi: dict, amap_poi: dict | None) -> dict:
         "amapId": "",
         "categories": [],
         "images": [],
+        "createdAt": now_iso,
+        "updatedAt": now_iso,
     }
 
     # If Amap data is available, supplement detailed information

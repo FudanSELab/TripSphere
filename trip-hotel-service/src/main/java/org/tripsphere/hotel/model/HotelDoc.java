@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class HotelDoc {
     @Id private String id;
     private String name;
+    private String nameEn;
     private String poiId;
 
     /** Location in WGS84 coordinate system */

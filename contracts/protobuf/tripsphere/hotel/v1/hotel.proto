@@ -25,18 +25,20 @@ service HotelService {
 message Hotel {
   string id = 1;
   string name = 2;
-  string poi_id = 3;
-  tripsphere.common.v1.Address address = 4;
-  tripsphere.common.v1.GeoPoint location = 5;
+  // Hotel name in English.
+  string name_en = 3;
+  string poi_id = 4;
+  tripsphere.common.v1.Address address = 5;
+  tripsphere.common.v1.GeoPoint location = 6;
   // Suggested for soft tags, e.g., ["拍照出片", "氛围浪漫"]
-  repeated string tags = 6;
-  repeated string images = 7;
-  HotelInformation information = 8;
+  repeated string tags = 7;
+  repeated string images = 8;
+  HotelInformation information = 9;
   // Estimated price for a night. Must never be used for pricing.
-  tripsphere.common.v1.Money estimated_price = 9;
-  HotelPolicy policy = 10;
+  tripsphere.common.v1.Money estimated_price = 10;
+  HotelPolicy policy = 11;
   // For example, ["健身房", "游泳池", "免费停车场"]
-  repeated string amenities = 11;
+  repeated string amenities = 12;
 }
 
 message HotelInformation {
