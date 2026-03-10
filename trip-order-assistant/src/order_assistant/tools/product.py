@@ -11,7 +11,7 @@ from google.rpc import status_pb2  # type: ignore
 from grpc_status import rpc_status
 from tripsphere.product.v1 import product_pb2, product_pb2_grpc
 
-from journey_assistant.nacos.naming import get_nacos_naming
+from order_assistant.nacos.naming import get_nacos_naming
 
 logger = logging.getLogger(__name__)
 

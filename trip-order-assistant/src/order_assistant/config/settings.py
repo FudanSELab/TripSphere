@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class AppSettings(BaseModel):
-    name: str = Field(default="trip-journey-assistant")
+    name: str = Field(default="trip-order-assistant")
     debug: bool = Field(default=False)
 
 

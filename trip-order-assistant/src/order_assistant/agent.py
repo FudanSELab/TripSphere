@@ -9,16 +9,16 @@ from google.adk.agents import LlmAgent
 from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.models.lite_llm import LiteLlm
 
-from journey_assistant.config.settings import get_settings
-from journey_assistant.tools.order import OrderToolset
-from journey_assistant.tools.product import ProductToolset
+from order_assistant.config.settings import get_settings
+from order_assistant.tools.order import OrderToolset
+from order_assistant.tools.product import ProductToolset
 
 logger = logging.getLogger(__name__)
 
 
-AGENT_NAME = "journey_assistant"
-AGENT_DESCRIPTION = "An agent that can help users with their journey."
-INSTRUCTION = """Role: You are a helpful journey assistant agent.
+AGENT_NAME = "order_assistant"
+AGENT_DESCRIPTION = "An agent that can help users with their orders."
+INSTRUCTION = """Role: You are a helpful order management assistant agent.
 
 Capabilities:
 - You are equipped with order management tools.
@@ -63,7 +63,7 @@ manage_order = AgentSkill(
 agent_card = AgentCard(
     name=AGENT_NAME,
     description=AGENT_DESCRIPTION,
-    version=version("journey-assistant"),
+    version=version("order-assistant"),
     # If no endpoint is available in the current version,
     # this URL will be used by Nacos AI service.
     url=f"http://localhost:{get_settings().uvicorn.port}",

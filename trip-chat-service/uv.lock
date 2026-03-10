@@ -568,6 +568,7 @@ dependencies = [
     { name = "google-adk", extra = ["a2a", "otel-gcp"] },
     { name = "grpcio" },
     { name = "litellm" },
+    { name = "mcp-weather-server" },
     { name = "mem0ai" },
     { name = "nacos-sdk-python" },
     { name = "openinference-instrumentation-google-adk" },
@@ -596,6 +597,7 @@ requires-dist = [
     { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.20.0" },
     { name = "grpcio", specifier = ">=1.75.1" },
     { name = "litellm", specifier = ">=1.80.5" },
+    { name = "mcp-weather-server", specifier = ">=0.6.1" },
     { name = "mem0ai", specifier = ">=0.1.115" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },
@@ -2320,6 +2322,30 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d5/2d/649d80a0ecf6a1f82632ca44bec21c0461a9d9fc8934d38cb5b319f2db5e/mcp-1.25.0.tar.gz", hash = "sha256:56310361ebf0364e2d438e5b45f7668cbb124e158bb358333cd06e49e83a6802", size = 605387, upload-time = "2025-12-19T10:19:56.985Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/fc/6dc7659c2ae5ddf280477011f4213a74f806862856b796ef08f028e664bf/mcp-1.25.0-py3-none-any.whl", hash = "sha256:b37c38144a666add0862614cc79ec276e97d72aa8ca26d622818d4e278b9721a", size = 233076, upload-time = "2025-12-19T10:19:55.416Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "python-dotenv" },
+    { name = "typer" },
+]
+
+[[package]]
+name = "mcp-weather-server"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "python-dateutil" },
+    { name = "python-dotenv" },
+    { name = "starlette" },
+    { name = "tzdata" },
+    { name = "uvicorn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/df/c6/1ef4ec4582bf4b906fa3e60036d3ebc7f0a0684e8c8bedf1a0665f876f76/mcp_weather_server-0.6.1.tar.gz", hash = "sha256:ad85f11949c038e52c08dcea3d84c0410042d22fe47c63c87695a6fedc4d798c", size = 55592, upload-time = "2025-12-13T13:21:29.089Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/46/a9dc4b4a60be43d0adaa086a191380e4965846635984c8f214c567c06148/mcp_weather_server-0.6.1-py3-none-any.whl", hash = "sha256:049948f33f79c172dcaa64a845ef91ec7b64a7141919f122e9c1ecbaf8c6c6f9", size = 33651, upload-time = "2025-12-13T13:21:27.851Z" },
 ]
 
 [[package]]

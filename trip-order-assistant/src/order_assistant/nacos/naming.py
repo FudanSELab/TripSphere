@@ -10,8 +10,8 @@ from v2.nacos import (  # type: ignore
     RegisterInstanceParam,
 )  # pyright: ignore[reportMissingTypeStubs]
 
-from journey_assistant.config.settings import get_settings
-from journey_assistant.nacos.utils import get_local_ip
+from order_assistant.config.settings import get_settings
+from order_assistant.nacos.utils import get_local_ip
 
 
 class NacosNaming:

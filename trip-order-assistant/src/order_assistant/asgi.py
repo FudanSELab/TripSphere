@@ -6,9 +6,9 @@ from openinference.instrumentation.google_adk import GoogleADKInstrumentor
 from openinference.instrumentation.litellm import LiteLLMInstrumentor
 from starlette.applications import Starlette
 
-from journey_assistant.agent import agent_card, root_agent
-from journey_assistant.config.settings import get_settings
-from journey_assistant.nacos.ai import NacosAI
+from order_assistant.agent import agent_card, root_agent
+from order_assistant.config.settings import get_settings
+from order_assistant.nacos.ai import NacosAI
 
 warnings.filterwarnings("ignore")  # Suppress ADK Experimental Warnings
 

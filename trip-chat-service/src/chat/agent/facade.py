@@ -9,7 +9,10 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools.load_memory_tool import load_memory_tool
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from httpx import AsyncClient
+from mcp import StdioServerParameters
 
 from chat.config.settings import get_settings
 from chat.nacos.ai import NacosAI
@@ -21,7 +24,7 @@ warnings.filterwarnings("ignore", module="google.adk")
 logger = logging.getLogger(__name__)
 
 # Default remote agent names to discover via Nacos
-_DEFAULT_REMOTE_AGENTS = ("journey_assistant", "review_summary")
+_DEFAULT_REMOTE_AGENTS = ("order_assistant", "review_summary")
 
 
 def _ensure_openai_env() -> None:
@@ -75,11 +78,18 @@ class AgentFacadeFactory:
         """
         _ensure_openai_env()
         sub_agents = await self._discover_remote_agents()
+        weather_toolset = McpToolset(
+            connection_params=StdioConnectionParams(
+                server_params=StdioServerParameters(
+                    command="python", args=["-m", "mcp_weather_server"]
+                )
+            )
+        )
         return LlmAgent(
             name="agent_facade",
             model=LiteLlm(model=self._model),
             instruction=DELEGATOR_INSTRUCTION,
-            tools=[load_memory_tool],
+            tools=[load_memory_tool, weather_toolset],
             sub_agents=sub_agents,
             after_agent_callback=_add_session_to_memory,
         )
