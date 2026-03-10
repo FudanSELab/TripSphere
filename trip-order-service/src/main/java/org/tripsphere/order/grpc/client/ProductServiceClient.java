@@ -13,14 +13,14 @@ public class ProductServiceClient {
     @GrpcClient("trip-product-service")
     private ProductServiceGrpc.ProductServiceBlockingStub productStub;
 
-    public StockKeepingUnit getSkuById(String skuId) {
+    public Sku getSkuById(String skuId) {
         log.debug("Fetching SKU: {}", skuId);
         GetSkuByIdResponse response =
                 productStub.getSkuById(GetSkuByIdRequest.newBuilder().setId(skuId).build());
         return response.getSku();
     }
 
-    public List<StockKeepingUnit> batchGetSkus(List<String> skuIds) {
+    public List<Sku> batchGetSkus(List<String> skuIds) {
         log.debug("Batch fetching {} SKUs", skuIds.size());
         BatchGetSkusResponse response =
                 productStub.batchGetSkus(
@@ -28,14 +28,14 @@ public class ProductServiceClient {
         return response.getSkusList();
     }
 
-    public StandardProductUnit getSpuById(String spuId) {
+    public Spu getSpuById(String spuId) {
         log.debug("Fetching SPU: {}", spuId);
         GetSpuByIdResponse response =
                 productStub.getSpuById(GetSpuByIdRequest.newBuilder().setId(spuId).build());
         return response.getSpu();
     }
 
-    public List<StandardProductUnit> batchGetSpus(List<String> spuIds) {
+    public List<Spu> batchGetSpus(List<String> spuIds) {
         log.debug("Batch fetching {} SPUs", spuIds.size());
         BatchGetSpusResponse response =
                 productStub.batchGetSpus(

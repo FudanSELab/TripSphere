@@ -2,6 +2,9 @@ package org.tripsphere.hotel.api.grpc;
 
 import io.grpc.stub.StreamObserver;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.tripsphere.hotel.exception.InvalidArgumentException;
@@ -45,7 +48,18 @@ public class HotelGrpcService extends HotelServiceGrpc.HotelServiceImplBase {
 
         List<Hotel> hotels = hotelService.findAllByIds(ids);
 
-        responseObserver.onNext(BatchGetHotelsResponse.newBuilder().addAllHotels(hotels).build());
+        Map<String, Hotel> hotelsById =
+                hotels.stream().collect(Collectors.toMap(Hotel::getId, Function.identity()));
+
+        List<String> missingIds = ids.stream().filter(id -> !hotelsById.containsKey(id)).toList();
+        if (!missingIds.isEmpty()) {
+            throw new NotFoundException("Hotels with IDs " + missingIds + " not found");
+        }
+
+        List<Hotel> orderedHotels = ids.stream().map(hotelsById::get).toList();
+
+        responseObserver.onNext(
+                BatchGetHotelsResponse.newBuilder().addAllHotels(orderedHotels).build());
         responseObserver.onCompleted();
     }
 

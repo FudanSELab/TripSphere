@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -19,7 +17,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "spus")
-@CompoundIndex(name = "idx_resource", def = "{'resourceType': 1, 'resourceId': 1}")
 public class SpuDoc {
     @Id private String id;
     private String name;
@@ -27,9 +24,7 @@ public class SpuDoc {
     private String resourceType;
     private String resourceId;
     private List<String> images;
-
-    @Indexed private String status;
-
+    private String status;
     private Map<String, Object> attributes;
     private List<SkuDoc> skus;
     @CreatedDate private Instant createdAt;

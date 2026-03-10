@@ -29,9 +29,9 @@ import org.tripsphere.order.repository.OrderRepository;
 import org.tripsphere.order.v1.ContactInfo;
 import org.tripsphere.order.v1.CreateOrderItem;
 import org.tripsphere.order.v1.OrderSource;
+import org.tripsphere.product.v1.Sku;
 import org.tripsphere.product.v1.SkuStatus;
-import org.tripsphere.product.v1.StandardProductUnit;
-import org.tripsphere.product.v1.StockKeepingUnit;
+import org.tripsphere.product.v1.Spu;
 
 /** CreateOrder saga: validate SKUs → lock inventory → persist order. Compensates on failure. */
 @Slf4j
@@ -59,14 +59,13 @@ public class CreateOrderSaga {
 
         // Step 1: Validate SKUs
         List<String> skuIds = items.stream().map(CreateOrderItem::getSkuId).distinct().toList();
-        List<StockKeepingUnit> skus = productClient.batchGetSkus(skuIds);
+        List<Sku> skus = productClient.batchGetSkus(skuIds);
 
-        Map<String, StockKeepingUnit> skuMap =
-                skus.stream().collect(Collectors.toMap(StockKeepingUnit::getId, sku -> sku));
+        Map<String, Sku> skuMap = skus.stream().collect(Collectors.toMap(Sku::getId, sku -> sku));
 
         // Validate all requested SKUs exist and are active
         for (String skuId : skuIds) {
-            StockKeepingUnit sku = skuMap.get(skuId);
+            Sku sku = skuMap.get(skuId);
             if (sku == null) {
                 throw new InvalidArgumentException("SKU not found: " + skuId);
             }
@@ -125,19 +124,15 @@ public class CreateOrderSaga {
         }
     }
 
-    private Map<String, String> fetchSpuNames(List<StockKeepingUnit> skus) {
+    private Map<String, String> fetchSpuNames(List<Sku> skus) {
         List<String> spuIds =
-                skus.stream()
-                        .map(StockKeepingUnit::getSpuId)
-                        .filter(id -> !id.isEmpty())
-                        .distinct()
-                        .toList();
+                skus.stream().map(Sku::getSpuId).filter(id -> !id.isEmpty()).distinct().toList();
 
         Map<String, String> spuNameMap = new HashMap<>();
         if (!spuIds.isEmpty()) {
             try {
-                List<StandardProductUnit> spus = productClient.batchGetSpus(spuIds);
-                for (StandardProductUnit spu : spus) {
+                List<Spu> spus = productClient.batchGetSpus(spuIds);
+                for (Spu spu : spus) {
                     spuNameMap.put(spu.getId(), spu.getName());
                 }
             } catch (Exception e) {
@@ -177,8 +172,7 @@ public class CreateOrderSaga {
     }
 
     /** Fetch prices for all (sku, date) combinations via calendar queries. */
-    private Map<String, Money> fetchPrices(
-            List<CreateOrderItem> items, Map<String, StockKeepingUnit> skuMap) {
+    private Map<String, Money> fetchPrices(List<CreateOrderItem> items, Map<String, Sku> skuMap) {
 
         Map<String, List<LocalDate>> skuDatesMap = new LinkedHashMap<>();
         for (CreateOrderItem item : items) {
@@ -235,7 +229,7 @@ public class CreateOrderSaga {
             List<CreateOrderItem> items,
             ContactInfo contact,
             OrderSource source,
-            Map<String, StockKeepingUnit> skuMap,
+            Map<String, Sku> skuMap,
             Map<String, String> spuNameMap,
             Map<String, Money> priceCache,
             InventoryLock inventoryLock) {
@@ -251,7 +245,7 @@ public class CreateOrderSaga {
                     String totalCurrency = "CNY";
 
                     for (CreateOrderItem createItem : items) {
-                        StockKeepingUnit sku = skuMap.get(createItem.getSkuId());
+                        Sku sku = skuMap.get(createItem.getSkuId());
                         String itemId = UUID.randomUUID().toString();
 
                         LocalDate startDate = orderMapper.protoToLocalDate(createItem.getDate());
@@ -355,7 +349,7 @@ public class CreateOrderSaga {
     }
 
     private Money lookupPrice(
-            String skuId, LocalDate date, Map<String, Money> priceCache, StockKeepingUnit sku) {
+            String skuId, LocalDate date, Map<String, Money> priceCache, Sku sku) {
         Money cached = priceCache.get(skuId + ":" + date);
         if (cached != null) {
             return cached;

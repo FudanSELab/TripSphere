@@ -2,8 +2,8 @@ import socket
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from chat.infra.nacos.ai import NacosAI
-    from chat.infra.nacos.naming import NacosNaming
+    from chat.nacos.ai import NacosAI
+    from chat.nacos.naming import NacosNaming
 
 
 def get_local_ip() -> str:

@@ -1,5 +1,6 @@
 package org.tripsphere.inventory.model;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,8 +23,8 @@ import lombok.NoArgsConstructor;
 public class DailyInventoryEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36, nullable = false)
+    private String id;
 
     @Column(nullable = false, length = 64)
     private String skuId;
@@ -64,8 +65,15 @@ public class DailyInventoryEntity {
     private Instant updatedAt = Instant.now();
 
     @PrePersist
+    private void beforeInsert() {
+        if (this.id == null) {
+            this.id = UuidCreator.getTimeOrderedEpoch().toString();
+        }
+        this.updatedAt = Instant.now();
+    }
+
     @PreUpdate
-    private void updateTimestamp() {
+    private void beforeUpdate() {
         this.updatedAt = Instant.now();
     }
 }

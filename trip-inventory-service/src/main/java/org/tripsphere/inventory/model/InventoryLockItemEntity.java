@@ -1,5 +1,6 @@
 package org.tripsphere.inventory.model;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
@@ -18,8 +19,8 @@ import lombok.NoArgsConstructor;
 public class InventoryLockItemEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36, nullable = false)
+    private String id;
 
     @Column(nullable = false, length = 64)
     private String lockId;
@@ -32,4 +33,11 @@ public class InventoryLockItemEntity {
 
     @Column(nullable = false)
     private int quantity;
+
+    @PrePersist
+    public void generateId() {
+        if (this.id == null) {
+            this.id = UuidCreator.getTimeOrderedEpoch().toString();
+        }
+    }
 }

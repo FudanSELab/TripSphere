@@ -1,11 +1,13 @@
 package org.tripsphere.product.repository.impl;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -31,6 +33,40 @@ public class CustomSpuDocRepositoryImpl implements CustomSpuDocRepository {
         List<SpuDoc> docs = mongoTemplate.find(query, SpuDoc.class);
 
         return new PageImpl<>(docs, pageable, total);
+    }
+
+    @Override
+    public List<SpuDoc> findByResourceWithCursor(
+            String resourceType,
+            String resourceId,
+            int limit,
+            Instant afterCreatedAt,
+            String afterId) {
+        Criteria baseCriteria =
+                Criteria.where("resourceType").is(resourceType).and("resourceId").is(resourceId);
+
+        Criteria cursorCriteria;
+        if (afterCreatedAt != null && afterId != null) {
+            // Return documents strictly after the cursor:
+            // (createdAt > afterCreatedAt) OR (createdAt == afterCreatedAt AND id > afterId)
+            cursorCriteria =
+                    new Criteria()
+                            .orOperator(
+                                    Criteria.where("createdAt").gt(afterCreatedAt),
+                                    Criteria.where("createdAt")
+                                            .is(afterCreatedAt)
+                                            .and("_id")
+                                            .gt(afterId));
+        } else {
+            cursorCriteria = new Criteria();
+        }
+
+        Query query =
+                new Query(new Criteria().andOperator(baseCriteria, cursorCriteria))
+                        .with(Sort.by(Sort.Direction.ASC, "createdAt", "_id"))
+                        .limit(limit);
+
+        return mongoTemplate.find(query, SpuDoc.class);
     }
 
     @Override

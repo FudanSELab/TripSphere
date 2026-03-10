@@ -2,12 +2,15 @@ package org.tripsphere.product.api.grpc;
 
 import io.grpc.stub.StreamObserver;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
-import org.springframework.data.domain.Page;
 import org.tripsphere.product.exception.InvalidArgumentException;
 import org.tripsphere.product.exception.NotFoundException;
 import org.tripsphere.product.service.ProductService;
+import org.tripsphere.product.service.ProductService.SpuPage;
 import org.tripsphere.product.v1.*;
 
 @GrpcService
@@ -23,7 +26,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             throw InvalidArgumentException.required("spu");
         }
 
-        StandardProductUnit created = productService.createSpu(request.getSpu());
+        Spu created = productService.createSpu(request.getSpu());
 
         responseObserver.onNext(CreateSpuResponse.newBuilder().setSpu(created).build());
         responseObserver.onCompleted();
@@ -38,7 +41,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             throw new InvalidArgumentException("Request list for batch creation is empty");
         }
 
-        List<StandardProductUnit> spusToCreate =
+        List<Spu> spusToCreate =
                 requests.stream()
                         .filter(CreateSpuRequest::hasSpu)
                         .map(CreateSpuRequest::getSpu)
@@ -48,7 +51,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             throw new InvalidArgumentException("No valid SPU data in batch creation request");
         }
 
-        List<StandardProductUnit> created = productService.batchCreateSpus(spusToCreate);
+        List<Spu> created = productService.batchCreateSpus(spusToCreate);
 
         responseObserver.onNext(BatchCreateSpusResponse.newBuilder().addAllSpus(created).build());
         responseObserver.onCompleted();
@@ -62,8 +65,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             throw InvalidArgumentException.required("id");
         }
 
-        StandardProductUnit spu =
-                productService.getSpuById(id).orElseThrow(() -> new NotFoundException("SPU", id));
+        Spu spu = productService.getSpuById(id).orElseThrow(() -> new NotFoundException("SPU", id));
 
         responseObserver.onNext(GetSpuByIdResponse.newBuilder().setSpu(spu).build());
         responseObserver.onCompleted();
@@ -79,9 +81,19 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             return;
         }
 
-        List<StandardProductUnit> spus = productService.batchGetSpus(ids);
+        List<Spu> spus = productService.batchGetSpus(ids);
 
-        responseObserver.onNext(BatchGetSpusResponse.newBuilder().addAllSpus(spus).build());
+        Map<String, Spu> spusById =
+                spus.stream().collect(Collectors.toMap(Spu::getId, Function.identity()));
+
+        List<String> missingIds = ids.stream().filter(id -> !spusById.containsKey(id)).toList();
+        if (!missingIds.isEmpty()) {
+            throw new NotFoundException("SPUs with IDs " + missingIds + " not found");
+        }
+
+        List<Spu> orderedSpus = ids.stream().map(spusById::get).toList();
+
+        responseObserver.onNext(BatchGetSpusResponse.newBuilder().addAllSpus(orderedSpus).build());
         responseObserver.onCompleted();
     }
 
@@ -98,12 +110,12 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
 
         String resourceType =
                 switch (request.getResourceType()) {
-                    case RESOURCE_TYPE_HOTEL_ROOM -> "HOTEL_ROOM";
-                    case RESOURCE_TYPE_ATTRACTION -> "ATTRACTION";
-                    default -> "UNSPECIFIED";
+                    case RESOURCE_TYPE_HOTEL_ROOM -> "RESOURCE_TYPE_HOTEL_ROOM";
+                    case RESOURCE_TYPE_ATTRACTION -> "RESOURCE_TYPE_ATTRACTION";
+                    default -> "RESOURCE_TYPE_UNSPECIFIED";
                 };
 
-        Page<StandardProductUnit> page =
+        SpuPage page =
                 productService.listSpusByResource(
                         resourceType,
                         request.getResourceId(),
@@ -111,10 +123,10 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
                         request.getPageToken());
 
         ListSpusByResourceResponse.Builder responseBuilder =
-                ListSpusByResourceResponse.newBuilder().addAllSpus(page.getContent());
+                ListSpusByResourceResponse.newBuilder().addAllSpus(page.spus());
 
-        if (page.hasNext()) {
-            responseBuilder.setNextPageToken(String.valueOf(page.getNumber() + 1));
+        if (page.nextPageToken() != null && !page.nextPageToken().isEmpty()) {
+            responseBuilder.setNextPageToken(page.nextPageToken());
         }
 
         responseObserver.onNext(responseBuilder.build());
@@ -136,7 +148,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             fieldPaths = request.getFieldMask().getPathsList();
         }
 
-        StandardProductUnit updated = productService.updateSpu(request.getSpu(), fieldPaths);
+        Spu updated = productService.updateSpu(request.getSpu(), fieldPaths);
 
         responseObserver.onNext(UpdateSpuResponse.newBuilder().setSpu(updated).build());
         responseObserver.onCompleted();
@@ -150,8 +162,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             throw InvalidArgumentException.required("id");
         }
 
-        StockKeepingUnit sku =
-                productService.getSkuById(id).orElseThrow(() -> new NotFoundException("SKU", id));
+        Sku sku = productService.getSkuById(id).orElseThrow(() -> new NotFoundException("SKU", id));
 
         responseObserver.onNext(GetSkuByIdResponse.newBuilder().setSku(sku).build());
         responseObserver.onCompleted();
@@ -167,9 +178,19 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             return;
         }
 
-        List<StockKeepingUnit> skus = productService.batchGetSkus(ids);
+        List<Sku> skus = productService.batchGetSkus(ids);
 
-        responseObserver.onNext(BatchGetSkusResponse.newBuilder().addAllSkus(skus).build());
+        Map<String, Sku> skusById =
+                skus.stream().collect(Collectors.toMap(Sku::getId, Function.identity()));
+
+        List<String> missingIds = ids.stream().filter(id -> !skusById.containsKey(id)).toList();
+        if (!missingIds.isEmpty()) {
+            throw new NotFoundException("SKUs with IDs " + missingIds + " not found");
+        }
+
+        List<Sku> orderedSkus = ids.stream().map(skusById::get).toList();
+
+        responseObserver.onNext(BatchGetSkusResponse.newBuilder().addAllSkus(orderedSkus).build());
         responseObserver.onCompleted();
     }
 }

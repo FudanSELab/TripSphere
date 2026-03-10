@@ -1,12 +1,12 @@
 package org.tripsphere.inventory.service.impl;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -242,7 +242,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         long now = Instant.now().getEpochSecond();
         long expireAt = now + lockTimeoutSeconds;
-        String lockId = UUID.randomUUID().toString();
+        String lockId = UuidCreator.getTimeOrderedEpoch().toString();
 
         InventoryLockEntity lockEntity =
                 InventoryLockEntity.builder()

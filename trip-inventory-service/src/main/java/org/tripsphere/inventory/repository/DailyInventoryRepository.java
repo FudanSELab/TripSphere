@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.tripsphere.inventory.model.DailyInventoryEntity;
 
-public interface DailyInventoryRepository extends JpaRepository<DailyInventoryEntity, Long> {
+public interface DailyInventoryRepository extends JpaRepository<DailyInventoryEntity, String> {
 
     Optional<DailyInventoryEntity> findBySkuIdAndInvDate(String skuId, LocalDate invDate);
 

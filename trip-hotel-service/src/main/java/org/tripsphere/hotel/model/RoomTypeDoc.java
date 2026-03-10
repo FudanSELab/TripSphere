@@ -20,7 +20,7 @@ public class RoomTypeDoc {
     @Id private String id;
     private String hotelId;
     private String name;
-    private int areaSquareMeters;
+    private String areaDescription;
     private String bedDescription;
     private int maxOccupancy;
     private boolean hasWindow;

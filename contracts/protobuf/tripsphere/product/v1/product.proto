@@ -42,7 +42,7 @@ enum SpuStatus {
   SPU_STATUS_DELETED = 4;
 }
 
-message StandardProductUnit {
+message Spu {
   string id = 1;
   string name = 2;
   string description = 3;
@@ -51,7 +51,7 @@ message StandardProductUnit {
   // For example, hotel room type ID, attraction ID, etc.
   string resource_id = 5;
   repeated string images = 6;
-  repeated StockKeepingUnit skus = 7;
+  repeated Sku skus = 7;
   SpuStatus status = 8;
   google.protobuf.Struct attributes = 9;
 }
@@ -63,7 +63,7 @@ enum SkuStatus {
   SKU_STATUS_DELETED = 3;
 }
 
-message StockKeepingUnit {
+message Sku {
   string id = 1;
   string name = 2;
   string spu_id = 3;
@@ -80,7 +80,7 @@ message GetSpuByIdRequest {
 }
 
 message GetSpuByIdResponse {
-  StandardProductUnit spu = 1;
+  Spu spu = 1;
 }
 
 message BatchGetSpusRequest {
@@ -88,7 +88,7 @@ message BatchGetSpusRequest {
 }
 
 message BatchGetSpusResponse {
-  repeated StandardProductUnit spus = 1;
+  repeated Spu spus = 1;
 }
 
 message ListSpusByResourceRequest {
@@ -99,16 +99,16 @@ message ListSpusByResourceRequest {
 }
 
 message ListSpusByResourceResponse {
-  repeated StandardProductUnit spus = 1;
+  repeated Spu spus = 1;
   string next_page_token = 2;
 }
 
 message CreateSpuRequest {
-  StandardProductUnit spu = 1;
+  Spu spu = 1;
 }
 
 message CreateSpuResponse {
-  StandardProductUnit spu = 1;
+  Spu spu = 1;
 }
 
 message BatchCreateSpusRequest {
@@ -116,16 +116,16 @@ message BatchCreateSpusRequest {
 }
 
 message BatchCreateSpusResponse {
-  repeated StandardProductUnit spus = 1;
+  repeated Spu spus = 1;
 }
 
 message UpdateSpuRequest {
-  StandardProductUnit spu = 1;
+  Spu spu = 1;
   google.protobuf.FieldMask field_mask = 2;
 }
 
 message UpdateSpuResponse {
-  StandardProductUnit spu = 1;
+  Spu spu = 1;
 }
 
 message GetSkuByIdRequest {
@@ -133,7 +133,7 @@ message GetSkuByIdRequest {
 }
 
 message GetSkuByIdResponse {
-  StockKeepingUnit sku = 1;
+  Sku sku = 1;
 }
 
 message BatchGetSkusRequest {
@@ -141,5 +141,5 @@ message BatchGetSkusRequest {
 }
 
 message BatchGetSkusResponse {
-  repeated StockKeepingUnit skus = 1;
+  repeated Sku skus = 1;
 }
