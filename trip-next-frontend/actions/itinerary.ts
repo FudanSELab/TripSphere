@@ -1,5 +1,7 @@
 "use server";
 
+import { headers } from "next/headers";
+
 export type TravelInterest =
   | "culture"
   | "classic"
@@ -73,17 +75,42 @@ export interface PlanItineraryResult {
   conversation_messages: { role: string; content: string }[];
 }
 
+export interface SavedItinerarySummary {
+  id: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  day_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 const PLANNER_URL =
   process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
+
+// ── Auth helper ────────────────────────────────────────────────────────────
+
+async function getPlannerHeaders(extra?: Record<string, string>): Promise<HeadersInit> {
+  const reqHeaders = await headers();
+  const userId = reqHeaders.get("x-user-id") ?? "";
+  return {
+    "Content-Type": "application/json",
+    "x-user-id": userId,
+    ...extra,
+  };
+}
+
+// ── Planning ───────────────────────────────────────────────────────────────
 
 export async function createItineraryPlan(
   input: PlanItineraryInput,
 ): Promise<PlanItineraryResult> {
+  const h = await getPlannerHeaders();
+
   const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/plannings`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: h,
     body: JSON.stringify({
-      user_id: "anonymous",
       destination: input.destination,
       start_date: input.startDate,
       end_date: input.endDate,
@@ -99,4 +126,60 @@ export async function createItineraryPlan(
   }
 
   return res.json();
+}
+
+// ── Persistence CRUD ───────────────────────────────────────────────────────
+
+export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
+  const h = await getPlannerHeaders();
+  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries`, { headers: h });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`List itineraries failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+export async function getItinerary(id: string): Promise<PlanItineraryResult> {
+  const h = await getPlannerHeaders();
+  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/${id}`, {
+    headers: h,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Get itinerary failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+export async function updateSavedItinerary(
+  id: string,
+  itinerary: Itinerary,
+  markdownContent?: string,
+): Promise<void> {
+  const h = await getPlannerHeaders();
+  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/${id}`, {
+    method: "PUT",
+    headers: h,
+    body: JSON.stringify({
+      itinerary,
+      markdown_content: markdownContent ?? null,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Update itinerary failed (${res.status}): ${text}`);
+  }
+}
+
+export async function deleteItinerary(id: string): Promise<void> {
+  const h = await getPlannerHeaders();
+  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/${id}`, {
+    method: "DELETE",
+    headers: h,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Delete itinerary failed (${res.status}): ${text}`);
+  }
 }

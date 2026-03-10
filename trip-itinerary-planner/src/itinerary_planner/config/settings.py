@@ -30,6 +30,11 @@ class NacosSettings(BaseModel):
     group_name: str = Field(default="DEFAULT_GROUP")
 
 
+class MongoDBSettings(BaseModel):
+    uri: str = Field(default="mongodb://root:fudanse@localhost:27017")
+    database: str = Field(default="planner_db")
+
+
 class OpenAISettings(BaseModel):
     api_key: SecretStr = Field(default=SecretStr("api-key"))
     base_url: str = Field(default="https://api.openai.com/v1")
@@ -59,6 +64,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
+    mongodb: MongoDBSettings = Field(default_factory=MongoDBSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)
 
