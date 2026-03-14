@@ -187,12 +187,12 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  trip-journey-assistant:
+  trip-order-assistant:
     build:
-      context: trip-journey-assistant
+      context: trip-order-assistant
       dockerfile: Dockerfile
-    image: tripsphere/trip-journey-assistant:latest
-    container_name: trip-journey-assistant
+    image: tripsphere/trip-order-assistant:latest
+    container_name: trip-order-assistant
     logging: *default-logging
     ports:
       - "24211:24211" # HTTP

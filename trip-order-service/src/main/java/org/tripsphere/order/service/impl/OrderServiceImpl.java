@@ -31,6 +31,7 @@ import org.tripsphere.order.v1.CreateOrderItem;
 import org.tripsphere.order.v1.Order;
 import org.tripsphere.order.v1.OrderSource;
 import org.tripsphere.order.v1.OrderStatus;
+import org.tripsphere.order.v1.OrderType;
 
 @Slf4j
 @Service
@@ -44,7 +45,6 @@ public class OrderServiceImpl implements OrderService {
     private final StringRedisTemplate redisTemplate;
     private final OrderMapper orderMapper = OrderMapper.INSTANCE;
 
-    private static final String ORDER_SEQ_KEY_PREFIX = "order:seq:";
     private static final String ORDER_EXPIRE_KEY = "order:expire";
     private static final String ORDER_DEDUP_KEY_PREFIX = "order:dedup:";
     private static final Duration DEDUP_WINDOW = Duration.ofSeconds(10);
@@ -94,11 +94,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Page<Order> listUserOrders(
-            String userId, OrderStatus status, int pageSize, String pageToken) {
+            String userId, OrderStatus status, OrderType type, int pageSize, String pageToken) {
         log.debug(
-                "Listing orders: userId={}, status={}, pageSize={}, pageToken={}",
+                "Listing orders: userId={}, status={}, type={}, pageSize={}, pageToken={}",
                 userId,
                 status,
+                type,
                 pageSize,
                 pageToken);
 
@@ -113,16 +114,32 @@ public class OrderServiceImpl implements OrderService {
         if (pageSize <= 0) pageSize = 20;
         if (pageSize > 100) pageSize = 100;
 
+        String statusStr =
+                (status != null && status != OrderStatus.ORDER_STATUS_UNSPECIFIED)
+                        ? orderMapper.orderStatusToString(status)
+                        : null;
+        String typeStr =
+                (type != null && type != OrderType.ORDER_TYPE_UNSPECIFIED)
+                        ? orderMapper.orderTypeToString(type)
+                        : null;
+
+        PageRequest pageable = PageRequest.of(page, pageSize);
         Page<OrderEntity> entityPage;
-        if (status != null && status != OrderStatus.ORDER_STATUS_UNSPECIFIED) {
-            String statusStr = orderMapper.orderStatusToString(status);
+
+        if (statusStr != null && typeStr != null) {
+            entityPage =
+                    orderRepository.findByUserIdAndStatusAndTypeOrderByCreatedAtDesc(
+                            userId, statusStr, typeStr, pageable);
+        } else if (statusStr != null) {
             entityPage =
                     orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(
-                            userId, statusStr, PageRequest.of(page, pageSize));
-        } else {
+                            userId, statusStr, pageable);
+        } else if (typeStr != null) {
             entityPage =
-                    orderRepository.findByUserIdOrderByCreatedAtDesc(
-                            userId, PageRequest.of(page, pageSize));
+                    orderRepository.findByUserIdAndTypeOrderByCreatedAtDesc(
+                            userId, typeStr, pageable);
+        } else {
+            entityPage = orderRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
         }
 
         return entityPage.map(
@@ -271,22 +288,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Generate order number: TS + yyyyMMdd + 6-digit sequence. Falls back to nanos if Redis
-     * unavailable.
+     * Generate order number: TS + yyyyMMdd + 6-digit sequence. Uses PostgreSQL SEQUENCE for atomic,
+     * concurrency-safe generation.
      */
     private String generateOrderNo() {
         String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        try {
-            String seqKey = ORDER_SEQ_KEY_PREFIX + today;
-            Long seq = redisTemplate.opsForValue().increment(seqKey);
-            if (seq != null && seq == 1) {
-                redisTemplate.expire(seqKey, Duration.ofDays(2));
-            }
-            return String.format("TS%s%06d", today, seq != null ? seq : 1);
-        } catch (Exception e) {
-            log.warn("Redis order sequence failed, using fallback: {}", e.getMessage());
-            int fallback = Math.abs((int) (System.nanoTime() % 1_000_000));
-            return String.format("TS%s%06d", today, fallback);
-        }
+        long seq = orderRepository.getNextOrderSequence();
+        return String.format("TS%s%06d", today, seq);
     }
 }

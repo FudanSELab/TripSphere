@@ -2,10 +2,13 @@ package org.tripsphere.order.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Data
 @Builder
@@ -35,6 +38,25 @@ public class OrderItemEntity {
 
     @Column(length = 256)
     private String skuName;
+
+    // "HOTEL_ROOM" or "ATTRACTION" — derived from the SPU resource_type at order creation.
+    @Column(length = 16)
+    private String resourceType;
+
+    // Hotel ID or attraction ID — the top-level resource this item belongs to.
+    @Column(length = 64)
+    private String resourceId;
+
+    @Column(length = 512)
+    private String spuImage;
+
+    @Column(length = 1024)
+    private String spuDescription;
+
+    // JSON snapshot of SKU attributes (e.g. {"passenger_type": "adult"}).
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> skuAttributes;
 
     @Column(nullable = false)
     private LocalDate itemDate;

@@ -77,11 +77,14 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
                 request.getStatus() != OrderStatus.ORDER_STATUS_UNSPECIFIED
                         ? request.getStatus()
                         : null;
+        OrderType typeFilter =
+                request.getType() != OrderType.ORDER_TYPE_UNSPECIFIED ? request.getType() : null;
 
         Page<Order> page =
                 orderService.listUserOrders(
                         request.getUserId(),
                         statusFilter,
+                        typeFilter,
                         request.getPageSize(),
                         request.getPageToken());
 

@@ -15,9 +15,9 @@ const serviceAdapter = new ExperimentalEmptyAdapter();
 const runtime = new CopilotRuntime({
   agents: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: new HttpAgent({ url: `${chatUrl}/` }) as any,
+    default: new HttpAgent({ url: "http://localhost:24210/" }) as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    itinerary_planner: new HttpAgent({ url: `${plannerUrl}/copilotkit` }) as any,
+    order_assistant: new HttpAgent({ url: "http://localhost:24211/" }) as any,
   },
 });
 

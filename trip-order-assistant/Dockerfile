@@ -52,7 +52,7 @@ COPY --from=builder --chown=nonroot:nonroot /app /app
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Set the OpenTelemetry environment variables
-ENV OTEL_SERVICE_NAME="trip-journey-assistant" \
+ENV OTEL_SERVICE_NAME="trip-order-assistant" \
     OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317" \
     OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
     OTEL_PYTHON_LOG_LEVEL="info" \
@@ -70,7 +70,7 @@ ENV UVICORN_PORT=24211
 EXPOSE $UVICORN_PORT
 
 # Run the agent server with uvicorn
-ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "journey_assistant.asgi:app"]
+ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "order_assistant.asgi:app"]
 # Do NOT directly provide uvicorn `--port` option here.
 # It must be overridden via environment variable.
 # Otherwise, app may register incorrect port in service registry.

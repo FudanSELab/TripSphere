@@ -41,7 +41,7 @@ wheels = [
 
 [[package]]
 name = "ag-ui-adk"
-version = "0.4.2"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-protocol" },
@@ -52,9 +52,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/c3/cdf3170477b9955d525052432842db49092fedce306e07ad707abe421414/ag_ui_adk-0.4.2.tar.gz", hash = "sha256:e6048bade7301a985cf790be86d6edb2e3be206d05aff6c0170aec03b8e28e02", size = 45743, upload-time = "2026-01-22T17:45:56.446Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/90/2b924f5e32dde282f8ec93fedaeffea9d1528d8f1b5d41ad405b6c1e8a54/ag_ui_adk-0.5.1.tar.gz", hash = "sha256:53cc59583f5610cee908d00219f0a09241a0b9c6a004dcbc22afe4dcd1317ce2", size = 58496, upload-time = "2026-03-05T16:46:08.955Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/39/da8b5c0f875ccb1770349caaecd87a253949ccbcdc2c869929919d744551/ag_ui_adk-0.4.2-py3-none-any.whl", hash = "sha256:47017d18a128c786beb1d8b2bb3a8dc64e8a295f10e3288710b90bd5ce59dde7", size = 51478, upload-time = "2026-01-22T17:45:55.576Z" },
+    { url = "https://files.pythonhosted.org/packages/86/0f/26434145864a523f3ad5e810b2790175da5cae5fc012ff4c285706134676/ag_ui_adk-0.5.1-py3-none-any.whl", hash = "sha256:e3343fa32e5d03da36010e75775f73491828e95d06cc18fc9dce0922f3154fed", size = 65239, upload-time = "2026-03-05T16:46:07.645Z" },
 ]
 
 [[package]]
@@ -568,6 +568,7 @@ dependencies = [
     { name = "google-adk", extra = ["a2a", "otel-gcp"] },
     { name = "grpcio" },
     { name = "litellm" },
+    { name = "mcp-weather-server" },
     { name = "mem0ai" },
     { name = "nacos-sdk-python" },
     { name = "openinference-instrumentation-google-adk" },
@@ -591,11 +592,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ag-ui-adk", specifier = ">=0.4.2" },
+    { name = "ag-ui-adk", specifier = ">=0.5.1" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.123.10" },
     { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.20.0" },
     { name = "grpcio", specifier = ">=1.75.1" },
     { name = "litellm", specifier = ">=1.80.5" },
+    { name = "mcp-weather-server", specifier = ">=0.6.1" },
     { name = "mem0ai", specifier = ">=0.1.115" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },
@@ -2320,6 +2322,30 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d5/2d/649d80a0ecf6a1f82632ca44bec21c0461a9d9fc8934d38cb5b319f2db5e/mcp-1.25.0.tar.gz", hash = "sha256:56310361ebf0364e2d438e5b45f7668cbb124e158bb358333cd06e49e83a6802", size = 605387, upload-time = "2025-12-19T10:19:56.985Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/fc/6dc7659c2ae5ddf280477011f4213a74f806862856b796ef08f028e664bf/mcp-1.25.0-py3-none-any.whl", hash = "sha256:b37c38144a666add0862614cc79ec276e97d72aa8ca26d622818d4e278b9721a", size = 233076, upload-time = "2025-12-19T10:19:55.416Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "python-dotenv" },
+    { name = "typer" },
+]
+
+[[package]]
+name = "mcp-weather-server"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "python-dateutil" },
+    { name = "python-dotenv" },
+    { name = "starlette" },
+    { name = "tzdata" },
+    { name = "uvicorn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/df/c6/1ef4ec4582bf4b906fa3e60036d3ebc7f0a0684e8c8bedf1a0665f876f76/mcp_weather_server-0.6.1.tar.gz", hash = "sha256:ad85f11949c038e52c08dcea3d84c0410042d22fe47c63c87695a6fedc4d798c", size = 55592, upload-time = "2025-12-13T13:21:29.089Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/46/a9dc4b4a60be43d0adaa086a191380e4965846635984c8f214c567c06148/mcp_weather_server-0.6.1-py3-none-any.whl", hash = "sha256:049948f33f79c172dcaa64a845ef91ec7b64a7141919f122e9c1ecbaf8c6c6f9", size = 33651, upload-time = "2025-12-13T13:21:27.851Z" },
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { CopilotProvider } from "@/components/copilot-provider";
+import { CopilotKit } from "@copilotkit/react-core";
 
 export default function MainLayout({
   children,
@@ -22,7 +22,9 @@ export default function MainLayout({
       <SidebarInset>
         <SiteHeader />
         <main className="mx-auto w-full max-w-screen-2xl px-[10rem] py-6">
-          <CopilotProvider>{children}</CopilotProvider>
+          <CopilotKit runtimeUrl="/api/v1/copilotkit">
+            {children}
+          </CopilotKit>
         </main>
       </SidebarInset>
     </SidebarProvider>

@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", module="google.adk")
 logger = logging.getLogger(__name__)
 
 # Default remote agent names to discover via Nacos
-_DEFAULT_REMOTE_AGENTS = ("journey_assistant", "review_summary")
+_DEFAULT_REMOTE_AGENTS = ("order_assistant", "review_summary")
 
 
 def _ensure_openai_env() -> None:
@@ -56,7 +56,7 @@ class AgentFacadeFactory:
         httpx_client: AsyncClient,
         nacos_ai: NacosAI,
         *,
-        model: str = "openai/gpt-4o-mini",
+        model: str = "openai/gpt-4o",
         remote_agent_names: list[str] | None = None,
     ) -> None:
         self._httpx_client = httpx_client
@@ -75,6 +75,15 @@ class AgentFacadeFactory:
         """
         _ensure_openai_env()
         sub_agents = await self._discover_remote_agents()
+        # NOTE: McpToolset with StdioConnectionParams cannot be used with AG-UI ADK
+        # because it contains TextIOWrapper instances that cannot be deep copied.
+        # weather_toolset = McpToolset(
+        #     connection_params=StdioConnectionParams(
+        #         server_params=StdioServerParameters(
+        #             command="python", args=["-m", "mcp_weather_server"]
+        #         )
+        #     )
+        # )
         return LlmAgent(
             name="agent_facade",
             model=LiteLlm(model=self._model),

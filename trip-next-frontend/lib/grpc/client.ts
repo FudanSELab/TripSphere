@@ -6,13 +6,16 @@ import { HotelServiceClient } from "./generated/tripsphere/hotel/v1/hotel";
 import { AttractionServiceClient } from "./generated/tripsphere/attraction/v1/attraction";
 import { ItineraryServiceClient } from "./generated/tripsphere/itinerary/v1/itinerary";
 import { PoiServiceClient } from "./generated/tripsphere/poi/v1/poi";
+import { ProductServiceClient } from "./generated/tripsphere/product/v1/product";
 
 // Static service addresses
 const SERVICE_ADDRESSES = {
   "trip-attraction-service": "localhost:50053",
   "trip-hotel-service": "localhost:50054",
+  "trip-inventory-service": "localhost:50061",
   "trip-itinerary-service": "localhost:50052",
   "trip-poi-service": "localhost:50058",
+  "trip-product-service": "localhost:50060",
   "trip-user-service": "localhost:50056",
 };
 
@@ -65,6 +68,13 @@ export function getItineraryService() {
 
 export function getPoiService() {
   return getGrpcClient(PoiServiceClient, SERVICE_ADDRESSES["trip-poi-service"]);
+}
+
+export function getProductService() {
+  return getGrpcClient(
+    ProductServiceClient,
+    SERVICE_ADDRESSES["trip-product-service"],
+  );
 }
 
 export async function getAuthMetadata(): Promise<Metadata> {

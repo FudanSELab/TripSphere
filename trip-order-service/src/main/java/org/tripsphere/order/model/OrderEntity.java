@@ -65,6 +65,14 @@ public class OrderEntity {
     @Column(length = 64)
     private String sourceSession;
 
+    @Column(nullable = false, length = 16, columnDefinition = "VARCHAR(16) DEFAULT 'UNSPECIFIED'")
+    @Builder.Default
+    private String type = "UNSPECIFIED";
+
+    // Hotel ID for HOTEL orders; attraction ID for ATTRACTION orders.
+    @Column(length = 64)
+    private String resourceId;
+
     @Column(length = 256)
     private String cancelReason;
 

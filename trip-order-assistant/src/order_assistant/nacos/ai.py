@@ -9,7 +9,7 @@ from v2.nacos.ai.nacos_ai_service import (  # type: ignore
     ReleaseAgentCardParam,
 )
 
-from journey_assistant.nacos.utils import get_local_ip
+from order_assistant.nacos.utils import get_local_ip
 
 
 class NacosAI:

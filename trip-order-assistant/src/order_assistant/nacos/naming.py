@@ -10,7 +10,8 @@ from v2.nacos import (  # type: ignore
     RegisterInstanceParam,
 )  # pyright: ignore[reportMissingTypeStubs]
 
-from journey_assistant.nacos.utils import get_local_ip
+from order_assistant.config.settings import get_settings
+from order_assistant.nacos.utils import get_local_ip
 
 
 class NacosNaming:
@@ -79,3 +80,19 @@ class NacosNaming:
             raise RuntimeError("No healthy service instance found")
         # Randomly select one instance
         return random.choice(instances)
+
+
+_nacos_naming: NacosNaming | None = None
+
+
+async def get_nacos_naming() -> NacosNaming:
+    global _nacos_naming
+    if _nacos_naming is None:
+        settings = get_settings()
+        _nacos_naming = await NacosNaming.create_naming(
+            service_name=settings.app.name,
+            port=settings.uvicorn.port,
+            server_address=settings.nacos.server_address,
+            namespace_id=settings.nacos.namespace_id,
+        )
+    return _nacos_naming

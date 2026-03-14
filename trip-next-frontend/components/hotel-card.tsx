@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ImagePlaceholder } from "@/components/image-placeholder";
 
 export interface HotelCardData {
   id: string;
@@ -18,14 +20,7 @@ function StarIcons({ count }: { count: number }) {
   return (
     <span className="inline-flex gap-0.5">
       {Array.from({ length: count }).map((_, i) => (
-        <svg
-          key={i}
-          className="size-3 fill-amber-500"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M12 2L9 9H2l6 5-2.5 8L12 17l6.5 5L16 14l6-5h-7z" />
-        </svg>
+        <Star key={i} className="size-3 fill-amber-500 text-amber-500" />
       ))}
     </span>
   );
@@ -49,28 +44,7 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
             sizes="(max-width: 768px) 100vw, 25vw"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-300">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="size-12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1}
-                d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1}
-                d="M9 22V12h6v10"
-              />
-            </svg>
-          </div>
+          <ImagePlaceholder className="h-full w-full" />
         )}
         {/* Rating overlay */}
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5">

@@ -166,6 +166,7 @@ def build_spu_doc(
     resource_id: str,
     skus: list[dict[str, Any]],
     ts: str,
+    attributes: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Construct a single SpuDoc document."""
     return {
@@ -176,7 +177,7 @@ def build_spu_doc(
         "resourceId": resource_id,
         "images": [],
         "status": SPU_STATUS_ON_SHELF,
-        "attributes": None,
+        "attributes": attributes,
         "skus": skus,
         "createdAt": ts,
         "updatedAt": ts,
@@ -259,6 +260,7 @@ def generate_hotel_spus(
             resource_id=room_type_id,
             skus=[sku],
             ts=ts,
+            attributes={"hotel_id": hotel_id},
         )
         spus.append(spu)
         summary.append(

@@ -12,7 +12,7 @@ from openinference.instrumentation.google_adk import GoogleADKInstrumentor
 from openinference.instrumentation.litellm import LiteLLMInstrumentor
 from pymongo import AsyncMongoClient
 
-from chat.agent.facade import AgentFacadeFactory
+from chat.agent import app as adk_app
 from chat.agent.memory import Mem0MemoryService
 from chat.agent.session import MongoSessionService
 from chat.config.logging import setup_logging
@@ -53,16 +53,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             server_address=settings.nacos.server_address
         )
 
-        # Add the ADK endpoint
-        agent_facade_factory = AgentFacadeFactory(
-            httpx_client=app.state.httpx_client, nacos_ai=app.state.nacos_ai
-        )
-        agent_facade = await agent_facade_factory.create_facade()
         memory_service = Mem0MemoryService(app.state.memory_engine)
         session_service = MongoSessionService(app.state.mongo_client)
-        root_agent = ADKAgent(
-            adk_agent=agent_facade,
-            app_name=settings.app.name,
+        root_agent = ADKAgent.from_app(
+            app=adk_app,
             user_id_extractor=lambda input: input.state.get("headers", {}).get(
                 "user_id", "anonymous"
             ),

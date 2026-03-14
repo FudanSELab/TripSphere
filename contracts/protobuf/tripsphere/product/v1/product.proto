@@ -53,6 +53,7 @@ message Spu {
   repeated string images = 6;
   repeated Sku skus = 7;
   SpuStatus status = 8;
+  // For example, {"hotel_id": "019cc379-11a6-75a2-9311-802eaab55887"}
   google.protobuf.Struct attributes = 9;
 }
 

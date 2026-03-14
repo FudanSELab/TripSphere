@@ -1,0 +1,42 @@
+{
+    "capabilities": {},
+    "defaultInputModes": [
+        "text/plain"
+    ],
+    "defaultOutputModes": [
+        "application/json"
+    ],
+    "description": "An order assistant that handles order creation, retrieval, and cancellation requests.",
+    "name": "order_assistant",
+    "skills": [
+        {
+            "id": "create_order",
+            "name": "Create Order",
+            "description": "Create a new order",
+            "tags": [
+                "order",
+                "create"
+            ]
+        },
+        {
+            "id": "get_order",
+            "name": "Get Order",
+            "description": "Get the details of an order",
+            "tags": [
+                "order",
+                "get"
+            ]
+        },
+        {
+            "id": "cancel_order",
+            "name": "Cancel Order",
+            "description": "Cancel an order",
+            "tags": [
+                "order",
+                "cancel"
+            ]
+        }
+    ],
+    "url": "http://localhost:8000/a2a/order_assistant",
+    "version": "1.0.0"
+}

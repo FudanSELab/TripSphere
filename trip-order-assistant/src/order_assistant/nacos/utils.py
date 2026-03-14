@@ -2,8 +2,8 @@ import socket
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from journey_assistant.nacos.ai import NacosAI
-    from journey_assistant.nacos.naming import NacosNaming
+    from order_assistant.nacos.ai import NacosAI
+    from order_assistant.nacos.naming import NacosNaming
 
 
 def get_local_ip() -> str:

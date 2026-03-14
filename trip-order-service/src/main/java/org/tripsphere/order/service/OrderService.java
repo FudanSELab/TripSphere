@@ -7,6 +7,7 @@ import org.tripsphere.order.v1.CreateOrderItem;
 import org.tripsphere.order.v1.Order;
 import org.tripsphere.order.v1.OrderSource;
 import org.tripsphere.order.v1.OrderStatus;
+import org.tripsphere.order.v1.OrderType;
 
 public interface OrderService {
 
@@ -18,7 +19,8 @@ public interface OrderService {
 
     Optional<Order> getOrder(String orderId);
 
-    Page<Order> listUserOrders(String userId, OrderStatus status, int pageSize, String pageToken);
+    Page<Order> listUserOrders(
+            String userId, OrderStatus status, OrderType type, int pageSize, String pageToken);
 
     Order cancelOrder(String orderId, String reason);
 
