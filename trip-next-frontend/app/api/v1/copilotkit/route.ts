@@ -18,6 +18,8 @@ const runtime = new CopilotRuntime({
     default: new HttpAgent({ url: "http://localhost:24210/" }) as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     order_assistant: new HttpAgent({ url: "http://localhost:24211/" }) as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    itinerary_planner: new HttpAgent({ url: `${plannerUrl}/copilotkit` }) as any,
   },
 });
 

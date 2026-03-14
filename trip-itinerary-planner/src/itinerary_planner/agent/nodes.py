@@ -5,6 +5,7 @@ from typing import Any
 
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
+import random
 
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
@@ -44,8 +45,9 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     # Step 1: Geocode destination
     try:
-        geocode_result: GeocodeResult = await geocoding_tool.ainvoke(  # pyright: ignore
-            {"address": state["destination"], "city": state["destination"]}
+        geocode_result: GeocodeResult = await geocoding_tool(
+            address=state["destination"],
+            city=state["destination"],
         )
         destination_coords = {
             "longitude": geocode_result.longitude,
@@ -63,16 +65,15 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     # Step 2: Search for attractions
     try:
-        search_result = await search_attractions_nearby.ainvoke(  # pyright: ignore
-            {
-                "nacos_naming": state["nacos_naming"],
-                "center_longitude": destination_coords["longitude"],
-                "center_latitude": destination_coords["latitude"],
-                "radius_km": 25.0,
-                "limit": 35,
-            }
+        search_result = await search_attractions_nearby(
+            nacos_naming=state["nacos_naming"],
+            center_longitude=destination_coords["longitude"],
+            center_latitude=destination_coords["latitude"],
+            radius_km=25.0,
+            limit=35,
         )
-        attractions: list[AttractionDetail] = search_result.attractions
+        # shuffle the attractions and sample 10
+        attractions: list[AttractionDetail] = random.sample(search_result.attractions, 10)
         logger.info(f"Found {len(attractions)} attractions via gRPC service")
     except Exception as e:
         logger.error(f"Attraction search failed: {e}")
@@ -104,7 +105,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             [
                 f"- {attraction.name}: {attraction.description} "
                 f"(Tags: {', '.join(attraction.tags)})"
-                for attraction in attractions[:35]  # Limit for token efficiency
+                for attraction in attractions[:10]
             ]
         )
     else:
@@ -325,10 +326,10 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         summary=summary,
     )
 
-    # Create final progress event
+    # Create progress event — 85% because markdown + conversation context follow
     progress_event = PlanningProgressEvent(
-        progress_percentage=100,
-        status_message=f"Your {num_days}-day trip to {state['destination']} is ready!",
+        progress_percentage=85,
+        status_message=f"Itinerary structure ready for {state['destination']}…",
         current_step=PlanningStep.FINALIZING,
         itinerary=itinerary,
     )
@@ -365,7 +366,7 @@ async def generate_markdown(state: PlanningState) -> dict[str, Any]:
         markdown_content = _build_fallback_markdown(itinerary)
 
     progress_event = PlanningProgressEvent(
-        progress_percentage=90,
+        progress_percentage=95,
         status_message="生成行程文案中……",
         current_step=PlanningStep.OPTIMIZING_ROUTE,
         itinerary=None,
@@ -389,35 +390,3 @@ def _build_fallback_markdown(itinerary: Itinerary) -> str:
             )
         lines.append("")
     return "\n".join(lines)
-
-
-async def generate_conversation_context(state: PlanningState) -> dict[str, Any]:
-    """Step 4: Build initial conversation messages for the Deep Agent handoff."""
-    logger.info("Generating conversation context for Deep Agent")
-
-    itinerary = state.get("itinerary")
-    markdown = state.get("markdown_content", "")
-
-    system_msg = (
-        "你是 TripSphere 的 AI 行程规划助手。"
-        "用户已经生成了一份初始行程，你的任务是帮助用户修改和优化这份行程。\n\n"
-        "当前行程内容如下：\n\n" + markdown
-    )
-
-    ai_msg = (
-        f"我已经为您规划了一份{itinerary.destination}的旅行行程"
-        if itinerary
-        else "行程已生成"
-    ) + "，您可以告诉我任何想要调整的地方，例如：\n" + (
-        "- 「第二天太赶了，删掉一个景点」\n"
-        "- 「把第三天改成轻松一点」\n"
-        "- 「加入一个当地特色美食」\n"
-        "- 「帮我重新规划第一天」"
-    )
-
-    conversation_messages: list[dict[str, str]] = [
-        {"role": "system", "content": system_msg},
-        {"role": "assistant", "content": ai_msg},
-    ]
-
-    return {"conversation_messages": conversation_messages, "events": []}

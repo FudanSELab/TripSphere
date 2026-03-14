@@ -37,13 +37,11 @@ def create_planning_workflow() -> CompiledStateGraph[
     workflow.add_node("research_and_plan", research_and_plan)  # pyright: ignore
     workflow.add_node("finalize_itinerary", finalize_itinerary)  # pyright: ignore
     workflow.add_node("generate_markdown", generate_markdown)  # pyright: ignore
-    workflow.add_node("generate_conversation_context", generate_conversation_context)  # pyright: ignore
 
     workflow.add_edge(START, "research_and_plan")
     workflow.add_edge("research_and_plan", "finalize_itinerary")
     workflow.add_edge("finalize_itinerary", "generate_markdown")
-    workflow.add_edge("generate_markdown", "generate_conversation_context")
-    workflow.add_edge("generate_conversation_context", END)
+    workflow.add_edge("generate_markdown", END)
 
     graph = workflow.compile()  # pyright: ignore
 

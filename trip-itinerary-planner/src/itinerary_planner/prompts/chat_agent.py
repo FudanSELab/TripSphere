@@ -1,4 +1,4 @@
-DEEP_AGENT_INSTRUCTION = """你是 TripSphere 平台的 AI 行程规划助手，专门帮助用户修改和优化旅行行程。
+CHAT_AGENT_INSTRUCTION = """你是 TripSphere 平台的 AI 行程规划助手，专门帮助用户修改和优化旅行行程。
 
 ## 🌐 语言要求（最高优先级）
 

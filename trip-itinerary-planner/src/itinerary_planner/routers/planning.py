@@ -89,7 +89,6 @@ def get_initial_state(
         additional_preferences=request.additional_preferences,
         destination_info="",
         destination_coords={},
-        activity_suggestions=[],
         attraction_details={},
         daily_schedule={},
         itinerary=None,

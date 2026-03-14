@@ -1,7 +1,6 @@
 from operator import add
 from typing import Annotated, Any, TypedDict
 
-from itinerary_planner.models.activity import ActivitySuggestion
 from itinerary_planner.models.itinerary import Itinerary, TravelInterest, TripPace
 from itinerary_planner.models.planning import PlanningProgressEvent
 from itinerary_planner.nacos.naming import NacosNaming
@@ -23,7 +22,6 @@ class PlanningState(TypedDict):
     # Working data accumulated through workflow
     destination_info: str  # Research results from LLM
     destination_coords: dict[str, Any]  # {latitude, longitude, address}
-    activity_suggestions: list[ActivitySuggestion]  # Generated activities
     attraction_details: dict[str, dict[str, Any]]
     daily_schedule: dict[int, list[dict[str, Any]]]  # Day number -> activities
 
