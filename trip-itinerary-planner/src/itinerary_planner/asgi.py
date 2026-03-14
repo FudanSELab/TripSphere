@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await app.state.nacos_naming.register(ephemeral=True)
 
         # CopilotKit AG-UI endpoint — served by ag_ui_langgraph
-        chat_graph = create_chat_graph()
+        chat_graph = create_chat_graph(nacos_naming=app.state.nacos_naming)
         chat_agent = LangGraphAgent(
             name="itinerary_planner",
             graph=chat_graph,

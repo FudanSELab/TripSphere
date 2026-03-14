@@ -5,7 +5,6 @@ from langgraph.graph.state import CompiledStateGraph  # pyright: ignore
 
 from itinerary_planner.agent.nodes import (
     finalize_itinerary,
-    generate_conversation_context,
     generate_markdown,
     research_and_plan,
 )
@@ -19,14 +18,10 @@ def create_planning_workflow() -> CompiledStateGraph[
 ]:
     """Create and compile the itinerary planning workflow.
 
-    This workflow follows a 4-step linear process:
-    1. Research and Plan (70%) - Research destination, find attractions, create schedule
-    2. Finalize Itinerary (85%) - Convert to proper data structures with coordinates
-    3. Generate Markdown (90%) - Produce natural-language Markdown itinerary
-    4. Generate Conversation Context (100%) - Build messages for Deep Agent handoff
-
-    Returns:
-        Compiled StateGraph ready for execution
+    3-step linear process:
+    1. Research and Plan (70%) — Research destination, find attractions, create schedule
+    2. Finalize Itinerary (85%) — Convert to proper data structures with coordinates
+    3. Generate Markdown (100%) — Produce natural-language Markdown itinerary
     """
     logger.info("Creating planning workflow")
 
