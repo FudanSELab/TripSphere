@@ -13,6 +13,12 @@ public interface ItineraryService {
 
     PageResult<Itinerary> listUserItineraries(String userId, int pageSize, String pageToken);
 
+    void deleteItinerary(String id);
+
+    Itinerary updateItinerary(Itinerary itinerary);
+
+    Itinerary replaceItinerary(String id, Itinerary itinerary);
+
     DayPlan addDayPlan(String itineraryId, DayPlan dayPlan);
 
     void deleteDayPlan(String itineraryId, String dayPlanId);

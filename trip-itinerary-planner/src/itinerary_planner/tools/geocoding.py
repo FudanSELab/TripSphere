@@ -1,6 +1,9 @@
+"""Geocoding tool — shared by workflow and chat agent (single @tool)."""
+
 import logging
 
 from httpx import AsyncClient
+from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -15,15 +18,10 @@ class GeocodeResult(BaseModel):
     address: str = Field(description="Full address or description")
 
 
+@tool  # type: ignore[misc]
 async def geocoding_tool(address: str, city: str = "") -> GeocodeResult:
     """Convert a location name to geographic coordinates (latitude, longitude).
-
-    Arguments:
-        address: Name or address of the location to geocode
-        city: Optional city context (e.g., "Shanghai", "Beijing")
-
-    Returns:
-        GeocodeResult with coordinates and address information
+    Use when the user asks for coordinates or address of a place.
     """
     logger.info("Geocoding: %s (city: %s)", address, city)
 

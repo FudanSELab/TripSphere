@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timezone
-from typing import Annotated, AsyncGenerator, Any
+from typing import Annotated, AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -10,7 +9,7 @@ from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.agent.workflow import create_planning_workflow
 from itinerary_planner.common.deps import (
     CurrentUserId,
-    ItineraryRepoDep,
+    ItineraryServiceClientDep,
     provide_nacos_naming,
 )
 from itinerary_planner.models.itinerary import Itinerary, TravelInterest, TripPace
@@ -20,11 +19,11 @@ from itinerary_planner.utils.sse import encode
 
 logger = logging.getLogger(__name__)
 
-
 _workflow = create_planning_workflow()
 
 
 # ── Request / Response models ──────────────────────────────────────────────
+
 
 class PlanItineraryRequest(BaseModel):
     destination: str = Field(description="Destination name")
@@ -46,25 +45,6 @@ class PlanItineraryResponse(BaseModel):
     markdown_content: str = Field(description="Natural-language Markdown itinerary")
     conversation_messages: list[dict[str, str]] = Field(
         description="Initial conversation messages for Deep Agent handoff"
-    )
-
-
-class ItinerarySummaryItem(BaseModel):
-    """Lightweight representation returned by list endpoint."""
-
-    id: str
-    destination: str
-    start_date: str
-    end_date: str
-    day_count: int
-    created_at: datetime
-    updated_at: datetime
-
-
-class UpdateItineraryRequest(BaseModel):
-    itinerary: dict[str, Any] = Field(description="Updated full itinerary JSON")
-    markdown_content: str | None = Field(
-        default=None, description="Updated markdown content (optional)"
     )
 
 
@@ -101,12 +81,13 @@ def get_initial_state(
 
 # ── Planning endpoints ─────────────────────────────────────────────────────
 
+
 @planning.post("/itineraries/plannings", status_code=201)
 async def plan_itinerary(
     request: PlanItineraryRequest,
     nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
     user_id: CurrentUserId,
-    repo: ItineraryRepoDep,
+    svc: ItineraryServiceClientDep,
 ) -> PlanItineraryResponse:
     logger.info("Planning itinerary for %s (user=%s)", request.destination, user_id)
 
@@ -127,20 +108,18 @@ async def plan_itinerary(
             "conversation_messages", []
         )
 
-        # Persist to MongoDB
+        # Persist to itinerary service via gRPC
         try:
-            await repo.save(
-                itinerary_id=itinerary.id,
+            saved = await svc.create_itinerary(
+                itinerary=itinerary,
                 user_id=user_id,
-                destination=itinerary.destination,
-                start_date=itinerary.start_date,
-                end_date=itinerary.end_date,
-                itinerary=itinerary.model_dump(),
                 markdown_content=markdown_content,
             )
+            # Use the server-assigned ID for subsequent operations
+            itinerary = itinerary.model_copy(update={"id": saved.id})
         except Exception as exc:
             # Non-fatal: the itinerary is still returned even if save fails
-            logger.error("Failed to persist itinerary %s: %s", itinerary.id, exc)
+            logger.error("Failed to persist itinerary via gRPC: %s", exc)
 
         return PlanItineraryResponse(
             itinerary=itinerary,
@@ -150,7 +129,7 @@ async def plan_itinerary(
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(f"Error planning itinerary: {e}")
+        logger.exception("Error planning itinerary: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -165,7 +144,7 @@ async def _stream_events(initial_state: PlanningState) -> AsyncGenerator[str, No
         yield encode(event="completed", data="")
 
     except Exception as e:
-        logger.exception(f"Error in planning stream: {e}")
+        logger.exception("Error in planning stream: %s", e)
         yield encode(event="failed", data=f"Error in planning stream: {e}")
 
 
@@ -175,6 +154,8 @@ async def plan_itinerary_stream(
     nacos_naming: Annotated[NacosNaming, Depends(provide_nacos_naming)],
     user_id: CurrentUserId,
 ) -> StreamingResponse:
+    """Streaming SSE planning endpoint — does not persist; client fetches the
+    full result from the non-streaming endpoint or gRPC directly."""
     logger.info("Streaming itinerary planning for %s", request.destination)
 
     initial_state = get_initial_state(request, nacos_naming, user_id)
@@ -182,90 +163,3 @@ async def plan_itinerary_stream(
     return StreamingResponse(
         _stream_events(initial_state), media_type="text/event-stream"
     )
-
-
-# ── CRUD endpoints ─────────────────────────────────────────────────────────
-
-@planning.get("/itineraries")
-async def list_itineraries(
-    user_id: CurrentUserId,
-    repo: ItineraryRepoDep,
-) -> list[ItinerarySummaryItem]:
-    """Return a summary list of the authenticated user's saved itineraries."""
-    docs = await repo.list_by_user(user_id=user_id)
-    items: list[ItinerarySummaryItem] = []
-    for doc in docs:
-        # day_count is computed via aggregation projection
-        day_count = doc.get("day_count", 0)
-        items.append(
-            ItinerarySummaryItem(
-                id=str(doc["_id"]),
-                destination=doc.get("destination", ""),
-                start_date=doc.get("start_date", ""),
-                end_date=doc.get("end_date", ""),
-                day_count=day_count,
-                created_at=doc.get("created_at", datetime.now(timezone.utc)),
-                updated_at=doc.get("updated_at", datetime.now(timezone.utc)),
-            )
-        )
-    return items
-
-
-@planning.get("/itineraries/{itinerary_id}")
-async def get_itinerary(
-    itinerary_id: str,
-    user_id: CurrentUserId,
-    repo: ItineraryRepoDep,
-) -> PlanItineraryResponse:
-    """Fetch a single saved itinerary owned by the authenticated user."""
-    doc = await repo.get(itinerary_id=itinerary_id, user_id=user_id)
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Itinerary not found")
-
-    try:
-        itinerary = Itinerary.model_validate(doc["itinerary"])
-    except Exception as exc:
-        logger.error("Failed to parse stored itinerary %s: %s", itinerary_id, exc)
-        raise HTTPException(status_code=500, detail="Corrupted itinerary data") from exc
-
-    return PlanItineraryResponse(
-        itinerary=itinerary,
-        markdown_content=doc.get("markdown_content", ""),
-        conversation_messages=[],
-    )
-
-
-@planning.put("/itineraries/{itinerary_id}", status_code=200)
-async def update_itinerary(
-    itinerary_id: str,
-    body: UpdateItineraryRequest,
-    user_id: CurrentUserId,
-    repo: ItineraryRepoDep,
-) -> dict[str, str]:
-    """Replace the itinerary data for a user-owned document.
-
-    Called automatically by the frontend's debounced sync whenever the AI
-    agent modifies the in-memory itinerary.
-    """
-    found = await repo.update(
-        itinerary_id=itinerary_id,
-        user_id=user_id,
-        itinerary=body.itinerary,
-        markdown_content=body.markdown_content,
-    )
-    if not found:
-        raise HTTPException(status_code=404, detail="Itinerary not found")
-    return {"status": "updated"}
-
-
-@planning.delete("/itineraries/{itinerary_id}", status_code=200)
-async def delete_itinerary(
-    itinerary_id: str,
-    user_id: CurrentUserId,
-    repo: ItineraryRepoDep,
-) -> dict[str, str]:
-    """Delete a user-owned itinerary."""
-    deleted = await repo.delete(itinerary_id=itinerary_id, user_id=user_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Itinerary not found")
-    return {"status": "deleted"}

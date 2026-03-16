@@ -26,8 +26,14 @@ import org.tripsphere.itinerary.v1.Itinerary;
 import org.tripsphere.itinerary.v1.ItineraryServiceGrpc.ItineraryServiceImplBase;
 import org.tripsphere.itinerary.v1.ListUserItinerariesRequest;
 import org.tripsphere.itinerary.v1.ListUserItinerariesResponse;
+import org.tripsphere.itinerary.v1.DeleteItineraryRequest;
+import org.tripsphere.itinerary.v1.DeleteItineraryResponse;
+import org.tripsphere.itinerary.v1.ReplaceItineraryRequest;
+import org.tripsphere.itinerary.v1.ReplaceItineraryResponse;
 import org.tripsphere.itinerary.v1.UpdateActivityRequest;
 import org.tripsphere.itinerary.v1.UpdateActivityResponse;
+import org.tripsphere.itinerary.v1.UpdateItineraryRequest;
+import org.tripsphere.itinerary.v1.UpdateItineraryResponse;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -101,6 +107,67 @@ public class ItineraryGrpcService extends ItineraryServiceImplBase {
         }
 
         responseObserver.onNext(responseBuilder.build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void deleteItinerary(
+            DeleteItineraryRequest request,
+            StreamObserver<DeleteItineraryResponse> responseObserver) {
+        GrpcAuthContext authContext = GrpcAuthContext.current();
+
+        if (request.getId().isEmpty()) {
+            throw InvalidArgumentException.required("id");
+        }
+
+        authorizationService.checkItineraryAccess(authContext, request.getId());
+
+        itineraryService.deleteItinerary(request.getId());
+
+        responseObserver.onNext(DeleteItineraryResponse.newBuilder().build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void updateItinerary(
+            UpdateItineraryRequest request,
+            StreamObserver<UpdateItineraryResponse> responseObserver) {
+        GrpcAuthContext authContext = GrpcAuthContext.current();
+
+        if (!request.hasItinerary()) {
+            throw InvalidArgumentException.required("itinerary");
+        }
+        if (request.getItinerary().getId().isEmpty()) {
+            throw InvalidArgumentException.required("itinerary.id");
+        }
+
+        authorizationService.checkItineraryAccess(authContext, request.getItinerary().getId());
+
+        Itinerary updated = itineraryService.updateItinerary(request.getItinerary());
+
+        responseObserver.onNext(UpdateItineraryResponse.newBuilder().setItinerary(updated).build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void replaceItinerary(
+            ReplaceItineraryRequest request,
+            StreamObserver<ReplaceItineraryResponse> responseObserver) {
+        GrpcAuthContext authContext = GrpcAuthContext.current();
+
+        if (request.getId().isEmpty()) {
+            throw InvalidArgumentException.required("id");
+        }
+        if (!request.hasItinerary()) {
+            throw InvalidArgumentException.required("itinerary");
+        }
+
+        authorizationService.checkItineraryAccess(authContext, request.getId());
+
+        Itinerary replaced = itineraryService.replaceItinerary(request.getId(), request.getItinerary());
+
+        responseObserver.onNext(
+                ReplaceItineraryResponse.newBuilder().setItinerary(replaced).build());
         responseObserver.onCompleted();
     }
 

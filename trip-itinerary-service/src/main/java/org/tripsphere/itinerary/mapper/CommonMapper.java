@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
+import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Map;
@@ -94,6 +96,23 @@ public interface CommonMapper {
         Struct.Builder structBuilder = Struct.newBuilder();
         JsonFormat.parser().merge(json, structBuilder);
         return structBuilder.build();
+    }
+
+    // ===================================================================
+    // Timestamp Mappings (Instant <-> proto Timestamp)
+    // ===================================================================
+
+    default Timestamp toTimestamp(Instant instant) {
+        if (instant == null) return Timestamp.getDefaultInstance();
+        return Timestamp.newBuilder()
+                .setSeconds(instant.getEpochSecond())
+                .setNanos(instant.getNano())
+                .build();
+    }
+
+    default Instant toInstant(Timestamp timestamp) {
+        if (timestamp == null || timestamp.equals(Timestamp.getDefaultInstance())) return null;
+        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
     // ===================================================================

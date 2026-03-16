@@ -106,6 +106,72 @@ public class ItineraryServiceImpl implements ItineraryService {
     }
 
     @Override
+    public void deleteItinerary(String id) {
+        log.debug("Deleting itinerary: {}", id);
+        if (!itineraryDocRepository.existsById(id)) {
+            throw new NotFoundException("Itinerary", id);
+        }
+        itineraryDocRepository.deleteById(id);
+        log.info("Deleted itinerary with id: {}", id);
+    }
+
+    @Override
+    public Itinerary updateItinerary(Itinerary itinerary) {
+        log.debug("Updating itinerary meta: {}", itinerary.getId());
+
+        if (itinerary.getId().isEmpty()) {
+            throw InvalidArgumentException.required("itinerary.id");
+        }
+
+        ItineraryDoc existing = getItineraryDoc(itinerary.getId());
+        // Map incoming proto to a temporary doc to reuse converter logic for dates and summary
+        ItineraryDoc incoming = itineraryMapper.toDoc(itinerary);
+
+        // Update only meta-level fields; preserve day plans and ownership
+        if (!itinerary.getTitle().isEmpty()) existing.setTitle(itinerary.getTitle());
+        if (itinerary.hasStartDate()) existing.setStartDate(incoming.getStartDate());
+        if (itinerary.hasEndDate()) existing.setEndDate(incoming.getEndDate());
+        if (!itinerary.getDestinationName().isEmpty())
+            existing.setDestinationName(itinerary.getDestinationName());
+        if (!itinerary.getMarkdownContent().isEmpty())
+            existing.setMarkdownContent(itinerary.getMarkdownContent());
+        if (itinerary.hasSummary()) existing.setSummary(incoming.getSummary());
+
+        ItineraryDoc saved = itineraryDocRepository.save(existing);
+        log.info("Updated itinerary meta for id: {}", saved.getId());
+        return itineraryMapper.toProto(saved);
+    }
+
+    @Override
+    public Itinerary replaceItinerary(String id, Itinerary itinerary) {
+        log.debug("Replacing itinerary: {}", id);
+
+        ItineraryDoc existing =
+                itineraryDocRepository
+                        .findById(id)
+                        .orElseThrow(() -> new NotFoundException("Itinerary", id));
+
+        ItineraryDoc replacement = itineraryMapper.toDoc(itinerary);
+        // Preserve identity and ownership from the existing document
+        replacement.setId(existing.getId());
+        replacement.setUserId(existing.getUserId());
+        // createdAt is preserved by @CreatedDate + Spring Data (it won't overwrite an existing value)
+        replacement.setCreatedAt(existing.getCreatedAt());
+
+        // Ensure all day plans and activities have IDs
+        if (replacement.getDayPlans() != null) {
+            for (DayPlanDoc dayPlan : replacement.getDayPlans()) {
+                ensureDayPlanId(dayPlan);
+            }
+        }
+
+        ItineraryDoc saved = itineraryDocRepository.save(replacement);
+        log.info("Replaced itinerary with id: {}", saved.getId());
+
+        return itineraryMapper.toProto(saved);
+    }
+
+    @Override
     public DayPlan addDayPlan(String itineraryId, DayPlan dayPlan) {
         log.debug("Adding day plan to itinerary: {}", itineraryId);
 

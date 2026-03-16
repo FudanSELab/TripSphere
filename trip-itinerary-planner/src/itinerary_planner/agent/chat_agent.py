@@ -35,9 +35,13 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 
-from itinerary_planner.agent.itinerary_tools import INLINE_TOOLS, make_regenerate_day_tool
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.naming import NacosNaming
+from itinerary_planner.tools import (
+    INLINE_TOOLS,
+    geocoding_tool,
+    make_regenerate_day_tool,
+)
 from itinerary_planner.prompts.chat_agent import CHAT_AGENT_INSTRUCTION
 
 logger = logging.getLogger(__name__)
@@ -110,7 +114,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
         base_url=settings.openai.base_url,
     )
 
-    all_tools = list(INLINE_TOOLS)
+    all_tools = [geocoding_tool, *INLINE_TOOLS]
     if nacos_naming is not None:
         all_tools.append(make_regenerate_day_tool(nacos_naming))
 

@@ -3,15 +3,15 @@ from typing import Annotated, cast
 from fastapi import Depends, HTTPException, Request
 
 from itinerary_planner.nacos.naming import NacosNaming
-from itinerary_planner.storage.itinerary_repo import ItineraryRepo
+from itinerary_planner.services.itinerary_service_client import ItineraryServiceClient
 
 
 def provide_nacos_naming(request: Request) -> NacosNaming:
     return cast(NacosNaming, request.app.state.nacos_naming)
 
 
-def provide_itinerary_repo(request: Request) -> ItineraryRepo:
-    return cast(ItineraryRepo, request.app.state.itinerary_repo)
+def provide_itinerary_service_client(request: Request) -> ItineraryServiceClient:
+    return cast(ItineraryServiceClient, request.app.state.itinerary_service_client)
 
 
 def provide_current_user_id(request: Request) -> str:
@@ -29,4 +29,6 @@ def provide_current_user_id(request: Request) -> str:
 
 # Convenient annotated types for injection
 CurrentUserId = Annotated[str, Depends(provide_current_user_id)]
-ItineraryRepoDep = Annotated[ItineraryRepo, Depends(provide_itinerary_repo)]
+ItineraryServiceClientDep = Annotated[
+    ItineraryServiceClient, Depends(provide_itinerary_service_client)
+]

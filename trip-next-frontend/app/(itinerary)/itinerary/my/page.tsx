@@ -9,12 +9,18 @@ import {
 // ── Date helpers ───────────────────────────────────────────────────────────
 
 function formatDate(dateStr: string): string {
+  if (!dateStr || dateStr.trim() === "") return "—";
   const [, m, d] = dateStr.split("-");
-  return `${parseInt(m, 10)}月${parseInt(d, 10)}日`;
+  const month = parseInt(m, 10);
+  const day = parseInt(d, 10);
+  if (Number.isNaN(month) || Number.isNaN(day)) return "—";
+  return `${month}月${day}日`;
 }
 
 function formatRelative(dateStr: string): string {
+  if (!dateStr || dateStr.trim() === "") return "—";
   const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "—";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
@@ -30,7 +36,8 @@ function formatRelative(dateStr: string): string {
 function tripDays(start: string, end: string): number {
   const s = new Date(start);
   const e = new Date(end);
-  return Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 0;
+  return Math.max(0, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
 }
 
 // ── Delete button (needs client interaction) ───────────────────────────────

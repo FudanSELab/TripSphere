@@ -15,7 +15,7 @@ import org.tripsphere.itinerary.v1.Activity;
         collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
-        uses = {CommonMapper.class, MoneyMapper.class})
+        uses = {CommonMapper.class, MoneyMapper.class, GeoLocationMapper.class})
 public interface ActivityMapper {
     ActivityMapper INSTANCE = Mappers.getMapper(ActivityMapper.class);
 

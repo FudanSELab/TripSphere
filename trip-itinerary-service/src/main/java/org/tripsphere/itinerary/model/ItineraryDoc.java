@@ -28,6 +28,9 @@ public class ItineraryDoc {
     private LocalDate endDate;
     @Builder.Default private List<DayPlanDoc> dayPlans = new ArrayList<>();
     private Map<String, Object> metadata;
+    private String destinationName;
+    private ItinerarySummaryDoc summary;
+    private String markdownContent;
     @CreatedDate private Instant createdAt;
     @LastModifiedDate private Instant updatedAt;
 }

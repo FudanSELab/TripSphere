@@ -6,7 +6,6 @@ from ag_ui_langgraph import LangGraphAgent, add_langgraph_fastapi_endpoint  # ty
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
-from motor.motor_asyncio import AsyncIOMotorClient
 from openinference.instrumentation.langchain import LangChainInstrumentor
 
 from itinerary_planner.agent.chat_agent import create_chat_graph
@@ -14,7 +13,7 @@ from itinerary_planner.config.logging import setup_logging
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.routers.planning import planning
-from itinerary_planner.storage.itinerary_repo import ItineraryRepo
+from itinerary_planner.services.itinerary_service_client import ItineraryServiceClient
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +28,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     app.state.httpx_client = AsyncClient()
 
-    # MongoDB / Motor
-    mongo_client: AsyncIOMotorClient = AsyncIOMotorClient(settings.mongodb.uri)  # type: ignore[type-arg]
-    db = mongo_client[settings.mongodb.database]
-    repo = ItineraryRepo(db)
-    await repo.ensure_indexes()
-    app.state.itinerary_repo = repo
-    app.state.mongo_client = mongo_client
+    # gRPC client for itinerary CRUD — backed by trip-itinerary-service
+    svc_settings = settings.itinerary_service
+    app.state.itinerary_service_client = ItineraryServiceClient(
+        host=svc_settings.host, port=svc_settings.port
+    )
     logger.info(
-        "MongoDB connected: %s / %s", settings.mongodb.uri, settings.mongodb.database
+        "ItineraryServiceClient configured: %s:%s",
+        svc_settings.host,
+        svc_settings.port,
     )
 
     try:
@@ -73,9 +72,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             logger.info("Deregistering service instance...")
             await app.state.nacos_naming.deregister(ephemeral=True)
             await app.state.nacos_naming.shutdown()
-
-        mongo_client.close()
-        logger.info("MongoDB connection closed")
 
         await app.state.httpx_client.aclose()
 

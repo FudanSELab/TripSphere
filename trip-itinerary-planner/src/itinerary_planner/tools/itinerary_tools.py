@@ -12,7 +12,6 @@ custom serialisation.
 
 from __future__ import annotations
 
-import json
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -441,6 +440,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
 # ── Public convenience: all tools except the factory one ──────────────────
 
+# Tools that need no Nacos; regenerate_day is added via make_regenerate_day_tool(nacos_naming) when Nacos is enabled.
 INLINE_TOOLS = [
     update_itinerary_day,
     add_activity,

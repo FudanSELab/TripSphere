@@ -16,11 +16,12 @@ from itinerary_planner.prompts.workflow import (
     MARKDOWN_GENERATION_PROMPT,
     RESEARCH_AND_PLAN_PROMPT,
 )
-from itinerary_planner.tools.attractions import (
+from itinerary_planner.tools import (
     AttractionDetail,
+    GeocodeResult,
+    geocoding_tool,
     search_attractions_nearby,
 )
-from itinerary_planner.tools.geocoding import GeocodeResult, geocoding_tool
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     # Step 1: Geocode destination
     try:
-        geocode_result: GeocodeResult = await geocoding_tool(
-            address=state["destination"],
-            city=state["destination"],
-        )
+        geocode_result: GeocodeResult = await geocoding_tool.ainvoke({
+            "address": state["destination"],
+            "city": state["destination"],
+        })
         destination_coords = {
             "longitude": geocode_result.longitude,
             "latitude": geocode_result.latitude,

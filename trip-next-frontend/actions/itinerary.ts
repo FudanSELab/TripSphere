@@ -1,6 +1,20 @@
 "use server";
 
 import { headers } from "next/headers";
+import { getAuthMetadata, getItineraryService } from "@/lib/grpc/client";
+import {
+  ActivityKind,
+  type Itinerary as ProtoItinerary,
+  type DayPlan as ProtoDayPlan,
+  type Activity as ProtoActivity,
+  type GeoLocation,
+  type ItinerarySummary as ProtoItinerarySummary,
+  type CreateItineraryRequest,
+  type ReplaceItineraryRequest,
+} from "@/lib/grpc/generated/tripsphere/itinerary/v1/itinerary";
+import type { Metadata } from "@grpc/grpc-js";
+
+// ── Re-exported public types ───────────────────────────────────────────────
 
 export type TravelInterest =
   | "culture"
@@ -85,27 +99,233 @@ export interface SavedItinerarySummary {
   updated_at: string;
 }
 
-const PLANNER_URL =
-  process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
+// ── Proto ↔ frontend conversion helpers ───────────────────────────────────
 
-// ── Auth helper ────────────────────────────────────────────────────────────
+function formatDate(d: { year: number; month: number; day: number } | undefined): string {
+  if (!d) return "";
+  return `${d.year.toString().padStart(4, "0")}-${d.month.toString().padStart(2, "0")}-${d.day.toString().padStart(2, "0")}`;
+}
 
-async function getPlannerHeaders(extra?: Record<string, string>): Promise<HeadersInit> {
-  const reqHeaders = await headers();
-  const userId = reqHeaders.get("x-user-id") ?? "";
+function parseDate(iso: string): { year: number; month: number; day: number } {
+  const [y, m, d] = iso.split("-").map(Number);
+  return { year: y, month: m, day: d };
+}
+
+function formatTime(t: { hours: number; minutes: number } | undefined): string {
+  if (!t) return "00:00";
+  return `${t.hours.toString().padStart(2, "0")}:${t.minutes.toString().padStart(2, "0")}`;
+}
+
+function parseTime(hhmm: string): { hours: number; minutes: number; seconds: number; nanos: number } {
+  const [h, m] = hhmm.split(":").map(Number);
+  return { hours: h || 0, minutes: m || 0, seconds: 0, nanos: 0 };
+}
+
+const KIND_STRING_TO_PROTO: Record<string, ActivityKind> = {
+  attraction_visit: ActivityKind.ACTIVITY_KIND_ATTRACTION_VISIT,
+  dining: ActivityKind.ACTIVITY_KIND_DINING,
+  hotel_stay: ActivityKind.ACTIVITY_KIND_HOTEL_STAY,
+  custom: ActivityKind.ACTIVITY_KIND_CUSTOM,
+};
+
+const KIND_PROTO_TO_STRING: Partial<Record<ActivityKind, string>> = {
+  [ActivityKind.ACTIVITY_KIND_ATTRACTION_VISIT]: "attraction_visit",
+  [ActivityKind.ACTIVITY_KIND_DINING]: "dining",
+  [ActivityKind.ACTIVITY_KIND_HOTEL_STAY]: "hotel_stay",
+  [ActivityKind.ACTIVITY_KIND_CUSTOM]: "custom",
+};
+
+function protoActivityToFrontend(a: ProtoActivity): Activity {
+  const loc = a.location ?? ({ name: "", latitude: 0, longitude: 0, address: "" } as GeoLocation);
+  const cost = a.estimatedCost;
+  const amount = cost ? (Number(cost.units) + cost.nanos / 1_000_000_000) : 0;
+
+  let attraction_id: string | null = null;
+  let hotel_id: string | null = null;
+  if (a.attraction?.id) attraction_id = a.attraction.id;
+  else if (a.hotel?.id) hotel_id = a.hotel.id;
+
   return {
-    "Content-Type": "application/json",
-    "x-user-id": userId,
-    ...extra,
+    id: a.id,
+    name: a.title,
+    description: a.description,
+    start_time: formatTime(a.startTime),
+    end_time: formatTime(a.endTime),
+    location: {
+      name: loc.name,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      address: loc.address,
+    },
+    category: a.category || "sightseeing",
+    estimated_cost: { amount, currency: cost?.currency || "CNY" },
+    kind: KIND_PROTO_TO_STRING[a.kind] ?? "attraction_visit",
+    attraction_id,
+    hotel_id,
   };
 }
 
-// ── Planning ───────────────────────────────────────────────────────────────
+function frontendActivityToProto(a: Activity): ProtoActivity {
+  const proto: ProtoActivity = {
+    id: a.id,
+    title: a.name,
+    description: a.description,
+    kind: KIND_STRING_TO_PROTO[a.kind] ?? ActivityKind.ACTIVITY_KIND_UNSPECIFIED,
+    startTime: parseTime(a.start_time),
+    endTime: parseTime(a.end_time),
+    estimatedCost: {
+      currency: a.estimated_cost.currency,
+      units: Math.trunc(a.estimated_cost.amount),
+      nanos: Math.round((a.estimated_cost.amount % 1) * 1_000_000_000),
+    },
+    location: {
+      name: a.location.name,
+      latitude: a.location.latitude,
+      longitude: a.location.longitude,
+      address: a.location.address,
+    },
+    category: a.category,
+    metadata: undefined,
+  };
+  if (a.attraction_id) proto.attraction = { id: a.attraction_id } as ProtoActivity["attraction"];
+  else if (a.hotel_id) proto.hotel = { id: a.hotel_id } as ProtoActivity["hotel"];
+  return proto;
+}
+
+function protoDayPlanToFrontend(dp: ProtoDayPlan): DayPlan {
+  return {
+    day_number: dp.dayNumber,
+    date: formatDate(dp.date),
+    activities: dp.activities.map(protoActivityToFrontend),
+    notes: dp.notes,
+  };
+}
+
+function frontendDayPlanToProto(dp: DayPlan): ProtoDayPlan {
+  return {
+    id: "",
+    date: parseDate(dp.date),
+    title: "",
+    dayNumber: dp.day_number,
+    notes: dp.notes,
+    activities: dp.activities.map(frontendActivityToProto),
+    metadata: undefined,
+  };
+}
+
+function moneyToAmount(m: { units: number; nanos: number; currency: string } | undefined): { amount: number; currency: string } {
+  if (!m) return { amount: 0, currency: "CNY" };
+  const amount = m.units + m.nanos / 1_000_000_000;
+  return { amount, currency: m.currency || "CNY" };
+}
+
+function amountToMoney(amount: number, currency: string): { units: number; nanos: number; currency: string } {
+  return {
+    currency: currency || "CNY",
+    units: Math.trunc(amount),
+    nanos: Math.round((amount % 1) * 1_000_000_000),
+  };
+}
+
+function protoItineraryToFrontend(proto: ProtoItinerary): Itinerary {
+  let summary: ItinerarySummary | null = null;
+  if (proto.summary) {
+    const { amount, currency } = moneyToAmount(proto.summary.totalEstimatedCost);
+    summary = {
+      total_estimated_cost: amount,
+      currency,
+      total_activities: proto.summary.totalActivities,
+      highlights: proto.summary.highlights,
+    };
+  }
+  return {
+    id: proto.id,
+    destination: proto.destinationName || proto.title,
+    start_date: formatDate(proto.startDate),
+    end_date: formatDate(proto.endDate),
+    day_plans: proto.dayPlans.map(protoDayPlanToFrontend),
+    summary,
+  };
+}
+
+function frontendItineraryToProto(
+  it: Itinerary,
+  markdownContent: string = "",
+): ProtoItinerary {
+  let summary: ProtoItinerarySummary | undefined;
+  if (it.summary) {
+    summary = {
+      totalEstimatedCost: amountToMoney(it.summary.total_estimated_cost, it.summary.currency),
+      totalActivities: it.summary.total_activities,
+      highlights: it.summary.highlights,
+    };
+  }
+  return {
+    id: it.id,
+    title: it.destination,
+    userId: "",
+    destination: undefined,
+    startDate: parseDate(it.start_date),
+    endDate: parseDate(it.end_date),
+    dayPlans: it.day_plans.map(frontendDayPlanToProto),
+    metadata: undefined,
+    destinationName: it.destination,
+    summary,
+    markdownContent: markdownContent,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
+}
+
+/** Accept Date (from TS gRPC decode), proto Timestamp shape, or undefined. */
+function toIsoString(
+  value: Date | { seconds: number; nanos: number } | undefined,
+): string {
+  if (value == null) return new Date().toISOString();
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    if (Number.isNaN(ms)) return new Date().toISOString();
+    return value.toISOString();
+  }
+  const ms = value.seconds * 1000 + value.nanos / 1_000_000;
+  const d = new Date(ms);
+  return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
+// ── gRPC promisify helper ──────────────────────────────────────────────────
+
+function callGrpc<Req, Res>(
+  client: ReturnType<typeof getItineraryService>,
+  method: keyof ReturnType<typeof getItineraryService>,
+  request: Req,
+  metadata: Metadata,
+): Promise<Res> {
+  return new Promise<Res>((resolve, reject) => {
+    (client[method] as (req: Req, meta: Metadata, cb: (err: unknown, res: Res) => void) => void)(
+      request,
+      metadata,
+      (error: unknown, response: Res) => {
+        if (error) reject(error);
+        else resolve(response);
+      },
+    );
+  });
+}
+
+// ── Planning (HTTP to planner) ─────────────────────────────────────────────
+
+const PLANNER_URL =
+  process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
 
 export async function createItineraryPlan(
   input: PlanItineraryInput,
 ): Promise<PlanItineraryResult> {
-  const h = await getPlannerHeaders();
+  const reqHeaders = await headers();
+  const userId = reqHeaders.get("x-user-id") ?? "";
+  const h: HeadersInit = {
+    "Content-Type": "application/json",
+    "x-user-id": userId,
+  };
 
   const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/plannings`, {
     method: "POST",
@@ -128,28 +348,48 @@ export async function createItineraryPlan(
   return res.json();
 }
 
-// ── Persistence CRUD ───────────────────────────────────────────────────────
+// ── Persistence CRUD (gRPC to trip-itinerary-service) ─────────────────────
 
 export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
-  const h = await getPlannerHeaders();
-  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries`, { headers: h });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`List itineraries failed (${res.status}): ${text}`);
-  }
-  return res.json();
+  const client = getItineraryService();
+  const metadata = await getAuthMetadata();
+  const reqHeaders = await headers();
+  const userId = reqHeaders.get("x-user-id") ?? "";
+
+  if (!userId) throw new Error("Missing x-user-id header");
+
+  const { itineraries } = await callGrpc<
+    Parameters<typeof client.listUserItineraries>[0],
+    Awaited<ReturnType<typeof client.listUserItineraries>>
+  >(client, "listUserItineraries", { userId, pageSize: 50, pageToken: "" }, metadata);
+
+  return (itineraries ?? []).map((it) => ({
+    id: it.id,
+    destination: it.destinationName || it.title,
+    start_date: formatDate(it.startDate),
+    end_date: formatDate(it.endDate),
+    day_count: it.dayPlans.length,
+    created_at: toIsoString(it.createdAt),
+    updated_at: toIsoString(it.updatedAt),
+  }));
 }
 
 export async function getItinerary(id: string): Promise<PlanItineraryResult> {
-  const h = await getPlannerHeaders();
-  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/${id}`, {
-    headers: h,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Get itinerary failed (${res.status}): ${text}`);
-  }
-  return res.json();
+  const client = getItineraryService();
+  const metadata = await getAuthMetadata();
+
+  const { itinerary } = await callGrpc<
+    Parameters<typeof client.getItinerary>[0],
+    Awaited<ReturnType<typeof client.getItinerary>>
+  >(client, "getItinerary", { id }, metadata);
+
+  if (!itinerary) throw new Error("Itinerary not found");
+
+  return {
+    itinerary: protoItineraryToFrontend(itinerary),
+    markdown_content: itinerary.markdownContent ?? "",
+    conversation_messages: [],
+  };
 }
 
 export async function updateSavedItinerary(
@@ -157,29 +397,27 @@ export async function updateSavedItinerary(
   itinerary: Itinerary,
   markdownContent?: string,
 ): Promise<void> {
-  const h = await getPlannerHeaders();
-  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/${id}`, {
-    method: "PUT",
-    headers: h,
-    body: JSON.stringify({
-      itinerary,
-      markdown_content: markdownContent ?? null,
-    }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Update itinerary failed (${res.status}): ${text}`);
-  }
+  const client = getItineraryService();
+  const metadata = await getAuthMetadata();
+
+  const proto = frontendItineraryToProto(itinerary, markdownContent ?? "");
+
+  await callGrpc<ReplaceItineraryRequest, unknown>(
+    client,
+    "replaceItinerary",
+    { id, itinerary: proto },
+    metadata,
+  );
 }
 
 export async function deleteItinerary(id: string): Promise<void> {
-  const h = await getPlannerHeaders();
-  const res = await fetch(`${PLANNER_URL}/api/v1/itineraries/${id}`, {
-    method: "DELETE",
-    headers: h,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Delete itinerary failed (${res.status}): ${text}`);
-  }
+  const client = getItineraryService();
+  const metadata = await getAuthMetadata();
+
+  await callGrpc<Parameters<typeof client.deleteItinerary>[0], unknown>(
+    client,
+    "deleteItinerary",
+    { id },
+    metadata,
+  );
 }
