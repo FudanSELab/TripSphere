@@ -10,7 +10,7 @@ import random
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
-from itinerary_planner.models.itinerary import DayPlan, Itinerary, ItinerarySummary
+from itinerary_planner.models.itinerary import DayPlan, get_attraction_tags_for_interests, Itinerary, ItinerarySummary
 from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
 from itinerary_planner.prompts.workflow import (
     MARKDOWN_GENERATION_PROMPT,
@@ -63,6 +63,11 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             "latitude": 31.2304,
             "address": state["destination"],
         }
+        
+    travel_interests = state.get("interests", [])
+    logger.info(f"Travel interests: {travel_interests}")
+    tags = get_attraction_tags_for_interests(travel_interests)
+    logger.info(f"Attraction tags: {tags}")
 
     # Step 2: Search for attractions
     try:
@@ -71,6 +76,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             center_longitude=destination_coords["longitude"],
             center_latitude=destination_coords["latitude"],
             radius_km=25.0,
+            tags=tags,
             limit=35,
         )
         # shuffle the attractions and sample 10
