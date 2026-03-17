@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import {
-  Star,
   MapPin,
   Calendar,
   User,
@@ -27,8 +27,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImagePlaceholder } from "@/components/image-placeholder";
+import { StarIcons } from "@/components/star-icons";
 import { getHotelById, getRoomTypesByHotelId } from "@/actions/hotel";
 import { listSpusByRoomType } from "@/actions/product";
+import { formatDate, formatMoney } from "@/lib/format";
 import type {
   Hotel,
   RoomType,
@@ -37,26 +39,7 @@ import type {
   Spu,
   Sku,
 } from "@/lib/grpc/generated/tripsphere/product/v1/product";
-import type { Money } from "@/lib/grpc/generated/tripsphere/common/v1/money";
 
-// Helper to format money
-function formatMoney(money: Money | undefined): number {
-  if (!money) return 0;
-  return money.units + money.nanos / 1_000_000_000;
-}
-
-// Star rating component
-function StarIcons({ count }: { count: number }) {
-  return (
-    <span className="inline-flex gap-0.5">
-      {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} className="size-4 fill-amber-500 text-amber-500" />
-      ))}
-    </span>
-  );
-}
-
-// Amenity icon component
 function AmenityIcon({
   name,
   className,
@@ -85,19 +68,19 @@ function AmenityIcon({
   return <CheckCircle className={className} />;
 }
 
-// Get today and tomorrow dates
+function formatTime(
+  time: { hours: number; minutes: number } | undefined,
+  fallbackHour: number,
+): string {
+  const h = time?.hours ?? fallbackHour;
+  const m = String(time?.minutes ?? 0).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
 function getDateStrings() {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const formatDate = (date: Date) => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-    const weekday = weekdays[date.getDay()];
-    return `${month}月${day}日(${weekday})`;
-  };
 
   return {
     checkIn: formatDate(today),
@@ -105,14 +88,12 @@ function getDateStrings() {
   };
 }
 
-// Get city from address
 function getCityFromAddress(hotel: Hotel): string {
   if (hotel.address?.city) return hotel.address.city;
   if (hotel.address?.province) return hotel.address.province;
   return "未知城市";
 }
 
-// Get full address string
 function getFullAddress(hotel: Hotel): string {
   const addr = hotel.address;
   if (!addr) return "地址未知";
@@ -122,12 +103,6 @@ function getFullAddress(hotel: Hotel): string {
   return parts.join("") || "地址未知";
 }
 
-// Format estimated price
-function getEstimatedPrice(hotel: Hotel): number {
-  return formatMoney(hotel.estimatedPrice);
-}
-
-// Get lowest SKU price from SPUs
 function getLowestSkuPrice(spus: Spu[]): number {
   let lowest = Infinity;
   for (const spu of spus) {
@@ -141,7 +116,6 @@ function getLowestSkuPrice(spus: Spu[]): number {
   return lowest === Infinity ? 0 : lowest;
 }
 
-// Room type card with SPUs
 interface RoomTypeWithSpus {
   roomType: RoomType;
   spus: Spu[];
@@ -154,8 +128,8 @@ function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
   return (
     <div className="rounded-lg border">
       {/* Room Type Header */}
-      <div className="border-b bg-gray-50 px-4 py-3">
-        <h3 className="text-lg font-bold text-gray-900">{roomType.name}</h3>
+      <div className="bg-muted border-b px-4 py-3">
+        <h3 className="text-foreground text-lg font-bold">{roomType.name}</h3>
       </div>
 
       <div className="flex">
@@ -187,7 +161,7 @@ function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
           </div>
 
           {/* Room Details */}
-          <div className="space-y-1.5 text-sm text-gray-600">
+          <div className="text-muted-foreground space-y-1.5 text-sm">
             <div className="flex items-center gap-2">
               <Bed className="size-4" />
               <span>{roomType.bedDescription || "标准床型"}</span>
@@ -220,7 +194,7 @@ function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
         <div className="flex-1">
           <table className="w-full">
             <thead>
-              <tr className="border-b bg-gray-50 text-sm text-gray-600">
+              <tr className="bg-muted text-muted-foreground border-b text-sm">
                 <th className="px-4 py-3 text-left font-medium">房型摘要</th>
                 <th className="px-4 py-3 text-center font-medium">可住人数</th>
                 <th className="px-4 py-3 text-right font-medium">今日价格</th>
@@ -232,7 +206,6 @@ function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
                   spu.skus.map((sku, skuIdx) => (
                     <SkuRow
                       key={sku.id}
-                      spu={spu}
                       sku={sku}
                       maxOccupancy={roomType.maxOccupancy}
                       isLast={
@@ -246,7 +219,7 @@ function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
                 <tr>
                   <td
                     colSpan={3}
-                    className="px-4 py-8 text-center text-gray-500"
+                    className="text-muted-foreground px-4 py-8 text-center"
                   >
                     暂无可预订房型
                   </td>
@@ -269,13 +242,11 @@ function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
   );
 }
 
-// SKU row component
 function SkuRow({
   sku,
   maxOccupancy,
   isLast,
 }: {
-  spu: Spu;
   sku: Sku;
   maxOccupancy: number;
   isLast: boolean;
@@ -291,12 +262,16 @@ function SkuRow({
       {/* Room Summary */}
       <td className="px-4 py-4">
         <div className="space-y-1 text-sm">
-          <div className="font-medium text-gray-900">{sku.name}</div>
+          <div className="text-foreground font-medium">{sku.name}</div>
           <div className="flex items-center gap-2">
             <Utensils
-              className={`size-4 ${hasBreakfast ? "text-green-500" : "text-gray-400"}`}
+              className={`size-4 ${hasBreakfast ? "text-green-500" : "text-muted-foreground"}`}
             />
-            <span className={hasBreakfast ? "text-green-600" : "text-gray-500"}>
+            <span
+              className={
+                hasBreakfast ? "text-green-600" : "text-muted-foreground"
+              }
+            >
               {hasBreakfast ? "含早餐" : "无早餐"}
             </span>
           </div>
@@ -304,9 +279,13 @@ function SkuRow({
             {cancellable ? (
               <CheckCircle className="size-4 text-green-500" />
             ) : (
-              <XCircle className="size-4 text-gray-400" />
+              <XCircle className="text-muted-foreground size-4" />
             )}
-            <span className={cancellable ? "text-green-600" : "text-gray-500"}>
+            <span
+              className={
+                cancellable ? "text-green-600" : "text-muted-foreground"
+              }
+            >
               {cancellable ? "可取消" : "不可取消"}
             </span>
           </div>
@@ -317,8 +296,8 @@ function SkuRow({
             </div>
           )}
           <div className="flex items-center gap-2">
-            <CreditCard className="size-4 text-gray-400" />
-            <span className="text-gray-500">在线付</span>
+            <CreditCard className="text-muted-foreground size-4" />
+            <span className="text-muted-foreground">在线付</span>
           </div>
         </div>
       </td>
@@ -327,7 +306,7 @@ function SkuRow({
       <td className="px-4 py-4 text-center">
         <div className="flex items-center justify-center gap-0.5">
           {Array.from({ length: maxOccupancy }).map((_, i) => (
-            <User key={i} className="size-5 text-gray-600" />
+            <User key={i} className="text-muted-foreground size-5" />
           ))}
         </div>
       </td>
@@ -353,6 +332,24 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const hotel = await getHotelById(id);
+
+  if (!hotel) {
+    return { title: "酒店未找到" };
+  }
+
+  return {
+    title: hotel.name,
+    description:
+      hotel.information?.introduction?.slice(0, 160) ??
+      `查看${hotel.name}的详情、房型和价格`,
+  };
+}
+
 export default async function HotelDetailPage({ params }: PageProps) {
   const { id } = await params;
   const hotel = await getHotelById(id);
@@ -374,7 +371,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
   const dates = getDateStrings();
   const city = getCityFromAddress(hotel);
   const address = getFullAddress(hotel);
-  const estimatedPrice = getEstimatedPrice(hotel);
+  const estimatedPrice = formatMoney(hotel.estimatedPrice);
   const hasImages = hotel.images.length > 0;
 
   // Calculate star count based on tags or default to 3
@@ -389,7 +386,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500">
+      <nav className="text-muted-foreground text-sm">
         <ol className="flex items-center gap-1">
           <li>
             <Link href="/" className="text-blue-500 hover:underline">
@@ -409,20 +406,22 @@ export default async function HotelDetailPage({ params }: PageProps) {
             </Link>
           </li>
           <li className="mx-1">&gt;</li>
-          <li className="text-gray-700">{hotel.name}</li>
+          <li className="text-foreground">{hotel.name}</li>
         </ol>
       </nav>
 
       {/* Hotel Header Card */}
-      <div className="rounded-xl border bg-white p-6">
+      <div className="bg-card rounded-xl border p-6">
         {/* Title Row */}
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900">{hotel.name}</h1>
-              <StarIcons count={starCount} />
+              <h1 className="text-foreground text-xl font-bold">
+                {hotel.name}
+              </h1>
+              <StarIcons count={starCount} className="size-4" />
             </div>
-            <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
+            <div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
               <MapPin className="size-4" />
               <span>{address}</span>
               <button className="text-blue-500 hover:underline">
@@ -449,7 +448,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
               <span className="text-2xl font-bold text-orange-500">
                 ¥{Math.round(estimatedPrice)}
               </span>
-              <span className="text-sm text-gray-500">起</span>
+              <span className="text-muted-foreground text-sm">起</span>
             </div>
             <Button className="bg-blue-500 px-6 hover:bg-blue-600">
               选择房间
@@ -516,7 +515,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
             {/* Facilities */}
             {hotel.amenities.length > 0 && (
               <div>
-                <h2 className="mb-4 text-base font-bold text-gray-900">
+                <h2 className="text-foreground mb-4 text-base font-bold">
                   酒店设施
                 </h2>
                 <div className="grid grid-cols-4 gap-3">
@@ -524,9 +523,9 @@ export default async function HotelDetailPage({ params }: PageProps) {
                     <div key={idx} className="flex items-center gap-2 text-sm">
                       <AmenityIcon
                         name={amenity}
-                        className="size-5 text-gray-600"
+                        className="text-muted-foreground size-5"
                       />
-                      <span className="text-gray-700">{amenity}</span>
+                      <span className="text-foreground">{amenity}</span>
                     </div>
                   ))}
                 </div>
@@ -541,10 +540,10 @@ export default async function HotelDetailPage({ params }: PageProps) {
             {/* Description */}
             {hotel.information?.introduction && (
               <div>
-                <h2 className="mb-2 text-base font-bold text-gray-900">
+                <h2 className="text-foreground mb-2 text-base font-bold">
                   酒店简介
                 </h2>
-                <p className="line-clamp-3 text-sm leading-relaxed text-gray-600">
+                <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
                   {hotel.information.introduction}
                 </p>
                 <button className="mt-2 text-sm text-blue-500 hover:underline">
@@ -558,24 +557,24 @@ export default async function HotelDetailPage({ params }: PageProps) {
           <div className="space-y-4">
             {/* Opening & Room Info */}
             {hotel.information && (
-              <div className="rounded-lg border bg-white p-4">
-                <h3 className="mb-3 font-bold text-gray-900">酒店信息</h3>
+              <div className="bg-card rounded-lg border p-4">
+                <h3 className="text-foreground mb-3 font-bold">酒店信息</h3>
                 <div className="space-y-2 text-sm">
                   {hotel.information.openingSince > 0 && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar className="size-4 text-gray-500" />
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Calendar className="size-4" />
                       <span>开业: {hotel.information.openingSince}年</span>
                     </div>
                   )}
                   {hotel.information.roomCount > 0 && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Bed className="size-4 text-gray-500" />
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Bed className="size-4" />
                       <span>客房数: {hotel.information.roomCount}间</span>
                     </div>
                   )}
                   {hotel.information.phoneNumber && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Phone className="size-4 text-gray-500" />
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Phone className="size-4" />
                       <span>{hotel.information.phoneNumber}</span>
                     </div>
                   )}
@@ -585,34 +584,27 @@ export default async function HotelDetailPage({ params }: PageProps) {
 
             {/* Policy */}
             {hotel.policy && (
-              <div className="rounded-lg border bg-white p-4">
-                <h3 className="mb-3 font-bold text-gray-900">入住政策</h3>
+              <div className="bg-card rounded-lg border p-4">
+                <h3 className="text-foreground mb-3 font-bold">入住政策</h3>
                 <div className="space-y-2 text-sm">
                   {hotel.policy.checkInTime && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="size-4 text-gray-500" />
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Clock className="size-4" />
                       <span>
-                        入住: {hotel.policy.checkInTime.hours || 14}:
-                        {String(hotel.policy.checkInTime.minutes || 0).padStart(
-                          2,
-                          "0",
-                        )}
+                        入住: {formatTime(hotel.policy.checkInTime, 14)}
                       </span>
                     </div>
                   )}
                   {hotel.policy.checkOutTime && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="size-4 text-gray-500" />
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Clock className="size-4" />
                       <span>
-                        退房: {hotel.policy.checkOutTime.hours || 12}:
-                        {String(
-                          hotel.policy.checkOutTime.minutes || 0,
-                        ).padStart(2, "0")}
+                        退房: {formatTime(hotel.policy.checkOutTime, 12)}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <PawPrint className="size-4 text-gray-500" />
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <PawPrint className="size-4" />
                     <span>
                       {hotel.policy.petsAllowed
                         ? "允许携带宠物"
@@ -627,7 +619,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
       </div>
 
       {/* Room Selection Section */}
-      <div className="rounded-xl border bg-white">
+      <div className="bg-card rounded-xl border">
         {/* Tabs Navigation */}
         <div className="border-b px-6 pt-4">
           <Tabs defaultValue="rooms">
@@ -654,15 +646,15 @@ export default async function HotelDetailPage({ params }: PageProps) {
 
             <TabsContent value="rooms" className="py-4">
               {/* Date & Guest Selector */}
-              <div className="mb-4 flex items-center gap-4 rounded-lg border bg-gray-50 p-3">
+              <div className="bg-muted mb-4 flex items-center gap-4 rounded-lg border p-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="size-5 text-gray-500" />
+                  <Calendar className="text-muted-foreground size-5" />
                   <span className="font-medium">{dates.checkIn}</span>
-                  <span className="text-sm text-gray-400">1晚</span>
+                  <span className="text-muted-foreground text-sm">1晚</span>
                   <span className="font-medium">{dates.checkOut}</span>
                 </div>
                 <div className="flex items-center gap-2 border-l pl-4">
-                  <User className="size-5 text-gray-500" />
+                  <User className="text-muted-foreground size-5" />
                   <span>1间, 1成人, 0儿童</span>
                 </div>
               </div>
@@ -678,8 +670,8 @@ export default async function HotelDetailPage({ params }: PageProps) {
                     />
                   ))
                 ) : (
-                  <div className="py-12 text-center text-gray-500">
-                    <Building2 className="mx-auto mb-4 size-16 text-gray-300" />
+                  <div className="text-muted-foreground py-12 text-center">
+                    <Building2 className="text-muted-foreground/50 mx-auto mb-4 size-16" />
                     <p>暂无可预订房型</p>
                   </div>
                 )}
@@ -690,13 +682,13 @@ export default async function HotelDetailPage({ params }: PageProps) {
             <TabsContent value="overview" className="p-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-bold">酒店概览</h3>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   {hotel.information?.introduction || "暂无酒店介绍信息"}
                 </p>
               </div>
             </TabsContent>
             <TabsContent value="reviews" className="p-6">
-              <p className="text-gray-500">用户点评内容...</p>
+              <p className="text-muted-foreground">用户点评内容...</p>
             </TabsContent>
             <TabsContent value="facilities" className="p-6">
               <div className="space-y-4">
@@ -710,14 +702,14 @@ export default async function HotelDetailPage({ params }: PageProps) {
                       >
                         <AmenityIcon
                           name={amenity}
-                          className="size-5 text-gray-600"
+                          className="text-muted-foreground size-5"
                         />
-                        <span className="text-gray-700">{amenity}</span>
+                        <span className="text-foreground">{amenity}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">暂无设施信息</p>
+                  <p className="text-muted-foreground">暂无设施信息</p>
                 )}
               </div>
             </TabsContent>
@@ -725,19 +717,9 @@ export default async function HotelDetailPage({ params }: PageProps) {
               <div className="space-y-4">
                 <h3 className="text-lg font-bold">酒店政策</h3>
                 {hotel.policy ? (
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <p>
-                      入住时间:{" "}
-                      {hotel.policy.checkInTime
-                        ? `${hotel.policy.checkInTime.hours || 14}:${String(hotel.policy.checkInTime.minutes || 0).padStart(2, "0")}`
-                        : "14:00"}
-                    </p>
-                    <p>
-                      退房时间:{" "}
-                      {hotel.policy.checkOutTime
-                        ? `${hotel.policy.checkOutTime.hours || 12}:${String(hotel.policy.checkOutTime.minutes || 0).padStart(2, "0")}`
-                        : "12:00"}
-                    </p>
+                  <div className="text-muted-foreground space-y-2 text-sm">
+                    <p>入住时间: {formatTime(hotel.policy.checkInTime, 14)}</p>
+                    <p>退房时间: {formatTime(hotel.policy.checkOutTime, 12)}</p>
                     <p>
                       宠物政策:{" "}
                       {hotel.policy.petsAllowed
@@ -746,16 +728,16 @@ export default async function HotelDetailPage({ params }: PageProps) {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-gray-500">暂无政策信息</p>
+                  <p className="text-muted-foreground">暂无政策信息</p>
                 )}
               </div>
             </TabsContent>
             <TabsContent value="location" className="p-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-bold">地图与周边位置</h3>
-                <p className="text-gray-600">地址: {address}</p>
+                <p className="text-muted-foreground">地址: {address}</p>
                 {hotel.location && (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-muted-foreground text-sm">
                     坐标: {hotel.location.latitude?.toFixed(6)},{" "}
                     {hotel.location.longitude?.toFixed(6)}
                   </p>

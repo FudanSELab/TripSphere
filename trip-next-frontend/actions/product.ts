@@ -79,13 +79,13 @@ export async function batchGetSpus(ids: string[]): Promise<Spu[]> {
  */
 export async function getSpusForRoomTypes(
   roomTypeIds: string[],
-): Promise<Map<string, Spu[]>> {
-  const result = new Map<string, Spu[]>();
+): Promise<Record<string, Spu[]>> {
+  const result: Record<string, Spu[]> = {};
 
   await Promise.all(
     roomTypeIds.map(async (roomTypeId) => {
       const { spus } = await listSpusByRoomType(roomTypeId);
-      result.set(roomTypeId, spus);
+      result[roomTypeId] = spus;
     }),
   );
 

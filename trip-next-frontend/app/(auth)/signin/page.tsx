@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { SigninForm } from "@/components/signin-form";
+
+export const metadata: Metadata = {
+  title: "登录",
+};
 
 export default function SignInPage() {
   return (

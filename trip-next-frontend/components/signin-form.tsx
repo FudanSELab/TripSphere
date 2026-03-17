@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signIn } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ export function SigninForm({
                   使用 Google 登录
                 </Button>
                 <FieldDescription className="text-center">
-                  还没有账户？<a href="/signup">注册</a>
+                  还没有账户？<Link href="/signup">注册</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

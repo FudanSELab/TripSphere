@@ -1,7 +1,7 @@
 import "server-only";
 import { importSPKI, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { SessionPayload } from "@/lib/definitions";
+import type { SessionPayload } from "@/lib/definitions";
 
 const COOKIE_NAME = "session";
 
@@ -10,7 +10,13 @@ let _publicKey: CryptoKey | null = null;
 
 async function getPublicKey(): Promise<CryptoKey> {
   if (!_publicKey) {
-    _publicKey = await importSPKI(process.env.JWT_PUBLIC_KEY!, "RS256");
+    const rawKey = process.env.JWT_PUBLIC_KEY;
+    if (!rawKey) {
+      throw new Error(
+        "Environment variable JWT_PUBLIC_KEY is not set. Authentication will not work.",
+      );
+    }
+    _publicKey = await importSPKI(rawKey, "RS256");
   }
   return _publicKey;
 }
@@ -58,7 +64,6 @@ export async function getToken(): Promise<string | null> {
 
 export async function getSession(): Promise<SessionPayload | null> {
   const token = await getToken();
-  console.log("[session] getSession - token exists:", !!token);
   if (!token) return null;
   return verifyToken(token);
 }

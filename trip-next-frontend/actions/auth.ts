@@ -53,7 +53,7 @@ export async function signUp(
     });
   } catch (error: unknown) {
     const code = (error as { code?: number }).code;
-    console.log("[signUp] error code:", code);
+
     return {
       message:
         (code != null && SIGN_UP_ERROR_MESSAGES[code]) ||
@@ -93,7 +93,7 @@ export async function signIn(
     await createSession(response.token);
   } catch (error: unknown) {
     const code = (error as { code?: number }).code;
-    console.log("[signIn] error code:", code);
+
     return {
       message:
         (code != null && SIGN_IN_ERROR_MESSAGES[code]) ||

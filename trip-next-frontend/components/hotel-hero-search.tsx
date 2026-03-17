@@ -23,14 +23,8 @@ import {
 } from "@/components/ui/popover";
 import { type DateRange } from "react-day-picker";
 import { zhCN } from "date-fns/locale";
-
-function formatDate(date: Date): string {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-  const weekday = weekdays[date.getDay()];
-  return `${month}月${day}日(${weekday})`;
-}
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 
 function calcNights(checkIn: Date, checkOut: Date): number {
   const diff = checkOut.getTime() - checkIn.getTime();
@@ -97,17 +91,17 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
         </h1>
 
         {/* Search Card */}
-        <div className="flex h-14 items-center rounded-xl bg-white p-2 shadow-lg">
+        <div className="bg-card flex h-14 items-center rounded-xl p-2 shadow-lg">
           {/* Location */}
           <SearchField className="w-1/6">
             <MapPin className="size-4 shrink-0 text-blue-500" />
-            <span className="text-sm font-medium text-gray-800">
+            <span className="text-foreground text-sm font-medium">
               {location || "目的地"}
             </span>
             {location && (
               <button
                 onClick={() => setLocation("")}
-                className="ml-auto rounded-full p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="text-muted-foreground hover:bg-accent hover:text-foreground ml-auto rounded-full p-0.5 transition-colors"
               >
                 <X className="size-3.5" />
               </button>
@@ -119,13 +113,13 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
           {/* Date Range */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="flex min-w-[220px] cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50">
+              <button className="hover:bg-accent flex min-w-[220px] cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors">
                 <CalendarDays className="size-4 shrink-0 text-blue-500" />
-                <span className="text-sm font-medium text-gray-800">
+                <span className="text-foreground text-sm font-medium">
                   {formatDate(checkIn)}
                 </span>
-                <span className="mx-3 text-xs text-gray-400">-</span>
-                <span className="text-sm font-medium text-gray-800">
+                <span className="text-muted-foreground mx-3 text-xs">-</span>
+                <span className="text-foreground text-sm font-medium">
                   {formatDate(checkOut)}
                 </span>
                 <Badge
@@ -157,9 +151,9 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
           {/* Rooms & Guests */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50">
+              <button className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors">
                 <Users className="size-4 shrink-0 text-blue-500" />
-                <span className="text-sm font-medium text-gray-800">
+                <span className="text-foreground text-sm font-medium">
                   {rooms}间, {adults}成人, {children}儿童
                 </span>
               </button>
@@ -201,12 +195,12 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
           <Separator orientation="vertical" className="mx-1" />
 
           {/* Keyword */}
-          <div className="flex flex-1 items-center rounded-lg px-3 hover:bg-gray-50">
+          <div className="hover:bg-accent flex flex-1 items-center rounded-lg px-3">
             <Input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="位置/品牌/酒店（选填）"
-              className="h-9 border-none bg-transparent px-0 text-sm shadow-none placeholder:text-gray-400 focus-visible:ring-0"
+              className="placeholder:text-muted-foreground/70 h-9 border-none bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
             />
           </div>
 
@@ -233,7 +227,10 @@ function SearchField({
 }) {
   return (
     <div
-      className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50 ${className ?? ""}`}
+      className={cn(
+        "hover:bg-accent flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors",
+        className,
+      )}
     >
       {children}
     </div>
@@ -263,7 +260,7 @@ function GuestCounterRow({
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-gray-800">{label}</span>
+        <span className="text-foreground text-sm font-medium">{label}</span>
         {description && (
           <span className="text-muted-foreground text-xs">{description}</span>
         )}

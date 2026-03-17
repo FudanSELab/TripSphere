@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signUp } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,7 +107,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   使用 Google 注册
                 </Button>
                 <FieldDescription className="px-6 text-center">
-                  已有账户？<a href="/signin">登录</a>
+                  已有账户？<Link href="/signin">登录</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

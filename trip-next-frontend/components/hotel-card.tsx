@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImagePlaceholder } from "@/components/image-placeholder";
+import { StarIcons } from "@/components/star-icons";
 
 export interface HotelCardData {
   id: string;
@@ -16,24 +16,14 @@ export interface HotelCardData {
   price: number;
 }
 
-function StarIcons({ count }: { count: number }) {
-  return (
-    <span className="inline-flex gap-0.5">
-      {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} className="size-3 fill-amber-500 text-amber-500" />
-      ))}
-    </span>
-  );
-}
-
 export function HotelCard({ hotel }: { hotel: HotelCardData }) {
   return (
     <Link
       href={`/hotels/${hotel.id}`}
-      className="group flex w-full flex-col overflow-hidden rounded-xl border bg-white"
+      className="group bg-card flex w-full flex-col overflow-hidden rounded-xl border"
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
+      <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden">
         {hotel.image ? (
           <Image
             src={hotel.image}
@@ -68,7 +58,7 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
       {/* Info */}
       <div className="flex flex-1 flex-col gap-1 p-3">
         <div className="flex items-center gap-1.5">
-          <span className="line-clamp-1 text-sm font-semibold text-gray-900">
+          <span className="text-foreground line-clamp-1 text-sm font-semibold">
             {hotel.name}
           </span>
           <StarIcons count={hotel.stars} />
@@ -77,7 +67,7 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
           {hotel.location}
         </span>
         <div className="mt-auto flex items-baseline justify-end gap-1 pt-2">
-          <span className="text-xs text-gray-500">最低价</span>
+          <span className="text-muted-foreground text-xs">最低价</span>
           <span className="text-lg font-bold text-orange-500">
             ¥{hotel.price.toLocaleString()}
           </span>
@@ -89,7 +79,7 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
 
 export function HotelCardSkeleton() {
   return (
-    <div className="flex w-full flex-col overflow-hidden rounded-xl border bg-white">
+    <div className="bg-card flex w-full flex-col overflow-hidden rounded-xl border">
       <Skeleton className="aspect-[4/3] w-full rounded-none" />
       <div className="flex flex-1 flex-col gap-2 p-3">
         <Skeleton className="h-4 w-3/4" />

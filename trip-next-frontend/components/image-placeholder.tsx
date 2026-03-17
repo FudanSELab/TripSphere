@@ -13,7 +13,7 @@ export function ImagePlaceholder({
   return (
     <div
       className={cn(
-        "flex items-center justify-center bg-gray-100 from-slate-100 to-slate-200 text-slate-400",
+        "bg-muted text-muted-foreground flex items-center justify-center",
         className,
       )}
     >

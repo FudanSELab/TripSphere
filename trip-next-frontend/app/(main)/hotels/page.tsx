@@ -2,6 +2,12 @@ import { HotelHeroSearch } from "@/components/hotel-hero-search";
 import { HotelCardList } from "@/components/hotel-card-list";
 import { listHotels } from "@/actions/hotel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "酒店",
+  description: "搜索和预订全球优质酒店",
+};
 
 export default async function HotelPage() {
   const today = new Date().toISOString().split("T")[0];
