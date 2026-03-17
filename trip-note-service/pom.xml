@@ -205,11 +205,9 @@
 							<include>src/main/java/**/*.java</include>
 							<include>src/test/java/**/*.java</include>
 						</includes>
-						<googleJavaFormat>
-							<version>1.17.0</version>
-							<style>AOSP</style>
-							<reflowLongStrings>true</reflowLongStrings>
-						</googleJavaFormat>
+						<palantirJavaFormat>
+                            <version>2.89.0</version>
+                        </palantirJavaFormat>
 						<removeUnusedImports />
 						<importOrder />
 						<lineEndings>UNIX</lineEndings>

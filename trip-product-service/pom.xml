@@ -116,6 +116,12 @@
 			<artifactId>mapstruct</artifactId>
 			<version>${org.mapstruct.version}</version>
 		</dependency>
+        <!-- UUID library -->
+		<dependency>
+			<groupId>com.github.f4b6a3</groupId>
+			<artifactId>uuid-creator</artifactId>
+			<version>5.3.7</version>
+		</dependency>
     </dependencies>
 
     <build>
@@ -209,11 +215,9 @@
 							<include>src/main/java/**/*.java</include>
 							<include>src/test/java/**/*.java</include>
 						</includes>
-						<googleJavaFormat>
-							<version>1.17.0</version>
-							<style>AOSP</style>
-							<reflowLongStrings>true</reflowLongStrings>
-						</googleJavaFormat>
+                        <palantirJavaFormat>
+                            <version>2.89.0</version>
+                        </palantirJavaFormat>
 						<removeUnusedImports />
 						<importOrder />
 						<lineEndings>UNIX</lineEndings>

@@ -3,6 +3,9 @@ spring:
     name: trip-product-service
   profiles:
     active: dev
+  threads:
+    virtual:
+      enabled: true
 
 server:
   port: 24220
