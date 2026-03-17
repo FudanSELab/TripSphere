@@ -21,6 +21,7 @@ from itinerary_planner.tools import (
     GeocodeResult,
     geocoding_tool,
     search_attractions_nearby,
+    search_hotels_nearby,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             limit=35,
         )
         # shuffle the attractions and sample 10
-        attractions: list[AttractionDetail] = random.sample(search_result.attractions, 10)
+        attractions: list[AttractionDetail] = random.sample(search_result.attractions, 15)
         logger.info(f"Found {len(attractions)} attractions via gRPC service")
     except Exception as e:
         logger.error(f"Attraction search failed: {e}")
@@ -164,6 +165,42 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
                 for activity in day_plan.activities
             ]
 
+        # Step 4: Geometric center of planned attractions -> search hotels nearby
+        lats: list[float] = []
+        lons: list[float] = []
+        for day_plan in itinerary_plan.day_plans:
+            for activity in day_plan.activities:
+                att = _find_matching_attraction(activity.name, attraction_details)
+                if att:
+                    lats.append(att["latitude"])
+                    lons.append(att["longitude"])
+        if lats and lons:
+            center_lat = sum(lats) / len(lats)
+            center_lon = sum(lons) / len(lons)
+        else:
+            center_lat = destination_coords["latitude"]
+            center_lon = destination_coords["longitude"]
+
+        hotel_limit = 3 if num_days <= 4 else 5  # Short trip: one hotel; longer: multiple options
+        try:
+            hotel_result = await search_hotels_nearby(
+                nacos_naming=state["nacos_naming"],
+                center_longitude=center_lon,
+                center_latitude=center_lat,
+                radius_km=12.0,
+                limit=hotel_limit,
+            )
+            hotel_details = [h.model_dump() for h in hotel_result.hotels]
+            logger.info(
+                "Found %d hotels near attractions center (%.4f, %.4f)",
+                len(hotel_details),
+                center_lat,
+                center_lon,
+            )
+        except Exception as e:
+            logger.error("Hotel search failed: %s", e)
+            hotel_details = []
+
     except Exception as e:
         logger.error(f"LLM planning failed: {e}")
         # Create fallback plan
@@ -175,6 +212,19 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             highlights=[f"Explore {state['destination']}", "Experience local culture"],
             total_estimated_cost=0.0,
         )
+        # Still search hotels by destination center
+        try:
+            hotel_result = await search_hotels_nearby(
+                nacos_naming=state["nacos_naming"],
+                center_longitude=destination_coords["longitude"],
+                center_latitude=destination_coords["latitude"],
+                radius_km=12.0,
+                limit=5,
+            )
+            hotel_details = [h.model_dump() for h in hotel_result.hotels]
+        except Exception as eh:
+            logger.error("Hotel search failed: %s", eh)
+            hotel_details = []
 
     # Create progress event
     progress_event = PlanningProgressEvent(
@@ -189,6 +239,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
         "destination_coords": destination_coords,
         "attraction_details": attraction_details,
         "daily_schedule": daily_schedule,
+        "hotel_details": hotel_details,
         "progress_percentage": 70,
         "events": [progress_event],
     }
@@ -236,6 +287,18 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
 
     attraction_details = state.get("attraction_details", {})
     daily_schedule = state.get("daily_schedule", {})
+    hotel_details: list[dict[str, Any]] = state.get("hotel_details", [])
+
+    # Assign which hotel for each night: short trip 1 hotel, longer trip can use multiple
+    def _hotel_for_night(night_index: int) -> dict[str, Any] | None:
+        if not hotel_details:
+            return None
+        if len(hotel_details) == 1:
+            return hotel_details[0]
+        # Spread multiple hotels over nights (e.g. 6 days -> hotel0 for nights 0,1,2 and hotel1 for 3,4,5)
+        nights_per_hotel = max(1, (num_days + len(hotel_details) - 1) // len(hotel_details))
+        hotel_idx = min(night_index // nights_per_hotel, len(hotel_details) - 1)
+        return hotel_details[hotel_idx]
 
     # Build day plans with coordinates
     day_plans: list[DayPlan] = []
@@ -299,6 +362,34 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
                 attraction_id=attraction_id,
             )
             formatted_activities.append(activity)
+
+        # Append accommodation for this night (hotel near attractions center)
+        hotel_for_night = _hotel_for_night(day_num - 1)
+        if hotel_for_night:
+            hotel_name = hotel_for_night.get("name", "酒店")
+            stay_label = "入住: " + hotel_name if day_num == 1 else "当晚住宿: " + hotel_name
+            price_per_night = hotel_for_night.get("estimated_price") or 0.0
+            formatted_activities.append(
+                Activity(
+                    id=str(uuid.uuid4()),
+                    name=stay_label,
+                    description=hotel_for_night.get("introduction", "") or hotel_for_night.get("address", ""),
+                    start_time="20:00",
+                    end_time="次日08:00",
+                    location=ActivityLocation(
+                        name=hotel_name,
+                        latitude=hotel_for_night.get("latitude", 0.0),
+                        longitude=hotel_for_night.get("longitude", 0.0),
+                        address=hotel_for_night.get("address", ""),
+                    ),
+                    category="accommodation",
+                    estimated_cost=Cost(amount=price_per_night, currency="CNY"),
+                    kind="hotel_stay",
+                    hotel_id=hotel_for_night.get("id"),
+                )
+            )
+            total_cost += price_per_night
+            total_activities += 1
 
         day_plan = DayPlan(
             day_number=day_num,

@@ -10,6 +10,11 @@ from itinerary_planner.tools.itinerary_tools import (
     INLINE_TOOLS,
     make_regenerate_day_tool,
 )
+from itinerary_planner.tools.hotel import (
+    HotelDetail,
+    HotelSearchResult,
+    search_hotels_nearby,
+)
 
 __all__ = [
     "AttractionDetail",
@@ -19,4 +24,7 @@ __all__ = [
     "geocoding_tool",
     "make_regenerate_day_tool",
     "search_attractions_nearby",
+    "HotelDetail",
+    "HotelSearchResult",
+    "search_hotels_nearby",
 ]

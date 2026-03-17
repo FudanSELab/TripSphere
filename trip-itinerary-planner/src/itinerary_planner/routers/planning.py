@@ -71,6 +71,7 @@ def get_initial_state(
         destination_coords={},
         attraction_details={},
         daily_schedule={},
+        hotel_details=[],
         itinerary=None,
         markdown_content="",
         conversation_messages=[],
