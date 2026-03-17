@@ -375,7 +375,7 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
                     name=stay_label,
                     description=hotel_for_night.get("introduction", "") or hotel_for_night.get("address", ""),
                     start_time="20:00",
-                    end_time="次日08:00",
+                    end_time="08:00",
                     location=ActivityLocation(
                         name=hotel_name,
                         latitude=hotel_for_night.get("latitude", 0.0),

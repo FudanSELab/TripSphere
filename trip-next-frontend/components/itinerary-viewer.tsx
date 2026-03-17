@@ -358,9 +358,11 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
               {(activity.estimated_cost?.amount ?? 0) === 0 && (
                 <p className="text-[10px] text-emerald-500 font-medium">免费</p>
               )}
-              <p className="mt-0.5 text-[10px] text-gray-400 whitespace-nowrap">
-                止 {activity.end_time}
-              </p>
+              {activity.kind !== "hotel_stay" && (
+                <p className="mt-0.5 text-[10px] text-gray-400 whitespace-nowrap">
+                  止 {activity.end_time}
+                </p>
+              )}
             </div>
           </div>
         </div>
