@@ -5,23 +5,26 @@ import {
 } from "@copilotkit/runtime";
 import { HttpAgent } from "@ag-ui/client";
 import { NextRequest } from "next/server";
+import { config } from "@/lib/env";
 
-const chatUrl = process.env.HTTP_CHAT_URL || "http://localhost:24210";
 const itineraryPlannerUrl =
   process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
 
 const serviceAdapter = new ExperimentalEmptyAdapter();
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const runtime = new CopilotRuntime({
   agents: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: new HttpAgent({ url: "http://localhost:24210/" }) as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    order_assistant: new HttpAgent({ url: "http://localhost:24211/" }) as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    itinerary_planner: new HttpAgent({ url: `${itineraryPlannerUrl}/copilotkit` }) as any,
+    default: new HttpAgent({ url: config.copilot.defaultAgentUrl }) as any,
+    order_assistant: new HttpAgent({
+      url: config.copilot.orderAssistantUrl,
+    }) as any,
+    itinerary_planner: new HttpAgent({
+      url: `${itineraryPlannerUrl}/copilotkit`,
+    }) as any,
   },
 });
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const POST = async (req: NextRequest) => {
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({

@@ -165,13 +165,13 @@ def extract_sku_contexts(
 
     for spu in spus:
         spu_status = spu.get("status", "")
-        if spu_status != "SPU_STATUS_ON_SHELF":
+        if spu_status != "ON_SHELF":
             skipped_inactive_spus += 1
             continue
 
         for sku in spu.get("skus", []):
             sku_status = sku.get("status", "")
-            if sku_status != "SKU_STATUS_ACTIVE":
+            if sku_status != "ACTIVE":
                 skipped_inactive_skus += 1
                 continue
 
@@ -310,10 +310,10 @@ def build_inventory_doc(
     updated_at: str,
 ) -> dict[str, Any]:
     """Build a DailyInventoryEntity-compatible JSON document."""
-    if context.resource_type == "RESOURCE_TYPE_HOTEL_ROOM":
+    if context.resource_type == "HOTEL_ROOM":
         total_qty = hotel_total_qty(context, day)
         price = hotel_price(context, day)
-    elif context.resource_type == "RESOURCE_TYPE_ATTRACTION":
+    elif context.resource_type == "ATTRACTION":
         total_qty = attraction_total_qty(context, day)
         price = attraction_price(context, day)
     else:
@@ -414,10 +414,8 @@ def build_summary_document(
     days: int,
 ) -> dict[str, Any]:
     """Build a compact summary document for validation and debugging."""
-    hotel_skus = [c for c in contexts if c.resource_type == "RESOURCE_TYPE_HOTEL_ROOM"]
-    attraction_skus = [
-        c for c in contexts if c.resource_type == "RESOURCE_TYPE_ATTRACTION"
-    ]
+    hotel_skus = [c for c in contexts if c.resource_type == "HOTEL_ROOM"]
+    attraction_skus = [c for c in contexts if c.resource_type == "ATTRACTION"]
     return {
         "seed": SEED,
         "inventoryDays": days,

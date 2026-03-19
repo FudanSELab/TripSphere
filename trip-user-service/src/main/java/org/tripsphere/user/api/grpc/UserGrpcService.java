@@ -47,8 +47,10 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
 
         UserService.SignInResult result = userService.signIn(email, password);
 
-        SignInResponse response =
-                SignInResponse.newBuilder().setUser(result.user()).setToken(result.token()).build();
+        SignInResponse response = SignInResponse.newBuilder()
+                .setUser(result.user())
+                .setToken(result.token())
+                .build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
@@ -57,22 +59,17 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     /** Protected endpoint — requires an authenticated user with ROLE_USER. */
     @Override
     @Secured({"ROLE_USER"})
-    public void getCurrentUser(
-            GetCurrentUserRequest request,
-            StreamObserver<GetCurrentUserResponse> responseObserver) {
+    public void getCurrentUser(GetCurrentUserRequest request, StreamObserver<GetCurrentUserResponse> responseObserver) {
         Authentication rawAuth = SecurityContextHolder.getContext().getAuthentication();
         if (!(rawAuth instanceof JwtAuthenticationToken auth)) {
-            throw new StatusRuntimeException(
-                    Status.UNAUTHENTICATED.withDescription("Invalid auth context"));
+            throw new StatusRuntimeException(Status.UNAUTHENTICATED.withDescription("Invalid auth context"));
         }
         String email = auth.getEmail();
 
-        User user =
-                userService
-                        .findByEmail(email)
-                        .orElseThrow(() -> new NotFoundException("User", email));
+        User user = userService.findByEmail(email).orElseThrow(() -> new NotFoundException("User", email));
 
-        GetCurrentUserResponse response = GetCurrentUserResponse.newBuilder().setUser(user).build();
+        GetCurrentUserResponse response =
+                GetCurrentUserResponse.newBuilder().setUser(user).build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();

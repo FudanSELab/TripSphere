@@ -60,19 +60,14 @@ public class HotelServiceImpl implements HotelService {
         Point wgs84Location = toWgs84Point(location);
 
         List<HotelDoc> docs =
-                hotelDocRepository.findAllByLocationNear(
-                        wgs84Location, radiusMeters, DEFAULT_NEARBY_LIMIT);
+                hotelDocRepository.findAllByLocationNear(wgs84Location, radiusMeters, DEFAULT_NEARBY_LIMIT);
         return hotelMapper.toProtoList(docs);
     }
 
     @Override
     public HotelPage listHotels(String province, String city, int pageSize, String pageToken) {
         log.debug(
-                "Listing hotels: province={}, city={}, pageSize={}, pageToken={}",
-                province,
-                city,
-                pageSize,
-                pageToken);
+                "Listing hotels: province={}, city={}, pageSize={}, pageToken={}", province, city, pageSize, pageToken);
 
         // Normalize page size
         int normalizedPageSize = normalizePageSize(pageSize);
@@ -81,13 +76,12 @@ public class HotelServiceImpl implements HotelService {
         CursorToken cursor = decodeCursorToken(pageToken);
 
         // Fetch one extra to determine if there are more results
-        List<HotelDoc> docs =
-                hotelDocRepository.findByAddressWithPagination(
-                        province,
-                        city,
-                        normalizedPageSize + 1,
-                        cursor != null ? cursor.createdAt() : null,
-                        cursor != null ? cursor.id() : null);
+        List<HotelDoc> docs = hotelDocRepository.findByAddressWithPagination(
+                province,
+                city,
+                normalizedPageSize + 1,
+                cursor != null ? cursor.createdAt() : null,
+                cursor != null ? cursor.id() : null);
 
         boolean hasMore = docs.size() > normalizedPageSize;
         if (hasMore) {
@@ -117,9 +111,7 @@ public class HotelServiceImpl implements HotelService {
 
     /** Convert GeoPoint (GCJ-02) to Spring Point (WGS84) for MongoDB queries. */
     private Point toWgs84Point(GeoPoint geoPoint) {
-        double[] wgs84 =
-                CoordinateTransformUtil.gcj02ToWgs84(
-                        geoPoint.getLongitude(), geoPoint.getLatitude());
+        double[] wgs84 = CoordinateTransformUtil.gcj02ToWgs84(geoPoint.getLongitude(), geoPoint.getLatitude());
         return new Point(wgs84[0], wgs84[1]);
     }
 
@@ -142,9 +134,7 @@ public class HotelServiceImpl implements HotelService {
      */
     private String encodeCursorToken(Instant createdAt, String id) {
         String raw = createdAt.toEpochMilli() + CURSOR_SEPARATOR + id;
-        return Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(raw.getBytes(StandardCharsets.UTF_8));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -157,8 +147,7 @@ public class HotelServiceImpl implements HotelService {
             return null;
         }
         try {
-            String decoded =
-                    new String(Base64.getUrlDecoder().decode(pageToken), StandardCharsets.UTF_8);
+            String decoded = new String(Base64.getUrlDecoder().decode(pageToken), StandardCharsets.UTF_8);
             int separatorIndex = decoded.indexOf(CURSOR_SEPARATOR);
             if (separatorIndex == -1) {
                 log.warn("Invalid cursor token format: {}", pageToken);

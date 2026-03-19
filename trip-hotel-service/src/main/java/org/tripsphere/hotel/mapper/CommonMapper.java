@@ -22,22 +22,20 @@ public interface CommonMapper {
     // ===================================================================
 
     default GeoJsonPoint toGeoJsonPoint(GeoPoint point) {
-        if (point == null
-                || (point.getLongitude() == 0.0
-                        && point.getLatitude() == 0.0
-                        && !point.isInitialized())) {
+        if (point == null || (point.getLongitude() == 0.0 && point.getLatitude() == 0.0 && !point.isInitialized())) {
             return null;
         }
-        double[] coordinate =
-                CoordinateTransformUtil.gcj02ToWgs84(point.getLongitude(), point.getLatitude());
+        double[] coordinate = CoordinateTransformUtil.gcj02ToWgs84(point.getLongitude(), point.getLatitude());
         return new GeoJsonPoint(coordinate[0], coordinate[1]);
     }
 
     default GeoPoint toGeoPoint(GeoJsonPoint geoJsonPoint) {
         if (geoJsonPoint == null) return GeoPoint.getDefaultInstance();
-        double[] coordinate =
-                CoordinateTransformUtil.wgs84ToGcj02(geoJsonPoint.getX(), geoJsonPoint.getY());
-        return GeoPoint.newBuilder().setLongitude(coordinate[0]).setLatitude(coordinate[1]).build();
+        double[] coordinate = CoordinateTransformUtil.wgs84ToGcj02(geoJsonPoint.getX(), geoJsonPoint.getY());
+        return GeoPoint.newBuilder()
+                .setLongitude(coordinate[0])
+                .setLatitude(coordinate[1])
+                .build();
     }
 
     // ===================================================================
@@ -48,8 +46,7 @@ public interface CommonMapper {
         if (proto == null || proto.equals(TimeOfDay.getDefaultInstance())) {
             return null;
         }
-        return LocalTime.of(
-                proto.getHours(), proto.getMinutes(), proto.getSeconds(), proto.getNanos());
+        return LocalTime.of(proto.getHours(), proto.getMinutes(), proto.getSeconds(), proto.getNanos());
     }
 
     default TimeOfDay toTimeOfDayProto(LocalTime localTime) {

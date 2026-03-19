@@ -30,8 +30,7 @@ import org.tripsphere.user.v1.User;
 public class UserServiceImpl implements UserService {
 
     // Email pattern: basic email validation
-    private static final Pattern EMAIL_PATTERN =
-            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     // Password pattern: at least 8 characters, must contain a letter, a number, and a special
     // character
@@ -79,8 +78,7 @@ public class UserServiceImpl implements UserService {
         final Authentication authenticated;
         try {
             authenticated =
-                    authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(email, password));
+                    authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
         } catch (AuthenticationException e) {
             log.warn("Sign in failed: invalid credentials - email: {}", email);
             throw UnauthenticatedException.invalidCredentials();
@@ -92,15 +90,10 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = ((CustomUserDetails) authenticated.getPrincipal()).getUserEntity();
 
         List<String> rolesList = userEntity.getRoles().stream().map(Role::name).toList();
-        String token =
-                jwtUtil.generateToken(userEntity.getId(), userEntity.getName(), email, rolesList);
+        String token = jwtUtil.generateToken(userEntity.getId(), userEntity.getName(), email, rolesList);
 
         User user = userMapper.toProto(userEntity);
-        log.info(
-                "User sign in successful - email: {}, userId: {}, roles: {}",
-                email,
-                userEntity.getId(),
-                rolesList);
+        log.info("User sign in successful - email: {}, userId: {}, roles: {}", email, userEntity.getId(), rolesList);
 
         return new SignInResult(user, token);
     }

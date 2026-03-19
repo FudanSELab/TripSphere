@@ -289,6 +289,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  trip-product-service:
+    build:
+      context: trip-product-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-product-service:latest
+    container_name: trip-product-service
+    logging: *default-logging
+    ports:
+      - "24220:24220" # HTTP
+      - "50060:50060" # gRPC
+    depends_on:
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
+
   trip-review-service:
     build:
       context: trip-review-service

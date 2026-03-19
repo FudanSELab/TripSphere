@@ -21,8 +21,7 @@ public class CustomHotelDocRepositoryImpl implements CustomHotelDocRepository {
 
     @Override
     public List<HotelDoc> findAllByLocationNear(Point location, double radiusMeters, int limit) {
-        Criteria criteria =
-                Criteria.where("location").nearSphere(location).maxDistance(radiusMeters);
+        Criteria criteria = Criteria.where("location").nearSphere(location).maxDistance(radiusMeters);
 
         Query query = new Query(criteria).with(PageRequest.of(0, limit));
 
@@ -48,12 +47,9 @@ public class CustomHotelDocRepositoryImpl implements CustomHotelDocRepository {
                     Criteria.where("createdAt").is(cursorCreatedAt).and("_id").lt(cursorId));
         }
 
-        Query query =
-                new Query(criteria)
-                        .with(
-                                Sort.by(Sort.Direction.DESC, "createdAt")
-                                        .and(Sort.by(Sort.Direction.DESC, "_id")))
-                        .limit(limit);
+        Query query = new Query(criteria)
+                .with(Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "_id")))
+                .limit(limit);
 
         return mongoTemplate.find(query, HotelDoc.class);
     }

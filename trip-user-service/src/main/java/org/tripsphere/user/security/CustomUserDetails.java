@@ -20,17 +20,17 @@ import org.tripsphere.user.model.UserEntity;
 public class CustomUserDetails implements UserDetails {
 
     /** The wrapped entity — available after successful authentication. */
-    @Getter private final UserEntity userEntity;
+    @Getter
+    private final UserEntity userEntity;
 
     private final Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(UserEntity userEntity) {
         this.userEntity = userEntity;
-        this.authorities =
-                userEntity.getRoles().stream()
-                        .map(Role::name)
-                        .map(name -> new SimpleGrantedAuthority("ROLE_" + name))
-                        .collect(Collectors.toList());
+        this.authorities = userEntity.getRoles().stream()
+                .map(Role::name)
+                .map(name -> new SimpleGrantedAuthority("ROLE_" + name))
+                .collect(Collectors.toList());
     }
 
     @Override

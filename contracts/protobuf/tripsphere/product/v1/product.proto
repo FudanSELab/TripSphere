@@ -39,7 +39,6 @@ enum SpuStatus {
   SPU_STATUS_DRAFT = 1;
   SPU_STATUS_ON_SHELF = 2;
   SPU_STATUS_OFF_SHELF = 3;
-  SPU_STATUS_DELETED = 4;
 }
 
 message Spu {
@@ -48,7 +47,7 @@ message Spu {
   string description = 3;
   ResourceType resource_type = 4;
   // ID of the resource.
-  // For example, hotel room type ID, attraction ID, etc.
+  // For example, attraction ID "019cc3b4-3163-751c-9d82-edb85c27c4ae"
   string resource_id = 5;
   repeated string images = 6;
   repeated Sku skus = 7;
@@ -61,7 +60,6 @@ enum SkuStatus {
   SKU_STATUS_UNSPECIFIED = 0;
   SKU_STATUS_ACTIVE = 1;
   SKU_STATUS_INACTIVE = 2;
-  SKU_STATUS_DELETED = 3;
 }
 
 message Sku {

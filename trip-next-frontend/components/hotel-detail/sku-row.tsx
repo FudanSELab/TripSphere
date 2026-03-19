@@ -1,0 +1,90 @@
+import {
+  User,
+  Utensils,
+  CheckCircle,
+  XCircle,
+  Zap,
+  CreditCard,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { formatMoney } from "@/lib/format";
+import type { Sku } from "@/lib/grpc/generated/tripsphere/product/v1/product";
+
+interface SkuRowProps {
+  sku: Sku;
+  maxOccupancy: number;
+  isLast: boolean;
+}
+
+export function SkuRow({ sku, maxOccupancy, isLast }: SkuRowProps) {
+  const price = formatMoney(sku.basePrice);
+  const attrs = sku.attributes as Record<string, unknown> | undefined;
+  const hasBreakfast = attrs?.breakfast === true;
+  const cancellable = attrs?.cancellable === true;
+  const instantConfirm = attrs?.instant_confirm !== false;
+
+  return (
+    <tr className={!isLast ? "border-b" : ""}>
+      <td className="px-4 py-4">
+        <div className="space-y-1 text-sm">
+          <div className="text-foreground font-medium">{sku.name}</div>
+          <div className="flex items-center gap-2">
+            <Utensils
+              className={`size-4 ${hasBreakfast ? "text-green-500" : "text-muted-foreground"}`}
+            />
+            <span
+              className={
+                hasBreakfast ? "text-green-600" : "text-muted-foreground"
+              }
+            >
+              {hasBreakfast ? "含早餐" : "无早餐"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {cancellable ? (
+              <CheckCircle className="size-4 text-green-500" />
+            ) : (
+              <XCircle className="text-muted-foreground size-4" />
+            )}
+            <span
+              className={
+                cancellable ? "text-green-600" : "text-muted-foreground"
+              }
+            >
+              {cancellable ? "可取消" : "不可取消"}
+            </span>
+          </div>
+          {instantConfirm && (
+            <div className="flex items-center gap-2">
+              <Zap className="size-4 text-green-500" />
+              <span className="text-green-600">立即确认</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <CreditCard className="text-muted-foreground size-4" />
+            <span className="text-muted-foreground">在线付</span>
+          </div>
+        </div>
+      </td>
+
+      <td className="px-4 py-4 text-center">
+        <div className="flex items-center justify-center gap-0.5">
+          {Array.from({ length: maxOccupancy }).map((_, i) => (
+            <User key={i} className="text-muted-foreground size-5" />
+          ))}
+        </div>
+      </td>
+
+      <td className="px-4 py-4">
+        <div className="flex flex-col items-end gap-2">
+          <span className="text-xl font-bold text-orange-500">
+            ¥{Math.round(price)}
+          </span>
+          <Button size="sm" className="bg-blue-500 px-6 hover:bg-blue-600">
+            预订
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}

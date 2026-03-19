@@ -20,27 +20,37 @@ export function HotelCardList({
   city,
 }: HotelListProps) {
   const [hotels, setHotels] = useState<Hotel[]>(initialHotels);
-  const [nextPageToken, setNextPageToken] = useState(initialNextPageToken);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialNextPageToken !== "");
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const loadingRef = useRef(false);
+  const hasMoreRef = useRef(initialNextPageToken !== "");
+  const nextPageTokenRef = useRef(initialNextPageToken);
+
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (loadingRef.current || !hasMoreRef.current) return;
+
+    loadingRef.current = true;
     setLoading(true);
+
     try {
-      const result = await listHotels(city, nextPageToken);
+      const result = await listHotels(city, nextPageTokenRef.current);
       setHotels((prev) => [...prev, ...result.hotels]);
-      setNextPageToken(result.nextPageToken);
-      setHasMore(result.nextPageToken !== "");
+
+      nextPageTokenRef.current = result.nextPageToken;
+      const more = result.nextPageToken !== "";
+      hasMoreRef.current = more;
+      setHasMore(more);
     } catch {
+      hasMoreRef.current = false;
       setHasMore(false);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [city, nextPageToken, loading, hasMore]);
+  }, [city]);
 
-  // Infinite scroll via IntersectionObserver
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;

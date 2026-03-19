@@ -25,39 +25,35 @@ Attractions  (resourceType = RESOURCE_TYPE_ATTRACTION):
       成人票  → ticketInfo.estimatedPrice.amount
       儿童票  → max(round(adult_price × 0.5), 1)
 
-Output document structure (SpuDoc)
-───────────────────────────────────
+Output document structure (SpuDocument)
+───────────────────────────────────────
 {
     "_id":          str   UUID7
     "name":         str
     "description":  str
-    "resourceType": "RESOURCE_TYPE_HOTEL_ROOM" | "RESOURCE_TYPE_ATTRACTION"
+    "resourceType": "HOTEL_ROOM" | "ATTRACTION"
     "resourceId":   str   (room-type _id  OR  attraction _id)
     "images":       []
-    "status":       "SPU_STATUS_ON_SHELF"
+    "status":       "ON_SHELF"
     "attributes":   null
     "skus": [
         {
             "id":          str   UUID7
             "name":        str
+            "spuId":       str   (back-reference to parent SPU _id)
             "description": str
-            "status":      "SKU_STATUS_ACTIVE"
+            "status":      "ACTIVE"
             "attributes":  null
             "basePrice":   {"currency": "CNY", "amount": float}
         }
     ]
-    "createdAt":    str   ISO-8601 UTC  (@CreatedDate  / Instant)
-    "updatedAt":    str   ISO-8601 UTC  (@LastModifiedDate / Instant)
 }
 
 Notes on Spring Data MongoDB compatibility
 ───────────────────────────────────────────
-• resourceType and status are plain String fields in SpuDoc / SkuDoc, so
-  proto enum names are stored verbatim as strings.
-• createdAt / updatedAt are annotated with @CreatedDate / @LastModifiedDate
-  (Instant); the downstream importer must convert the ISO-8601 strings to
-  BSON Date objects (datetime) before insertion — same pattern used by the
-  hotel importer.
+• resourceType and status are plain String fields in SpuDocument / SkuDocument.
+  Values are the domain enum names (e.g. "HOTEL_ROOM", "ON_SHELF", "ACTIVE"),
+  NOT the proto enum names with prefixes.
 • basePrice.amount is stored here as a plain Python float.  The downstream
   importer should convert it to BSON Decimal128 so that Spring Data maps it
   correctly to java.math.BigDecimal.
@@ -65,7 +61,6 @@ Notes on Spring Data MongoDB compatibility
 
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -95,12 +90,12 @@ def generate_id() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Proto enum names — stored verbatim as strings by Spring Data MongoDB
+# Domain enum names — stored as strings by SpuDocumentMapper (MapStruct)
 # ---------------------------------------------------------------------------
-RESOURCE_TYPE_HOTEL_ROOM = "RESOURCE_TYPE_HOTEL_ROOM"
-RESOURCE_TYPE_ATTRACTION = "RESOURCE_TYPE_ATTRACTION"
-SPU_STATUS_ON_SHELF = "SPU_STATUS_ON_SHELF"
-SKU_STATUS_ACTIVE = "SKU_STATUS_ACTIVE"
+RESOURCE_TYPE_HOTEL_ROOM = "HOTEL_ROOM"
+RESOURCE_TYPE_ATTRACTION = "ATTRACTION"
+SPU_STATUS_ON_SHELF = "ON_SHELF"
+SKU_STATUS_ACTIVE = "ACTIVE"
 
 # ---------------------------------------------------------------------------
 # Price multiplier per room-type name
@@ -115,11 +110,6 @@ DEFAULT_ROOM_MULTIPLIER: float = 1.0
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def now_iso() -> str:
-    """Return the current UTC time as an ISO-8601 string (millisecond precision)."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 def load_json(file_path: Path) -> list | dict:
@@ -147,11 +137,14 @@ def build_money(amount: float) -> dict[str, Any]:
     return {"currency": "CNY", "amount": round(amount, 2)}
 
 
-def build_sku_doc(name: str, description: str, amount: float) -> dict[str, Any]:
+def build_sku_doc(
+    name: str, description: str, amount: float, spu_id: str
+) -> dict[str, Any]:
     """Construct a single SkuDoc sub-document."""
     return {
         "id": generate_id(),
         "name": name,
+        "spuId": spu_id,
         "description": description,
         "status": SKU_STATUS_ACTIVE,
         "attributes": None,
@@ -160,17 +153,17 @@ def build_sku_doc(name: str, description: str, amount: float) -> dict[str, Any]:
 
 
 def build_spu_doc(
+    spu_id: str,
     name: str,
     description: str,
     resource_type: str,
     resource_id: str,
     skus: list[dict[str, Any]],
-    ts: str,
     attributes: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Construct a single SpuDoc document."""
+    """Construct a single SpuDocument document."""
     return {
-        "_id": generate_id(),
+        "_id": spu_id,
         "name": name,
         "description": description,
         "resourceType": resource_type,
@@ -179,8 +172,6 @@ def build_spu_doc(
         "status": SPU_STATUS_ON_SHELF,
         "attributes": attributes,
         "skus": skus,
-        "createdAt": ts,
-        "updatedAt": ts,
     }
 
 
@@ -246,20 +237,21 @@ def generate_hotel_spus(
 
         multiplier = ROOM_PRICE_MULTIPLIER.get(room_name, DEFAULT_ROOM_MULTIPLIER)
         sku_price = float(round(base_price * multiplier))
-        ts = now_iso()
 
+        spu_id = generate_id()
         sku = build_sku_doc(
             name="标准入住",
             description="按入住日期计算，价格为单晚费用。",
             amount=sku_price,
+            spu_id=spu_id,
         )
         spu = build_spu_doc(
+            spu_id=spu_id,
             name=room_name,
             description=room_desc,
             resource_type=RESOURCE_TYPE_HOTEL_ROOM,
             resource_id=room_type_id,
             skus=[sku],
-            ts=ts,
             attributes={"hotel_id": hotel_id},
         )
         spus.append(spu)
@@ -327,29 +319,30 @@ def generate_attraction_spus(
             skipped_free += 1
             continue
 
-        # 儿童票：半价，最低 1 元，取整
         child_price = float(max(round(adult_price * 0.5), 1))
-        ts = now_iso()
 
+        spu_id = generate_id()
         skus = [
             build_sku_doc(
                 name="成人票",
                 description="适用于18岁及以上成人，含景区一日入场资格。",
                 amount=adult_price,
+                spu_id=spu_id,
             ),
             build_sku_doc(
                 name="儿童票",
                 description="适用于18岁以下儿童，含景区一日入场资格。",
                 amount=child_price,
+                spu_id=spu_id,
             ),
         ]
         spu = build_spu_doc(
+            spu_id=spu_id,
             name=f"{attr_name} 一日票",
             description=f"{attr_name}一日游门票，含景区基本入场权益。",
             resource_type=RESOURCE_TYPE_ATTRACTION,
             resource_id=attr_id,
             skus=skus,
-            ts=ts,
         )
         spus.append(spu)
         summary.append(
