@@ -1,8 +1,8 @@
 from typing import Annotated, cast
 
 from fastapi import Depends, HTTPException, Request
-from itinerary_planner.services.itinerary_service_client import ItineraryServiceClient
 
+from itinerary_planner.grpc.clients.itinerary import ItineraryServiceClient
 from itinerary_planner.nacos.naming import NacosNaming
 
 

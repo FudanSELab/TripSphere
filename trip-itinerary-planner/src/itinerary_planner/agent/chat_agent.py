@@ -51,7 +51,7 @@ _SEP = "─" * 60
 
 # ── State ──────────────────────────────────────────────────────────────────
 
-ChatState = TypedDict(  # type: ignore[misc]
+ChatState = TypedDict(
     "ChatState",
     {
         # Full conversation history; add_messages merges instead of replacing.
@@ -112,7 +112,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
     model = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.0,
-        api_key=settings.openai.api_key,  # type: ignore[arg-type]
+        api_key=settings.openai.api_key,
         base_url=settings.openai.base_url,
     )
 
@@ -120,8 +120,8 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
     if nacos_naming is not None:
         all_tools.append(make_regenerate_day_tool(nacos_naming))
 
-    tool_node = ToolNode(all_tools)  # type: ignore[arg-type]
-    model_with_tools = model.bind_tools(all_tools)  # type: ignore[arg-type]
+    tool_node = ToolNode(all_tools)
+    model_with_tools = model.bind_tools(all_tools)
 
     # ── Nodes ──────────────────────────────────────────────────────────────
 
@@ -151,7 +151,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
 
     # ── Graph ──────────────────────────────────────────────────────────────
 
-    workflow: StateGraph = StateGraph(ChatState)
+    workflow: StateGraph[ChatState] = StateGraph(ChatState)
     workflow.add_node("agent", agent_node)
     workflow.add_node("tools", tool_node)
 
@@ -169,4 +169,4 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
         "[ChatAgent] ReAct graph compiled (%d tool(s), checkpointer=MemorySaver)",
         len(all_tools),
     )
-    return graph  # type: ignore[return-value]
+    return graph

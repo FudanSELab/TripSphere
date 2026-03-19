@@ -80,7 +80,7 @@ def _update(
 # ── Inline tools ───────────────────────────────────────────────────────────
 
 
-@tool  # type: ignore[misc]
+@tool
 def update_itinerary_day(
     day: int,
     activities: list[dict[str, Any]],
@@ -124,7 +124,7 @@ def update_itinerary_day(
     )
 
 
-@tool  # type: ignore[misc]
+@tool
 def add_activity(
     day: int,
     activity: dict[str, Any],
@@ -164,7 +164,7 @@ def add_activity(
     )
 
 
-@tool  # type: ignore[misc]
+@tool
 def remove_spot(
     day: int,
     spot_name: str,
@@ -209,7 +209,7 @@ def remove_spot(
     return _update(tool_call_id, msg, new_itinerary)
 
 
-@tool  # type: ignore[misc]
+@tool
 def delete_day(
     day: int,
     tool_call_id: Annotated[str, InjectedToolCallId],
@@ -249,7 +249,7 @@ def delete_day(
     )
 
 
-@tool  # type: ignore[misc]
+@tool
 def add_day(
     date: str,
     activities: list[dict[str, Any]],
@@ -292,7 +292,7 @@ def add_day(
     return _update(tool_call_id, f"Day {new_day_number} ({date}) added.", new_itinerary)
 
 
-@tool  # type: ignore[misc]
+@tool
 def update_markdown(
     markdown: str,
     tool_call_id: Annotated[str, InjectedToolCallId],
@@ -340,7 +340,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
             description="Regenerated activities for the day"
         )
 
-    @tool("regenerate_day")  # type: ignore[misc]
+    @tool("regenerate_day")
     async def regenerate_day(
         day: int,
         preference: str,
@@ -405,7 +405,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
         chat_model = ChatOpenAI(
             model="gpt-4o-mini",
             temperature=0.6,
-            api_key=settings.openai.api_key,  # type: ignore[arg-type]
+            api_key=settings.openai.api_key,
             base_url=settings.openai.base_url,
         )
 
@@ -420,10 +420,10 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
         )
 
         try:
-            structured_llm = chat_model.with_structured_output(_RegResult)  # type: ignore[call-overload]
+            structured_llm = chat_model.with_structured_output(_RegResult)
             result: _RegResult = _RegResult.model_validate(
                 await structured_llm.ainvoke(prompt)
-            )  # type: ignore[arg-type]
+            )
 
             new_activities: list[dict[str, Any]] = []
             for act in result.activities:

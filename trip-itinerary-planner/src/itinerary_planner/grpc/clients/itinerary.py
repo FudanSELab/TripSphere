@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 import grpc
 from tripsphere.attraction.v1 import attraction_pb2
@@ -50,7 +51,7 @@ def _parse_date(iso: str) -> date_pb2.Date:
 
 
 def _activity_to_proto(activity: Activity) -> itinerary_pb2.Activity:
-    kwargs: dict = {  # type: ignore[type-arg]
+    kwargs: dict[str, Any] = {
         "id": activity.id,
         "title": activity.name,
         "description": activity.description,

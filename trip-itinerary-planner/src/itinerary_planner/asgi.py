@@ -13,9 +13,9 @@ from openinference.instrumentation.langchain import LangChainInstrumentor
 from itinerary_planner.agent.chat_agent import create_chat_graph
 from itinerary_planner.config.logging import setup_logging
 from itinerary_planner.config.settings import get_settings
+from itinerary_planner.grpc.clients.itinerary import ItineraryServiceClient
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.routers.planning import planning
-from itinerary_planner.services.itinerary_service_client import ItineraryServiceClient
 
 logger = logging.getLogger(__name__)
 
