@@ -8,6 +8,7 @@ import { HotelServiceClient } from "./generated/tripsphere/hotel/v1/hotel";
 import { AttractionServiceClient } from "./generated/tripsphere/attraction/v1/attraction";
 import { ItineraryServiceClient } from "./generated/tripsphere/itinerary/v1/itinerary";
 import { PoiServiceClient } from "./generated/tripsphere/poi/v1/poi";
+import { OrderServiceClient } from "./generated/tripsphere/order/v1/order";
 import { ProductServiceClient } from "./generated/tripsphere/product/v1/product";
 
 const clientCache = new Map<string, unknown>();
@@ -51,6 +52,10 @@ export function getPoiService() {
 
 export function getProductService() {
   return getGrpcClient(ProductServiceClient, config.grpc.productService);
+}
+
+export function getOrderService() {
+  return getGrpcClient(OrderServiceClient, config.grpc.orderService);
 }
 
 export async function getAuthMetadata(): Promise<Metadata> {

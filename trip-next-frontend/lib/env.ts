@@ -10,6 +10,7 @@ export const config = {
     hotelService: env("HOTEL_SERVICE_ADDR", "localhost:50054"),
     inventoryService: env("INVENTORY_SERVICE_ADDR", "localhost:50061"),
     itineraryService: env("ITINERARY_SERVICE_ADDR", "localhost:50052"),
+    orderService: env("ORDER_SERVICE_ADDR", "localhost:50062"),
     poiService: env("POI_SERVICE_ADDR", "localhost:50058"),
     productService: env("PRODUCT_SERVICE_ADDR", "localhost:50060"),
     userService: env("USER_SERVICE_ADDR", "localhost:50056"),

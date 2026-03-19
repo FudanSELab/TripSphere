@@ -120,6 +120,7 @@ services:
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       mongodb:
         condition: service_healthy
@@ -180,6 +181,8 @@ services:
     ports:
       - "24219:24219" # HTTP
       - "50052:50052" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
@@ -242,6 +245,8 @@ services:
     ports:
       - "24216:24216" # HTTP
       - "50055:50055" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
@@ -282,6 +287,8 @@ services:
     ports:
       - "24218:24218" # HTTP
       - "50058:50058" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
@@ -299,6 +306,8 @@ services:
     ports:
       - "24220:24220" # HTTP
       - "50060:50060" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
