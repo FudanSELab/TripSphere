@@ -17,8 +17,7 @@ public interface CustomItineraryDocRepository {
      * @param cursorId the id from the last item of the previous page (null for first page)
      * @return list of itineraries
      */
-    List<ItineraryDoc> findByUserIdWithPagination(
-            String userId, int limit, Instant cursorCreatedAt, String cursorId);
+    List<ItineraryDoc> findByUserIdWithPagination(String userId, int limit, Instant cursorCreatedAt, String cursorId);
 
     /**
      * Find the itinerary that contains a specific activity.

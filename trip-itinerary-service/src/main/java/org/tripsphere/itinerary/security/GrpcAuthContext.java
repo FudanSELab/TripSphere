@@ -22,8 +22,7 @@ import lombok.Getter;
 @Builder
 public class GrpcAuthContext {
 
-    private static final Context.Key<GrpcAuthContext> AUTH_CONTEXT_KEY =
-            Context.key("auth-context");
+    private static final Context.Key<GrpcAuthContext> AUTH_CONTEXT_KEY = Context.key("auth-context");
 
     private static final Metadata.Key<String> USER_ID_KEY =
             Metadata.Key.of("x-user-id", Metadata.ASCII_STRING_MARSHALLER);
@@ -59,7 +58,11 @@ public class GrpcAuthContext {
             roles = Arrays.asList(rolesStr.split(","));
         }
 
-        return GrpcAuthContext.builder().userId(userId).roles(roles).token(token).build();
+        return GrpcAuthContext.builder()
+                .userId(userId)
+                .roles(roles)
+                .token(token)
+                .build();
     }
 
     /** Create an anonymous (unauthenticated) context. */

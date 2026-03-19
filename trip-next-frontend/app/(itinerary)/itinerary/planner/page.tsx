@@ -25,14 +25,28 @@ type SyncStatus = "saved" | "saving" | "unsaved" | "error";
 
 function SyncBadge({ status }: { status: SyncStatus }) {
   const cfg: Record<SyncStatus, { label: string; cls: string }> = {
-    saved:   { label: "✓ 已保存",  cls: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-    saving:  { label: "⟳ 保存中…", cls: "bg-blue-50 text-blue-500 border-blue-200 animate-pulse" },
-    unsaved: { label: "● 未保存",  cls: "bg-amber-50 text-amber-600 border-amber-200" },
-    error:   { label: "✕ 保存失败", cls: "bg-red-50 text-red-500 border-red-200" },
+    saved: {
+      label: "✓ 已保存",
+      cls: "bg-emerald-50 text-emerald-600 border-emerald-200",
+    },
+    saving: {
+      label: "⟳ 保存中…",
+      cls: "bg-blue-50 text-blue-500 border-blue-200 animate-pulse",
+    },
+    unsaved: {
+      label: "● 未保存",
+      cls: "bg-amber-50 text-amber-600 border-amber-200",
+    },
+    error: {
+      label: "✕ 保存失败",
+      cls: "bg-red-50 text-red-500 border-red-200",
+    },
   };
   const { label, cls } = cfg[status];
   return (
-    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${cls}`}>
+    <span
+      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${cls}`}
+    >
       {label}
     </span>
   );
@@ -66,7 +80,8 @@ function PlannerContent() {
           ? newState({ itinerary, markdown_content: markdownContent })
           : newState;
       if (next.itinerary != null) setItinerary(next.itinerary);
-      if (next.markdown_content !== undefined) setMarkdownContent(next.markdown_content);
+      if (next.markdown_content !== undefined)
+        setMarkdownContent(next.markdown_content);
     },
   });
 
@@ -183,9 +198,13 @@ function PlannerContent() {
       {/* Top bar with sync status */}
       <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-4 py-2">
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span className="font-medium text-gray-700">{itinerary.destination}</span>
+          <span className="font-medium text-gray-700">
+            {itinerary.destination}
+          </span>
           <span>·</span>
-          <span>{itinerary.start_date} ~ {itinerary.end_date}</span>
+          <span>
+            {itinerary.start_date} ~ {itinerary.end_date}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <SyncBadge status={syncStatus} />

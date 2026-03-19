@@ -22,15 +22,13 @@ public interface MoneyMapper {
         }
         Currency currency = Currency.getInstance(proto.getCurrency());
         // Convert units + nanos to BigDecimal
-        BigDecimal amount =
-                BigDecimal.valueOf(proto.getUnits()).add(BigDecimal.valueOf(proto.getNanos(), 9));
+        BigDecimal amount = BigDecimal.valueOf(proto.getUnits()).add(BigDecimal.valueOf(proto.getNanos(), 9));
         return new Money(currency, amount);
     }
 
     default org.tripsphere.common.v1.Money toMoneyProto(Money obj) {
         if (obj == null) return org.tripsphere.common.v1.Money.getDefaultInstance();
-        org.tripsphere.common.v1.Money.Builder builder =
-                org.tripsphere.common.v1.Money.newBuilder();
+        org.tripsphere.common.v1.Money.Builder builder = org.tripsphere.common.v1.Money.newBuilder();
         if (obj.currency() != null) {
             builder.setCurrency(obj.currency().getCurrencyCode());
         }

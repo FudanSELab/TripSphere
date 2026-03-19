@@ -121,7 +121,12 @@ function formatTime(t: { hours: number; minutes: number } | undefined): string {
   return `${t.hours.toString().padStart(2, "0")}:${t.minutes.toString().padStart(2, "0")}`;
 }
 
-function parseTime(hhmm: string): { hours: number; minutes: number; seconds: number; nanos: number } {
+function parseTime(hhmm: string): {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  nanos: number;
+} {
   const [h, m] = hhmm.split(":").map(Number);
   return { hours: h || 0, minutes: m || 0, seconds: 0, nanos: 0 };
 }
@@ -144,7 +149,7 @@ function protoActivityToFrontend(a: ProtoActivity): Activity {
   const loc = a.location;
   const addrLine = formatAddressLine(a.address);
   const cost = a.estimatedCost;
-  const amount = cost ? (Number(cost.units) + cost.nanos / 1_000_000_000) : 0;
+  const amount = cost ? Number(cost.units) + cost.nanos / 1_000_000_000 : 0;
 
   let attraction_id: string | null = null;
   let hotel_id: string | null = null;
@@ -177,7 +182,8 @@ function frontendActivityToProto(a: Activity): ProtoActivity {
     id: a.id,
     title: a.name,
     description: a.description,
-    kind: KIND_STRING_TO_PROTO[a.kind] ?? ActivityKind.ACTIVITY_KIND_UNSPECIFIED,
+    kind:
+      KIND_STRING_TO_PROTO[a.kind] ?? ActivityKind.ACTIVITY_KIND_UNSPECIFIED,
     startTime: parseTime(a.start_time),
     endTime: parseTime(a.end_time),
     estimatedCost: {
@@ -199,8 +205,10 @@ function frontendActivityToProto(a: Activity): ProtoActivity {
     category: a.category,
     metadata: undefined,
   };
-  if (a.attraction_id) proto.attraction = { id: a.attraction_id } as ProtoActivity["attraction"];
-  else if (a.hotel_id) proto.hotel = { id: a.hotel_id } as ProtoActivity["hotel"];
+  if (a.attraction_id)
+    proto.attraction = { id: a.attraction_id } as ProtoActivity["attraction"];
+  else if (a.hotel_id)
+    proto.hotel = { id: a.hotel_id } as ProtoActivity["hotel"];
   return proto;
 }
 
@@ -225,13 +233,18 @@ function frontendDayPlanToProto(dp: DayPlan): ProtoDayPlan {
   };
 }
 
-function moneyToAmount(m: { units: number; nanos: number; currency: string } | undefined): { amount: number; currency: string } {
+function moneyToAmount(
+  m: { units: number; nanos: number; currency: string } | undefined,
+): { amount: number; currency: string } {
   if (!m) return { amount: 0, currency: "CNY" };
   const amount = m.units + m.nanos / 1_000_000_000;
   return { amount, currency: m.currency || "CNY" };
 }
 
-function amountToMoney(amount: number, currency: string): { units: number; nanos: number; currency: string } {
+function amountToMoney(
+  amount: number,
+  currency: string,
+): { units: number; nanos: number; currency: string } {
   return {
     currency: currency || "CNY",
     units: Math.trunc(amount),
@@ -242,7 +255,9 @@ function amountToMoney(amount: number, currency: string): { units: number; nanos
 function protoItineraryToFrontend(proto: ProtoItinerary): Itinerary {
   let summary: ItinerarySummary | null = null;
   if (proto.summary) {
-    const { amount, currency } = moneyToAmount(proto.summary.totalEstimatedCost);
+    const { amount, currency } = moneyToAmount(
+      proto.summary.totalEstimatedCost,
+    );
     summary = {
       total_estimated_cost: amount,
       currency,
@@ -267,7 +282,10 @@ function frontendItineraryToProto(
   let summary: ProtoItinerarySummary | undefined;
   if (it.summary) {
     summary = {
-      totalEstimatedCost: amountToMoney(it.summary.total_estimated_cost, it.summary.currency),
+      totalEstimatedCost: amountToMoney(
+        it.summary.total_estimated_cost,
+        it.summary.currency,
+      ),
       totalActivities: it.summary.total_activities,
       highlights: it.summary.highlights,
     };
@@ -313,14 +331,16 @@ function callGrpc<Req, Res>(
   metadata: Metadata,
 ): Promise<Res> {
   return new Promise<Res>((resolve, reject) => {
-    (client[method] as (req: Req, meta: Metadata, cb: (err: unknown, res: Res) => void) => void)(
-      request,
-      metadata,
-      (error: unknown, response: Res) => {
-        if (error) reject(error);
-        else resolve(response);
-      },
-    );
+    (
+      client[method] as (
+        req: Req,
+        meta: Metadata,
+        cb: (err: unknown, res: Res) => void,
+      ) => void
+    )(request, metadata, (error: unknown, response: Res) => {
+      if (error) reject(error);
+      else resolve(response);
+    });
   });
 }
 
@@ -373,7 +393,12 @@ export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
   const { itineraries } = await callGrpc<
     Parameters<typeof client.listUserItineraries>[0],
     Awaited<ReturnType<typeof client.listUserItineraries>>
-  >(client, "listUserItineraries", { userId, pageSize: 50, pageToken: "" }, metadata);
+  >(
+    client,
+    "listUserItineraries",
+    { userId, pageSize: 50, pageToken: "" },
+    metadata,
+  );
 
   return (itineraries ?? []).map((it) => ({
     id: it.id,

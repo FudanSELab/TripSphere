@@ -59,13 +59,11 @@ public class JwtAuthenticationToken extends AbstractAuthenticationToken {
      * Factory method to create an authenticated token. Should only be called by {@link
      * org.tripsphere.user.config.JwtAuthenticationProvider} after validating the JWT.
      */
-    public static JwtAuthenticationToken authenticated(
-            String token, String userId, String email, List<String> roles) {
-        Collection<SimpleGrantedAuthority> authorities =
-                roles.stream()
-                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-                        .map(SimpleGrantedAuthority::new)
-                        .toList();
+    public static JwtAuthenticationToken authenticated(String token, String userId, String email, List<String> roles) {
+        Collection<SimpleGrantedAuthority> authorities = roles.stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .map(SimpleGrantedAuthority::new)
+                .toList();
         return new JwtAuthenticationToken(token, userId, email, roles, authorities);
     }
 

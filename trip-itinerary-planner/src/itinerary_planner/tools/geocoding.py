@@ -18,7 +18,7 @@ class GeocodeResult(BaseModel):
     address: str = Field(description="Full address or description")
 
 
-@tool  # type: ignore[misc]
+@tool
 async def geocoding_tool(address: str, city: str = "") -> GeocodeResult:
     """Convert a location name to geographic coordinates (latitude, longitude).
     Use when the user asks for coordinates or address of a place.

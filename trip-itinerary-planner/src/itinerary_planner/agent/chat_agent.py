@@ -37,12 +37,12 @@ from langgraph.prebuilt import ToolNode
 
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.naming import NacosNaming
+from itinerary_planner.prompts.chat_agent import CHAT_AGENT_INSTRUCTION
 from itinerary_planner.tools import (
     INLINE_TOOLS,
     geocoding_tool,
     make_regenerate_day_tool,
 )
-from itinerary_planner.prompts.chat_agent import CHAT_AGENT_INSTRUCTION
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ _SEP = "─" * 60
 
 # ── State ──────────────────────────────────────────────────────────────────
 
-ChatState = TypedDict(  # type: ignore[misc]
+ChatState = TypedDict(
     "ChatState",
     {
         # Full conversation history; add_messages merges instead of replacing.
@@ -89,7 +89,9 @@ def _build_system_message(itinerary: dict[str, Any] | None) -> SystemMessage:
             len(itinerary_json),
         )
     else:
-        logger.warning("[ChatAgent] No itinerary in state; agent has no destination context.")
+        logger.warning(
+            "[ChatAgent] No itinerary in state; agent has no destination context."
+        )
 
     return SystemMessage(content=content)
 
@@ -110,7 +112,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
     model = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.0,
-        api_key=settings.openai.api_key,  # type: ignore[arg-type]
+        api_key=settings.openai.api_key,
         base_url=settings.openai.base_url,
     )
 
@@ -118,14 +120,12 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
     if nacos_naming is not None:
         all_tools.append(make_regenerate_day_tool(nacos_naming))
 
-    tool_node = ToolNode(all_tools)  # type: ignore[arg-type]
-    model_with_tools = model.bind_tools(all_tools)  # type: ignore[arg-type]
+    tool_node = ToolNode(all_tools)
+    model_with_tools = model.bind_tools(all_tools)
 
     # ── Nodes ──────────────────────────────────────────────────────────────
 
-    async def agent_node(
-        state: ChatState, config: RunnableConfig
-    ) -> dict[str, Any]:
+    async def agent_node(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
         logger.info(_SEP)
         logger.info(
             "[ChatAgent] messages=%d  itinerary=%s",
@@ -151,7 +151,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
 
     # ── Graph ──────────────────────────────────────────────────────────────
 
-    workflow: StateGraph = StateGraph(ChatState)
+    workflow: StateGraph[ChatState] = StateGraph(ChatState)
     workflow.add_node("agent", agent_node)
     workflow.add_node("tools", tool_node)
 
@@ -169,4 +169,4 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
         "[ChatAgent] ReAct graph compiled (%d tool(s), checkpointer=MemorySaver)",
         len(all_tools),
     )
-    return graph  # type: ignore[return-value]
+    return graph

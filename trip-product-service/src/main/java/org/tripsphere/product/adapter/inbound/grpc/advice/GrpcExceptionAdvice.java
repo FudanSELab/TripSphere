@@ -6,10 +6,38 @@ import net.devh.boot.grpc.server.advice.GrpcAdvice;
 import net.devh.boot.grpc.server.advice.GrpcExceptionHandler;
 import org.tripsphere.product.application.exception.BusinessException;
 import org.tripsphere.product.application.exception.ErrorCode;
+import org.tripsphere.product.domain.exception.DuplicateSkuNameException;
+import org.tripsphere.product.domain.exception.InvalidSkuStateException;
+import org.tripsphere.product.domain.exception.InvalidSpuStateException;
+import org.tripsphere.product.domain.exception.ProductDomainException;
 
 @Slf4j
 @GrpcAdvice
 public class GrpcExceptionAdvice {
+
+    @GrpcExceptionHandler(InvalidSpuStateException.class)
+    public Status handleInvalidSpuState(InvalidSpuStateException e) {
+        log.warn("Invalid SPU state: {}", e.getMessage());
+        return Status.FAILED_PRECONDITION.withDescription(e.getMessage());
+    }
+
+    @GrpcExceptionHandler(InvalidSkuStateException.class)
+    public Status handleInvalidSkuState(InvalidSkuStateException e) {
+        log.warn("Invalid SKU state: {}", e.getMessage());
+        return Status.FAILED_PRECONDITION.withDescription(e.getMessage());
+    }
+
+    @GrpcExceptionHandler(DuplicateSkuNameException.class)
+    public Status handleDuplicateSkuName(DuplicateSkuNameException e) {
+        log.warn("Duplicate SKU name: {}", e.getMessage());
+        return Status.ALREADY_EXISTS.withDescription(e.getMessage());
+    }
+
+    @GrpcExceptionHandler(ProductDomainException.class)
+    public Status handleProductDomainException(ProductDomainException e) {
+        log.warn("Domain exception: {}", e.getMessage());
+        return Status.FAILED_PRECONDITION.withDescription(e.getMessage());
+    }
 
     @GrpcExceptionHandler(BusinessException.class)
     public Status handleBusinessException(BusinessException e) {

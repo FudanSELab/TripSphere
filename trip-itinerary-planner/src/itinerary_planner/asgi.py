@@ -2,18 +2,20 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from ag_ui_langgraph import LangGraphAgent, add_langgraph_fastapi_endpoint  # type: ignore[import-untyped]
+from ag_ui_langgraph import (  # type: ignore[import-untyped]
+    LangGraphAgent,
+    add_langgraph_fastapi_endpoint,
+)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from httpx import AsyncClient
 from openinference.instrumentation.langchain import LangChainInstrumentor
 
 from itinerary_planner.agent.chat_agent import create_chat_graph
 from itinerary_planner.config.logging import setup_logging
 from itinerary_planner.config.settings import get_settings
+from itinerary_planner.grpc.clients.itinerary import ItineraryServiceClient
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.routers.planning import planning
-from itinerary_planner.services.itinerary_service_client import ItineraryServiceClient
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +27,6 @@ LangChainInstrumentor().instrument()
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info("Loaded settings: %s", settings)
-
-    app.state.httpx_client = AsyncClient()
 
     # gRPC client for itinerary CRUD — backed by trip-itinerary-service
     svc_settings = settings.itinerary_service
@@ -72,8 +72,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             logger.info("Deregistering service instance...")
             await app.state.nacos_naming.deregister(ephemeral=True)
             await app.state.nacos_naming.shutdown()
-
-        await app.state.httpx_client.aclose()
 
 
 def create_fastapi_app() -> FastAPI:

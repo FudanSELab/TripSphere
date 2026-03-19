@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.tripsphere.product.application.dto.SpuPage;
 import org.tripsphere.product.application.util.CursorTokenUtil;
 import org.tripsphere.product.application.util.CursorTokenUtil.CursorToken;
+import org.tripsphere.product.config.ProductProperties;
 import org.tripsphere.product.domain.model.ResourceType;
 import org.tripsphere.product.domain.model.Spu;
 import org.tripsphere.product.domain.repository.SpuRepository;
@@ -16,9 +17,7 @@ import org.tripsphere.product.domain.repository.SpuRepository;
 @RequiredArgsConstructor
 public class ListSpusByResourceUseCase {
     private final SpuRepository spuRepository;
-
-    private static final int DEFAULT_PAGE_SIZE = 20;
-    private static final int MAX_PAGE_SIZE = 100;
+    private final ProductProperties properties;
 
     public SpuPage execute(ResourceType resourceType, String resourceId, int pageSize, String pageToken) {
         log.debug(
@@ -48,8 +47,8 @@ public class ListSpusByResourceUseCase {
     }
 
     private int normalizePageSize(int pageSize) {
-        if (pageSize <= 0) return DEFAULT_PAGE_SIZE;
-        return Math.min(pageSize, MAX_PAGE_SIZE);
+        if (pageSize <= 0) return properties.defaultPageSize();
+        return Math.min(pageSize, properties.maxPageSize());
     }
 
     private String decodeAfterIdOrNull(String pageToken) {

@@ -17,13 +17,12 @@ public class MetadataGrpcService extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
-    public void getVersion(
-            GetVersionRequest request, StreamObserver<GetVersionResponse> responseObserver) {
-        String version =
-                buildProperties != null
-                        ? buildProperties.getVersion()
-                        : "develop"; // Default version in development environment
-        GetVersionResponse response = GetVersionResponse.newBuilder().setVersion(version).build();
+    public void getVersion(GetVersionRequest request, StreamObserver<GetVersionResponse> responseObserver) {
+        String version = buildProperties != null
+                ? buildProperties.getVersion()
+                : "develop"; // Default version in development environment
+        GetVersionResponse response =
+                GetVersionResponse.newBuilder().setVersion(version).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

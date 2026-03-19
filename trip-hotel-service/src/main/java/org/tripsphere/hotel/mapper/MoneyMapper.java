@@ -18,15 +18,13 @@ public interface MoneyMapper {
             return null;
         }
         Currency currency = Currency.getInstance(proto.getCurrency());
-        BigDecimal amount =
-                BigDecimal.valueOf(proto.getUnits()).add(BigDecimal.valueOf(proto.getNanos(), 9));
+        BigDecimal amount = BigDecimal.valueOf(proto.getUnits()).add(BigDecimal.valueOf(proto.getNanos(), 9));
         return new Money(currency, amount);
     }
 
     default org.tripsphere.common.v1.Money toMoneyProto(Money doc) {
         if (doc == null) return org.tripsphere.common.v1.Money.getDefaultInstance();
-        org.tripsphere.common.v1.Money.Builder builder =
-                org.tripsphere.common.v1.Money.newBuilder();
+        org.tripsphere.common.v1.Money.Builder builder = org.tripsphere.common.v1.Money.newBuilder();
         if (doc.currency() != null) {
             builder.setCurrency(doc.currency().getCurrencyCode());
         }

@@ -5,6 +5,9 @@ Thumbs.db
 # Visual Studio Code
 .vscode/
 
+# Cursor
+.cursor/
+
 # JetBrains
 .idea/
 

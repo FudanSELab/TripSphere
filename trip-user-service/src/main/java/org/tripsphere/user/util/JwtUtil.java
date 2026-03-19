@@ -51,12 +51,11 @@ public class JwtUtil {
     private PrivateKey loadPrivateKey(Resource resource)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         String pem = readPem(resource);
-        String base64 =
-                pem.replace("-----BEGIN PRIVATE KEY-----", "")
-                        .replace("-----END PRIVATE KEY-----", "")
-                        .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                        .replace("-----END RSA PRIVATE KEY-----", "")
-                        .replaceAll("\\s", "");
+        String base64 = pem.replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+                .replace("-----END RSA PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
         byte[] keyBytes = Base64.getDecoder().decode(base64);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
@@ -65,10 +64,9 @@ public class JwtUtil {
     private PublicKey loadPublicKey(Resource resource)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         String pem = readPem(resource);
-        String base64 =
-                pem.replace("-----BEGIN PUBLIC KEY-----", "")
-                        .replace("-----END PUBLIC KEY-----", "")
-                        .replaceAll("\\s", "");
+        String base64 = pem.replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
         byte[] keyBytes = Base64.getDecoder().decode(base64);
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
         return KeyFactory.getInstance("RSA").generatePublic(keySpec);

@@ -1,5 +1,5 @@
-import { CopilotKit } from "@copilotkit/react-core";
 import { SiteHeader } from "@/components/site-header";
+import { CopilotProvider } from "@/components/copilot-provider";
 
 export default function ItineraryLayout({
   children,
@@ -9,7 +9,11 @@ export default function ItineraryLayout({
   return (
     <>
       <SiteHeader />
-      <CopilotKit runtimeUrl="/api/v1/copilotkit">{children}</CopilotKit>
+      <CopilotProvider>
+        <main className="mx-auto w-full max-w-screen-2xl px-[10rem] py-6">
+          {children}
+        </main>
+      </CopilotProvider>
     </>
   );
 }

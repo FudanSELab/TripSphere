@@ -22,8 +22,7 @@ public class JwtGrpcAuthenticationReader implements GrpcAuthenticationReader {
     private static final String BEARER_PREFIX = "Bearer ";
 
     @Override
-    public Authentication readAuthentication(ServerCall<?, ?> call, Metadata headers)
-            throws AuthenticationException {
+    public Authentication readAuthentication(ServerCall<?, ?> call, Metadata headers) throws AuthenticationException {
         String token = extractToken(headers);
 
         if (token == null) {
@@ -36,9 +35,7 @@ public class JwtGrpcAuthenticationReader implements GrpcAuthenticationReader {
 
     /** Extract JWT token from metadata authorization header. */
     private String extractToken(Metadata headers) {
-        String authHeader =
-                headers.get(
-                        Metadata.Key.of(AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER));
+        String authHeader = headers.get(Metadata.Key.of(AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER));
 
         if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
             return authHeader.substring(BEARER_PREFIX.length()).trim();

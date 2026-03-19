@@ -13,22 +13,19 @@ Usage:
 
 Spring Data MongoDB compatibility notes
 ────────────────────────────────────────
-• createdAt / updatedAt   – ISO-8601 strings are converted to timezone-aware
-  ``datetime`` objects (BSON Date) so they map correctly to Spring Data's
-  ``@CreatedDate`` / ``@LastModifiedDate`` (``Instant``) fields.
 • skus[].basePrice.amount – plain floats are converted to BSON ``Decimal128``
   so Spring Data maps them to ``java.math.BigDecimal`` inside the ``Money``
-  record embedded in ``SkuDoc``.
-• resourceType / status / skus[].status – stored verbatim as strings; the
-  proto enum names are already in the correct format (e.g.
-  ``"RESOURCE_TYPE_HOTEL_ROOM"``, ``"SPU_STATUS_ON_SHELF"``).
+  record embedded in ``SkuDocument``.
+• resourceType / status / skus[].status – stored as domain enum name strings
+  (e.g. ``"HOTEL_ROOM"``, ``"ON_SHELF"``, ``"ACTIVE"``).  These are mapped
+  by ``SpuDocumentMapper`` / ``SkuDocumentMapper`` (MapStruct) to the
+  corresponding Java enum constants.
 """
 
 import json
 import logging
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator, Sequence
 
@@ -205,26 +202,6 @@ class SpuImporter:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _parse_timestamp(value: Any) -> datetime:
-        """
-        Parse a timestamp value into a timezone-aware UTC datetime.
-
-        Accepts ``datetime`` objects and ISO-8601 strings produced by the
-        creation script (e.g. ``"2026-03-09T08:39:01.792Z"``).
-        Falls back to *now* when the value is absent or unparseable.
-        """
-        if isinstance(value, datetime):
-            return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
-        if isinstance(value, str):
-            cleaned = value.rstrip("Z")
-            for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
-                try:
-                    return datetime.strptime(cleaned, fmt).replace(tzinfo=timezone.utc)
-                except ValueError:
-                    continue
-        return datetime.now(timezone.utc)
-
-    @staticmethod
     def _transform_money(price: Any) -> dict[str, Any] | None:
         """
         Convert a Money sub-document so that ``amount`` is stored as BSON
@@ -272,9 +249,6 @@ class SpuImporter:
         Prepare an SPU document for MongoDB storage.
 
         - Renames the legacy ``id`` field to ``_id`` when present.
-        - Converts ``createdAt`` / ``updatedAt`` ISO-8601 strings to BSON
-          ``Date`` (``datetime``) objects so they match Spring Data's
-          ``@CreatedDate`` / ``@LastModifiedDate`` (``Instant``) mapping.
         - Recursively converts ``basePrice.amount`` in every embedded SKU to
           BSON ``Decimal128`` for correct ``BigDecimal`` mapping.
 
@@ -286,24 +260,9 @@ class SpuImporter:
         """
         doc = dict(spu)
 
-        # Backward compatibility: rename 'id' -> '_id'
         if "_id" not in doc and "id" in doc:
             doc["_id"] = doc.pop("id")
 
-        # Convert audit timestamps to BSON Date values.
-        now = datetime.now(timezone.utc)
-        doc["createdAt"] = (
-            SpuImporter._parse_timestamp(doc.get("createdAt"))
-            if doc.get("createdAt")
-            else now
-        )
-        doc["updatedAt"] = (
-            SpuImporter._parse_timestamp(doc.get("updatedAt"))
-            if doc.get("updatedAt")
-            else now
-        )
-
-        # Transform embedded SKU sub-documents.
         raw_skus = doc.get("skus")
         if isinstance(raw_skus, list):
             doc["skus"] = [SpuImporter._transform_sku(s) for s in raw_skus]
@@ -382,16 +341,10 @@ class SpuImporter:
 
                 doc = self._transform_spu(spu)
                 doc_id = doc.pop("_id")
-                # Preserve createdAt on subsequent upserts (@CreatedDate semantics)
-                created_at = doc.pop("createdAt")
-                doc["updatedAt"] = datetime.now(timezone.utc)
                 operations.append(
                     UpdateOne(
                         {"_id": doc_id},
-                        {
-                            "$set": doc,
-                            "$setOnInsert": {"createdAt": created_at},
-                        },
+                        {"$set": doc},
                         upsert=True,
                     )
                 )

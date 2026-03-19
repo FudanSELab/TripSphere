@@ -1,9 +1,9 @@
 package org.tripsphere.product.domain.model;
 
-import com.github.f4b6a3.uuid.UuidCreator;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
+import org.tripsphere.product.domain.exception.InvalidSkuStateException;
 
 @Getter
 @Builder
@@ -17,9 +17,14 @@ public class Sku {
     private Money basePrice;
 
     public static Sku create(
-            String name, String description, SkuStatus status, Map<String, Object> attributes, Money basePrice) {
+            String id,
+            String name,
+            String description,
+            SkuStatus status,
+            Map<String, Object> attributes,
+            Money basePrice) {
         return Sku.builder()
-                .id(UuidCreator.getTimeOrderedEpoch().toString())
+                .id(id)
                 .name(name)
                 .description(description)
                 .status(status != null ? status : SkuStatus.ACTIVE)
@@ -30,14 +35,14 @@ public class Sku {
 
     public void activate() {
         if (this.status == SkuStatus.ACTIVE) {
-            throw new IllegalStateException("SKU is already active");
+            throw new InvalidSkuStateException(id, status.name(), "activate");
         }
         this.status = SkuStatus.ACTIVE;
     }
 
     public void deactivate() {
         if (this.status == SkuStatus.INACTIVE) {
-            throw new IllegalStateException("SKU is already inactive");
+            throw new InvalidSkuStateException(id, status.name(), "deactivate");
         }
         this.status = SkuStatus.INACTIVE;
     }

@@ -35,12 +35,10 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         // Add DAO authentication provider for email/password authentication
-        DaoAuthenticationProvider daoAuthenticationProvider =
-                new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
 
-        List<AuthenticationProvider> providers =
-                List.of(jwtAuthenticationProvider, daoAuthenticationProvider);
+        List<AuthenticationProvider> providers = List.of(jwtAuthenticationProvider, daoAuthenticationProvider);
 
         return new ProviderManager(providers);
     }

@@ -1,23 +1,14 @@
 import "server-only";
+
 import { credentials, Metadata, type ChannelCredentials } from "@grpc/grpc-js";
 import { headers } from "next/headers";
+import { config } from "@/lib/env";
 import { UserServiceClient } from "./generated/tripsphere/user/v1/user";
 import { HotelServiceClient } from "./generated/tripsphere/hotel/v1/hotel";
 import { AttractionServiceClient } from "./generated/tripsphere/attraction/v1/attraction";
 import { ItineraryServiceClient } from "./generated/tripsphere/itinerary/v1/itinerary";
 import { PoiServiceClient } from "./generated/tripsphere/poi/v1/poi";
 import { ProductServiceClient } from "./generated/tripsphere/product/v1/product";
-
-// Static service addresses
-const SERVICE_ADDRESSES = {
-  "trip-attraction-service": "localhost:50053",
-  "trip-hotel-service": "localhost:50054",
-  "trip-inventory-service": "localhost:50061",
-  "trip-itinerary-service": "localhost:50052",
-  "trip-poi-service": "localhost:50058",
-  "trip-product-service": "localhost:50060",
-  "trip-user-service": "localhost:50056",
-};
 
 const clientCache = new Map<string, unknown>();
 
@@ -39,42 +30,27 @@ function getGrpcClient<T>(
 }
 
 export function getUserService() {
-  return getGrpcClient(
-    UserServiceClient,
-    SERVICE_ADDRESSES["trip-user-service"],
-  );
+  return getGrpcClient(UserServiceClient, config.grpc.userService);
 }
 
 export function getHotelService() {
-  return getGrpcClient(
-    HotelServiceClient,
-    SERVICE_ADDRESSES["trip-hotel-service"],
-  );
+  return getGrpcClient(HotelServiceClient, config.grpc.hotelService);
 }
 
 export function getAttractionService() {
-  return getGrpcClient(
-    AttractionServiceClient,
-    SERVICE_ADDRESSES["trip-attraction-service"],
-  );
+  return getGrpcClient(AttractionServiceClient, config.grpc.attractionService);
 }
 
 export function getItineraryService() {
-  return getGrpcClient(
-    ItineraryServiceClient,
-    SERVICE_ADDRESSES["trip-itinerary-service"],
-  );
+  return getGrpcClient(ItineraryServiceClient, config.grpc.itineraryService);
 }
 
 export function getPoiService() {
-  return getGrpcClient(PoiServiceClient, SERVICE_ADDRESSES["trip-poi-service"]);
+  return getGrpcClient(PoiServiceClient, config.grpc.poiService);
 }
 
 export function getProductService() {
-  return getGrpcClient(
-    ProductServiceClient,
-    SERVICE_ADDRESSES["trip-product-service"],
-  );
+  return getGrpcClient(ProductServiceClient, config.grpc.productService);
 }
 
 export async function getAuthMetadata(): Promise<Metadata> {

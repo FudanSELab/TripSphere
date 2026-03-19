@@ -16,6 +16,7 @@ dependencies = [
     "pydantic-settings>=2.11.0",
     "tripsphere>=0.1.0",
     "uvicorn>=0.40.0",
+    "fastapi>=0.135.1",
 ]
 
 [build-system]
@@ -53,3 +54,9 @@ python_version = "3.12"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src"]
+# suppress noisy reports for 3rd-party libs that lack full type stubs
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+reportUnknownArgumentType = false

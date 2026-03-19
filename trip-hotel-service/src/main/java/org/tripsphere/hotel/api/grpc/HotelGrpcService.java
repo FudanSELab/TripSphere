@@ -21,24 +21,21 @@ public class HotelGrpcService extends HotelServiceGrpc.HotelServiceImplBase {
     private static final double DEFAULT_RADIUS_METERS = 1000;
 
     @Override
-    public void getHotelById(
-            GetHotelByIdRequest request, StreamObserver<GetHotelByIdResponse> responseObserver) {
+    public void getHotelById(GetHotelByIdRequest request, StreamObserver<GetHotelByIdResponse> responseObserver) {
         String id = request.getId();
         if (id.isEmpty()) {
             throw InvalidArgumentException.required("id");
         }
 
-        Hotel hotel =
-                hotelService.findById(id).orElseThrow(() -> new NotFoundException("Hotel", id));
+        Hotel hotel = hotelService.findById(id).orElseThrow(() -> new NotFoundException("Hotel", id));
 
-        responseObserver.onNext(GetHotelByIdResponse.newBuilder().setHotel(hotel).build());
+        responseObserver.onNext(
+                GetHotelByIdResponse.newBuilder().setHotel(hotel).build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void batchGetHotels(
-            BatchGetHotelsRequest request,
-            StreamObserver<BatchGetHotelsResponse> responseObserver) {
+    public void batchGetHotels(BatchGetHotelsRequest request, StreamObserver<BatchGetHotelsResponse> responseObserver) {
         List<String> ids = request.getIdsList();
         if (ids.isEmpty()) {
             responseObserver.onNext(BatchGetHotelsResponse.newBuilder().build());
@@ -48,10 +45,10 @@ public class HotelGrpcService extends HotelServiceGrpc.HotelServiceImplBase {
 
         List<Hotel> hotels = hotelService.findAllByIds(ids);
 
-        Map<String, Hotel> hotelsById =
-                hotels.stream().collect(Collectors.toMap(Hotel::getId, Function.identity()));
+        Map<String, Hotel> hotelsById = hotels.stream().collect(Collectors.toMap(Hotel::getId, Function.identity()));
 
-        List<String> missingIds = ids.stream().filter(id -> !hotelsById.containsKey(id)).toList();
+        List<String> missingIds =
+                ids.stream().filter(id -> !hotelsById.containsKey(id)).toList();
         if (!missingIds.isEmpty()) {
             throw new NotFoundException("Hotels with IDs " + missingIds + " not found");
         }
@@ -65,30 +62,24 @@ public class HotelGrpcService extends HotelServiceGrpc.HotelServiceImplBase {
 
     @Override
     public void getHotelsNearby(
-            GetHotelsNearbyRequest request,
-            StreamObserver<GetHotelsNearbyResponse> responseObserver) {
+            GetHotelsNearbyRequest request, StreamObserver<GetHotelsNearbyResponse> responseObserver) {
         if (!request.hasLocation()) {
             throw InvalidArgumentException.required("location");
         }
 
-        double radiusMeters =
-                request.getRadiusMeters() > 0 ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS;
+        double radiusMeters = request.getRadiusMeters() > 0 ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS;
 
         List<Hotel> hotels = hotelService.searchNearby(request.getLocation(), radiusMeters);
 
-        responseObserver.onNext(GetHotelsNearbyResponse.newBuilder().addAllHotels(hotels).build());
+        responseObserver.onNext(
+                GetHotelsNearbyResponse.newBuilder().addAllHotels(hotels).build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void listHotels(
-            ListHotelsRequest request, StreamObserver<ListHotelsResponse> responseObserver) {
-        HotelService.HotelPage page =
-                hotelService.listHotels(
-                        request.getProvince(),
-                        request.getCity(),
-                        request.getPageSize(),
-                        request.getPageToken());
+    public void listHotels(ListHotelsRequest request, StreamObserver<ListHotelsResponse> responseObserver) {
+        HotelService.HotelPage page = hotelService.listHotels(
+                request.getProvince(), request.getCity(), request.getPageSize(), request.getPageToken());
 
         ListHotelsResponse.Builder responseBuilder =
                 ListHotelsResponse.newBuilder().addAllHotels(page.hotels());
@@ -103,8 +94,7 @@ public class HotelGrpcService extends HotelServiceGrpc.HotelServiceImplBase {
 
     @Override
     public void getRoomTypesByHotelId(
-            GetRoomTypesByHotelIdRequest request,
-            StreamObserver<GetRoomTypesByHotelIdResponse> responseObserver) {
+            GetRoomTypesByHotelIdRequest request, StreamObserver<GetRoomTypesByHotelIdResponse> responseObserver) {
         String hotelId = request.getHotelId();
         if (hotelId.isEmpty()) {
             throw InvalidArgumentException.required("hotel_id");
@@ -115,8 +105,9 @@ public class HotelGrpcService extends HotelServiceGrpc.HotelServiceImplBase {
 
         List<RoomType> roomTypes = hotelService.findRoomTypesByHotelId(hotelId);
 
-        responseObserver.onNext(
-                GetRoomTypesByHotelIdResponse.newBuilder().addAllRoomTypes(roomTypes).build());
+        responseObserver.onNext(GetRoomTypesByHotelIdResponse.newBuilder()
+                .addAllRoomTypes(roomTypes)
+                .build());
         responseObserver.onCompleted();
     }
 }

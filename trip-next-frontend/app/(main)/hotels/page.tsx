@@ -11,18 +11,17 @@ export const metadata: Metadata = {
 
 export default async function HotelPage() {
   const today = new Date().toISOString().split("T")[0];
-  const { hotels: shanghaiHotels, nextPageToken: shanghaiNextPageToken } =
-    await listHotels("上海市");
-  const { hotels: nanjingHotels, nextPageToken: nanjingNextPageToken } =
-    await listHotels("南京市");
-  const { hotels: beijingHotels, nextPageToken: beijingNextPageToken } =
-    await listHotels("北京市");
+
+  const [shanghaiResult, nanjingResult, beijingResult] = await Promise.all([
+    listHotels("上海市"),
+    listHotels("南京市"),
+    listHotels("北京市"),
+  ]);
 
   return (
     <div className="flex flex-col gap-10">
       <HotelHeroSearch today={today} />
 
-      {/* Hotel Recommendations */}
       <section className="flex flex-col gap-4">
         <h2 className="text-2xl font-bold">酒店推荐</h2>
 
@@ -41,22 +40,22 @@ export default async function HotelPage() {
 
           <TabsContent value="shanghai">
             <HotelCardList
-              initialHotels={shanghaiHotels}
-              initialNextPageToken={shanghaiNextPageToken}
+              initialHotels={shanghaiResult.hotels}
+              initialNextPageToken={shanghaiResult.nextPageToken}
               city="上海市"
             />
           </TabsContent>
           <TabsContent value="nanjing">
             <HotelCardList
-              initialHotels={nanjingHotels}
-              initialNextPageToken={nanjingNextPageToken}
+              initialHotels={nanjingResult.hotels}
+              initialNextPageToken={nanjingResult.nextPageToken}
               city="南京市"
             />
           </TabsContent>
           <TabsContent value="beijing">
             <HotelCardList
-              initialHotels={beijingHotels}
-              initialNextPageToken={beijingNextPageToken}
+              initialHotels={beijingResult.hotels}
+              initialNextPageToken={beijingResult.nextPageToken}
               city="北京市"
             />
           </TabsContent>

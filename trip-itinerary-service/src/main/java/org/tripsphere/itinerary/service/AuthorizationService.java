@@ -119,10 +119,7 @@ public class AuthorizationService {
 
         // Users can only list their own itineraries
         if (!authContext.getUserId().equals(targetUserId)) {
-            log.warn(
-                    "User {} attempted to list itineraries for user {}",
-                    authContext.getUserId(),
-                    targetUserId);
+            log.warn("User {} attempted to list itineraries for user {}", authContext.getUserId(), targetUserId);
             throw PermissionDeniedException.notOwner();
         }
     }

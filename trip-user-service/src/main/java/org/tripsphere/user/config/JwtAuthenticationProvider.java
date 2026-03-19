@@ -23,8 +23,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
     private final JwtUtil jwtUtil;
 
     @Override
-    public Authentication authenticate(Authentication authentication)
-            throws AuthenticationException {
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
             return null;
         }
@@ -34,8 +33,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         try {
             // Single parse: validate signature + expiration and extract all claims at once
             JwtUtil.TokenClaims claims = jwtUtil.parseAndValidate(token);
-            return JwtAuthenticationToken.authenticated(
-                    token, claims.userId(), claims.email(), claims.roles());
+            return JwtAuthenticationToken.authenticated(token, claims.userId(), claims.email(), claims.roles());
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("JWT token validation failed: {}", e.getMessage());
             throw new BadCredentialsException("Invalid or expired JWT token", e);

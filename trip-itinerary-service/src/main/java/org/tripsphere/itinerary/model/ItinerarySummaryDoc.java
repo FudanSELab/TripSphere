@@ -14,5 +14,7 @@ import lombok.NoArgsConstructor;
 public class ItinerarySummaryDoc {
     private Money totalEstimatedCost;
     private Integer totalActivities;
-    @Builder.Default private List<String> highlights = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> highlights = new ArrayList<>();
 }

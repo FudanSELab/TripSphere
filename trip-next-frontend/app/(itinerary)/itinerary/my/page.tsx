@@ -59,7 +59,7 @@ function ItineraryCard({ item }: { item: SavedItinerarySummary }) {
       {/* Colored header */}
       <div className="flex items-start justify-between bg-gradient-to-r from-blue-600 to-blue-500 p-5 text-white">
         <div>
-          <h3 className="text-lg font-bold leading-snug">{item.destination}</h3>
+          <h3 className="text-lg leading-snug font-bold">{item.destination}</h3>
           <p className="mt-1 text-xs text-blue-100">
             {formatDate(item.start_date)} — {formatDate(item.end_date)}
           </p>
@@ -146,7 +146,9 @@ export default async function MyItinerariesPage() {
       {!error && itineraries.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <span className="text-6xl">🗺️</span>
-          <p className="mt-4 text-base font-medium text-gray-500">还没有保存的行程</p>
+          <p className="mt-4 text-base font-medium text-gray-500">
+            还没有保存的行程
+          </p>
           <p className="mt-1 text-sm text-gray-400">
             用 AI 规划你的第一次旅行吧！
           </p>

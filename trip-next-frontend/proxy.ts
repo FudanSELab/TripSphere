@@ -5,7 +5,7 @@ const GUEST_ONLY_ROUTES = ["/signin", "/signup"];
 const AUTHENTICATED_ROUTES = ["/orders", "/profile", "/itinerary"];
 
 export default async function proxy(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
   const token = request.cookies.get("session")?.value;
   const session = token ? await verifyToken(token) : null;
 
@@ -22,11 +22,11 @@ export default async function proxy(request: NextRequest) {
     requestHeaders.set("authorization", `Bearer ${token}`);
 
     // Authenticated users should not access guest-only routes
-    if (GUEST_ONLY_ROUTES.some((route) => path.startsWith(route))) {
+    if (GUEST_ONLY_ROUTES.some((route) => pathname.startsWith(route))) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   } else {
-    if (AUTHENTICATED_ROUTES.some((route) => path.startsWith(route))) {
+    if (AUTHENTICATED_ROUTES.some((route) => pathname.startsWith(route))) {
       return NextResponse.redirect(new URL("/signin", request.url));
     }
   }

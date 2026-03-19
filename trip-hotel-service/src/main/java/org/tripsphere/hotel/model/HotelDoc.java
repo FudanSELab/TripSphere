@@ -20,7 +20,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @Document(collection = "hotels")
 public class HotelDoc {
-    @Id private String id;
+    @Id
+    private String id;
+
     private String name;
     private String nameEn;
     private String poiId;
@@ -36,6 +38,10 @@ public class HotelDoc {
     private Money estimatedPrice;
     private HotelPolicy policy;
     private List<String> amenities;
-    @CreatedDate private Instant createdAt;
-    @LastModifiedDate private Instant updatedAt;
+
+    @CreatedDate
+    private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 }

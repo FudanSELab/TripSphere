@@ -26,9 +26,7 @@ public class AuthInterceptor implements ServerInterceptor {
 
         if (authContext.isAuthenticated()) {
             log.debug(
-                    "Authenticated request from user: {}, roles: {}",
-                    authContext.getUserId(),
-                    authContext.getRoles());
+                    "Authenticated request from user: {}, roles: {}", authContext.getUserId(), authContext.getRoles());
         } else {
             log.debug("Unauthenticated request");
         }

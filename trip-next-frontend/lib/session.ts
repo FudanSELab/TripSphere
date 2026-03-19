@@ -1,16 +1,17 @@
 import "server-only";
+
 import { importSPKI, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { config } from "@/lib/env";
 import type { SessionPayload } from "@/lib/definitions";
 
 const COOKIE_NAME = "session";
 
-// Lazily cache the public key so importSPKI runs only once
 let _publicKey: CryptoKey | null = null;
 
 async function getPublicKey(): Promise<CryptoKey> {
   if (!_publicKey) {
-    const rawKey = process.env.JWT_PUBLIC_KEY;
+    const rawKey = config.auth.jwtPublicKey;
     if (!rawKey) {
       throw new Error(
         "Environment variable JWT_PUBLIC_KEY is not set. Authentication will not work.",
@@ -50,7 +51,7 @@ export async function createSession(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: false,
+    secure: config.isProduction,
     sameSite: "lax",
     path: "/",
     expires: session.expiresAt,

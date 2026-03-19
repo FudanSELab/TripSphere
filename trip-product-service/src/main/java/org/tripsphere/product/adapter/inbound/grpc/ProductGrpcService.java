@@ -6,8 +6,10 @@ import io.grpc.stub.StreamObserver;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.tripsphere.product.adapter.inbound.grpc.mapper.MoneyProtoMapper;
 import org.tripsphere.product.adapter.inbound.grpc.mapper.SkuProtoMapper;
 import org.tripsphere.product.adapter.inbound.grpc.mapper.SpuProtoMapper;
+import org.tripsphere.product.adapter.inbound.grpc.mapper.StructProtoMapper;
 import org.tripsphere.product.application.dto.CreateSpuCommand;
 import org.tripsphere.product.application.dto.SpuPage;
 import org.tripsphere.product.application.dto.UpdateSpuCommand;
@@ -27,6 +29,8 @@ import org.tripsphere.product.v1.*;
 public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBase {
     private final SpuProtoMapper spuProtoMapper;
     private final SkuProtoMapper skuProtoMapper;
+    private final MoneyProtoMapper moneyProtoMapper;
+    private final StructProtoMapper structProtoMapper;
     private final GetSpuUseCase getSpuUseCase;
     private final BatchGetSpusUseCase batchGetSpusUseCase;
     private final CreateSpuUseCase createSpuUseCase;
@@ -41,7 +45,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
         if (!request.hasSpu()) {
             throw invalidArgument("spu is required");
         }
-        CreateSpuCommand command = CreateSpuCommand.from(spuProtoMapper.mapToDomain(request.getSpu()));
+        CreateSpuCommand command = toCreateCommand(request.getSpu());
         org.tripsphere.product.domain.model.Spu created = createSpuUseCase.execute(command);
 
         responseObserver.onNext(CreateSpuResponse.newBuilder()
@@ -60,7 +64,7 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
 
         List<CreateSpuCommand> commands = requests.stream()
                 .filter(CreateSpuRequest::hasSpu)
-                .map(r -> CreateSpuCommand.from(spuProtoMapper.mapToDomain(r.getSpu())))
+                .map(r -> toCreateCommand(r.getSpu()))
                 .toList();
 
         if (commands.isEmpty()) {
@@ -128,19 +132,19 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
             throw invalidArgument("spu.id is required");
         }
 
-        org.tripsphere.product.domain.model.Spu domainInput = spuProtoMapper.mapToDomain(request.getSpu());
+        Spu protoSpu = request.getSpu();
         List<String> fieldPaths =
                 request.hasFieldMask() ? request.getFieldMask().getPathsList() : List.of();
 
         UpdateSpuCommand command = new UpdateSpuCommand(
-                domainInput.getId(),
+                protoSpu.getId(),
                 fieldPaths,
-                domainInput.getName(),
-                domainInput.getDescription(),
-                domainInput.getResourceType(),
-                domainInput.getResourceId(),
-                domainInput.getImages(),
-                domainInput.getAttributes());
+                protoSpu.getName(),
+                protoSpu.getDescription(),
+                spuProtoMapper.mapResourceTypeToDomain(protoSpu.getResourceType()),
+                protoSpu.getResourceId(),
+                protoSpu.getImagesList(),
+                structProtoMapper.mapStruct(protoSpu.getAttributes()));
 
         org.tripsphere.product.domain.model.Spu updated = updateSpuUseCase.execute(command);
 
@@ -175,6 +179,26 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
         responseObserver.onNext(
                 BatchGetSkusResponse.newBuilder().addAllSkus(protos).build());
         responseObserver.onCompleted();
+    }
+
+    private CreateSpuCommand toCreateCommand(Spu proto) {
+        List<CreateSpuCommand.CreateSkuCommand> skuCommands = proto.getSkusList().stream()
+                .map(sku -> new CreateSpuCommand.CreateSkuCommand(
+                        sku.getName(),
+                        sku.getDescription(),
+                        skuProtoMapper.mapSkuStatusToDomain(sku.getStatus()),
+                        structProtoMapper.mapStruct(sku.getAttributes()),
+                        moneyProtoMapper.map(sku.getBasePrice())))
+                .toList();
+
+        return new CreateSpuCommand(
+                proto.getName(),
+                proto.getDescription(),
+                spuProtoMapper.mapResourceTypeToDomain(proto.getResourceType()),
+                proto.getResourceId(),
+                proto.getImagesList(),
+                structProtoMapper.mapStruct(proto.getAttributes()),
+                skuCommands);
     }
 
     private static StatusRuntimeException invalidArgument(String message) {

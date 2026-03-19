@@ -1,10 +1,12 @@
+import json
 import logging
 import os
 import warnings
 from datetime import datetime
-from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
+from a2a.types import AgentCard
 from google.adk.agents import LlmAgent
 from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.models.lite_llm import LiteLlm
@@ -19,7 +21,7 @@ from order_assistant.tools.product import ProductToolset
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-warnings.filterwarnings("ignore", module="google.adk")
+warnings.filterwarnings("ignore", module=".*")
 
 AGENT_NAME = "order_assistant"
 AGENT_DESCRIPTION = "An agent that can help users with their orders."
@@ -54,8 +56,7 @@ def ask_for_confirmation(
     return {"status": "pending", "order_id": order_id, "reason": reason}
 
 
-@lru_cache(maxsize=1, typed=True)
-def get_root_agent(model: str = "openai/gpt-4o") -> LlmAgent:
+def create_agent(model: str = "openai/gpt-4o") -> LlmAgent:
     settings = get_settings()
     if not os.environ.get("OPENAI_API_KEY", None):
         os.environ["OPENAI_API_KEY"] = settings.openai.api_key.get_secret_value()
@@ -76,4 +77,18 @@ def get_root_agent(model: str = "openai/gpt-4o") -> LlmAgent:
     )
 
 
-root_agent = get_root_agent()
+def load_agent_card(path: Path | None = None) -> AgentCard:
+    path = path or Path(__file__).parent / "agent.json"
+    with open(path, "r", encoding="utf-8") as f:
+        agent_card = json.load(f)
+    return AgentCard.model_validate(agent_card)
+
+
+"""
+Use the following command to run ADK Web UI:
+
+```
+uv run adk web --log_level debug src/
+```
+"""
+root_agent = create_agent()

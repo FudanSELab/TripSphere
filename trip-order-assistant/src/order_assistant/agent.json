@@ -37,6 +37,6 @@
             ]
         }
     ],
-    "url": "http://localhost:8000/a2a/order_assistant",
+    "url": "http://localhost:24211/a2a/order_assistant",
     "version": "1.0.0"
 }

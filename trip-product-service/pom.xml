@@ -166,15 +166,15 @@
 							<artifactId>lombok</artifactId>
 							<version>${lombok.version}</version>
 						</path>
+                        <path>
+							<groupId>no.entur.mapstruct.spi</groupId>
+							<artifactId>protobuf-spi-impl</artifactId>
+							<version>1.52.0</version>
+						</path>
 						<path>
 							<groupId>org.mapstruct</groupId>
 							<artifactId>mapstruct-processor</artifactId>
 							<version>${org.mapstruct.version}</version>
-						</path>
-						<path>
-							<groupId>no.entur.mapstruct.spi</groupId>
-							<artifactId>protobuf-spi-impl</artifactId>
-							<version>1.52.0</version>
 						</path>
 						<!-- Additional annotation processor required as of Lombok 1.18.16 -->
 						<path>

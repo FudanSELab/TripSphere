@@ -30,12 +30,9 @@ public class CustomItineraryDocRepositoryImpl implements CustomItineraryDocRepos
                     Criteria.where("createdAt").is(cursorCreatedAt).and("_id").lt(cursorId));
         }
 
-        Query query =
-                new Query(criteria)
-                        .with(
-                                Sort.by(Sort.Direction.DESC, "createdAt")
-                                        .and(Sort.by(Sort.Direction.DESC, "_id")))
-                        .limit(limit);
+        Query query = new Query(criteria)
+                .with(Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "_id")))
+                .limit(limit);
 
         return mongoTemplate.find(query, ItineraryDoc.class);
     }

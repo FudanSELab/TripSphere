@@ -1,11 +1,11 @@
 import logging
+import random
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-import random
 
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
@@ -47,10 +47,12 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     # Step 1: Geocode destination
     try:
-        geocode_result: GeocodeResult = await geocoding_tool.ainvoke({
-            "address": state["destination"],
-            "city": state["destination"],
-        })
+        geocode_result: GeocodeResult = await geocoding_tool.ainvoke(
+            {
+                "address": state["destination"],
+                "city": state["destination"],
+            }
+        )
         destination_coords = {
             "longitude": geocode_result.longitude,
             "latitude": geocode_result.latitude,
@@ -74,8 +76,8 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
     try:
         search_result = await search_attractions_nearby(
             nacos_naming=state["nacos_naming"],
-            center_longitude=destination_coords["longitude"],
-            center_latitude=destination_coords["latitude"],
+            center_longitude=float(destination_coords.get("longitude") or 0),  # type: ignore[arg-type]
+            center_latitude=float(destination_coords.get("latitude") or 0),  # type: ignore[arg-type]
             radius_km=25.0,
             tags=tags,
             limit=35,
