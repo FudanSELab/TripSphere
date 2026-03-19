@@ -4,9 +4,6 @@ spring:
   cloud:
     nacos:
       server-addr: localhost:8848
-      discovery:
-        metadata:
-          gRPC_port: ${grpc.server.port:50054}
   data:
     mongodb:
       uri: mongodb://root:fudanse@localhost:27017
