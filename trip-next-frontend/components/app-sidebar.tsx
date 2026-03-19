@@ -10,7 +10,6 @@ import {
   Notebook,
   Plane,
   Train,
-  BookMarked,
 } from "lucide-react";
 
 import {
@@ -35,7 +34,6 @@ const group0 = [
 
 const group1 = [
   { title: "AI行程助手", url: "/itinerary", icon: Sparkles },
-  { title: "我的行程", url: "/itinerary/my", icon: BookMarked },
   { title: "笔记攻略", url: "/notes", icon: Notebook },
 ];
 
