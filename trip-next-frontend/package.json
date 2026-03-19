@@ -52,5 +52,8 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "patchedDependencies": {
+    "@copilotkitnext/react@1.54.0": "patches/@copilotkitnext%2Freact@1.54.0.patch"
+  }
 }

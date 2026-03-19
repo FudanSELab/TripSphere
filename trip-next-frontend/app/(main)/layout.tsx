@@ -1,7 +1,6 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { CopilotProvider } from "@/components/copilot-provider";
 import { CopilotSidebar } from "@copilotkit/react-core/v2";
 
 const COPILOT_LABELS = {
@@ -28,16 +27,14 @@ export default function MainLayout({
       <SidebarInset>
         <SiteHeader />
         <main className="mx-auto w-full max-w-screen-2xl px-[10rem] py-6">
-          <CopilotProvider>
-            {children}
-            <CopilotSidebar
-              agentId="default"
-              defaultOpen={true}
-              width="30rem"
-              labels={COPILOT_LABELS}
-              autoFocus={true}
-            />
-          </CopilotProvider>
+          {children}
+          <CopilotSidebar
+            agentId="default"
+            defaultOpen={true}
+            width="30rem"
+            labels={COPILOT_LABELS}
+            autoFocus={true}
+          />
         </main>
       </SidebarInset>
     </SidebarProvider>
