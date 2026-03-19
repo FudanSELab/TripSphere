@@ -88,6 +88,15 @@ def update_itinerary_day(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Replace ALL activities for a specific day with a new list.
+    
+    Arguments:
+        day: The day number to update (1-indexed)
+        activities: List of activities to replace the existing activities for the day
+        tool_call_id: The ID of the tool call
+        state: The state of the itinerary
+
+    Returns:
+    Command that updates the itinerary with the new activities
 
     Use this ONLY when regenerating an entire day's schedule.
     Do NOT use this to add a single activity — use add_activity instead.
@@ -132,6 +141,15 @@ def add_activity(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Add a SINGLE new activity to a specific day without replacing existing ones.
+    
+    Arguments:
+        day: The day number to add the activity to (1-indexed)
+        activity: The activity to add to the day
+        tool_call_id: The ID of the tool call
+        state: The state of the itinerary
+
+    Returns:
+    Command that updates the itinerary with the new activity
 
     Use this whenever the user asks to add or insert one activity.
     The activity object must strictly follow the Activity schema.
@@ -172,6 +190,15 @@ def remove_spot(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Remove a single spot/activity from a specific day by name.
+    
+    Arguments:
+        day: The day number to remove the activity from (1-indexed)
+        spot_name: The name of the activity to remove
+        tool_call_id: The ID of the tool call
+        state: The state of the itinerary
+
+    Returns:
+    Command that updates the itinerary with the removed activity
 
     Only that one activity is removed; all other activities and all other
     days remain unchanged.
@@ -216,6 +243,14 @@ def delete_day(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Completely remove a day from the itinerary.
+    
+    Arguments:
+        day: The day number to delete (1-indexed)
+        tool_call_id: The ID of the tool call
+        state: The state of the itinerary
+
+    Returns:
+    Command that updates the itinerary with the deleted day
 
     All activities for that day are deleted.  Remaining days are
     renumbered (1, 2, 3 …) and their dates are shifted forward to remain
@@ -258,6 +293,16 @@ def add_day(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Add a brand-new day to the itinerary, appended after the last existing day.
+    
+    Arguments:
+        date: The date of the new day (YYYY-MM-DD)
+        activities: List of activities to add to the new day
+        notes: Notes for the new day
+        tool_call_id: The ID of the tool call
+        state: The state of the itinerary
+
+    Returns:
+    Command that updates the itinerary with the new day
 
     Use when the user asks to add another day, extend the trip, or add a
     Nth day that does not yet exist. All activities must be in the same
@@ -298,6 +343,13 @@ def update_markdown(
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:  # type: ignore[type-arg]
     """Update the Markdown travel narrative displayed in the itinerary viewer.
+    
+    Arguments:
+        markdown: The Markdown content to update
+        tool_call_id: The ID of the tool call
+    
+    Returns:
+    Command that updates the itinerary with the new Markdown content
 
     Call this after significant itinerary changes to keep the narrative in
     sync with the structured data.
@@ -349,6 +401,15 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
     ) -> Command:  # type: ignore[type-arg]
         """Completely regenerate all activities for
         a specific day using real attractions.
+        
+        Arguments:
+            day: The day number to regenerate (1-indexed)
+            preference: The preference/style of the itinerary
+            tool_call_id: The ID of the tool call
+            state: The state of the itinerary
+
+        Returns:
+        Command that updates the itinerary with the regenerated day
 
         Queries the attraction service for the destination, then uses the LLM
         to create a fresh schedule tailored to the given preference/style.

@@ -21,6 +21,12 @@ class GeocodeResult(BaseModel):
 @tool
 async def geocoding_tool(address: str, city: str = "") -> GeocodeResult:
     """Convert a location name to geographic coordinates (latitude, longitude).
+    Arguments:
+        address: Name or address of the location to geocode
+        city: Optional city context (e.g., "Shanghai", "Beijing")
+
+    Returns:
+        GeocodeResult with coordinates and address information
     Use when the user asks for coordinates or address of a place.
     """
     logger.info("Geocoding: %s (city: %s)", address, city)
