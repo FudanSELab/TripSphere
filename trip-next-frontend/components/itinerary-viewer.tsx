@@ -264,7 +264,7 @@ function DayCard({ day, onClick }: { day: DayPlan; onClick: () => void }) {
                   >
                     <span>{meta.icon}</span>
                     <span className="max-w-[5rem] truncate">
-                      {a.kind === "hotel_stay" ? `住在${a.location?.name || "目的地"}` : a.name}
+                      {a.kind === "hotel_stay" ? `住在${a.name || "目的地"}` : a.name}
                     </span>
                   </span>
                 );
@@ -327,7 +327,7 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="truncate text-sm font-semibold text-gray-900">
                   {activity.kind === "hotel_stay"
-                    ? `住在 ${activity.location?.name || "目的地"}`
+                    ? `住在 ${activity.name || "目的地"}`
                     : activity.name}
                 </span>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.bg} ${meta.text} border border-current/20`}>
@@ -341,10 +341,12 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
                 </p>
               )}
 
-              {activity.location?.name && (
+              {(activity.location.address || activity.name) && (
                 <p className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
                   <span>📍</span>
-                  <span className="truncate">{activity.location.address || activity.location.name}</span>
+                  <span className="truncate">
+                    {activity.location.address || activity.name}
+                  </span>
                 </p>
               )}
             </div>

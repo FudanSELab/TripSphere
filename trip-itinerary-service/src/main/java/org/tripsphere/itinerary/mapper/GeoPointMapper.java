@@ -5,17 +5,17 @@ import org.mapstruct.Mapper;
 import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
-import org.tripsphere.itinerary.model.GeoLocationDoc;
-import org.tripsphere.itinerary.v1.GeoLocation;
+import org.tripsphere.common.v1.GeoPoint;
+import org.tripsphere.itinerary.model.GeoPointDoc;
 
 @Mapper(
         collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
-public interface GeoLocationMapper {
-    GeoLocationMapper INSTANCE = Mappers.getMapper(GeoLocationMapper.class);
+public interface GeoPointMapper {
+    GeoPointMapper INSTANCE = Mappers.getMapper(GeoPointMapper.class);
 
-    GeoLocationDoc toDoc(GeoLocation geoLocation);
+    GeoPointDoc toDoc(GeoPoint geoPoint);
 
-    GeoLocation toProto(GeoLocationDoc doc);
+    GeoPoint toProto(GeoPointDoc doc);
 }

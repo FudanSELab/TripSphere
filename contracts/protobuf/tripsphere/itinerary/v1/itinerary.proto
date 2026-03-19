@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "tripsphere/attraction/v1/attraction.proto";
 import "tripsphere/common/v1/date.proto";
+import "tripsphere/common/v1/map.proto";
 import "tripsphere/common/v1/money.proto";
 import "tripsphere/common/v1/timeofday.proto";
 import "tripsphere/hotel/v1/hotel.proto";
@@ -52,14 +53,6 @@ enum ActivityKind {
   ACTIVITY_KIND_CUSTOM = 4;
 }
 
-// Geographic location with coordinates for an activity.
-message GeoLocation {
-  string name = 1;
-  double latitude = 2;
-  double longitude = 3;
-  string address = 4;
-}
-
 // Summary statistics for a planned itinerary.
 message ItinerarySummary {
   tripsphere.common.v1.Money total_estimated_cost = 1;
@@ -80,10 +73,12 @@ message Activity {
     tripsphere.hotel.v1.Hotel hotel = 9;
   }
   google.protobuf.Struct metadata = 10;
-  // Geographic location of this activity.
-  GeoLocation location = 11;
+  // GCJ02 coordinates for this activity (same semantics as POI.location).
+  tripsphere.common.v1.GeoPoint location = 11;
   // Category label (e.g. "sightseeing", "dining", "shopping").
   string category = 12;
+  // Structured address (same shape as POI.address).
+  tripsphere.common.v1.Address address = 13;
 }
 
 message DayPlan {

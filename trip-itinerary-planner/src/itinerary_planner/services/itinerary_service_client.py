@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 import grpc
 from tripsphere.attraction.v1 import attraction_pb2
-from tripsphere.common.v1 import date_pb2, money_pb2, timeofday_pb2
+from tripsphere.common.v1 import date_pb2, map_pb2, money_pb2, timeofday_pb2
 from tripsphere.hotel.v1 import hotel_pb2
 from tripsphere.itinerary.v1 import itinerary_pb2, itinerary_pb2_grpc
 
@@ -62,12 +62,11 @@ def _activity_to_proto(activity: Activity) -> itinerary_pb2.Activity:
             units=int(activity.estimated_cost.amount),
             nanos=int((activity.estimated_cost.amount % 1) * 1_000_000_000),
         ),
-        "location": itinerary_pb2.GeoLocation(
-            name=activity.location.name,
-            latitude=activity.location.latitude,
+        "location": map_pb2.GeoPoint(
             longitude=activity.location.longitude,
-            address=activity.location.address,
+            latitude=activity.location.latitude,
         ),
+        "address": map_pb2.Address(detailed=activity.location.address or ""),
         "category": activity.category,
     }
     # oneof resource: attraction or hotel
@@ -130,15 +129,26 @@ def _date_to_str(d: date_pb2.Date) -> str:
     return f"{d.year:04d}-{d.month:02d}-{d.day:02d}"
 
 
+def _format_address(addr: map_pb2.Address) -> str:
+    parts = [addr.province, addr.city, addr.district, addr.detailed]
+    return "".join(p for p in parts if p)
+
+
 def _proto_to_activity(proto: itinerary_pb2.Activity) -> Activity:
-    location = ActivityLocation(name="", latitude=0.0, longitude=0.0, address="")
+    lat = 0.0
+    lng = 0.0
     if proto.HasField("location"):
-        location = ActivityLocation(
-            name=proto.location.name,
-            latitude=proto.location.latitude,
-            longitude=proto.location.longitude,
-            address=proto.location.address,
-        )
+        lat = proto.location.latitude
+        lng = proto.location.longitude
+    line_address = ""
+    if proto.HasField("address"):
+        line_address = _format_address(proto.address)
+    location = ActivityLocation(
+        name=proto.title or "",
+        latitude=lat,
+        longitude=lng,
+        address=line_address,
+    )
 
     amount = proto.estimated_cost.units + proto.estimated_cost.nanos / 1_000_000_000
     cost = Cost(amount=amount, currency=proto.estimated_cost.currency or "CNY")

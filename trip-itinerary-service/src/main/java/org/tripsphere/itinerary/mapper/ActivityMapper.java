@@ -1,12 +1,15 @@
 package org.tripsphere.itinerary.mapper;
 
 import java.util.List;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
+import org.tripsphere.common.v1.Address;
 import org.tripsphere.itinerary.model.ActivityDoc;
 import org.tripsphere.itinerary.model.ActivityKind;
 import org.tripsphere.itinerary.v1.Activity;
@@ -15,7 +18,7 @@ import org.tripsphere.itinerary.v1.Activity;
         collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
-        uses = {CommonMapper.class, MoneyMapper.class, GeoLocationMapper.class})
+        uses = {CommonMapper.class, MoneyMapper.class, GeoPointMapper.class, AddressMapper.class})
 public interface ActivityMapper {
     ActivityMapper INSTANCE = Mappers.getMapper(ActivityMapper.class);
 
@@ -25,11 +28,33 @@ public interface ActivityMapper {
 
     @Mapping(target = "attractionId", source = "attraction.id")
     @Mapping(target = "hotelId", source = "hotel.id")
+    @Mapping(target = "location.name", ignore = true)
+    @Mapping(target = "location.lineAddress", ignore = true)
     ActivityDoc toDoc(Activity activity);
 
     @Mapping(target = "attraction", ignore = true)
     @Mapping(target = "hotel", ignore = true)
     Activity toProto(ActivityDoc doc);
+
+    /**
+     * Legacy Mongo: flat string lived under {@code location.address}. Promote to structured {@link
+     * Address} when the new {@code address} object is empty.
+     */
+    @AfterMapping
+    default void mergeLegacyFlatAddressIntoProto(ActivityDoc doc, @MappingTarget Activity.Builder builder) {
+        if (doc == null || doc.getLocation() == null) {
+            return;
+        }
+        String line = doc.getLocation().getLineAddress();
+        if (line == null || line.isBlank()) {
+            return;
+        }
+        Address built = builder.getAddress();
+        if (built != null && !built.getDetailed().isBlank()) {
+            return;
+        }
+        builder.setAddress(Address.newBuilder().setDetailed(line).build());
+    }
 
     List<ActivityDoc> toActivityDocList(List<Activity> activities);
 

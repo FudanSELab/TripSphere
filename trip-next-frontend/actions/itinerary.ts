@@ -2,12 +2,12 @@
 
 import { headers } from "next/headers";
 import { getAuthMetadata, getItineraryService } from "@/lib/grpc/client";
+import type { Address } from "@/lib/grpc/generated/tripsphere/common/v1/map";
 import {
   ActivityKind,
   type Itinerary as ProtoItinerary,
   type DayPlan as ProtoDayPlan,
   type Activity as ProtoActivity,
-  type GeoLocation,
   type ItinerarySummary as ProtoItinerarySummary,
   type CreateItineraryRequest,
   type ReplaceItineraryRequest,
@@ -101,6 +101,11 @@ export interface SavedItinerarySummary {
 
 // ── Proto ↔ frontend conversion helpers ───────────────────────────────────
 
+function formatAddressLine(addr: Address | undefined): string {
+  if (!addr) return "";
+  return [addr.province, addr.city, addr.district, addr.detailed].filter(Boolean).join("");
+}
+
 function formatDate(d: { year: number; month: number; day: number } | undefined): string {
   if (!d) return "";
   return `${d.year.toString().padStart(4, "0")}-${d.month.toString().padStart(2, "0")}-${d.day.toString().padStart(2, "0")}`;
@@ -136,7 +141,8 @@ const KIND_PROTO_TO_STRING: Partial<Record<ActivityKind, string>> = {
 };
 
 function protoActivityToFrontend(a: ProtoActivity): Activity {
-  const loc = a.location ?? ({ name: "", latitude: 0, longitude: 0, address: "" } as GeoLocation);
+  const loc = a.location;
+  const addrLine = formatAddressLine(a.address);
   const cost = a.estimatedCost;
   const amount = cost ? (Number(cost.units) + cost.nanos / 1_000_000_000) : 0;
 
@@ -152,10 +158,10 @@ function protoActivityToFrontend(a: ProtoActivity): Activity {
     start_time: formatTime(a.startTime),
     end_time: formatTime(a.endTime),
     location: {
-      name: loc.name,
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-      address: loc.address,
+      name: a.title,
+      latitude: loc?.latitude ?? 0,
+      longitude: loc?.longitude ?? 0,
+      address: addrLine,
     },
     category: a.category || "sightseeing",
     estimated_cost: { amount, currency: cost?.currency || "CNY" },
@@ -166,6 +172,7 @@ function protoActivityToFrontend(a: ProtoActivity): Activity {
 }
 
 function frontendActivityToProto(a: Activity): ProtoActivity {
+  const hasCoords = a.location.latitude !== 0 || a.location.longitude !== 0;
   const proto: ProtoActivity = {
     id: a.id,
     title: a.name,
@@ -178,12 +185,17 @@ function frontendActivityToProto(a: Activity): ProtoActivity {
       units: Math.trunc(a.estimated_cost.amount),
       nanos: Math.round((a.estimated_cost.amount % 1) * 1_000_000_000),
     },
-    location: {
-      name: a.location.name,
-      latitude: a.location.latitude,
-      longitude: a.location.longitude,
-      address: a.location.address,
-    },
+    location: hasCoords
+      ? { longitude: a.location.longitude, latitude: a.location.latitude }
+      : undefined,
+    address: a.location.address
+      ? {
+          province: "",
+          city: "",
+          district: "",
+          detailed: a.location.address,
+        }
+      : undefined,
     category: a.category,
     metadata: undefined,
   };

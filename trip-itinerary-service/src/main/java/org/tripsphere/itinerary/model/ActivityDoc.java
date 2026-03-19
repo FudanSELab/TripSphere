@@ -22,6 +22,7 @@ public class ActivityDoc {
     private String attractionId;
     private String hotelId;
     private Map<String, Object> metadata;
-    private GeoLocationDoc location;
+    private GeoPointDoc location;
+    private AddressDoc address;
     private String category;
 }

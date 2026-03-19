@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GeoLocationDoc {
-    private String name;
-    private Double latitude;
-    private Double longitude;
-    private String address;
+public class AddressDoc {
+    private String province;
+    private String city;
+    private String district;
+    private String detailed;
 }
