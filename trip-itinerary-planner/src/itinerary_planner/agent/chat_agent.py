@@ -37,12 +37,12 @@ from langgraph.prebuilt import ToolNode
 
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.naming import NacosNaming
+from itinerary_planner.prompts.chat_agent import CHAT_AGENT_INSTRUCTION
 from itinerary_planner.tools import (
     INLINE_TOOLS,
     geocoding_tool,
     make_regenerate_day_tool,
 )
-from itinerary_planner.prompts.chat_agent import CHAT_AGENT_INSTRUCTION
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,9 @@ def _build_system_message(itinerary: dict[str, Any] | None) -> SystemMessage:
             len(itinerary_json),
         )
     else:
-        logger.warning("[ChatAgent] No itinerary in state; agent has no destination context.")
+        logger.warning(
+            "[ChatAgent] No itinerary in state; agent has no destination context."
+        )
 
     return SystemMessage(content=content)
 
@@ -123,9 +125,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
 
     # ── Nodes ──────────────────────────────────────────────────────────────
 
-    async def agent_node(
-        state: ChatState, config: RunnableConfig
-    ) -> dict[str, Any]:
+    async def agent_node(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
         logger.info(_SEP)
         logger.info(
             "[ChatAgent] messages=%d  itinerary=%s",

@@ -7,9 +7,6 @@ import { HttpAgent } from "@ag-ui/client";
 import { NextRequest } from "next/server";
 import { config } from "@/lib/env";
 
-const itineraryPlannerUrl =
-  process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
-
 const serviceAdapter = new ExperimentalEmptyAdapter();
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -20,7 +17,7 @@ const runtime = new CopilotRuntime({
       url: config.copilot.orderAssistantUrl,
     }) as any,
     itinerary_planner: new HttpAgent({
-      url: `${itineraryPlannerUrl}/copilotkit`,
+      url: config.copilot.itineraryPlannerUrl,
     }) as any,
   },
 });

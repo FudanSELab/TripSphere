@@ -57,8 +57,7 @@ public interface ActivityMapper {
             return org.tripsphere.itinerary.v1.ActivityKind.ACTIVITY_KIND_UNSPECIFIED;
         }
         return switch (docKind) {
-            case ATTRACTION_VISIT -> org.tripsphere.itinerary.v1.ActivityKind
-                    .ACTIVITY_KIND_ATTRACTION_VISIT;
+            case ATTRACTION_VISIT -> org.tripsphere.itinerary.v1.ActivityKind.ACTIVITY_KIND_ATTRACTION_VISIT;
             case DINING -> org.tripsphere.itinerary.v1.ActivityKind.ACTIVITY_KIND_DINING;
             case HOTEL_STAY -> org.tripsphere.itinerary.v1.ActivityKind.ACTIVITY_KIND_HOTEL_STAY;
             case CUSTOM -> org.tripsphere.itinerary.v1.ActivityKind.ACTIVITY_KIND_CUSTOM;

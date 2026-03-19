@@ -109,11 +109,19 @@ def update_itinerary_day(
     ]
 
     updated_plans = [
-        ({**dp, "activities": cleaned_activities} if dp.get("day_number") == day else dp)
+        (
+            {**dp, "activities": cleaned_activities}
+            if dp.get("day_number") == day
+            else dp
+        )
         for dp in day_plans
     ]
     new_itinerary = {**itinerary, "day_plans": updated_plans}
-    return _update(tool_call_id, f"Day {day} activities replaced ({len(cleaned_activities)} activities).", new_itinerary)
+    return _update(
+        tool_call_id,
+        f"Day {day} activities replaced ({len(cleaned_activities)} activities).",
+        new_itinerary,
+    )
 
 
 @tool  # type: ignore[misc]
@@ -149,7 +157,11 @@ def add_activity(
         for dp in day_plans
     ]
     new_itinerary = {**itinerary, "day_plans": updated_plans}
-    return _update(tool_call_id, f"Added \"{act.get('name', 'activity')}\" to day {day}.", new_itinerary)
+    return _update(
+        tool_call_id,
+        f'Added "{act.get("name", "activity")}" to day {day}.',
+        new_itinerary,
+    )
 
 
 @tool  # type: ignore[misc]
@@ -175,7 +187,8 @@ def remove_spot(
             return dp
         original = dp.get("activities", [])
         kept = [
-            a for a in original
+            a
+            for a in original
             if not (
                 a.get("name", "").lower() == spot_lower
                 or spot_lower in a.get("name", "").lower()
@@ -189,9 +202,9 @@ def remove_spot(
     updated_plans = [_filter(dp) for dp in day_plans]
     new_itinerary = {**itinerary, "day_plans": updated_plans}
     msg = (
-        f"Removed \"{spot_name}\" from day {day}."
+        f'Removed "{spot_name}" from day {day}.'
         if removed
-        else f"\"{spot_name}\" not found in day {day}; no change."
+        else f'"{spot_name}" not found in day {day}; no change.'
     )
     return _update(tool_call_id, msg, new_itinerary)
 
@@ -228,7 +241,10 @@ def delete_day(
     }
     return _update(
         tool_call_id,
-        f"Day {day} deleted; {len(renumbered)} remaining day(s) renumbered with consecutive dates.",
+        (
+            f"Day {day} deleted; {len(renumbered)} remaining day(s) "
+            "renumbered with consecutive dates."
+        ),
         new_itinerary,
     )
 
@@ -289,7 +305,11 @@ def update_markdown(
     return Command(
         update={
             "markdown_content": markdown,
-            "messages": [ToolMessage(content="Markdown narrative updated.", tool_call_id=tool_call_id)],
+            "messages": [
+                ToolMessage(
+                    content="Markdown narrative updated.", tool_call_id=tool_call_id
+                )
+            ],
         }
     )
 
@@ -298,12 +318,16 @@ def update_markdown(
 
 
 def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
-    """Return an async 'regenerate_day' tool that uses Nacos to find fresh attractions."""
+    """Return an async 'regenerate_day' tool that
+    uses Nacos to find fresh attractions.
+    """
 
     class _RegActivity(BaseModel):
         name: str = Field(description="Activity / attraction name")
         description: str = Field(description="Short description (≤ 40 chars)")
-        category: str = Field(description="sightseeing|cultural|shopping|dining|entertainment|transportation|nature")
+        category: str = Field(
+            description="sightseeing|cultural|shopping|dining|entertainment|transportation|nature"
+        )
         start_time: str = Field(description="HH:MM")
         end_time: str = Field(description="HH:MM")
         estimated_cost: float = Field(description="Estimated cost in CNY")
@@ -312,7 +336,9 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
         address: str = Field(description="Full address")
 
     class _RegResult(BaseModel):
-        activities: list[_RegActivity] = Field(description="Regenerated activities for the day")
+        activities: list[_RegActivity] = Field(
+            description="Regenerated activities for the day"
+        )
 
     @tool("regenerate_day")  # type: ignore[misc]
     async def regenerate_day(
@@ -321,7 +347,8 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
         tool_call_id: Annotated[str, InjectedToolCallId],
         state: Annotated[dict[str, Any], InjectedState],
     ) -> Command:  # type: ignore[type-arg]
-        """Completely regenerate all activities for a specific day using real attractions.
+        """Completely regenerate all activities for
+        a specific day using real attractions.
 
         Queries the attraction service for the destination, then uses the LLM
         to create a fresh schedule tailored to the given preference/style.
@@ -359,7 +386,10 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
                 limit=20,
             )
             attractions_text = "\n".join(
-                f"- {a.name}: {a.description} (lat={a.latitude:.4f}, lon={a.longitude:.4f}, tags={', '.join(a.tags)})"
+                (
+                    f"- {a.name}: {a.description} "
+                    f"(lat={a.latitude:.4f}, lon={a.longitude:.4f}, tags={a.tags})"
+                )
                 for a in search_result.attractions
             )
             attraction_map = {a.name: a for a in search_result.attractions}
@@ -391,7 +421,9 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
         try:
             structured_llm = chat_model.with_structured_output(_RegResult)  # type: ignore[call-overload]
-            result: _RegResult = _RegResult.model_validate(await structured_llm.ainvoke(prompt))  # type: ignore[arg-type]
+            result: _RegResult = _RegResult.model_validate(
+                await structured_llm.ainvoke(prompt)
+            )  # type: ignore[arg-type]
 
             new_activities: list[dict[str, Any]] = []
             for act in result.activities:
@@ -409,8 +441,16 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
                         "start_time": act.start_time,
                         "end_time": act.end_time,
                         "category": act.category,
-                        "location": {"name": act.name, "longitude": lon, "latitude": lat, "address": addr},
-                        "estimated_cost": {"amount": act.estimated_cost, "currency": "CNY"},
+                        "location": {
+                            "name": act.name,
+                            "longitude": lon,
+                            "latitude": lat,
+                            "address": addr,
+                        },
+                        "estimated_cost": {
+                            "amount": act.estimated_cost,
+                            "currency": "CNY",
+                        },
                         "kind": "attraction_visit",
                         "attraction_id": attraction_id,
                         "hotel_id": None,
@@ -431,7 +471,10 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
         new_itinerary = {**itinerary, "day_plans": updated_plans}
         return _update(
             tool_call_id,
-            f"Day {day} regenerated with {len(new_activities)} new activities (preference: \"{preference}\").",
+            (
+                f"Day {day} regenerated with {len(new_activities)} "
+                f'new activities (preference: "{preference}").'
+            ),
             new_itinerary,
         )
 
@@ -440,7 +483,8 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
 # ── Public convenience: all tools except the factory one ──────────────────
 
-# Tools that need no Nacos; regenerate_day is added via make_regenerate_day_tool(nacos_naming) when Nacos is enabled.
+# Tools that need no Nacos; regenerate_day is added via
+# make_regenerate_day_tool(nacos_naming) when Nacos is enabled.
 INLINE_TOOLS = [
     update_itinerary_day,
     add_activity,

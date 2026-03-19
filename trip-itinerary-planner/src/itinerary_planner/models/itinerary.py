@@ -32,9 +32,7 @@ class ItinerarySummary(BaseModel):
     total_estimated_cost: float = Field(description="Total estimated cost")
     currency: str = Field(default="CNY", description="Currency code")
     total_activities: int = Field(description="Total number of activities")
-    highlights: list[str] = Field(
-        default_factory=list, description="Trip highlights"
-    )
+    highlights: list[str] = Field(default_factory=list, description="Trip highlights")
 
 
 class Itinerary(BaseModel):

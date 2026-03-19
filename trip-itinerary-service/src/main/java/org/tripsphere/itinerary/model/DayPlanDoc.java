@@ -17,7 +17,10 @@ public class DayPlanDoc {
     private String id;
     private LocalDate date;
     private String title;
-    @Builder.Default private List<ActivityDoc> activities = new ArrayList<>();
+
+    @Builder.Default
+    private List<ActivityDoc> activities = new ArrayList<>();
+
     private String notes;
     private Map<String, Object> metadata;
     private Integer dayNumber;

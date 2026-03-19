@@ -23,6 +23,10 @@ export const config = {
       "COPILOT_ORDER_AGENT_URL",
       "http://localhost:24211/",
     ),
+    itineraryPlannerUrl: env(
+      "COPILOT_ITINERARY_PLANNER_URL",
+      "http://localhost:24215/",
+    ),
   },
   auth: {
     jwtPublicKey: process.env.JWT_PUBLIC_KEY ?? "",

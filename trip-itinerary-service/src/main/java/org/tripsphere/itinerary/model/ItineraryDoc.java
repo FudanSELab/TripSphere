@@ -20,17 +20,26 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @Document(collection = "itineraries")
 public class ItineraryDoc {
-    @Id private String id;
+    @Id
+    private String id;
+
     private String userId;
     private String title;
     private String destinationPoiId;
     private LocalDate startDate;
     private LocalDate endDate;
-    @Builder.Default private List<DayPlanDoc> dayPlans = new ArrayList<>();
+
+    @Builder.Default
+    private List<DayPlanDoc> dayPlans = new ArrayList<>();
+
     private Map<String, Object> metadata;
     private String destinationName;
     private ItinerarySummaryDoc summary;
     private String markdownContent;
-    @CreatedDate private Instant createdAt;
-    @LastModifiedDate private Instant updatedAt;
+
+    @CreatedDate
+    private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 }

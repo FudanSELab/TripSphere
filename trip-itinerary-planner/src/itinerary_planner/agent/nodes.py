@@ -1,11 +1,11 @@
 import logging
+import random
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-import random
 
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
@@ -46,10 +46,12 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     # Step 1: Geocode destination
     try:
-        geocode_result: GeocodeResult = await geocoding_tool.ainvoke({
-            "address": state["destination"],
-            "city": state["destination"],
-        })
+        geocode_result: GeocodeResult = await geocoding_tool.ainvoke(
+            {
+                "address": state["destination"],
+                "city": state["destination"],
+            }
+        )
         destination_coords = {
             "longitude": geocode_result.longitude,
             "latitude": geocode_result.latitude,
@@ -74,7 +76,9 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             limit=35,
         )
         # shuffle the attractions and sample 10
-        attractions: list[AttractionDetail] = random.sample(search_result.attractions, 10)
+        attractions: list[AttractionDetail] = random.sample(
+            search_result.attractions, 10
+        )
         logger.info(f"Found {len(attractions)} attractions via gRPC service")
     except Exception as e:
         logger.error(f"Attraction search failed: {e}")

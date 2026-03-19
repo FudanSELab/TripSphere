@@ -57,11 +57,7 @@ public interface CommonMapper {
         if (timeOfDay == null || timeOfDay.equals(TimeOfDay.getDefaultInstance())) {
             return null;
         }
-        return LocalTime.of(
-                timeOfDay.getHours(),
-                timeOfDay.getMinutes(),
-                timeOfDay.getSeconds(),
-                timeOfDay.getNanos());
+        return LocalTime.of(timeOfDay.getHours(), timeOfDay.getMinutes(), timeOfDay.getSeconds(), timeOfDay.getNanos());
     }
 
     default TimeOfDay toTimeOfDayProto(LocalTime localTime) {
@@ -78,8 +74,7 @@ public interface CommonMapper {
     // Struct <-> Map Conversions
     // ===================================================================
 
-    default Map<String, Object> toMap(Struct struct)
-            throws InvalidProtocolBufferException, JsonProcessingException {
+    default Map<String, Object> toMap(Struct struct) throws InvalidProtocolBufferException, JsonProcessingException {
         if (struct == null || struct.equals(Struct.getDefaultInstance())) {
             return Map.of();
         }
@@ -87,8 +82,7 @@ public interface CommonMapper {
         return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
-    default Struct toStruct(Map<String, Object> map)
-            throws JsonProcessingException, InvalidProtocolBufferException {
+    default Struct toStruct(Map<String, Object> map) throws JsonProcessingException, InvalidProtocolBufferException {
         if (map == null || map.isEmpty()) {
             return Struct.getDefaultInstance();
         }

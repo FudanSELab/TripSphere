@@ -54,7 +54,9 @@ def _activity_to_proto(activity: Activity) -> itinerary_pb2.Activity:
         "id": activity.id,
         "title": activity.name,
         "description": activity.description,
-        "kind": _KIND_TO_PROTO.get(activity.kind, itinerary_pb2.ACTIVITY_KIND_UNSPECIFIED),
+        "kind": _KIND_TO_PROTO.get(
+            activity.kind, itinerary_pb2.ACTIVITY_KIND_UNSPECIFIED
+        ),
         "start_time": _parse_time(activity.start_time),
         "end_time": _parse_time(activity.end_time),
         "estimated_cost": money_pb2.Money(
@@ -103,7 +105,9 @@ def _summary_to_proto(s: ItinerarySummary) -> itinerary_pb2.ItinerarySummary:
     )
 
 
-def _itinerary_to_proto(itinerary: Itinerary, markdown_content: str = "") -> itinerary_pb2.Itinerary:
+def _itinerary_to_proto(
+    itinerary: Itinerary, markdown_content: str = ""
+) -> itinerary_pb2.Itinerary:
     summary = None
     if itinerary.summary is not None:
         summary = _summary_to_proto(itinerary.summary)
@@ -175,7 +179,9 @@ def _proto_to_day_plan(proto: itinerary_pb2.DayPlan) -> DayPlan:
     )
 
 
-def _proto_to_summary(proto_summary: itinerary_pb2.ItinerarySummary) -> ItinerarySummary:
+def _proto_to_summary(
+    proto_summary: itinerary_pb2.ItinerarySummary,
+) -> ItinerarySummary:
     """Extract Pydantic ItinerarySummary from proto (Money -> amount + currency)."""
     cost = proto_summary.total_estimated_cost
     amount = cost.units + cost.nanos / 1_000_000_000 if cost else 0.0
@@ -243,7 +249,9 @@ class ItineraryServiceClient:
         user_id: str,
         markdown_content: str = "",
     ) -> Itinerary:
-        """Create the itinerary via gRPC.  The server overwrites user_id from auth metadata."""
+        """Create the itinerary via gRPC.
+        The server overwrites user_id from auth metadata.
+        """
         proto = _itinerary_to_proto(itinerary, markdown_content)
         async with grpc.aio.insecure_channel(self._address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
@@ -256,7 +264,9 @@ class ItineraryServiceClient:
         saved, _ = _proto_to_itinerary(response.itinerary)
         return saved.model_copy(update={"id": response.itinerary.id})
 
-    async def get_itinerary(self, itinerary_id: str, user_id: str) -> tuple[Itinerary, str]:
+    async def get_itinerary(
+        self, itinerary_id: str, user_id: str
+    ) -> tuple[Itinerary, str]:
         async with grpc.aio.insecure_channel(self._address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
             metadata = [("x-user-id", user_id)]

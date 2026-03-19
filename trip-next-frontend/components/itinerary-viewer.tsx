@@ -8,7 +8,14 @@ import type { Itinerary, DayPlan, Activity } from "@/actions/itinerary";
 
 const CATEGORY_META: Record<
   string,
-  { icon: string; label: string; bg: string; text: string; dot: string; bar: string }
+  {
+    icon: string;
+    label: string;
+    bg: string;
+    text: string;
+    dot: string;
+    bar: string;
+  }
 > = {
   transportation: {
     icon: "✈️",
@@ -86,7 +93,8 @@ const DEFAULT_META = {
 };
 
 function getCategoryMeta(activity: Activity) {
-  if (activity.kind === "transport") return CATEGORY_META["transportation"] ?? DEFAULT_META;
+  if (activity.kind === "transport")
+    return CATEGORY_META["transportation"] ?? DEFAULT_META;
   if (activity.kind === "hotel_stay")
     return {
       icon: "🛏️",
@@ -127,7 +135,7 @@ function safeNotes(value: string | null | undefined): string {
 function durationMinutes(start: string, end: string): number {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
+  return eh * 60 + em - (sh * 60 + sm);
 }
 
 function formatDuration(mins: number): string {
@@ -149,7 +157,10 @@ function getTimePeriod(startTime: string): TimePeriod {
   return "evening";
 }
 
-const PERIOD_LABEL: Record<TimePeriod, { label: string; icon: string; color: string }> = {
+const PERIOD_LABEL: Record<
+  TimePeriod,
+  { label: string; icon: string; color: string }
+> = {
   morning: { label: "上午", icon: "🌅", color: "text-amber-600" },
   afternoon: { label: "下午", icon: "☀️", color: "text-orange-500" },
   evening: { label: "傍晚 / 夜间", icon: "🌙", color: "text-indigo-600" },
@@ -164,7 +175,7 @@ function TripHeader({ itinerary }: { itinerary: Itinerary }) {
 
   return (
     <div className="shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-4 text-white">
-      <h1 className="text-lg font-bold leading-tight tracking-wide">
+      <h1 className="text-lg leading-tight font-bold tracking-wide">
         {itinerary.destination} 旅行行程
       </h1>
       <p className="mt-0.5 text-xs text-blue-100">
@@ -181,7 +192,9 @@ function TripHeader({ itinerary }: { itinerary: Itinerary }) {
         </div>
         {totalCost > 0 && (
           <div className="flex flex-col items-center rounded-lg bg-white/15 px-3 py-1.5">
-            <span className="text-base font-bold">¥{totalCost.toLocaleString()}</span>
+            <span className="text-base font-bold">
+              ¥{totalCost.toLocaleString()}
+            </span>
             <span className="text-blue-100">预算</span>
           </div>
         )}
@@ -204,7 +217,11 @@ function DayCard({ day, onClick }: { day: DayPlan; onClick: () => void }) {
   const categories = [
     ...new Set(
       day.activities.map((a) =>
-        a.kind === "hotel_stay" ? "hotel" : a.kind === "transport" ? "transportation" : a.category,
+        a.kind === "hotel_stay"
+          ? "hotel"
+          : a.kind === "transport"
+            ? "transportation"
+            : a.category,
       ),
     ),
   ].slice(0, 4);
@@ -212,20 +229,22 @@ function DayCard({ day, onClick }: { day: DayPlan; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left rounded-xl border border-gray-100 bg-white shadow-sm transition-all hover:border-blue-200 hover:shadow-md active:scale-[.985]"
+      className="group w-full rounded-xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-blue-200 hover:shadow-md active:scale-[.985]"
     >
       <div className="flex gap-0 overflow-hidden rounded-xl">
         {/* Left color accent */}
         <div className="flex w-1.5 shrink-0 flex-col">
-          {categories.length > 0
-            ? categories.map((cat, i) => (
-                <div
-                  key={i}
-                  className={`flex-1 ${(CATEGORY_META[cat] ?? DEFAULT_META).bar}`}
-                  style={{ minHeight: "12px" }}
-                />
-              ))
-            : <div className="flex-1 bg-gray-200" />}
+          {categories.length > 0 ? (
+            categories.map((cat, i) => (
+              <div
+                key={i}
+                className={`flex-1 ${(CATEGORY_META[cat] ?? DEFAULT_META).bar}`}
+                style={{ minHeight: "12px" }}
+              />
+            ))
+          ) : (
+            <div className="flex-1 bg-gray-200" />
+          )}
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3.5">
@@ -241,14 +260,20 @@ function DayCard({ day, onClick }: { day: DayPlan; onClick: () => void }) {
                 )}
               </div>
               {notes && (
-                <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{notes}</p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-gray-400">
+                  {notes}
+                </p>
               )}
             </div>
             <div className="shrink-0 text-right">
               {dayCost > 0 && (
-                <p className="text-xs font-semibold text-orange-500">¥{dayCost}</p>
+                <p className="text-xs font-semibold text-orange-500">
+                  ¥{dayCost}
+                </p>
               )}
-              <p className="text-[10px] text-gray-400">{day.activities.length} 项活动</p>
+              <p className="text-[10px] text-gray-400">
+                {day.activities.length} 项活动
+              </p>
             </div>
           </div>
 
@@ -264,7 +289,9 @@ function DayCard({ day, onClick }: { day: DayPlan; onClick: () => void }) {
                   >
                     <span>{meta.icon}</span>
                     <span className="max-w-[5rem] truncate">
-                      {a.kind === "hotel_stay" ? `住在${a.location?.name || "目的地"}` : a.name}
+                      {a.kind === "hotel_stay"
+                        ? `住在${a.location?.name || "目的地"}`
+                        : a.name}
                     </span>
                   </span>
                 );
@@ -288,7 +315,13 @@ function DayCard({ day, onClick }: { day: DayPlan; onClick: () => void }) {
 
 // ── Activity card (timeline) ───────────────────────────────────────────────
 
-function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolean }) {
+function ActivityCard({
+  activity,
+  isLast,
+}: {
+  activity: Activity;
+  isLast: boolean;
+}) {
   const meta = getCategoryMeta(activity);
   const dur = durationMinutes(activity.start_time, activity.end_time);
   const durLabel = formatDuration(dur);
@@ -308,17 +341,22 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
       {/* Timeline spine + dot */}
       <div className="relative flex flex-col items-center">
         <div
-          className={`relative z-10 mt-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-white shadow-sm text-[9px] ${meta.dot}`}
+          className={`relative z-10 mt-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-white text-[9px] shadow-sm ${meta.dot}`}
         >
           {meta.icon}
         </div>
         {!isLast && (
-          <div className="mt-1 flex-1 w-px bg-gray-200" style={{ minHeight: "1.5rem" }} />
+          <div
+            className="mt-1 w-px flex-1 bg-gray-200"
+            style={{ minHeight: "1.5rem" }}
+          />
         )}
       </div>
 
       {/* Card */}
-      <div className={`mb-3 flex-1 min-w-0 rounded-xl border border-gray-100 ${meta.bg} shadow-sm overflow-hidden`}>
+      <div
+        className={`mb-3 min-w-0 flex-1 rounded-xl border border-gray-100 ${meta.bg} overflow-hidden shadow-sm`}
+      >
         {/* Colored top bar */}
         <div className={`h-0.5 w-full ${meta.bar}`} />
         <div className="p-3">
@@ -330,7 +368,9 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
                     ? `住在 ${activity.location?.name || "目的地"}`
                     : activity.name}
                 </span>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.bg} ${meta.text} border border-current/20`}>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.bg} ${meta.text} border border-current/20`}
+                >
                   {meta.label}
                 </span>
               </div>
@@ -344,7 +384,9 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
               {activity.location?.name && (
                 <p className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
                   <span>📍</span>
-                  <span className="truncate">{activity.location.address || activity.location.name}</span>
+                  <span className="truncate">
+                    {activity.location.address || activity.location.name}
+                  </span>
                 </p>
               )}
             </div>
@@ -356,9 +398,9 @@ function ActivityCard({ activity, isLast }: { activity: Activity; isLast: boolea
                 </p>
               )}
               {(activity.estimated_cost?.amount ?? 0) === 0 && (
-                <p className="text-[10px] text-emerald-500 font-medium">免费</p>
+                <p className="text-[10px] font-medium text-emerald-500">免费</p>
               )}
-              <p className="mt-0.5 text-[10px] text-gray-400 whitespace-nowrap">
+              <p className="mt-0.5 text-[10px] whitespace-nowrap text-gray-400">
                 止 {activity.end_time}
               </p>
             </div>
@@ -403,9 +445,7 @@ function DayDetail({ day }: { day: DayPlan }) {
               </span>
             )}
           </div>
-          {notes && (
-            <p className="mt-0.5 text-sm text-gray-500">{notes}</p>
-          )}
+          {notes && <p className="mt-0.5 text-sm text-gray-500">{notes}</p>}
         </div>
         {totalCost > 0 && (
           <div className="shrink-0 rounded-xl bg-orange-50 px-3 py-1.5 text-right">
@@ -419,7 +459,9 @@ function DayDetail({ day }: { day: DayPlan }) {
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <span className="text-4xl">📅</span>
           <p className="mt-3 text-sm text-gray-400">本天暂无活动安排</p>
-          <p className="mt-1 text-xs text-gray-300">可以告诉 AI 助手为这天添加活动</p>
+          <p className="mt-1 text-xs text-gray-300">
+            可以告诉 AI 助手为这天添加活动
+          </p>
         </div>
       )}
 
@@ -435,7 +477,7 @@ function DayDetail({ day }: { day: DayPlan }) {
               <span className={`text-xs font-semibold ${periodInfo.color}`}>
                 {periodInfo.label}
               </span>
-              <div className="flex-1 h-px bg-gray-100" />
+              <div className="h-px flex-1 bg-gray-100" />
             </div>
 
             {/* Activities */}
@@ -463,7 +505,9 @@ function SummaryCard({ itinerary }: { itinerary: Itinerary }) {
 
   return (
     <div className="mt-1 rounded-xl border border-blue-100 bg-blue-50 p-4">
-      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">行程概览</p>
+      <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+        行程概览
+      </p>
       <div className="mt-2 flex flex-wrap gap-3 text-xs text-blue-600">
         <span>🗓️ {itinerary.day_plans.length} 天</span>
         <span>🎯 {summary.total_activities} 个活动</span>
@@ -538,7 +582,7 @@ export function ItineraryViewer({ itinerary, markdownContent }: Props) {
           >
             {tab === "itinerary" ? "行程详情" : "旅行灵感"}
             {topTab === tab && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-blue-500" />
+              <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-t bg-blue-500" />
             )}
           </button>
         ))}

@@ -104,10 +104,7 @@ export function ItineraryPlanForm({ today: todayStr }: ItineraryPlanFormProps) {
           additionalPreferences,
         });
 
-        sessionStorage.setItem(
-          "itinerary_plan_result",
-          JSON.stringify(result),
-        );
+        sessionStorage.setItem("itinerary_plan_result", JSON.stringify(result));
         router.push("/itinerary/planner");
       } catch (err) {
         setError(err instanceof Error ? err.message : "规划失败，请重试");
@@ -268,9 +265,7 @@ export function ItineraryPlanForm({ today: todayStr }: ItineraryPlanFormProps) {
           </div>
 
           {/* Error */}
-          {error && (
-            <p className="text-sm font-medium text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm font-medium text-red-500">{error}</p>}
 
           {/* Submit */}
           <Button
