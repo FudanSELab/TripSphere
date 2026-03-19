@@ -28,11 +28,7 @@ class NacosSettings(BaseModel):
     server_address: str = Field(default="localhost:8848")
     namespace_id: str = Field(default="public")
     group_name: str = Field(default="DEFAULT_GROUP")
-
-
-class ItineraryServiceSettings(BaseModel):
-    host: str = Field(default="localhost")
-    port: int = Field(default=50052)
+    itinerary_service_name: str = Field(default="trip-itinerary-service")
 
 
 class OpenAISettings(BaseModel):
@@ -64,9 +60,6 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
-    itinerary_service: ItineraryServiceSettings = Field(
-        default_factory=ItineraryServiceSettings
-    )
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)
 

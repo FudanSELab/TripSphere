@@ -28,17 +28,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info("Loaded settings: %s", settings)
 
-    # gRPC client for itinerary CRUD — backed by trip-itinerary-service
-    svc_settings = settings.itinerary_service
-    app.state.itinerary_service_client = ItineraryServiceClient(
-        host=svc_settings.host, port=svc_settings.port
-    )
-    logger.info(
-        "ItineraryServiceClient configured: %s:%s",
-        svc_settings.host,
-        svc_settings.port,
-    )
-
     try:
         app.state.nacos_naming = await NacosNaming.create_naming(
             service_name=settings.app.name,
@@ -48,6 +37,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
+
+        # gRPC client for itinerary CRUD — discovers trip-itinerary-service via Nacos
+        app.state.itinerary_service_client = ItineraryServiceClient(
+            nacos_naming=app.state.nacos_naming,
+            service_name=settings.nacos.itinerary_service_name,
+        )
+        logger.info(
+            "ItineraryServiceClient configured via Nacos (service=%s)",
+            settings.nacos.itinerary_service_name,
+        )
 
         # CopilotKit AG-UI endpoint — served by ag_ui_langgraph
         chat_graph = create_chat_graph(nacos_naming=app.state.nacos_naming)

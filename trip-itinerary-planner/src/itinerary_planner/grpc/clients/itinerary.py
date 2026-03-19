@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import grpc
 from tripsphere.attraction.v1 import attraction_pb2
@@ -19,7 +19,13 @@ from tripsphere.itinerary.v1 import itinerary_pb2, itinerary_pb2_grpc
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
 from itinerary_planner.models.itinerary import DayPlan, Itinerary, ItinerarySummary
 
+if TYPE_CHECKING:
+    from itinerary_planner.nacos.naming import NacosNaming
+
 logger = logging.getLogger(__name__)
+
+# Default gRPC port when metadata is missing (e.g. legacy instance)
+_DEFAULT_GRPC_PORT = 50052
 
 # ── Kind string → proto enum ────────────────────────────────────────────────
 
@@ -249,10 +255,23 @@ def _proto_to_itinerary_summary(proto: itinerary_pb2.Itinerary) -> dict:  # type
 
 
 class ItineraryServiceClient:
-    """Async gRPC client wrapper around trip-itinerary-service."""
+    """Async gRPC client wrapper around trip-itinerary-service.
+    Resolves target via Nacos service discovery (per-request).
+    """
 
-    def __init__(self, host: str = "localhost", port: int = 50052) -> None:
-        self._address = f"{host}:{port}"
+    def __init__(
+        self,
+        nacos_naming: "NacosNaming",
+        service_name: str = "trip-itinerary-service",
+    ) -> None:
+        self._nacos_naming = nacos_naming
+        self._service_name = service_name
+
+    async def _resolve_address(self) -> str:
+        instance = await self._nacos_naming.get_service_instance(self._service_name)
+        port_str = (instance.metadata or {}).get("gRPC_port", str(_DEFAULT_GRPC_PORT))
+        port = int(port_str)
+        return f"{instance.ip}:{port}"
 
     async def create_itinerary(
         self,
@@ -264,7 +283,8 @@ class ItineraryServiceClient:
         The server overwrites user_id from auth metadata.
         """
         proto = _itinerary_to_proto(itinerary, markdown_content)
-        async with grpc.aio.insecure_channel(self._address) as channel:
+        address = await self._resolve_address()
+        async with grpc.aio.insecure_channel(address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
             # x-user-id is read by AuthInterceptor to populate GrpcAuthContext
             metadata = [("x-user-id", user_id)]
@@ -278,7 +298,8 @@ class ItineraryServiceClient:
     async def get_itinerary(
         self, itinerary_id: str, user_id: str
     ) -> tuple[Itinerary, str]:
-        async with grpc.aio.insecure_channel(self._address) as channel:
+        address = await self._resolve_address()
+        async with grpc.aio.insecure_channel(address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
             metadata = [("x-user-id", user_id)]
             response = await stub.GetItinerary(
@@ -290,7 +311,8 @@ class ItineraryServiceClient:
     async def list_user_itineraries(
         self, user_id: str, page_size: int = 50
     ) -> list[dict]:  # type: ignore[type-arg]
-        async with grpc.aio.insecure_channel(self._address) as channel:
+        address = await self._resolve_address()
+        async with grpc.aio.insecure_channel(address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
             metadata = [("x-user-id", user_id)]
             response = await stub.ListUserItineraries(
@@ -309,7 +331,8 @@ class ItineraryServiceClient:
         markdown_content: str = "",
     ) -> Itinerary:
         proto = _itinerary_to_proto(itinerary, markdown_content)
-        async with grpc.aio.insecure_channel(self._address) as channel:
+        address = await self._resolve_address()
+        async with grpc.aio.insecure_channel(address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
             metadata = [("x-user-id", user_id)]
             response = await stub.ReplaceItinerary(
@@ -320,7 +343,8 @@ class ItineraryServiceClient:
         return saved.model_copy(update={"id": response.itinerary.id})
 
     async def delete_itinerary(self, itinerary_id: str, user_id: str) -> None:
-        async with grpc.aio.insecure_channel(self._address) as channel:
+        address = await self._resolve_address()
+        async with grpc.aio.insecure_channel(address) as channel:
             stub = itinerary_pb2_grpc.ItineraryServiceStub(channel)
             metadata = [("x-user-id", user_id)]
             await stub.DeleteItinerary(
