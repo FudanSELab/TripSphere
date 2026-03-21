@@ -40,4 +40,15 @@ public interface AttractionService {
      * @return the attraction if found
      */
     Optional<Attraction> findByPoiId(String poiId);
+
+    /**
+     * List attractions in a given city with optional tag filter and skip-based pagination.
+     *
+     * @param city the city name (e.g. "上海市")
+     * @param tags optional tag filter; null or empty means no filter
+     * @param pageSize number of results to return
+     * @param skip number of results to skip
+     * @return list of attractions in the city
+     */
+    List<Attraction> listByCity(String city, List<String> tags, int pageSize, int skip);
 }

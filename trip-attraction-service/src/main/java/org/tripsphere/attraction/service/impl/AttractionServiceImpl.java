@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.Point;
 import org.springframework.stereotype.Service;
 import org.tripsphere.attraction.mapper.AttractionMapper;
@@ -59,6 +61,27 @@ public class AttractionServiceImpl implements AttractionService {
     public Optional<Attraction> findByPoiId(String poiId) {
         log.debug("Finding attraction by poiId: {}", poiId);
         return attractionDocRepository.findByPoiId(poiId).map(attractionMapper::toProto);
+    }
+
+    @Override
+    public List<Attraction> listByCity(String city, List<String> tags, int pageSize, int skip) {
+        log.debug(
+                "Listing attractions by city: {}, tags: {}, pageSize: {}, skip: {}",
+                city,
+                tags,
+                pageSize,
+                skip);
+        int effectivePageSize = pageSize > 0 ? pageSize : 12;
+        int page = effectivePageSize > 0 ? skip / effectivePageSize : 0;
+        PageRequest pageRequest = PageRequest.of(page, effectivePageSize, Sort.by("name"));
+
+        List<AttractionDoc> docs;
+        if (tags == null || tags.isEmpty()) {
+            docs = attractionDocRepository.findAllByAddressCity(city, pageRequest);
+        } else {
+            docs = attractionDocRepository.findAllByAddressCityAndTagsIn(city, tags, pageRequest);
+        }
+        return attractionMapper.toProtoList(docs);
     }
 
     /** Convert GeoPoint (GCJ-02) to Spring Point (WGS84) for MongoDB queries. */

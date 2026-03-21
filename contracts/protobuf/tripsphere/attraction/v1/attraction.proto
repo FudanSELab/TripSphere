@@ -19,6 +19,9 @@ service AttractionService {
 
   // Find attractions within a radius from a location and list them in order from near to far
   rpc GetAttractionsNearby(GetAttractionsNearbyRequest) returns (GetAttractionsNearbyResponse);
+
+  // List attractions in a city with optional tag filter and pagination
+  rpc ListAttractionsByCity(ListAttractionsByCityRequest) returns (ListAttractionsByCityResponse);
 }
 
 message Attraction {
@@ -90,4 +93,18 @@ message GetAttractionsNearbyRequest {
 
 message GetAttractionsNearbyResponse {
   repeated Attraction attractions = 1;
+}
+
+message ListAttractionsByCityRequest {
+  string city = 1;
+  // Optional filter by tags
+  repeated string tags = 2;
+  int32 page_size = 3;
+  // Skip-offset encoded as string; empty string means start from beginning
+  string page_token = 4;
+}
+
+message ListAttractionsByCityResponse {
+  repeated Attraction attractions = 1;
+  string next_page_token = 2;
 }

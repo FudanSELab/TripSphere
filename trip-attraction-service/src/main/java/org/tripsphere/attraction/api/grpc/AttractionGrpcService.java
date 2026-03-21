@@ -18,6 +18,8 @@ import org.tripsphere.attraction.v1.GetAttractionByIdRequest;
 import org.tripsphere.attraction.v1.GetAttractionByIdResponse;
 import org.tripsphere.attraction.v1.GetAttractionsNearbyRequest;
 import org.tripsphere.attraction.v1.GetAttractionsNearbyResponse;
+import org.tripsphere.attraction.v1.ListAttractionsByCityRequest;
+import org.tripsphere.attraction.v1.ListAttractionsByCityResponse;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -97,6 +99,43 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
 
         responseObserver.onNext(
                 GetAttractionsNearbyResponse.newBuilder().addAllAttractions(attractions).build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void listAttractionsByCity(
+            ListAttractionsByCityRequest request,
+            StreamObserver<ListAttractionsByCityResponse> responseObserver) {
+        String city = request.getCity();
+        if (city.isEmpty()) {
+            throw InvalidArgumentException.required("city");
+        }
+
+        int pageSize = request.getPageSize() > 0 ? request.getPageSize() : 12;
+        int skip = 0;
+        String pageTokenStr = request.getPageToken();
+        if (!pageTokenStr.isEmpty()) {
+            try {
+                skip = Integer.parseInt(pageTokenStr);
+            } catch (NumberFormatException ignored) {
+                skip = 0;
+            }
+        }
+
+        List<String> tags = request.getTagsList();
+
+        List<Attraction> attractions =
+                attractionService.listByCity(
+                        city, tags.isEmpty() ? null : tags, pageSize, skip);
+
+        int nextSkip = skip + attractions.size();
+        String nextPageToken = attractions.size() < pageSize ? "" : String.valueOf(nextSkip);
+
+        responseObserver.onNext(
+                ListAttractionsByCityResponse.newBuilder()
+                        .addAllAttractions(attractions)
+                        .setNextPageToken(nextPageToken)
+                        .build());
         responseObserver.onCompleted();
     }
 }
