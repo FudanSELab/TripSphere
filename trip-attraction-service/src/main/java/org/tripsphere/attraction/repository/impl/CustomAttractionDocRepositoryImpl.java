@@ -20,8 +20,7 @@ public class CustomAttractionDocRepositoryImpl implements CustomAttractionDocRep
     @Override
     public List<AttractionDoc> findAllByLocationNear(
             Point location, double radiusMeters, int limit, List<String> tags) {
-        Criteria criteria =
-                Criteria.where("location").nearSphere(location).maxDistance(radiusMeters);
+        Criteria criteria = Criteria.where("location").nearSphere(location).maxDistance(radiusMeters);
 
         if (tags != null && !tags.isEmpty()) {
             criteria.and("tags").in(tags);

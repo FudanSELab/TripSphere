@@ -16,6 +16,7 @@ import {
   type GetItineraryResponse,
 } from "@/lib/grpc/generated/tripsphere/itinerary/v1/itinerary";
 import type { Metadata } from "@grpc/grpc-js";
+import { parseDateOnly } from "@/lib/format";
 
 // ── Re-exported public types ───────────────────────────────────────────────
 
@@ -119,8 +120,13 @@ function formatDate(
 }
 
 function parseDate(iso: string): { year: number; month: number; day: number } {
-  const [y, m, d] = iso.split("-").map(Number);
-  return { year: y, month: m, day: d };
+  const dt = parseDateOnly(iso);
+  if (!dt) return { year: NaN, month: NaN, day: NaN };
+  return {
+    year: dt.getFullYear(),
+    month: dt.getMonth() + 1,
+    day: dt.getDate(),
+  };
 }
 
 function formatTime(t: { hours: number; minutes: number } | undefined): string {

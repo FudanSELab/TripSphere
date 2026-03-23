@@ -27,43 +27,36 @@ TRAVEL_INTEREST_TO_ATTRACTION_TAGS: dict[TravelInterest, list[str]] = {
         "美术馆",
         "艺术馆",
         "文化旅游区",
-        "其他"
+        "其他",
     ],
-    TravelInterest.CLASSIC: [
-        "历史古迹",
-        "纪念馆",
-        "红色景点",
-        "人文景观",
-        "其他"
-    ],
-    TravelInterest.NATURE: [
-        "自然风光",
-        "公园",
-        "其他"
-    ],
-    TravelInterest.CITYSCAPE: [
-        "商业街区",
-        "大学校园",
-        "公园",
-        "人文景观",
-        "其他"
-    ],
-    TravelInterest.HISTORY: [
-        "历史古迹",
-        "纪念馆",
-        "红色景点",
-        "博物馆",
-        "其他"
-    ],
+    TravelInterest.CLASSIC: ["历史古迹", "纪念馆", "红色景点", "人文景观", "其他"],
+    TravelInterest.NATURE: ["自然风光", "公园", "其他"],
+    TravelInterest.CITYSCAPE: ["商业街区", "大学校园", "公园", "人文景观", "其他"],
+    TravelInterest.HISTORY: ["历史古迹", "纪念馆", "红色景点", "博物馆", "其他"],
 }
 
 
 def get_attraction_tags_for_interests(interests: list[TravelInterest]) -> list[str]:
     """Return deduplicated attraction tags for the given travel interests."""
     if not interests:
-        return ["人文景观", "体育娱乐", "公园", "其它", "博物馆", "历史古迹", 
-                "商业街区", "大学校园", "文化旅游区", "游乐园", "红色景点", 
-                "纪念馆", "美术馆", "自然风光", "艺术馆", "其他"]
+        return [
+            "人文景观",
+            "体育娱乐",
+            "公园",
+            "其它",
+            "博物馆",
+            "历史古迹",
+            "商业街区",
+            "大学校园",
+            "文化旅游区",
+            "游乐园",
+            "红色景点",
+            "纪念馆",
+            "美术馆",
+            "自然风光",
+            "艺术馆",
+            "其他",
+        ]
     tags: list[str] = []
     seen: set[str] = set()
     for interest in interests:

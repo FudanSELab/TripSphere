@@ -16,7 +16,7 @@ export function OrderList({ orders }: { orders: OrderData[] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {orders.map((order) => (
         <OrderCard key={order.id} order={order} />
       ))}

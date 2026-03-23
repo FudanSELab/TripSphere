@@ -10,7 +10,12 @@ from pydantic import BaseModel
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
-from itinerary_planner.models.itinerary import DayPlan, get_attraction_tags_for_interests, Itinerary, ItinerarySummary
+from itinerary_planner.models.itinerary import (
+    DayPlan,
+    Itinerary,
+    ItinerarySummary,
+    get_attraction_tags_for_interests,
+)
 from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
 from itinerary_planner.prompts.workflow import (
     MARKDOWN_GENERATION_PROMPT,
@@ -66,7 +71,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             "latitude": 31.2304,
             "address": state["destination"],
         }
-        
+
     travel_interests = state.get("interests", [])
     logger.info(f"Travel interests: {travel_interests}")
     tags = get_attraction_tags_for_interests(travel_interests)
@@ -83,7 +88,9 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             limit=35,
         )
         # shuffle the attractions and sample 10
-        attractions: list[AttractionDetail] = random.sample(search_result.attractions, 15)
+        attractions: list[AttractionDetail] = random.sample(
+            search_result.attractions, 15
+        )
         logger.info(f"Found {len(attractions)} attractions via gRPC service")
     except Exception as e:
         logger.error(f"Attraction search failed: {e}")
@@ -183,7 +190,9 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             center_lat = destination_coords["latitude"]
             center_lon = destination_coords["longitude"]
 
-        hotel_limit = 3 if num_days <= 4 else 5  # Short trip: one hotel; longer: multiple options
+        hotel_limit = (
+            3 if num_days <= 4 else 5
+        )  # Short trip: one hotel; longer: multiple options
         try:
             hotel_result = await search_hotels_nearby(
                 nacos_naming=state["nacos_naming"],
@@ -298,7 +307,9 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         if len(hotel_details) == 1:
             return hotel_details[0]
         # Spread multiple hotels over nights (e.g. 6 days -> hotel0 for nights 0,1,2 and hotel1 for 3,4,5)
-        nights_per_hotel = max(1, (num_days + len(hotel_details) - 1) // len(hotel_details))
+        nights_per_hotel = max(
+            1, (num_days + len(hotel_details) - 1) // len(hotel_details)
+        )
         hotel_idx = min(night_index // nights_per_hotel, len(hotel_details) - 1)
         return hotel_details[hotel_idx]
 
@@ -369,13 +380,16 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         hotel_for_night = _hotel_for_night(day_num - 1)
         if hotel_for_night:
             hotel_name = hotel_for_night.get("name", "酒店")
-            stay_label = "入住: " + hotel_name if day_num == 1 else "当晚住宿: " + hotel_name
+            stay_label = (
+                "入住: " + hotel_name if day_num == 1 else "当晚住宿: " + hotel_name
+            )
             price_per_night = hotel_for_night.get("estimated_price") or 0.0
             formatted_activities.append(
                 Activity(
                     id=str(uuid.uuid4()),
                     name=stay_label,
-                    description=hotel_for_night.get("introduction", "") or hotel_for_night.get("address", ""),
+                    description=hotel_for_night.get("introduction", "")
+                    or hotel_for_night.get("address", ""),
                     start_time="20:00",
                     end_time="08:00",
                     location=ActivityLocation(

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Hotel as HotelIcon } from "lucide-react";
 import { HotelCard, HotelCardSkeleton } from "@/components/hotel-card";
 import { listHotels } from "@/actions/hotel";
+import { hotelToCardData } from "@/lib/mappers/hotel";
 import type { Hotel } from "@/lib/grpc/generated/tripsphere/hotel/v1/hotel";
 
 const SKELETON_COUNT = 4;
@@ -72,21 +73,7 @@ export function HotelCardList({
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {hotels.map((hotel) => (
-          <HotelCard
-            key={hotel.id}
-            hotel={{
-              id: hotel.id,
-              name: hotel.name,
-              image: hotel.images[0] ?? null,
-              stars: 4,
-              rating: null,
-              reviews: 0,
-              location: hotel.address
-                ? `${hotel.address.city} · ${hotel.address.district}`
-                : "",
-              price: hotel.estimatedPrice?.units ?? 0,
-            }}
-          />
+          <HotelCard key={hotel.id} hotel={hotelToCardData(hotel)} />
         ))}
 
         {loading &&

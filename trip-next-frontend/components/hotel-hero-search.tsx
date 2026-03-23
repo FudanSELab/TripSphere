@@ -71,60 +71,76 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
+        aria-hidden="true"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1920&q=80')",
         }}
       />
-      {/* Overlay gradient for better text readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-600/40 via-blue-500/20 to-blue-400/30" />
+      <div
+        className="from-primary/40 via-primary/20 to-primary/30 absolute inset-0 bg-gradient-to-b"
+        aria-hidden="true"
+      />
 
-      {/* Content */}
       <div className="relative z-10 flex flex-col gap-8 px-10 pt-10 pb-14">
-        {/* Title */}
         <h1 className="text-4xl font-bold text-white drop-shadow-md">
           酒店
-          <span className="ml-1 inline-block size-2.5 rounded-full bg-amber-400" />
+          <span
+            className="bg-price ml-1 inline-block size-2.5 rounded-full"
+            aria-hidden="true"
+          />
         </h1>
 
-        {/* Search Card */}
         <div className="bg-card flex h-14 items-center rounded-xl p-2 shadow-lg">
-          {/* Location */}
           <SearchField className="w-1/6">
-            <MapPin className="size-4 shrink-0 text-blue-500" />
+            <MapPin
+              className="text-primary size-4 shrink-0"
+              aria-hidden="true"
+            />
             <span className="text-foreground text-sm font-medium">
               {location || "目的地"}
             </span>
             {location && (
               <button
                 onClick={() => setLocation("")}
+                aria-label="清除目的地"
                 className="text-muted-foreground hover:bg-accent hover:text-foreground ml-auto rounded-full p-0.5 transition-colors"
               >
-                <X className="size-3.5" />
+                <X className="size-3.5" aria-hidden="true" />
               </button>
             )}
           </SearchField>
 
           <Separator orientation="vertical" className="mx-1" />
 
-          {/* Date Range */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="hover:bg-accent flex min-w-[220px] cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors">
-                <CalendarDays className="size-4 shrink-0 text-blue-500" />
+              <button
+                aria-label={`入住日期 ${formatDate(checkIn)} 退房日期 ${formatDate(checkOut)} 共 ${nights} 晚`}
+                className="hover:bg-accent flex min-w-[220px] cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+              >
+                <CalendarDays
+                  className="text-primary size-4 shrink-0"
+                  aria-hidden="true"
+                />
                 <span className="text-foreground text-sm font-medium">
                   {formatDate(checkIn)}
                 </span>
-                <span className="text-muted-foreground mx-3 text-xs">-</span>
+                <span
+                  className="text-muted-foreground mx-3 text-xs"
+                  aria-hidden="true"
+                >
+                  -
+                </span>
                 <span className="text-foreground text-sm font-medium">
                   {formatDate(checkOut)}
                 </span>
                 <Badge
                   variant="secondary"
-                  className="ml-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600"
+                  className="bg-primary/10 text-primary ml-1 rounded-md px-1.5 py-0.5 text-xs font-medium"
+                  aria-hidden="true"
                 >
                   {nights}晚
                 </Badge>
@@ -148,11 +164,16 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
 
           <Separator orientation="vertical" className="mx-1" />
 
-          {/* Rooms & Guests */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors">
-                <Users className="size-4 shrink-0 text-blue-500" />
+              <button
+                aria-label={`房间和住客：${rooms}间, ${adults}成人, ${children}儿童`}
+                className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+              >
+                <Users
+                  className="text-primary size-4 shrink-0"
+                  aria-hidden="true"
+                />
                 <span className="text-foreground text-sm font-medium">
                   {rooms}间, {adults}成人, {children}儿童
                 </span>
@@ -160,7 +181,6 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
             </PopoverTrigger>
             <PopoverContent className="w-72" align="start">
               <div className="flex flex-col gap-4">
-                {/* Constraint: rooms >= 1, rooms <= adults */}
                 <GuestCounterRow
                   label="房间"
                   value={rooms}
@@ -169,7 +189,6 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
                   onDecrement={() => setRooms((r) => Math.max(1, r - 1))}
                   onIncrement={() => setRooms((r) => Math.min(adults, r + 1))}
                 />
-                {/* Constraint: adults >= 1, adults >= rooms */}
                 <GuestCounterRow
                   label="成人"
                   description="18岁及以上"
@@ -194,22 +213,24 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
 
           <Separator orientation="vertical" className="mx-1" />
 
-          {/* Keyword */}
           <div className="hover:bg-accent flex flex-1 items-center rounded-lg px-3">
+            <label htmlFor="hotel-keyword-search" className="sr-only">
+              酒店关键词搜索
+            </label>
             <Input
+              id="hotel-keyword-search"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="位置/品牌/酒店（选填）"
+              placeholder="位置/品牌/酒店（选填）…"
               className="placeholder:text-muted-foreground/70 h-9 border-none bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
             />
           </div>
 
-          {/* Search Button */}
           <Button
             onClick={handleSearch}
-            className="ml-2 h-10 cursor-pointer gap-1.5 rounded-lg bg-blue-600 px-6 text-white hover:bg-blue-700"
+            className="ml-2 h-10 cursor-pointer gap-1.5 rounded-lg px-6"
           >
-            <Search className="size-4" />
+            <Search className="size-4" aria-hidden="true" />
             搜索
           </Button>
         </div>
@@ -272,18 +293,25 @@ function GuestCounterRow({
           className="size-8 rounded-full"
           disabled={!canDecrement}
           onClick={onDecrement}
+          aria-label={`减少${label}`}
         >
-          <Minus className="size-3.5" />
+          <Minus className="size-3.5" aria-hidden="true" />
         </Button>
-        <span className="w-5 text-center text-sm font-medium">{value}</span>
+        <span
+          className="w-5 text-center text-sm font-medium"
+          aria-live="polite"
+        >
+          {value}
+        </span>
         <Button
           variant="outline"
           size="icon"
           className="size-8 rounded-full"
           disabled={!canIncrement}
           onClick={onIncrement}
+          aria-label={`增加${label}`}
         >
-          <Plus className="size-3.5" />
+          <Plus className="size-3.5" aria-hidden="true" />
         </Button>
       </div>
     </div>

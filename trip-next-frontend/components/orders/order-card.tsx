@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { cancelOrder } from "@/actions/order";
 import {
   formatMoney,
@@ -83,7 +84,7 @@ export function OrderCard({ order }: { order: OrderData }) {
 
       <CardContent className="px-6 py-4">
         <div className="flex items-start justify-between gap-6">
-          <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             {firstItem ? (
               <>
                 <h3 className="truncate text-base font-semibold">
@@ -122,7 +123,7 @@ export function OrderCard({ order }: { order: OrderData }) {
           </div>
 
           <div className="shrink-0 text-right">
-            <p className="text-lg font-bold text-orange-500">
+            <p className="text-price text-lg font-bold">
               ¥{totalPrice.toFixed(0)}
             </p>
           </div>
@@ -139,7 +140,14 @@ export function OrderCard({ order }: { order: OrderData }) {
             disabled={isPending}
             onClick={handleCancel}
           >
-            {isPending ? "取消中..." : "取消订单"}
+            {isPending ? (
+              <>
+                <Spinner className="mr-1.5 size-3.5" />
+                取消中…
+              </>
+            ) : (
+              "取消订单"
+            )}
           </Button>
         )}
         {order.status === ORDER_STATUS_PENDING_PAYMENT && (

@@ -14,8 +14,7 @@ export async function SiteHeader({ ...props }: React.ComponentProps<"header">) {
       className="bg-background/80 sticky top-0 z-50 flex h-16 shrink-0 items-center border-b backdrop-blur-sm"
       {...props}
     >
-      <div className="mx-auto flex w-full max-w-screen-2xl items-center gap-4 px-[10rem]">
-        {/* Logo */}
+      <div className="mx-auto flex w-full max-w-screen-2xl items-center gap-4 px-4 sm:px-8 lg:px-16">
         <Link
           href="/"
           className="text-primary flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight"
@@ -24,19 +23,20 @@ export async function SiteHeader({ ...props }: React.ComponentProps<"header">) {
           <span className="hidden sm:inline">TripSphere</span>
         </Link>
 
-        {/* Search */}
         <div className="relative mx-auto w-full max-w-md">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <label htmlFor="site-search" className="sr-only">
+            全站搜索
+          </label>
           <Input
+            id="site-search"
             type="search"
-            placeholder="搜索任何旅游相关......"
+            placeholder="搜索任何旅游相关…"
             className="h-9 pr-4 pl-9"
           />
         </div>
 
-        {/* Right section */}
         <div className="flex shrink-0 items-center gap-3">
-          {/* User section */}
           {session ? (
             <UserNavigation user={session} />
           ) : (
@@ -51,7 +51,6 @@ export async function SiteHeader({ ...props }: React.ComponentProps<"header">) {
             </div>
           )}
 
-          {/* My Orders */}
           <Button variant="ghost" size="sm" asChild>
             <Link href="/orders" className="gap-1.5">
               <ShoppingBag className="size-4" />
@@ -59,10 +58,9 @@ export async function SiteHeader({ ...props }: React.ComponentProps<"header">) {
             </Link>
           </Button>
 
-          {/* Notifications */}
           <Button variant="ghost" size="icon-sm" className="relative" asChild>
             <Link href="/notification">
-              <Bell className="size-4" />
+              <Bell className="size-4" aria-hidden="true" />
               <Badge
                 variant="destructive"
                 className="absolute -top-1 -right-1 size-4 justify-center p-0 text-[10px]"

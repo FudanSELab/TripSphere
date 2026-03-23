@@ -25,14 +25,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const group0 = [
+const travelLinks = [
   { title: "酒店", url: "/hotels", icon: Hotel },
   { title: "机票", url: "/flights", icon: Plane },
   { title: "火车票", url: "/trains", icon: Train },
   { title: "景点", url: "/attractions", icon: Ticket },
 ];
 
-const group1 = [
+const aiLinks = [
   { title: "AI行程助手", url: "/itinerary", icon: Sparkles },
   { title: "笔记攻略", url: "/notes", icon: Notebook },
 ];
@@ -61,7 +61,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
-              {group0.map((item) => (
+              {travelLinks.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -69,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
-                      <item.icon className="text-blue-600" />
+                      <item.icon className="text-primary" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -82,7 +82,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
-              {group1.map((item) => (
+              {aiLinks.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -90,7 +90,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
-                      <item.icon className="text-blue-600" />
+                      <item.icon className="text-primary" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

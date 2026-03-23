@@ -16,11 +16,6 @@ interface HotelRoomListProps {
   hotel: Hotel;
 }
 
-/**
- * Async server component — fetches room types & products, then renders
- * the room cards and syncs hotel context to the CopilotKit agent.
- * Wrapped in <Suspense> by the parent page for streaming.
- */
 export async function HotelRoomList({ hotel }: HotelRoomListProps) {
   const roomTypes = await getRoomTypesByHotelId(hotel.id);
 
@@ -42,7 +37,6 @@ export async function HotelRoomList({ hotel }: HotelRoomListProps) {
     <>
       <HotelAgentStateSync hotelContext={hotelContext} />
 
-      {/* Date & Guest Selector */}
       <div className="bg-muted mb-4 flex items-center gap-4 rounded-lg border p-3">
         <div className="flex items-center gap-2">
           <Calendar className="text-muted-foreground size-5" />
@@ -56,8 +50,7 @@ export async function HotelRoomList({ hotel }: HotelRoomListProps) {
         </div>
       </div>
 
-      {/* Room Type List */}
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         {roomTypesWithSpus.length > 0 ? (
           roomTypesWithSpus.map(({ roomType, spus }) => (
             <RoomTypeCard key={roomType.id} roomType={roomType} spus={spus} />
@@ -75,7 +68,7 @@ export async function HotelRoomList({ hotel }: HotelRoomListProps) {
 
 export function RoomListSkeleton() {
   return (
-    <div className="space-y-6 py-4">
+    <div className="flex flex-col gap-6 py-4">
       <Skeleton className="h-12 w-full rounded-lg" />
       {Array.from({ length: 2 }).map((_, i) => (
         <Skeleton key={i} className="h-64 w-full rounded-lg" />

@@ -30,10 +30,8 @@ public class OpenRule {
             if (!openTime.isBefore(closeTime)) {
                 throw new IllegalArgumentException("openTime must be before closeTime");
             }
-            if (lastEntryTime != null
-                    && (lastEntryTime.isBefore(openTime) || lastEntryTime.isAfter(closeTime))) {
-                throw new IllegalArgumentException(
-                        "lastEntryTime must be between openTime and closeTime");
+            if (lastEntryTime != null && (lastEntryTime.isBefore(openTime) || lastEntryTime.isAfter(closeTime))) {
+                throw new IllegalArgumentException("lastEntryTime must be between openTime and closeTime");
             }
         }
     }

@@ -1,6 +1,5 @@
 package org.tripsphere.product.adapter.outbound.mongodb.document;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -15,6 +14,5 @@ public class SkuDocument {
     private String description;
     private String status;
     private Map<String, Object> attributes;
-    private String priceCurrency;
-    private BigDecimal priceAmount;
+    private MoneyDocument basePrice;
 }

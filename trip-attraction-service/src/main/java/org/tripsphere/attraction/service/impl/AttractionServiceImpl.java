@@ -40,8 +40,7 @@ public class AttractionServiceImpl implements AttractionService {
     }
 
     @Override
-    public List<Attraction> searchNearby(
-            GeoPoint location, double radiusMeters, List<String> tags) {
+    public List<Attraction> searchNearby(GeoPoint location, double radiusMeters, List<String> tags) {
         log.debug(
                 "Searching attractions nearby location: ({}, {}), radius: {}m",
                 location.getLongitude(),
@@ -52,8 +51,7 @@ public class AttractionServiceImpl implements AttractionService {
         Point wgs84Location = toWgs84Point(location);
 
         List<AttractionDoc> docs =
-                attractionDocRepository.findAllByLocationNear(
-                        wgs84Location, radiusMeters, DEFAULT_NEARBY_LIMIT, tags);
+                attractionDocRepository.findAllByLocationNear(wgs84Location, radiusMeters, DEFAULT_NEARBY_LIMIT, tags);
         return attractionMapper.toProtoList(docs);
     }
 
@@ -86,9 +84,7 @@ public class AttractionServiceImpl implements AttractionService {
 
     /** Convert GeoPoint (GCJ-02) to Spring Point (WGS84) for MongoDB queries. */
     private Point toWgs84Point(GeoPoint geoPoint) {
-        double[] wgs84 =
-                CoordinateTransformUtil.gcj02ToWgs84(
-                        geoPoint.getLongitude(), geoPoint.getLatitude());
+        double[] wgs84 = CoordinateTransformUtil.gcj02ToWgs84(geoPoint.getLongitude(), geoPoint.getLatitude());
         return new Point(wgs84[0], wgs84[1]);
     }
 }

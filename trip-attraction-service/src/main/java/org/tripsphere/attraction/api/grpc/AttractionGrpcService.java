@@ -31,17 +31,14 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
 
     @Override
     public void getAttractionById(
-            GetAttractionByIdRequest request,
-            StreamObserver<GetAttractionByIdResponse> responseObserver) {
+            GetAttractionByIdRequest request, StreamObserver<GetAttractionByIdResponse> responseObserver) {
         String id = request.getId();
         if (id.isEmpty()) {
             throw InvalidArgumentException.required("id");
         }
 
         Attraction attraction =
-                attractionService
-                        .findById(id)
-                        .orElseThrow(() -> new NotFoundException("Attraction", id));
+                attractionService.findById(id).orElseThrow(() -> new NotFoundException("Attraction", id));
 
         responseObserver.onNext(
                 GetAttractionByIdResponse.newBuilder().setAttraction(attraction).build());
@@ -50,8 +47,7 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
 
     @Override
     public void batchGetAttractions(
-            BatchGetAttractionsRequest request,
-            StreamObserver<BatchGetAttractionsResponse> responseObserver) {
+            BatchGetAttractionsRequest request, StreamObserver<BatchGetAttractionsResponse> responseObserver) {
         List<String> ids = request.getIdsList();
         if (ids.isEmpty()) {
             responseObserver.onNext(BatchGetAttractionsResponse.newBuilder().build());
@@ -62,8 +58,7 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
         List<Attraction> attractions = attractionService.findAllByIds(ids);
 
         Map<String, Attraction> attractionsById =
-                attractions.stream()
-                        .collect(Collectors.toMap(Attraction::getId, Function.identity()));
+                attractions.stream().collect(Collectors.toMap(Attraction::getId, Function.identity()));
 
         List<String> missingIds =
                 ids.stream().filter(id -> !attractionsById.containsKey(id)).toList();
@@ -71,34 +66,32 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
             throw new NotFoundException("Attractions with IDs " + missingIds + " not found");
         }
 
-        List<Attraction> orderedAttractions = ids.stream().map(attractionsById::get).toList();
+        List<Attraction> orderedAttractions =
+                ids.stream().map(attractionsById::get).toList();
 
-        responseObserver.onNext(
-                BatchGetAttractionsResponse.newBuilder()
-                        .addAllAttractions(orderedAttractions)
-                        .build());
+        responseObserver.onNext(BatchGetAttractionsResponse.newBuilder()
+                .addAllAttractions(orderedAttractions)
+                .build());
         responseObserver.onCompleted();
     }
 
     @Override
     public void getAttractionsNearby(
-            GetAttractionsNearbyRequest request,
-            StreamObserver<GetAttractionsNearbyResponse> responseObserver) {
+            GetAttractionsNearbyRequest request, StreamObserver<GetAttractionsNearbyResponse> responseObserver) {
         if (!request.hasLocation()) {
             throw InvalidArgumentException.required("location");
         }
 
-        double radiusMeters =
-                request.getRadiusMeters() > 0 ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS;
+        double radiusMeters = request.getRadiusMeters() > 0 ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS;
 
         List<String> tags = request.getTagsList();
 
         List<Attraction> attractions =
-                attractionService.searchNearby(
-                        request.getLocation(), radiusMeters, tags.isEmpty() ? null : tags);
+                attractionService.searchNearby(request.getLocation(), radiusMeters, tags.isEmpty() ? null : tags);
 
-        responseObserver.onNext(
-                GetAttractionsNearbyResponse.newBuilder().addAllAttractions(attractions).build());
+        responseObserver.onNext(GetAttractionsNearbyResponse.newBuilder()
+                .addAllAttractions(attractions)
+                .build());
         responseObserver.onCompleted();
     }
 

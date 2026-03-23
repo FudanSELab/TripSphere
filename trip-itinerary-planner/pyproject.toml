@@ -54,9 +54,3 @@ python_version = "3.12"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src"]
-# suppress noisy reports for 3rd-party libs that lack full type stubs
-reportMissingTypeStubs = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
-reportUnknownParameterType = false
-reportUnknownArgumentType = false

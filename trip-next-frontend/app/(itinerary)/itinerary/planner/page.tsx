@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useCoAgent } from "@copilotkit/react-core";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import Link from "next/link";
+import { useAgent } from "@copilotkit/react-core/v2";
 import { CopilotSidebar } from "@copilotkit/react-core/v2";
-import { MapPanel } from "@/components/map-panel";
-import { ItineraryViewer } from "@/components/itinerary-viewer";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { MapPlaceholder } from "@/components/itinerary/map-placeholder";
+import { ItineraryViewer } from "@/components/itinerary/itinerary-viewer";
 import {
   getItinerary,
   updateSavedItinerary,
@@ -12,83 +17,58 @@ import {
   type PlanItineraryResult,
 } from "@/actions/itinerary";
 
-// ── Agent state shape (mirrors Python ChatState) ──────────────────────────
-
-interface AgentState {
-  itinerary: Itinerary | null;
-  markdown_content: string;
-}
-
-// ── Sync status badge ──────────────────────────────────────────────────────
-
 type SyncStatus = "saved" | "saving" | "unsaved" | "error";
 
-function SyncBadge({ status }: { status: SyncStatus }) {
-  const cfg: Record<SyncStatus, { label: string; cls: string }> = {
-    saved: {
-      label: "✓ 已保存",
-      cls: "bg-emerald-50 text-emerald-600 border-emerald-200",
-    },
-    saving: {
-      label: "⟳ 保存中…",
-      cls: "bg-blue-50 text-blue-500 border-blue-200 animate-pulse",
-    },
-    unsaved: {
-      label: "● 未保存",
-      cls: "bg-amber-50 text-amber-600 border-amber-200",
-    },
-    error: {
-      label: "✕ 保存失败",
-      cls: "bg-red-50 text-red-500 border-red-200",
-    },
-  };
-  const { label, cls } = cfg[status];
+const SYNC_STATUS_LABEL: Record<SyncStatus, string> = {
+  saved: "✓ 已保存",
+  saving: "⟳ 保存中…",
+  unsaved: "● 未保存",
+  error: "✕ 保存失败",
+};
+
+function SyncStatusBadge({ status }: { status: SyncStatus }) {
+  const variantMap = {
+    saved: "success",
+    unsaved: "warning",
+    error: "destructive",
+    saving: "outline",
+  } as const;
+
   return (
-    <span
-      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${cls}`}
+    <Badge
+      variant={variantMap[status]}
+      className={cn("rounded-full", status === "saving" && "animate-pulse")}
     >
-      {label}
-    </span>
+      {SYNC_STATUS_LABEL[status]}
+    </Badge>
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
-
 function PlannerContent() {
+  const searchParams = useSearchParams();
   const [loaded, setLoaded] = useState(false);
   const [itineraryId, setItineraryId] = useState<string | null>(null);
+  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  const [markdownContent, setMarkdownContent] = useState("");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("saved");
 
-  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
-  const [markdownContent, setMarkdownContent] = useState<string>("");
-
-  // ── Debounced persistence sync ───────────────────────────────────────────
+  const { agent } = useAgent({ agentId: "itinerary_planner" });
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapshotRef = useRef<string | null>(null);
+  const selfWriteRef = useRef(false);
 
   const syncToBackend = useCallback(
-    async (current: Itinerary, markdown: string, id: string) => {
+    async (it: Itinerary, md: string, id: string) => {
       setSyncStatus("saving");
       try {
-        await updateSavedItinerary(id, current, markdown);
+        await updateSavedItinerary(id, it, md);
         setSyncStatus("saved");
-      } catch (err) {
-        console.error("Sync failed:", err);
+      } catch {
         setSyncStatus("error");
       }
     },
     [],
-  );
-
-  const scheduleSyncToBackend = useCallback(
-    (current: Itinerary, markdown: string, id: string) => {
-      setSyncStatus("unsaved");
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => {
-        syncToBackend(current, markdown, id);
-      }, 1500);
-    },
-    [syncToBackend],
   );
 
   useEffect(() => {
@@ -97,79 +77,103 @@ function PlannerContent() {
     };
   }, []);
 
-  // ── CoAgent — external-state-management mode ──────────────────────────
-  // We pass our React state *in*, so CopilotKit sends it to the backend
-  // on every agent run (the agent always starts with the latest itinerary).
-  // When the backend tools mutate itinerary/markdown and emit a
-  // StateSnapshotEvent, CopilotKit calls our setState callback, which
-  // updates the React state and triggers a re-render immediately.
-  useCoAgent<AgentState>({
-    name: "itinerary_planner",
-    state: { itinerary, markdown_content: markdownContent },
-    setState: (newState) => {
-      const next =
-        typeof newState === "function"
-          ? newState({ itinerary, markdown_content: markdownContent })
-          : newState;
-      const nextItinerary = next.itinerary ?? itinerary;
-      const nextMarkdown =
-        next.markdown_content !== undefined
-          ? next.markdown_content
-          : markdownContent;
-      const changed =
-        next.itinerary != null || next.markdown_content !== undefined;
-      if (next.itinerary != null) setItinerary(next.itinerary);
-      if (next.markdown_content !== undefined)
-        setMarkdownContent(next.markdown_content);
-      if (changed && nextItinerary && itineraryId) {
-        scheduleSyncToBackend(nextItinerary, nextMarkdown, itineraryId);
-      }
-    },
-  });
-
-  // ── Load itinerary ───────────────────────────────────────────────────────
-
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
-      const params = new URLSearchParams(window.location.search);
-      const idParam = params.get("id");
+      const idParam = searchParams.get("id");
+      let data: { itinerary: Itinerary; markdown_content: string } | null =
+        null;
+      let resolvedId: string | null = null;
 
       if (idParam) {
         try {
-          const data = await getItinerary(idParam);
-          setItinerary(data.itinerary);
-          setMarkdownContent(data.markdown_content);
-          setItineraryId(idParam);
-        } catch (err) {
-          console.error("Failed to load itinerary:", err);
+          data = await getItinerary(idParam);
+          resolvedId = idParam;
+        } catch {
+          /* leave empty */
         }
       } else {
         const raw = sessionStorage.getItem("itinerary_plan_result");
         if (raw) {
           try {
-            const data = JSON.parse(raw) as PlanItineraryResult;
+            const parsed = JSON.parse(raw) as PlanItineraryResult;
+            data = parsed;
+            resolvedId = parsed.itinerary.id;
             const url = new URL(window.location.href);
-            url.searchParams.set("id", data.itinerary.id);
+            url.searchParams.set("id", resolvedId);
             window.history.replaceState({}, "", url.toString());
-            setItinerary(data.itinerary);
-            setMarkdownContent(data.markdown_content);
-            setItineraryId(data.itinerary.id);
           } catch {
-            /* ignore parse errors */
+            /* ignore */
           }
         }
       }
+
+      if (cancelled) return;
+
+      if (data) {
+        const snap = JSON.stringify(data.itinerary);
+        snapshotRef.current = snap;
+
+        setItinerary(data.itinerary);
+        setMarkdownContent(data.markdown_content);
+        setItineraryId(resolvedId);
+
+        selfWriteRef.current = true;
+        agent.setState({
+          itinerary: data.itinerary,
+          markdown_content: data.markdown_content,
+        });
+      }
+
       setLoaded(true);
     }
+
     load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!loaded) return;
+
+    if (selfWriteRef.current) {
+      selfWriteRef.current = false;
+      return;
+    }
+
+    const agentItinerary = (
+      agent.state as { itinerary?: Itinerary; markdown_content?: string } | null
+    )?.itinerary;
+    const agentMarkdown = (agent.state as { markdown_content?: string } | null)
+      ?.markdown_content;
+
+    if (!agentItinerary) return;
+
+    const snap = JSON.stringify(agentItinerary);
+    if (snap === snapshotRef.current) return;
+
+    snapshotRef.current = snap;
+    setItinerary(agentItinerary);
+    if (agentMarkdown !== undefined) setMarkdownContent(agentMarkdown);
+
+    if (itineraryId) {
+      setSyncStatus("unsaved");
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(
+        () => syncToBackend(agentItinerary, agentMarkdown ?? "", itineraryId),
+        1500,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent.state]);
 
   if (!loaded) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <p className="text-gray-400">加载中……</p>
+        <p className="text-muted-foreground">加载中…</p>
       </div>
     );
   }
@@ -178,13 +182,13 @@ function PlannerContent() {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <div className="text-center">
-          <p className="text-lg font-medium text-gray-500">暂无行程数据</p>
-          <a
+          <p className="text-foreground text-lg font-medium">暂无行程数据</p>
+          <Link
             href="/itinerary"
-            className="mt-2 inline-block text-sm text-blue-600 hover:underline"
+            className="text-primary mt-2 inline-block text-sm hover:underline"
           >
             返回规划页面
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -192,10 +196,9 @@ function PlannerContent() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-      {/* Top bar with sync status */}
-      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-4 py-2">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span className="font-medium text-gray-700">
+      <div className="border-border bg-background flex shrink-0 items-center justify-between border-b px-4 py-2">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <span className="text-foreground font-medium">
             {itinerary.destination}
           </span>
           <span>·</span>
@@ -204,41 +207,36 @@ function PlannerContent() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <SyncBadge status={syncStatus} />
-          <a
-            href="/itinerary/my"
-            className="text-xs text-blue-500 hover:underline"
+          <SyncStatusBadge status={syncStatus} />
+          <Link
+            href="/itinerary"
+            className="text-primary text-xs hover:underline"
           >
             我的行程
-          </a>
+          </Link>
         </div>
       </div>
 
-      {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Map Panel */}
-        <div className="hidden w-[300px] shrink-0 border-r p-3 lg:block">
-          <MapPanel />
+        <div className="hidden min-w-0 flex-1 overflow-hidden border-r lg:block">
+          <MapPlaceholder />
         </div>
 
-        {/* Center: Itinerary Viewer */}
-        <div className="min-w-0 flex-1 overflow-hidden">
+        <div className="w-[40rem] shrink-0 overflow-hidden">
           <ItineraryViewer
             itinerary={itinerary}
             markdownContent={markdownContent}
           />
         </div>
 
-        {/* Right: CopilotKit Sidebar */}
         <CopilotSidebar
           agentId="itinerary_planner"
           defaultOpen={true}
-          width="24rem"
+          width="30rem"
           labels={{
-            modalHeaderTitle: `AI 行程助手 · ${itinerary.destination}`,
-            chatInputPlaceholder: "告诉我你想如何修改行程……",
+            modalHeaderTitle: `AI行程助手 · ${itinerary.destination}`,
+            chatInputPlaceholder: "告诉我你想如何修改行程…",
           }}
-          autoFocus={true}
         />
       </div>
     </div>
@@ -246,5 +244,9 @@ function PlannerContent() {
 }
 
 export default function ItineraryPlannerPage() {
-  return <PlannerContent />;
+  return (
+    <Suspense>
+      <PlannerContent />
+    </Suspense>
+  );
 }

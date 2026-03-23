@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Bed, LayoutGrid, Building2, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { AmenityIcon } from "./amenity-icon";
 import { SkuRow } from "./sku-row";
@@ -16,7 +17,6 @@ export function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
       </div>
 
       <div className="flex">
-        {/* Room Image & Info */}
         <div className="w-64 shrink-0 border-r p-4">
           <div className="mb-3">
             <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
@@ -42,7 +42,7 @@ export function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
             </div>
           </div>
 
-          <div className="text-muted-foreground space-y-1.5 text-sm">
+          <div className="text-muted-foreground flex flex-col gap-1.5 text-sm">
             <div className="flex items-center gap-2">
               <Bed className="size-4" />
               <span>{roomType.bedDescription || "标准床型"}</span>
@@ -62,23 +62,29 @@ export function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
             {roomType.amenities.slice(0, 3).map((amenity) => (
               <div key={amenity} className="flex items-center gap-2">
                 <AmenityIcon name={amenity} className="size-4" />
-                <span className="text-blue-500">{amenity}</span>
+                <span className="text-primary">{amenity}</span>
               </div>
             ))}
           </div>
-          <button className="mt-3 text-sm text-blue-500 hover:underline">
+          <Button variant="link" size="sm" className="mt-3 h-auto p-0 text-sm">
             房间详情
-          </button>
+          </Button>
         </div>
 
-        {/* SKU Table */}
         <div className="flex-1">
           <table className="w-full">
+            <caption className="sr-only">{roomType.name} 价格选项</caption>
             <thead>
               <tr className="bg-muted text-muted-foreground border-b text-sm">
-                <th className="px-4 py-3 text-left font-medium">房型摘要</th>
-                <th className="px-4 py-3 text-center font-medium">可住人数</th>
-                <th className="px-4 py-3 text-right font-medium">今日价格</th>
+                <th scope="col" className="px-4 py-3 text-left font-medium">
+                  房型摘要
+                </th>
+                <th scope="col" className="px-4 py-3 text-center font-medium">
+                  可住人数
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">
+                  今日价格
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -111,9 +117,9 @@ export function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
 
           {spus.length > 0 && lowestPrice > 0 && (
             <div className="border-t p-3 text-center">
-              <button className="text-sm text-blue-500 hover:underline">
+              <Button variant="link" size="sm" className="h-auto p-0 text-sm">
                 展示更多价格选项
-              </button>
+              </Button>
             </div>
           )}
         </div>

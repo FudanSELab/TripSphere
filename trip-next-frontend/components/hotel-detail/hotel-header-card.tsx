@@ -29,7 +29,6 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
 
   return (
     <div className="bg-card rounded-xl border p-6">
-      {/* Title Row */}
       <div className="mb-4 flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -39,7 +38,9 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
           <div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
             <MapPin className="size-4" />
             <span>{address}</span>
-            <button className="text-blue-500 hover:underline">显示地图</button>
+            <Button variant="link" size="sm" className="h-auto p-0 text-sm">
+              显示地图
+            </Button>
           </div>
           {hotel.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -57,18 +58,15 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <span className="text-2xl font-bold text-orange-500">
+            <span className="text-price text-2xl font-bold">
               ¥{Math.round(estimatedPrice)}
             </span>
             <span className="text-muted-foreground text-sm">起</span>
           </div>
-          <Button className="bg-blue-500 px-6 hover:bg-blue-600">
-            选择房间
-          </Button>
+          <Button className="px-6">选择房间</Button>
         </div>
       </div>
 
-      {/* Image Gallery */}
       <div className="grid grid-cols-4 gap-2">
         <div className="relative col-span-2 row-span-2 overflow-hidden rounded-lg">
           {hasImages ? (
@@ -118,10 +116,8 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
         ))}
       </div>
 
-      {/* Hotel Info */}
       <div className="mt-6 grid grid-cols-3 gap-8">
-        {/* Facilities & Description */}
-        <div className="col-span-2 space-y-6">
+        <div className="col-span-2 flex flex-col gap-6">
           {hotel.amenities.length > 0 && (
             <div>
               <h2 className="text-foreground mb-4 text-base font-bold">
@@ -142,9 +138,13 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
                 ))}
               </div>
               {hotel.amenities.length > 8 && (
-                <button className="mt-3 text-sm text-blue-500 hover:underline">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-3 h-auto p-0 text-sm"
+                >
                   查看全部{hotel.amenities.length}项设施
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -157,19 +157,22 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
               <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
                 {hotel.information.introduction}
               </p>
-              <button className="mt-2 text-sm text-blue-500 hover:underline">
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-2 h-auto p-0 text-sm"
+              >
                 查看更多
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
-        {/* Side Cards */}
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           {hotel.information && (
             <div className="bg-card rounded-lg border p-4">
               <h3 className="text-foreground mb-3 font-bold">酒店信息</h3>
-              <div className="space-y-2 text-sm">
+              <div className="flex flex-col gap-2 text-sm">
                 {hotel.information.openingSince > 0 && (
                   <div className="text-muted-foreground flex items-center gap-2">
                     <Calendar className="size-4" />
@@ -195,7 +198,7 @@ export function HotelHeaderCard({ hotel }: HotelHeaderCardProps) {
           {hotel.policy && (
             <div className="bg-card rounded-lg border p-4">
               <h3 className="text-foreground mb-3 font-bold">入住政策</h3>
-              <div className="space-y-2 text-sm">
+              <div className="flex flex-col gap-2 text-sm">
                 {hotel.policy.checkInTime && (
                   <div className="text-muted-foreground flex items-center gap-2">
                     <Clock className="size-4" />

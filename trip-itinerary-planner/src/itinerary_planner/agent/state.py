@@ -24,7 +24,9 @@ class PlanningState(TypedDict):
     destination_coords: dict[str, Any]  # {latitude, longitude, address}
     attraction_details: dict[str, dict[str, Any]]
     daily_schedule: dict[int, list[dict[str, Any]]]  # Day number -> activities
-    hotel_details: list[dict[str, Any]]  # Hotels near attractions center (for accommodation)
+    hotel_details: list[
+        dict[str, Any]
+    ]  # Hotels near attractions center (for accommodation)
 
     # Output
     itinerary: Itinerary | None

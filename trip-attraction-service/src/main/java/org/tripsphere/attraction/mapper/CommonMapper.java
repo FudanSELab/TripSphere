@@ -29,30 +29,27 @@ public interface CommonMapper {
     // ===================================================================
 
     default GeoJsonPoint toGeoJsonPoint(GeoPoint point) {
-        if (point == null
-                || (point.getLongitude() == 0.0
-                        && point.getLatitude() == 0.0
-                        && !point.isInitialized())) {
+        if (point == null || (point.getLongitude() == 0.0 && point.getLatitude() == 0.0 && !point.isInitialized())) {
             return null;
         }
-        double[] coordinate =
-                CoordinateTransformUtil.gcj02ToWgs84(point.getLongitude(), point.getLatitude());
+        double[] coordinate = CoordinateTransformUtil.gcj02ToWgs84(point.getLongitude(), point.getLatitude());
         return new GeoJsonPoint(coordinate[0], coordinate[1]);
     }
 
     default GeoPoint toGeoPoint(GeoJsonPoint geoJsonPoint) {
         if (geoJsonPoint == null) return GeoPoint.getDefaultInstance();
-        double[] coordinate =
-                CoordinateTransformUtil.wgs84ToGcj02(geoJsonPoint.getX(), geoJsonPoint.getY());
-        return GeoPoint.newBuilder().setLongitude(coordinate[0]).setLatitude(coordinate[1]).build();
+        double[] coordinate = CoordinateTransformUtil.wgs84ToGcj02(geoJsonPoint.getX(), geoJsonPoint.getY());
+        return GeoPoint.newBuilder()
+                .setLongitude(coordinate[0])
+                .setLatitude(coordinate[1])
+                .build();
     }
 
     // ===================================================================
     // Struct <-> Map Conversions
     // ===================================================================
 
-    default Map<String, Object> toMap(Struct struct)
-            throws InvalidProtocolBufferException, JsonProcessingException {
+    default Map<String, Object> toMap(Struct struct) throws InvalidProtocolBufferException, JsonProcessingException {
         if (struct == null || struct.equals(Struct.getDefaultInstance())) {
             return Map.of();
         }
@@ -60,8 +57,7 @@ public interface CommonMapper {
         return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
-    default Struct toStruct(Map<String, Object> map)
-            throws JsonProcessingException, InvalidProtocolBufferException {
+    default Struct toStruct(Map<String, Object> map) throws JsonProcessingException, InvalidProtocolBufferException {
         if (map == null || map.isEmpty()) {
             return Struct.getDefaultInstance();
         }
@@ -90,8 +86,7 @@ public interface CommonMapper {
     }
 
     default org.tripsphere.common.v1.DayOfWeek toProtoDayOfWeek(java.time.DayOfWeek javaDayOfWeek) {
-        if (javaDayOfWeek == null)
-            return org.tripsphere.common.v1.DayOfWeek.DAY_OF_WEEK_UNSPECIFIED;
+        if (javaDayOfWeek == null) return org.tripsphere.common.v1.DayOfWeek.DAY_OF_WEEK_UNSPECIFIED;
         return switch (javaDayOfWeek) {
             case MONDAY -> org.tripsphere.common.v1.DayOfWeek.DAY_OF_WEEK_MONDAY;
             case TUESDAY -> org.tripsphere.common.v1.DayOfWeek.DAY_OF_WEEK_TUESDAY;
@@ -111,8 +106,7 @@ public interface CommonMapper {
         if (proto == null || proto.equals(TimeOfDay.getDefaultInstance())) {
             return null;
         }
-        return LocalTime.of(
-                proto.getHours(), proto.getMinutes(), proto.getSeconds(), proto.getNanos());
+        return LocalTime.of(proto.getHours(), proto.getMinutes(), proto.getSeconds(), proto.getNanos());
     }
 
     default TimeOfDay toTimeOfDayProto(LocalTime localTime) {

@@ -28,7 +28,6 @@ class NacosSettings(BaseModel):
     server_address: str = Field(default="localhost:8848")
     namespace_id: str = Field(default="public")
     group_name: str = Field(default="DEFAULT_GROUP")
-    itinerary_service_name: str = Field(default="trip-itinerary-service")
 
 
 class OpenAISettings(BaseModel):

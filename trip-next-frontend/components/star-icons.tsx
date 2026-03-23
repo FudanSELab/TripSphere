@@ -12,7 +12,7 @@ export function StarIcons({ count, className }: StarIconsProps) {
       {Array.from({ length: count }).map((_, i) => (
         <Star
           key={i}
-          className={cn("size-3 fill-amber-500 text-amber-500", className)}
+          className={cn("fill-rating text-rating size-3", className)}
         />
       ))}
     </span>

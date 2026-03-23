@@ -26,15 +26,15 @@ export function SkuRow({ sku, maxOccupancy, isLast }: SkuRowProps) {
   return (
     <tr className={!isLast ? "border-b" : ""}>
       <td className="px-4 py-4">
-        <div className="space-y-1 text-sm">
+        <div className="flex flex-col gap-1 text-sm">
           <div className="text-foreground font-medium">{sku.name}</div>
           <div className="flex items-center gap-2">
             <Utensils
-              className={`size-4 ${hasBreakfast ? "text-green-500" : "text-muted-foreground"}`}
+              className={`size-4 ${hasBreakfast ? "text-success" : "text-muted-foreground"}`}
             />
             <span
               className={
-                hasBreakfast ? "text-green-600" : "text-muted-foreground"
+                hasBreakfast ? "text-success" : "text-muted-foreground"
               }
             >
               {hasBreakfast ? "含早餐" : "无早餐"}
@@ -42,22 +42,20 @@ export function SkuRow({ sku, maxOccupancy, isLast }: SkuRowProps) {
           </div>
           <div className="flex items-center gap-2">
             {cancellable ? (
-              <CheckCircle className="size-4 text-green-500" />
+              <CheckCircle className="text-success size-4" />
             ) : (
               <XCircle className="text-muted-foreground size-4" />
             )}
             <span
-              className={
-                cancellable ? "text-green-600" : "text-muted-foreground"
-              }
+              className={cancellable ? "text-success" : "text-muted-foreground"}
             >
               {cancellable ? "可取消" : "不可取消"}
             </span>
           </div>
           {instantConfirm && (
             <div className="flex items-center gap-2">
-              <Zap className="size-4 text-green-500" />
-              <span className="text-green-600">立即确认</span>
+              <Zap className="text-success size-4" />
+              <span className="text-success">立即确认</span>
             </div>
           )}
           <div className="flex items-center gap-2">
@@ -77,10 +75,10 @@ export function SkuRow({ sku, maxOccupancy, isLast }: SkuRowProps) {
 
       <td className="px-4 py-4">
         <div className="flex flex-col items-end gap-2">
-          <span className="text-xl font-bold text-orange-500">
+          <span className="text-price text-xl font-bold">
             ¥{Math.round(price)}
           </span>
-          <Button size="sm" className="bg-blue-500 px-6 hover:bg-blue-600">
+          <Button size="sm" className="px-6">
             预订
           </Button>
         </div>

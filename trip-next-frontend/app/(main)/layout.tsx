@@ -26,14 +26,13 @@ export default function MainLayout({
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <main className="mx-auto w-full max-w-screen-2xl px-[10rem] py-6">
+        <main className="mx-auto w-full max-w-screen-2xl px-4 py-6 sm:px-8 lg:px-16">
           {children}
           <CopilotSidebar
             agentId="default"
             defaultOpen={true}
             width="30rem"
             labels={COPILOT_LABELS}
-            autoFocus={true}
           />
         </main>
       </SidebarInset>

@@ -15,8 +15,7 @@ import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 public class MongoConfig {
     @Bean
     public MongoCustomConversions mongoCustomConversions() {
-        return new MongoCustomConversions(
-                List.of(new StringToLocalTimeConverter(), new LocalTimeToStringConverter()));
+        return new MongoCustomConversions(List.of(new StringToLocalTimeConverter(), new LocalTimeToStringConverter()));
     }
 
     @ReadingConverter

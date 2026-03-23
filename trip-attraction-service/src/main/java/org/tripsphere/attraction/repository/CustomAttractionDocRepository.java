@@ -6,6 +6,5 @@ import org.tripsphere.attraction.model.AttractionDoc;
 
 public interface CustomAttractionDocRepository {
 
-    List<AttractionDoc> findAllByLocationNear(
-            Point point, double radiusMeters, int limit, List<String> tags);
+    List<AttractionDoc> findAllByLocationNear(Point point, double radiusMeters, int limit, List<String> tags);
 }

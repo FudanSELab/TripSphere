@@ -3,6 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { HotelHeaderCard } from "@/components/hotel-detail/hotel-header-card";
 import {
   HotelRoomList,
@@ -51,30 +59,31 @@ export default async function HotelDetailPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Breadcrumb */}
-      <nav className="text-muted-foreground text-sm">
-        <ol className="flex items-center gap-1">
-          <li>
-            <Link href="/" className="text-blue-500 hover:underline">
-              TripSphere
-            </Link>
-          </li>
-          <li className="mx-1">&gt;</li>
-          <li>
-            <Link href="/hotels" className="text-blue-500 hover:underline">
-              酒店
-            </Link>
-          </li>
-          <li className="mx-1">&gt;</li>
-          <li>
-            <Link href="/hotels" className="text-blue-500 hover:underline">
-              {city}酒店
-            </Link>
-          </li>
-          <li className="mx-1">&gt;</li>
-          <li className="text-foreground">{hotel.name}</li>
-        </ol>
-      </nav>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/">TripSphere</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/hotels">酒店</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/hotels">{city}酒店</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{hotel.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       <HotelHeaderCard hotel={hotel} />
 
@@ -110,7 +119,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
             </TabsContent>
 
             <TabsContent value="overview" className="p-6">
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-bold">酒店概览</h3>
                 <p className="text-muted-foreground">
                   {hotel.information?.introduction || "暂无酒店介绍信息"}
@@ -123,7 +132,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
             </TabsContent>
 
             <TabsContent value="facilities" className="p-6">
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-bold">服务及设施</h3>
                 {hotel.amenities.length > 0 ? (
                   <div className="grid grid-cols-4 gap-4">
@@ -147,10 +156,10 @@ export default async function HotelDetailPage({ params }: PageProps) {
             </TabsContent>
 
             <TabsContent value="policy" className="p-6">
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-bold">酒店政策</h3>
                 {hotel.policy ? (
-                  <div className="text-muted-foreground space-y-2 text-sm">
+                  <div className="text-muted-foreground flex flex-col gap-2 text-sm">
                     <p>入住时间: {formatTime(hotel.policy.checkInTime, 14)}</p>
                     <p>退房时间: {formatTime(hotel.policy.checkOutTime, 12)}</p>
                     <p>
@@ -167,7 +176,7 @@ export default async function HotelDetailPage({ params }: PageProps) {
             </TabsContent>
 
             <TabsContent value="location" className="p-6">
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-bold">地图与周边位置</h3>
                 <p className="text-muted-foreground">地址: {address}</p>
                 {hotel.location && (

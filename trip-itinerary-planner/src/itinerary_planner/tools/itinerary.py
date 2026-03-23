@@ -88,7 +88,7 @@ def update_itinerary_day(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Replace ALL activities for a specific day with a new list.
-    
+
     Arguments:
         day: The day number to update (1-indexed)
         activities: List of activities to replace the existing activities for the day
@@ -141,7 +141,7 @@ def add_activity(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Add a SINGLE new activity to a specific day without replacing existing ones.
-    
+
     Arguments:
         day: The day number to add the activity to (1-indexed)
         activity: The activity to add to the day
@@ -190,7 +190,7 @@ def remove_spot(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Remove a single spot/activity from a specific day by name.
-    
+
     Arguments:
         day: The day number to remove the activity from (1-indexed)
         spot_name: The name of the activity to remove
@@ -243,7 +243,7 @@ def delete_day(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Completely remove a day from the itinerary.
-    
+
     Arguments:
         day: The day number to delete (1-indexed)
         tool_call_id: The ID of the tool call
@@ -293,7 +293,7 @@ def add_day(
     state: Annotated[dict[str, Any], InjectedState],
 ) -> Command:  # type: ignore[type-arg]
     """Add a brand-new day to the itinerary, appended after the last existing day.
-    
+
     Arguments:
         date: The date of the new day (YYYY-MM-DD)
         activities: List of activities to add to the new day
@@ -343,11 +343,11 @@ def update_markdown(
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:  # type: ignore[type-arg]
     """Update the Markdown travel narrative displayed in the itinerary viewer.
-    
+
     Arguments:
         markdown: The Markdown content to update
         tool_call_id: The ID of the tool call
-    
+
     Returns:
     Command that updates the itinerary with the new Markdown content
 
@@ -401,7 +401,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
     ) -> Command:  # type: ignore[type-arg]
         """Completely regenerate all activities for
         a specific day using real attractions.
-        
+
         Arguments:
             day: The day number to regenerate (1-indexed)
             preference: The preference/style of the itinerary

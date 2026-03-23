@@ -20,7 +20,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @Document(collection = "attractions")
 public class AttractionDoc {
-    @Id private String id;
+    @Id
+    private String id;
+
     private String name;
     private String poiId;
 
@@ -36,6 +38,10 @@ public class AttractionDoc {
     private boolean temporarilyClosed;
     private TicketInfo ticketInfo;
     private RecommendTime recommendTime;
-    @CreatedDate private Instant createdAt;
-    @LastModifiedDate private Instant updatedAt;
+
+    @CreatedDate
+    private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 }
