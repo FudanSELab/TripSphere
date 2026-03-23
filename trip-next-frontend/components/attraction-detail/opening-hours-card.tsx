@@ -1,5 +1,6 @@
 import { Clock, CheckCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DayOfWeek } from "@/lib/grpc/generated/tripsphere/common/v1/dayofweek";
 import type {
   OpeningHours,
@@ -44,16 +45,18 @@ function formatDays(days: DayOfWeek[]): string {
 
 function isCurrentlyOpen(openingHours: OpeningHours): boolean {
   const now = new Date();
-  const todayDow = now.getDay(); // 0=Sun, 1=Mon...6=Sat
-  // Convert JS day-of-week to proto DayOfWeek (Mon=1, Sun=7)
+  const todayDow = now.getDay();
   const protoDow =
     todayDow === 0 ? DayOfWeek.DAY_OF_WEEK_SUNDAY : (todayDow as DayOfWeek);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   for (const rule of openingHours.rules) {
-    const days = rule.days.length === 0
-      ? Object.values(DayOfWeek).filter((v) => typeof v === "number") as DayOfWeek[]
-      : rule.days;
+    const days =
+      rule.days.length === 0
+        ? (Object.values(DayOfWeek).filter(
+            (v) => typeof v === "number",
+          ) as DayOfWeek[])
+        : rule.days;
 
     if (!days.includes(protoDow)) continue;
 
@@ -85,26 +88,28 @@ export function OpeningHoursCard({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-teal-600" />
+            <Clock className="text-primary size-4" />
             开放时间
           </div>
           {temporarilyClosed ? (
-            <span className="flex items-center gap-1 text-xs font-normal text-red-500">
-              <XCircle className="h-3.5 w-3.5" />
+            <span className="text-destructive flex items-center gap-1 text-xs font-normal">
+              <XCircle className="size-3.5" />
               暂停开放
             </span>
           ) : (
             <span
-              className={`flex items-center gap-1 text-xs font-normal ${open ? "text-emerald-600" : "text-muted-foreground"}`}
+              className={`flex items-center gap-1 text-xs font-normal ${
+                open ? "text-success" : "text-muted-foreground"
+              }`}
             >
               {open ? (
                 <>
-                  <CheckCircle className="h-3.5 w-3.5" />
+                  <CheckCircle className="size-3.5" />
                   开放中
                 </>
               ) : (
                 <>
-                  <XCircle className="h-3.5 w-3.5" />
+                  <XCircle className="size-3.5" />
                   已关闭
                 </>
               )}
@@ -115,33 +120,37 @@ export function OpeningHoursCard({
       <CardContent className="flex flex-col gap-3">
         {openingHours.rules.map((rule: OpenRule, rIdx: number) => (
           <div key={rIdx} className="flex flex-col gap-1.5">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
               {formatDays(rule.days)}
             </p>
             <div className="flex flex-col gap-1">
               {rule.timeRanges.map((tr: TimeRange, tIdx: number) => (
-                <p key={tIdx} className="text-sm text-foreground">
+                <p key={tIdx} className="text-foreground text-sm">
                   {formatTimeRange(tr)}
                 </p>
               ))}
               {rule.timeRanges.length === 0 && (
-                <p className="text-sm text-muted-foreground">全天开放</p>
+                <p className="text-muted-foreground text-sm">全天开放</p>
               )}
             </div>
             {rule.note && (
-              <p className="text-xs text-muted-foreground italic">{rule.note}</p>
+              <p className="text-muted-foreground text-xs italic">
+                {rule.note}
+              </p>
             )}
           </div>
         ))}
 
         {openingHours.rules.length === 0 && (
-          <p className="text-sm text-muted-foreground">暂无开放时间信息</p>
+          <p className="text-muted-foreground text-sm">暂无开放时间信息</p>
         )}
 
         {openingHours.specialTips && (
-          <div className="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            💡 {openingHours.specialTips}
-          </div>
+          <Alert>
+            <AlertDescription className="text-xs">
+              💡 {openingHours.specialTips}
+            </AlertDescription>
+          </Alert>
         )}
       </CardContent>
     </Card>

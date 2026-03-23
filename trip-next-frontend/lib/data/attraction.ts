@@ -6,8 +6,40 @@ import type {
   Attraction,
   GetAttractionByIdResponse,
   GetAttractionsNearbyResponse,
+  ListAttractionsByCityResponse,
 } from "@/lib/grpc/generated/tripsphere/attraction/v1/attraction";
 import type { GeoPoint } from "@/lib/grpc/generated/tripsphere/common/v1/map";
+
+export interface ListAttractionsByCityResult {
+  attractions: Attraction[];
+  nextPageToken: string;
+}
+
+export const listAttractionsByCity = cache(
+  async (
+    city: string,
+    tags?: string[],
+  ): Promise<ListAttractionsByCityResult> => {
+    const client = getAttractionService();
+
+    const response = await new Promise<ListAttractionsByCityResponse>(
+      (resolve, reject) => {
+        client.listAttractionsByCity(
+          { city, tags: tags ?? [], pageSize: 50, pageToken: "" },
+          (error, response) => {
+            if (error) reject(error);
+            else resolve(response);
+          },
+        );
+      },
+    );
+
+    return {
+      attractions: response.attractions,
+      nextPageToken: response.nextPageToken,
+    };
+  },
+);
 
 export const getAttractionById = cache(
   async (id: string): Promise<Attraction | null> => {

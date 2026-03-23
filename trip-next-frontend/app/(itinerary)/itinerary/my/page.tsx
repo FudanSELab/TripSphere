@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { listMyItineraries } from "@/lib/data/itinerary";
 import {
-  listMyItineraries,
   deleteItinerary,
   type SavedItinerarySummary,
 } from "@/actions/itinerary";

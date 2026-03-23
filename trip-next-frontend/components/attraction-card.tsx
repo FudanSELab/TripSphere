@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, MapPin } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImagePlaceholder } from "@/components/image-placeholder";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatRecommendTime } from "@/lib/format";
 import type { Attraction } from "@/lib/grpc/generated/tripsphere/attraction/v1/attraction";
 
-// Cycle of image heights to create natural masonry variety
 const IMAGE_ASPECT_CLASSES = [
   "aspect-[3/4]",
   "aspect-[2/3]",
@@ -53,13 +53,16 @@ interface AttractionCardProps {
 
 export function AttractionCard({ attraction, index = 0 }: AttractionCardProps) {
   const imageClass = IMAGE_ASPECT_CLASSES[index % IMAGE_ASPECT_CLASSES.length];
+  const visitTime = formatRecommendTime(
+    attraction.minHours,
+    attraction.maxHours,
+  );
 
   return (
     <Link
       href={`/attractions/${attraction.id}`}
-      className="group block w-full overflow-hidden rounded-2xl bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+      className="group bg-card block w-full overflow-hidden rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
     >
-      {/* Image container with variable height */}
       <div className={`relative ${imageClass} w-full overflow-hidden`}>
         {attraction.image ? (
           <Image
@@ -74,33 +77,32 @@ export function AttractionCard({ attraction, index = 0 }: AttractionCardProps) {
           <ImagePlaceholder className="h-full w-full" />
         )}
 
-        {/* Gradient overlay — stronger at bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-black/5 to-transparent" />
 
-        {/* Tags — top left */}
         {attraction.tags.length > 0 && (
-          <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1">
+          <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
             {attraction.tags.map((tag) => (
-              <span
+              <Badge
                 key={tag}
-                className="rounded-full bg-teal-500/85 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm"
+                className="bg-primary/85 text-primary-foreground backdrop-blur-sm"
               >
                 {tag}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
 
-        {/* Temporarily closed badge — top right */}
         {attraction.temporarilyClosed && (
-          <span className="absolute right-2.5 top-2.5 rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+          <Badge
+            variant="destructive"
+            className="absolute top-2.5 right-2.5 backdrop-blur-sm"
+          >
             暂停开放
-          </span>
+          </Badge>
         )}
 
-        {/* Name + district on image bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white drop-shadow-md">
+        <div className="absolute right-0 bottom-0 left-0 p-3">
+          <h3 className="line-clamp-2 text-sm leading-snug font-bold text-white drop-shadow-md">
             {attraction.name}
           </h3>
           {attraction.district && (
@@ -112,32 +114,27 @@ export function AttractionCard({ attraction, index = 0 }: AttractionCardProps) {
         </div>
       </div>
 
-      {/* Footer — visit time + price */}
       <div className="flex items-center justify-between px-3 py-2.5">
-        {attraction.minHours > 0 || attraction.maxHours > 0 ? (
-          <div className="flex items-center gap-1 text-teal-600">
+        {visitTime ? (
+          <div className="text-primary flex items-center gap-1">
             <Clock className="h-3 w-3 shrink-0" />
-            <span className="text-[11px] font-medium">
-              {attraction.minHours > 0 && attraction.maxHours > 0
-                ? `${attraction.minHours}–${attraction.maxHours}h`
-                : `${attraction.maxHours || attraction.minHours}h`}
-            </span>
+            <span className="text-[11px] font-medium">{visitTime}</span>
           </div>
         ) : (
-          <span className="text-[11px] text-muted-foreground">景点</span>
+          <span className="text-muted-foreground text-[11px]">景点</span>
         )}
 
         {attraction.price != null && attraction.price > 0 ? (
           <div className="flex items-baseline gap-0.5">
-            <span className="text-[10px] text-muted-foreground">¥</span>
-            <span className="text-sm font-bold text-orange-500">
+            <span className="text-muted-foreground text-[10px]">¥</span>
+            <span className="text-price text-sm font-bold">
               {attraction.price.toLocaleString()}
             </span>
           </div>
         ) : (
-          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+          <Badge variant="secondary" className="bg-success/10 text-success">
             免费
-          </span>
+          </Badge>
         )}
       </div>
     </Link>
@@ -147,7 +144,7 @@ export function AttractionCard({ attraction, index = 0 }: AttractionCardProps) {
 export function AttractionCardSkeleton({ index = 0 }: { index?: number }) {
   const imageClass = IMAGE_ASPECT_CLASSES[index % IMAGE_ASPECT_CLASSES.length];
   return (
-    <div className="w-full overflow-hidden rounded-2xl bg-card shadow-sm">
+    <div className="bg-card w-full overflow-hidden rounded-2xl shadow-sm">
       <Skeleton className={`${imageClass} w-full rounded-none`} />
       <div className="flex items-center justify-between px-3 py-2.5">
         <Skeleton className="h-3 w-16" />

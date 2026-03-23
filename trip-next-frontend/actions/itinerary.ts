@@ -10,8 +10,6 @@ import {
   type Activity as ProtoActivity,
   type ItinerarySummary as ProtoItinerarySummary,
   type ReplaceItineraryRequest,
-  type ListUserItinerariesRequest,
-  type ListUserItinerariesResponse,
   type GetItineraryRequest,
   type GetItineraryResponse,
 } from "@/lib/grpc/generated/tripsphere/itinerary/v1/itinerary";
@@ -320,21 +318,6 @@ function frontendItineraryToProto(
   };
 }
 
-/** Accept Date (from TS gRPC decode), proto Timestamp shape, or undefined. */
-function toIsoString(
-  value: Date | { seconds: number; nanos: number } | undefined,
-): string {
-  if (value == null) return new Date().toISOString();
-  if (value instanceof Date) {
-    const ms = value.getTime();
-    if (Number.isNaN(ms)) return new Date().toISOString();
-    return value.toISOString();
-  }
-  const ms = value.seconds * 1000 + value.nanos / 1_000_000;
-  const d = new Date(ms);
-  return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-}
-
 // ── gRPC promisify helper ──────────────────────────────────────────────────
 
 function callGrpc<Req, Res>(
@@ -394,35 +377,6 @@ export async function createItineraryPlan(
 }
 
 // ── Persistence CRUD (gRPC to trip-itinerary-service) ─────────────────────
-
-export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
-  const client = getItineraryService();
-  const metadata = await getAuthMetadata();
-  const reqHeaders = await headers();
-  const userId = reqHeaders.get("x-user-id") ?? "";
-
-  if (!userId) throw new Error("Missing x-user-id header");
-
-  const { itineraries } = await callGrpc<
-    ListUserItinerariesRequest,
-    ListUserItinerariesResponse
-  >(
-    client,
-    "listUserItineraries",
-    { userId, pageSize: 50, pageToken: "" },
-    metadata,
-  );
-
-  return (itineraries ?? []).map((it) => ({
-    id: it.id,
-    destination: it.destinationName || it.title,
-    start_date: formatDate(it.startDate),
-    end_date: formatDate(it.endDate),
-    day_count: it.dayPlans.length,
-    created_at: toIsoString(it.createdAt),
-    updated_at: toIsoString(it.updatedAt),
-  }));
-}
 
 export async function getItinerary(id: string): Promise<PlanItineraryResult> {
   const client = getItineraryService();

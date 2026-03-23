@@ -11,22 +11,17 @@ export interface ListAttractionsByCityResult {
   nextPageToken: string;
 }
 
-export async function listAttractionsByCity(
+export async function loadMoreAttractionsByCity(
   city: string,
+  pageToken: string,
   tags?: string[],
-  pageToken?: string,
 ): Promise<ListAttractionsByCityResult> {
   const client = getAttractionService();
 
   const response = await new Promise<ListAttractionsByCityResponse>(
     (resolve, reject) => {
       client.listAttractionsByCity(
-        {
-          city,
-          tags: tags ?? [],
-          pageSize: 50,
-          pageToken: pageToken ?? "",
-        },
+        { city, tags: tags ?? [], pageSize: 50, pageToken },
         (error, response) => {
           if (error) reject(error);
           else resolve(response);

@@ -1,25 +1,18 @@
 "use server";
 
 import { getHotelService } from "@/lib/grpc/client";
-import type {
-  Hotel,
-  ListHotelsResponse,
-} from "@/lib/grpc/generated/tripsphere/hotel/v1/hotel";
+import type { ListHotelsResponse } from "@/lib/grpc/generated/tripsphere/hotel/v1/hotel";
+import type { ListHotelsResult } from "@/lib/data/hotel";
 
-export interface ListHotelsResult {
-  hotels: Hotel[];
-  nextPageToken: string;
-}
-
-export async function listHotels(
+export async function loadMoreHotels(
   city: string,
-  pageToken?: string,
+  pageToken: string,
 ): Promise<ListHotelsResult> {
   const client = getHotelService();
 
   const response = await new Promise<ListHotelsResponse>((resolve, reject) => {
     client.listHotels(
-      { province: "", city, pageSize: 12, pageToken: pageToken ?? "" },
+      { province: "", city, pageSize: 12, pageToken },
       (error, response) => {
         if (error) reject(error);
         else resolve(response);

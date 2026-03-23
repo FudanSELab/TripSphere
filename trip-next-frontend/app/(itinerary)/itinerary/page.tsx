@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { listMyItineraries } from "@/actions/itinerary";
+import { listMyItineraries } from "@/lib/data/itinerary";
 import { ItineraryPlanForm } from "@/components/itinerary/itinerary-plan-form";
 import { ItineraryList } from "@/components/itinerary/itinerary-list";
 import { ItineraryListSkeleton } from "@/components/itinerary/itinerary-list-skeleton";

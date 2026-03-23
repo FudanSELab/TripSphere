@@ -6,10 +6,12 @@ export default function AttractionDetailLoading() {
       {/* Breadcrumb skeleton */}
       <Skeleton className="h-4 w-64" />
 
-      {/* Header card skeleton */}
+      {/* Header card skeleton - match attraction-header-card image area */}
       <div className="flex flex-col gap-6 lg:flex-row">
-        <Skeleton className="h-72 flex-1 rounded-2xl lg:h-96" />
-        <div className="flex w-full flex-col gap-4 lg:w-72">
+        <div className="min-w-0 flex-1">
+          <Skeleton className="aspect-video w-full rounded-2xl" />
+        </div>
+        <div className="flex w-full flex-col gap-4 lg:w-[300px]">
           <div className="flex flex-col gap-2">
             <div className="flex gap-2">
               <Skeleton className="h-6 w-16 rounded-full" />
@@ -19,7 +21,7 @@ export default function AttractionDetailLoading() {
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-1/2" />
           </div>
-          <div className="rounded-xl border p-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 rounded-xl border p-4">
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-9 w-32" />
             <Skeleton className="h-10 w-full rounded-lg" />
@@ -30,7 +32,7 @@ export default function AttractionDetailLoading() {
 
       {/* Two-column section skeleton */}
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        <div className="rounded-xl border p-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 rounded-xl border p-6">
           {/* Tabs skeleton */}
           <div className="flex gap-6 border-b pb-4">
             {["简介", "开放时间", "交通", "政策"].map((t) => (
@@ -45,7 +47,7 @@ export default function AttractionDetailLoading() {
         </div>
 
         <aside>
-          <div className="rounded-xl border p-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 rounded-xl border p-4">
             <Skeleton className="h-5 w-32" />
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">

@@ -35,6 +35,10 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
         ) : (
           <ImagePlaceholder className="h-full w-full" />
         )}
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-black/5 to-transparent"
+          aria-hidden="true"
+        />
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
           {hotel.rating != null ? (
             <>

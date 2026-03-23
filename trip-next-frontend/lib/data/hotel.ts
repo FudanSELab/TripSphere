@@ -5,14 +5,41 @@ import { getHotelService } from "@/lib/grpc/client";
 import type {
   Hotel,
   RoomType,
+  ListHotelsResponse,
   GetHotelByIdResponse,
   GetRoomTypesByHotelIdResponse,
 } from "@/lib/grpc/generated/tripsphere/hotel/v1/hotel";
 
-/**
- * Per-request deduplication via React.cache() — safe to call from both
- * generateMetadata and the page component without triggering duplicate RPCs.
- */
+export interface ListHotelsResult {
+  hotels: Hotel[];
+  nextPageToken: string;
+}
+
+export const listHotelsByCity = cache(
+  async (city: string): Promise<ListHotelsResult> => {
+    const client = getHotelService();
+    try {
+      const response = await new Promise<ListHotelsResponse>(
+        (resolve, reject) => {
+          client.listHotels(
+            { province: "", city, pageSize: 12, pageToken: "" },
+            (error, response) => {
+              if (error) reject(error);
+              else resolve(response);
+            },
+          );
+        },
+      );
+      return {
+        hotels: response.hotels,
+        nextPageToken: response.nextPageToken,
+      };
+    } catch {
+      return { hotels: [], nextPageToken: "" };
+    }
+  },
+);
+
 export const getHotelById = cache(async (id: string): Promise<Hotel | null> => {
   const client = getHotelService();
   try {

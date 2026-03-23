@@ -1,6 +1,6 @@
 import { AttractionSearchBar } from "@/components/attraction-search-bar";
 import { AttractionCardList } from "@/components/attraction-card-list";
-import { listAttractionsByCity } from "@/actions/attraction";
+import { listAttractionsByCity } from "@/lib/data/attraction";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Metadata } from "next";
 

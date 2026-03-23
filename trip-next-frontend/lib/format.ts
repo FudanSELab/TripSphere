@@ -134,6 +134,22 @@ export function formatDateMessage(
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Format a recommend time range like "1–3 小时" or "2 小时".
+ * Returns null when both values are 0/undefined.
+ */
+export function formatRecommendTime(
+  minHours: number | undefined,
+  maxHours: number | undefined,
+  unit = "h",
+): string | null {
+  const min = minHours ?? 0;
+  const max = maxHours ?? 0;
+  if (min <= 0 && max <= 0) return null;
+  if (min > 0 && max > 0 && min !== max) return `${min}–${max}${unit}`;
+  return `${max || min}${unit}`;
+}
+
 const ORDER_STATUS_LABELS: Record<number, string> = {
   0: "全部",
   1: "待支付",

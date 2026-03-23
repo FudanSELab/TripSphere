@@ -1,6 +1,6 @@
 import { HotelHeroSearch } from "@/components/hotel-hero-search";
 import { HotelCardList } from "@/components/hotel-card-list";
-import { listHotels } from "@/actions/hotel";
+import { listHotelsByCity } from "@/lib/data/hotel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Metadata } from "next";
 
@@ -13,9 +13,9 @@ export default async function HotelPage() {
   const today = new Date().toISOString().split("T")[0];
 
   const [shanghaiResult, nanjingResult, beijingResult] = await Promise.all([
-    listHotels("上海市"),
-    listHotels("南京市"),
-    listHotels("北京市"),
+    listHotelsByCity("上海市"),
+    listHotelsByCity("南京市"),
+    listHotelsByCity("北京市"),
   ]);
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Hotel as HotelIcon } from "lucide-react";
 import { HotelCard, HotelCardSkeleton } from "@/components/hotel-card";
-import { listHotels } from "@/actions/hotel";
+import { loadMoreHotels } from "@/actions/hotel";
 import { hotelToCardData } from "@/lib/mappers/hotel";
 import type { Hotel } from "@/lib/grpc/generated/tripsphere/hotel/v1/hotel";
 
@@ -36,7 +36,7 @@ export function HotelCardList({
     setLoading(true);
 
     try {
-      const result = await listHotels(city, nextPageTokenRef.current);
+      const result = await loadMoreHotels(city, nextPageTokenRef.current);
       setHotels((prev) => [...prev, ...result.hotels]);
 
       nextPageTokenRef.current = result.nextPageToken;

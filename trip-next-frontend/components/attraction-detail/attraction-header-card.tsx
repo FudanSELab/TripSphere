@@ -1,17 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  MapPin,
-  Clock,
-  Tag,
-  ExternalLink,
-  Ticket,
-  AlertCircle,
-} from "lucide-react";
+import { MapPin, Clock, ExternalLink, Ticket, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImagePlaceholder } from "@/components/image-placeholder";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatRecommendTime } from "@/lib/format";
 import type { Attraction } from "@/lib/grpc/generated/tripsphere/attraction/v1/attraction";
 
 interface AttractionHeaderCardProps {
@@ -33,10 +27,14 @@ export function AttractionHeaderCard({
   ]
     .filter(Boolean)
     .join("");
+  const visitTime = formatRecommendTime(
+    attraction.recommendTime?.minHours,
+    attraction.recommendTime?.maxHours,
+    " 小时",
+  );
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
-      {/* Image gallery */}
       <div className="flex-1">
         {images.length === 0 ? (
           <div className="aspect-video w-full overflow-hidden rounded-2xl">
@@ -55,7 +53,6 @@ export function AttractionHeaderCard({
           </div>
         ) : (
           <div className="grid h-72 grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-2xl lg:h-96">
-            {/* Main large image */}
             <div className="relative col-span-2 row-span-2 overflow-hidden">
               <Image
                 src={images[0]}
@@ -66,7 +63,6 @@ export function AttractionHeaderCard({
                 priority
               />
             </div>
-            {/* Side images */}
             {images.slice(1, 5).map((img, i) => (
               <div key={i} className="relative overflow-hidden">
                 <Image
@@ -78,7 +74,6 @@ export function AttractionHeaderCard({
                 />
               </div>
             ))}
-            {/* Fill remaining slots with placeholder */}
             {Array.from({ length: Math.max(0, 4 - (images.length - 1)) }).map(
               (_, i) => (
                 <div key={`placeholder-${i}`} className="overflow-hidden">
@@ -90,99 +85,82 @@ export function AttractionHeaderCard({
         )}
       </div>
 
-      {/* Info card */}
-      <div className="flex w-full flex-col gap-4 lg:w-72">
-        <div>
-          {/* Temporarily closed alert */}
+      <div className="flex w-full flex-col gap-4 lg:w-[300px]">
+        <div className="flex flex-col gap-2">
           {attraction.temporarilyClosed && (
-            <div className="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>该景点暂停开放</span>
-            </div>
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertDescription>该景点暂停开放</AlertDescription>
+            </Alert>
           )}
 
-          {/* Tags */}
-          <div className="mb-2 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {attraction.tags.map((tag) => (
-              <Badge
-                key={tag}
-                className="bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200"
-                variant="outline"
-              >
-                <Tag className="mr-1 h-2.5 w-2.5" />
+              <Badge key={tag} variant="secondary">
                 {tag}
               </Badge>
             ))}
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-foreground text-2xl font-bold">
             {attraction.name}
           </h1>
 
-          {/* Address */}
           {fullAddress && (
-            <div className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+            <div className="text-muted-foreground flex items-start gap-1.5 text-sm">
+              <MapPin className="text-primary mt-0.5 size-4 shrink-0" />
               <span className="line-clamp-2">{fullAddress}</span>
             </div>
           )}
 
-          {/* Recommend time */}
-          {(attraction.recommendTime?.minHours ||
-            attraction.recommendTime?.maxHours) && (
-            <div className="mt-2 flex items-center gap-1.5 text-sm">
-              <Clock className="h-4 w-4 shrink-0 text-teal-600" />
-              <span className="text-teal-700 font-medium">
-                建议游览{" "}
-                {attraction.recommendTime!.minHours > 0 &&
-                attraction.recommendTime!.maxHours > 0
-                  ? `${attraction.recommendTime!.minHours}–${attraction.recommendTime!.maxHours} 小时`
-                  : `${attraction.recommendTime!.maxHours || attraction.recommendTime!.minHours} 小时`}
-              </span>
+          {visitTime && (
+            <div className="text-primary flex items-center gap-1.5 text-sm">
+              <Clock className="size-4 shrink-0" />
+              <span className="font-medium">建议游览 {visitTime}</span>
             </div>
           )}
         </div>
 
-        {/* Ticket price */}
-        <div className="rounded-xl border bg-card p-4">
+        <div className="bg-card flex flex-col gap-3 rounded-xl border p-4">
           {price != null ? (
             price > 0 ? (
               <>
-                <p className="text-xs text-muted-foreground">参考票价（成人）</p>
-                <p className="mt-1 text-3xl font-bold text-orange-500">
+                <p className="text-muted-foreground text-xs">
+                  参考票价（成人）
+                </p>
+                <p className="text-price mt-1 text-3xl font-bold">
                   ¥{price.toLocaleString()}
                 </p>
               </>
             ) : (
               <>
-                <p className="text-xs text-muted-foreground">门票</p>
-                <p className="mt-1 text-2xl font-bold text-emerald-600">免费</p>
+                <p className="text-muted-foreground text-xs">门票</p>
+                <p className="text-success mt-1 text-2xl font-bold">免费</p>
               </>
             )
           ) : (
             <>
-              <p className="text-xs text-muted-foreground">门票</p>
-              <p className="mt-1 text-sm text-muted-foreground">价格待查</p>
+              <p className="text-muted-foreground text-xs">门票</p>
+              <p className="text-muted-foreground mt-1 text-sm">价格待查</p>
             </>
           )}
           <Button
-            className="mt-3 w-full bg-teal-600 font-semibold text-white hover:bg-teal-700"
+            className="w-full font-semibold"
             disabled={attraction.temporarilyClosed}
           >
-            <Ticket className="mr-2 h-4 w-4" />
+            <Ticket className="size-4" data-icon="inline-start" />
             {attraction.temporarilyClosed ? "暂停开放" : "立即购票"}
           </Button>
         </div>
 
-        {/* Map link */}
         {attraction.location && (
           <Link
             href={`https://maps.google.com/?q=${attraction.location.latitude},${attraction.location.longitude}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-800 hover:underline"
+            className="text-primary hover:text-primary/80 flex items-center gap-1.5 text-sm hover:underline"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="size-3.5" />
             在地图中查看
           </Link>
         )}

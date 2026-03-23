@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useMemo,
-  useRef,
-  useEffect,
-  useCallback,
-} from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -19,17 +13,19 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import {
   AttractionCard,
   AttractionCardSkeleton,
   attractionToCardData,
 } from "@/components/attraction-card";
-import { listAttractionsByCity } from "@/actions/attraction";
-import { formatMoney } from "@/lib/format";
+import { loadMoreAttractionsByCity } from "@/actions/attraction";
+import { formatMoney, formatRecommendTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Attraction } from "@/lib/grpc/generated/tripsphere/attraction/v1/attraction";
 
-// Corrected from itinerary.py
 const CATEGORY_TAGS = [
   "人文景观",
   "体育娱乐",
@@ -53,14 +49,16 @@ interface AttractionCardListProps {
   city: string;
 }
 
-// ─── Section 1: Cinematic carousel card ─────────────────────────────────────
-
 function HotCarouselCard({ attraction }: { attraction: Attraction }) {
   const price = attraction.ticketInfo?.estimatedPrice
     ? formatMoney(attraction.ticketInfo.estimatedPrice)
     : null;
   const district =
     attraction.address?.district ?? attraction.address?.city ?? "";
+  const visitTime = formatRecommendTime(
+    attraction.recommendTime?.minHours,
+    attraction.recommendTime?.maxHours,
+  );
 
   return (
     <Link
@@ -80,32 +78,28 @@ function HotCarouselCard({ attraction }: { attraction: Attraction }) {
         <ImagePlaceholder className="h-full w-full" />
       )}
 
-      {/* Full dark cinematic overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-black/5 to-transparent" />
 
-      {/* Hot badge */}
-      <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-orange-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-md">
-        <Flame className="h-3 w-3" />
+      <Badge className="bg-price text-price-foreground absolute top-3 left-3 gap-1">
+        <Flame className="size-3" />
         人气热门
-      </span>
+      </Badge>
 
-      {/* Tags */}
       {attraction.tags.length > 0 && (
-        <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1">
+        <div className="absolute top-3 right-3 flex flex-wrap justify-end gap-1">
           {attraction.tags.slice(0, 2).map((tag) => (
-            <span
+            <Badge
               key={tag}
-              className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
+              className="bg-background/20 text-white backdrop-blur-sm"
             >
               {tag}
-            </span>
+            </Badge>
           ))}
         </div>
       )}
 
-      {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="line-clamp-2 text-base font-bold leading-snug text-white drop-shadow-lg sm:text-lg">
+      <div className="absolute right-0 bottom-0 left-0 p-4">
+        <h3 className="line-clamp-2 text-base leading-snug font-bold text-white drop-shadow-lg sm:text-lg">
           {attraction.name}
         </h3>
         {district && (
@@ -115,25 +109,20 @@ function HotCarouselCard({ attraction }: { attraction: Attraction }) {
           </div>
         )}
         <div className="mt-2 flex items-center gap-3">
-          {(attraction.recommendTime?.minHours || attraction.recommendTime?.maxHours) && (
+          {visitTime && (
             <div className="flex items-center gap-1 text-white/80">
               <Clock className="h-3 w-3" />
-              <span className="text-xs">
-                {attraction.recommendTime!.minHours > 0 &&
-                attraction.recommendTime!.maxHours > 0
-                  ? `${attraction.recommendTime!.minHours}–${attraction.recommendTime!.maxHours}h`
-                  : `${attraction.recommendTime!.maxHours || attraction.recommendTime!.minHours}h`}
-              </span>
+              <span className="text-xs">{visitTime}</span>
             </div>
           )}
           {price != null ? (
-            <span className="rounded-full bg-orange-500/90 px-2.5 py-0.5 text-xs font-bold text-white">
+            <Badge className="bg-price/90 text-price-foreground">
               ¥{price.toLocaleString()}
-            </span>
+            </Badge>
           ) : (
-            <span className="rounded-full bg-emerald-500/90 px-2.5 py-0.5 text-xs font-bold text-white">
+            <Badge className="bg-success/90 text-success-foreground">
               免费
-            </span>
+            </Badge>
           )}
         </div>
       </div>
@@ -141,19 +130,19 @@ function HotCarouselCard({ attraction }: { attraction: Attraction }) {
   );
 }
 
-// ─── Section 2: Free row card ────────────────────────────────────────────────
-
 function FreeAttractionCard({ attraction }: { attraction: Attraction }) {
   const district =
     attraction.address?.district ?? attraction.address?.city ?? "";
-  const recommendTime = attraction.recommendTime;
+  const visitTime = formatRecommendTime(
+    attraction.recommendTime?.minHours,
+    attraction.recommendTime?.maxHours,
+  );
 
   return (
     <Link
       href={`/attractions/${attraction.id}`}
-      className="group block w-full overflow-hidden rounded-2xl border-2 border-emerald-100 bg-card transition-all duration-300 hover:border-emerald-400 hover:shadow-lg"
+      className="group bg-card border-success/20 hover:border-success/60 block w-full overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-lg"
     >
-      {/* Image — same aspect-video ratio as hot carousel for visual alignment */}
       <div className="relative aspect-video w-full overflow-hidden">
         {attraction.images[0] ? (
           <Image
@@ -167,50 +156,41 @@ function FreeAttractionCard({ attraction }: { attraction: Attraction }) {
         ) : (
           <ImagePlaceholder className="h-full w-full" />
         )}
-        {/* Light-to-transparent overlay (visually lighter than cinematic hot section) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/5 to-transparent" />
 
-        {/* FREE badge — top left */}
-        <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-md">
-          <Ticket className="h-3 w-3" />
+        <Badge className="bg-success text-success-foreground absolute top-3 left-3 gap-1">
+          <Ticket className="size-3" />
           免费
-        </span>
+        </Badge>
 
-        {/* Tags — top right */}
         {attraction.tags.length > 0 && (
-          <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1">
+          <div className="absolute top-3 right-3 flex flex-wrap justify-end gap-1">
             {attraction.tags.slice(0, 2).map((tag) => (
-              <span
+              <Badge
                 key={tag}
-                className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
+                className="bg-background/25 text-white backdrop-blur-sm"
               >
                 {tag}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
       </div>
 
-      {/* Footer — name, district, visit time */}
       <div className="p-3">
-        <h3 className="line-clamp-1 text-sm font-semibold text-foreground group-hover:text-emerald-700">
+        <h3 className="text-foreground group-hover:text-success line-clamp-1 text-sm font-semibold transition-colors">
           {attraction.name}
         </h3>
         <div className="mt-1 flex items-center justify-between">
           {district && (
-            <div className="flex items-center gap-0.5 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-0.5">
               <MapPin className="h-3 w-3 shrink-0" />
-              <span className="text-xs line-clamp-1">{district}</span>
+              <span className="line-clamp-1 text-xs">{district}</span>
             </div>
           )}
-          {(recommendTime?.minHours || recommendTime?.maxHours) && (
-            <div className="flex shrink-0 items-center gap-1 text-emerald-600">
+          {visitTime && (
+            <div className="text-success flex shrink-0 items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span className="text-xs font-medium">
-                {recommendTime!.minHours > 0 && recommendTime!.maxHours > 0
-                  ? `${recommendTime!.minHours}–${recommendTime!.maxHours}h`
-                  : `${recommendTime!.maxHours || recommendTime!.minHours}h`}
-              </span>
+              <span className="text-xs font-medium">{visitTime}</span>
             </div>
           )}
         </div>
@@ -219,7 +199,55 @@ function FreeAttractionCard({ attraction }: { attraction: Attraction }) {
   );
 }
 
-// ─── Main component ──────────────────────────────────────────────────────────
+function HorizontalScroll({
+  children,
+  scrollRef,
+}: {
+  children: React.ReactNode;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={scrollRef}
+      className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {children}
+    </div>
+  );
+}
+
+function ScrollControls({
+  onLeft,
+  onRight,
+}: {
+  onLeft: () => void;
+  onRight: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="size-8 rounded-full shadow-sm"
+        onClick={onLeft}
+        aria-label="向左"
+      >
+        <ChevronLeft className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="size-8 rounded-full shadow-sm"
+        onClick={onRight}
+        aria-label="向右"
+      >
+        <ChevronRight className="size-4" />
+      </Button>
+    </div>
+  );
+}
 
 export function AttractionCardList({
   initialAttractions,
@@ -235,14 +263,12 @@ export function AttractionCardList({
   const carouselRef = useRef<HTMLDivElement>(null);
   const freeRef = useRef<HTMLDivElement>(null);
 
-  // ── Infinite scroll ──────────────────────────────────────────────────────
   const loadMore = useCallback(async () => {
     if (loading || !nextPageTokenRef.current) return;
     setLoading(true);
     try {
-      const result = await listAttractionsByCity(
+      const result = await loadMoreAttractionsByCity(
         city,
-        undefined,
         nextPageTokenRef.current,
       );
       setAttractions((prev) => [...prev, ...result.attractions]);
@@ -265,7 +291,6 @@ export function AttractionCardList({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  // ── Derived data ─────────────────────────────────────────────────────────
   const hotAttractions = useMemo(
     () => attractions.filter((a) => !a.temporarilyClosed).slice(0, 9),
     [attractions],
@@ -290,8 +315,8 @@ export function AttractionCardList({
   }, [attractions, selectedTags]);
 
   const cards = filteredAttractions.map(attractionToCardData);
+  const cityShort = city.replace("市", "");
 
-  // ── Shared scroll helper — advances 2 cards per click ───────────────────
   function scrollSection(
     ref: React.RefObject<HTMLDivElement | null>,
     dir: "left" | "right",
@@ -306,7 +331,6 @@ export function AttractionCardList({
     });
   }
 
-  // ── Tag filter ───────────────────────────────────────────────────────────
   function toggleTag(tag: string) {
     setSelectedTags((prev) => {
       const next = new Set(prev);
@@ -316,143 +340,91 @@ export function AttractionCardList({
     });
   }
 
-  const cityShort = city.replace("市", "");
-
   return (
     <div className="flex flex-col gap-12">
-      {/* ════════════════════════════════════════════════════════════════════
-          Section 1 — Hot Attractions Carousel
-      ════════════════════════════════════════════════════════════════════ */}
       {hotAttractions.length > 0 && (
         <section className="flex flex-col gap-4">
-          {/* Section header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" />
+              <Flame className="text-price size-5" />
               <h2 className="text-xl font-bold">热门景点</h2>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 · {cityShort}必去
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => scrollSection(carouselRef, "left")}
-                className="flex h-8 w-8 items-center justify-center rounded-full border bg-card shadow-sm transition hover:bg-muted"
-                aria-label="向左"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollSection(carouselRef, "right")}
-                className="flex h-8 w-8 items-center justify-center rounded-full border bg-card shadow-sm transition hover:bg-muted"
-                aria-label="向右"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+            <ScrollControls
+              onLeft={() => scrollSection(carouselRef, "left")}
+              onRight={() => scrollSection(carouselRef, "right")}
+            />
           </div>
 
-          {/* Carousel strip */}
-          <div
-            ref={carouselRef}
-            className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
+          <HorizontalScroll scrollRef={carouselRef}>
             {hotAttractions.map((a) => (
               <div
                 key={a.id}
-                className="flex-none snap-start w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
+                className="w-full flex-none snap-start sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
               >
                 <HotCarouselCard attraction={a} />
               </div>
             ))}
-          </div>
+          </HorizontalScroll>
         </section>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════
-          Section 2 — Free Attractions Row
-      ════════════════════════════════════════════════════════════════════ */}
       {freeAttractions.length > 0 && (
         <section className="flex flex-col gap-4">
-          {/* Section header with emerald accent + arrows */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-6 w-1 rounded-full bg-emerald-500" />
+              <div className="bg-success h-6 w-1 rounded-full" />
               <div className="flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-emerald-600" />
+                <Ticket className="text-success size-5" />
                 <h2 className="text-xl font-bold">免费畅游</h2>
               </div>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                Free
-              </span>
-              <span className="hidden text-sm text-muted-foreground sm:inline">
+              <Badge className="bg-success/10 text-success">Free</Badge>
+              <span className="text-muted-foreground hidden text-sm sm:inline">
                 · 无需购票，随时出发
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => scrollSection(freeRef, "left")}
-                className="flex h-8 w-8 items-center justify-center rounded-full border bg-card shadow-sm transition hover:bg-muted"
-                aria-label="向左"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollSection(freeRef, "right")}
-                className="flex h-8 w-8 items-center justify-center rounded-full border bg-card shadow-sm transition hover:bg-muted"
-                aria-label="向右"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+            <ScrollControls
+              onLeft={() => scrollSection(freeRef, "left")}
+              onRight={() => scrollSection(freeRef, "right")}
+            />
           </div>
 
-          {/* Horizontal snap scroll */}
-          <div
-            ref={freeRef}
-            className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
+          <HorizontalScroll scrollRef={freeRef}>
             {freeAttractions.map((a) => (
               <div
                 key={a.id}
-                className="flex-none snap-start w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
+                className="w-full flex-none snap-start sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
               >
                 <FreeAttractionCard attraction={a} />
               </div>
             ))}
-          </div>
+          </HorizontalScroll>
         </section>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════
-          Section 3 — Browse by Category (Masonry)
-      ════════════════════════════════════════════════════════════════════ */}
       <section className="flex flex-col gap-4">
-        {/* Section header */}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-teal-600" />
+            <LayoutGrid className="text-primary size-5" />
             <h2 className="text-xl font-bold">按分类探索</h2>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             筛选你感兴趣的景点类型，发现更多精彩
           </p>
         </div>
 
-        {/* Tag filter chips */}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setSelectedTags(new Set())}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-medium transition",
               selectedTags.size === 0
-                ? "bg-teal-600 text-white shadow-sm"
-                : "bg-muted text-muted-foreground hover:bg-teal-50 hover:text-teal-700"
-            }`}
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary",
+            )}
           >
             全部
           </button>
@@ -461,21 +433,21 @@ export function AttractionCardList({
               key={tag}
               type="button"
               onClick={() => toggleTag(tag)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+              className={cn(
+                "rounded-full px-4 py-1.5 text-sm font-medium transition",
                 selectedTags.has(tag)
-                  ? "bg-teal-600 text-white shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-teal-50 hover:text-teal-700"
-              }`}
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary",
+              )}
             >
               {tag}
             </button>
           ))}
         </div>
 
-        {/* Masonry waterfall — 3 columns max */}
         {cards.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20 text-muted-foreground">
-            <MapPin className="h-12 w-12 opacity-25" />
+          <div className="text-muted-foreground flex flex-col items-center gap-3 py-20">
+            <MapPin className="size-12 opacity-25" />
             <p className="text-sm">暂无符合条件的景点</p>
           </div>
         ) : (
@@ -494,17 +466,15 @@ export function AttractionCardList({
           </div>
         )}
 
-        {/* Infinite scroll sentinel */}
         <div ref={sentinelRef} className="h-1" />
 
-        {/* End / loading states */}
         {loading && cards.length > 0 && (
           <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+            <Loader2 className="text-primary size-5 animate-spin" />
           </div>
         )}
         {!nextPageTokenRef.current && cards.length > 0 && !loading && (
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-center text-xs">
             已显示全部 {cards.length} 个景点
           </p>
         )}
