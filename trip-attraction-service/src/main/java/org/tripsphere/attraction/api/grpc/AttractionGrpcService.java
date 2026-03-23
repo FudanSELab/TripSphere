@@ -97,8 +97,7 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
 
     @Override
     public void listAttractionsByCity(
-            ListAttractionsByCityRequest request,
-            StreamObserver<ListAttractionsByCityResponse> responseObserver) {
+            ListAttractionsByCityRequest request, StreamObserver<ListAttractionsByCityResponse> responseObserver) {
         String city = request.getCity();
         if (city.isEmpty()) {
             throw InvalidArgumentException.required("city");
@@ -117,18 +116,15 @@ public class AttractionGrpcService extends AttractionServiceGrpc.AttractionServi
 
         List<String> tags = request.getTagsList();
 
-        List<Attraction> attractions =
-                attractionService.listByCity(
-                        city, tags.isEmpty() ? null : tags, pageSize, skip);
+        List<Attraction> attractions = attractionService.listByCity(city, tags.isEmpty() ? null : tags, pageSize, skip);
 
         int nextSkip = skip + attractions.size();
         String nextPageToken = attractions.size() < pageSize ? "" : String.valueOf(nextSkip);
 
-        responseObserver.onNext(
-                ListAttractionsByCityResponse.newBuilder()
-                        .addAllAttractions(attractions)
-                        .setNextPageToken(nextPageToken)
-                        .build());
+        responseObserver.onNext(ListAttractionsByCityResponse.newBuilder()
+                .addAllAttractions(attractions)
+                .setNextPageToken(nextPageToken)
+                .build());
         responseObserver.onCompleted();
     }
 }

@@ -12,6 +12,5 @@ public interface AttractionDocRepository extends MongoRepository<AttractionDoc, 
 
     List<AttractionDoc> findAllByAddressCity(String city, Pageable pageable);
 
-    List<AttractionDoc> findAllByAddressCityAndTagsIn(
-            String city, List<String> tags, Pageable pageable);
+    List<AttractionDoc> findAllByAddressCityAndTagsIn(String city, List<String> tags, Pageable pageable);
 }

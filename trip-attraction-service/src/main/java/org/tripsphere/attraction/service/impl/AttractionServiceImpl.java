@@ -63,12 +63,7 @@ public class AttractionServiceImpl implements AttractionService {
 
     @Override
     public List<Attraction> listByCity(String city, List<String> tags, int pageSize, int skip) {
-        log.debug(
-                "Listing attractions by city: {}, tags: {}, pageSize: {}, skip: {}",
-                city,
-                tags,
-                pageSize,
-                skip);
+        log.debug("Listing attractions by city: {}, tags: {}, pageSize: {}, skip: {}", city, tags, pageSize, skip);
         int effectivePageSize = pageSize > 0 ? pageSize : 12;
         int page = effectivePageSize > 0 ? skip / effectivePageSize : 0;
         PageRequest pageRequest = PageRequest.of(page, effectivePageSize, Sort.by("name"));
