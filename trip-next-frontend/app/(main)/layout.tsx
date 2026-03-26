@@ -4,8 +4,8 @@ import { SiteHeader } from "@/components/site-header";
 import { CopilotSidebar } from "@copilotkit/react-core/v2";
 
 const COPILOT_LABELS = {
-  modalHeaderTitle: "AI旅行助手",
-  chatInputPlaceholder: "询问我任何旅游相关的问题",
+  modalHeaderTitle: "AI 旅行助手",
+  chatInputPlaceholder: "输入你的旅行需求：目的地/时间/偏好，我来帮你规划",
 };
 
 export default function MainLayout({
