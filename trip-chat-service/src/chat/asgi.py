@@ -50,7 +50,7 @@ async def _init_infra(app: FastAPI, settings: Settings) -> None:
 async def _init_adk_app(app: FastAPI) -> None:
     remote_agents_factory = RemoteAgentsFactory(app.state.nacos_ai)
     remote_agents = await remote_agents_factory.get_remote_agents()
-    root_agent = create_agent(True, sub_agents=remote_agents)  # pyright: ignore
+    root_agent = create_agent(True, sub_agents=remote_agents)  # type: ignore
     adk_app = create_adk_app(root_agent)
 
     def user_id_extractor(input: RunAgentInput) -> str:

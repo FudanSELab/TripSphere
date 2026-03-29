@@ -41,8 +41,8 @@ wheels = [
 
 [[package]]
 name = "ag-ui-adk"
-version = "0.5.1"
-source = { registry = "https://pypi.org/simple" }
+version = "0.5.2"
+source = { git = "https://github.com/ag-ui-protocol/ag-ui?subdirectory=integrations%2Fadk-middleware%2Fpython&branch=main#fe6505700a87bdc2574fec9302909fe2e994ce4d" }
 dependencies = [
     { name = "ag-ui-protocol" },
     { name = "aiohttp" },
@@ -51,10 +51,6 @@ dependencies = [
     { name = "google-adk" },
     { name = "pydantic" },
     { name = "uvicorn" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/90/2b924f5e32dde282f8ec93fedaeffea9d1528d8f1b5d41ad405b6c1e8a54/ag_ui_adk-0.5.1.tar.gz", hash = "sha256:53cc59583f5610cee908d00219f0a09241a0b9c6a004dcbc22afe4dcd1317ce2", size = 58496, upload-time = "2026-03-05T16:46:08.955Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/0f/26434145864a523f3ad5e810b2790175da5cae5fc012ff4c285706134676/ag_ui_adk-0.5.1-py3-none-any.whl", hash = "sha256:e3343fa32e5d03da36010e75775f73491828e95d06cc18fc9dce0922f3154fed", size = 65239, upload-time = "2026-03-05T16:46:07.645Z" },
 ]
 
 [[package]]
@@ -592,7 +588,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ag-ui-adk", specifier = ">=0.5.1" },
+    { name = "ag-ui-adk", git = "https://github.com/ag-ui-protocol/ag-ui?subdirectory=integrations%2Fadk-middleware%2Fpython&branch=main" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.123.10" },
     { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.20.0" },
     { name = "grpcio", specifier = ">=1.75.1" },
@@ -1054,7 +1050,7 @@ wheels = [
 
 [[package]]
 name = "google-adk"
-version = "1.22.1"
+version = "1.23.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1101,9 +1097,9 @@ dependencies = [
     { name = "watchdog" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/7e/1fe2704d8079d93bffb5888aa2bd1081251855e8bf14d97f648abd9fd7fa/google_adk-1.22.1.tar.gz", hash = "sha256:4590df0a9340cf05cf5a9899986dfcc3db1c624c6165d76c04be16de535e6404", size = 2046783, upload-time = "2026-01-12T20:50:08.064Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7c/25/a8c7058812ae3a6046c1c909da31b4c95a6534f555ec50730fe215b2592c/google_adk-1.23.0.tar.gz", hash = "sha256:07829b3198d412ecddb8b102c6bc9511607a234989b7659be102d806e4c92258", size = 2072294, upload-time = "2026-01-22T23:26:52.352Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/ea/5fee720ca26eff38e338ff0dc1eae4abd06fc712b841333689f5caf4c55f/google_adk-1.22.1-py3-none-any.whl", hash = "sha256:65c921a1343220eb7823ec8972479c046e7d9464f17c0829fb5508551678a9ef", size = 2368855, upload-time = "2026-01-12T20:50:06.087Z" },
+    { url = "https://files.pythonhosted.org/packages/60/36/2abbcaad2bd4691863ac05189070c1e9f8d12ec16194f41a975c984883af/google_adk-1.23.0-py3-none-any.whl", hash = "sha256:94b77c9afa39042e77a35c2b3dad7e122d940e065cb5a9ba9e7b5de73786f993", size = 2418796, upload-time = "2026-01-22T23:26:50.289Z" },
 ]
 
 [package.optional-dependencies]

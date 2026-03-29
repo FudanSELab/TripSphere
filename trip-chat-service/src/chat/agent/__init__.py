@@ -33,22 +33,20 @@ def _ensure_openai_env() -> None:
 _ensure_openai_env()
 
 
-# NOTE: https://github.com/ag-ui-protocol/ag-ui/issues/1264
-def create_weather_toolset() -> McpToolset:
-    return McpToolset(
-        connection_params=StdioConnectionParams(
-            server_params=StdioServerParameters(
-                command="python", args=["-m", "mcp_weather_server"]
-            )
-        )
-    )
-
-
 def create_agent(
     agui_toolset: bool = False, sub_agents: list[BaseAgent] | None = None
 ) -> LlmAgent:
     sub_agents = sub_agents or []
-    tools: list[ToolUnion] = [load_memory_tool]  # pyright: ignore
+    # NOTE: https://github.com/ag-ui-protocol/ag-ui/issues/1264
+    weather_toolset = McpToolset(
+        connection_params=StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command="python", args=["-m", "mcp_weather_server", "--debug"]
+            ),
+            timeout=10,  # 10 seconds timeout
+        )
+    )
+    tools: list[ToolUnion] = [load_memory_tool, weather_toolset]  # pyright: ignore
     if agui_toolset is True:
         tools.extend([AGUIToolset(), HotelViewingToolset()])  # pyright: ignore
     return LlmAgent(
@@ -71,14 +69,6 @@ def create_adk_app(root_agent: BaseAgent) -> App:
     )
 
 
-order_assistant = RemoteA2aAgent(
-    name="order_assistant",
-    agent_card=(
-        f"http://localhost:24211/a2a/order_assistant{AGENT_CARD_WELL_KNOWN_PATH}"
-    ),
-)
-
-
 """
 Use the following command to run ADK Web UI:
 
@@ -86,5 +76,11 @@ Use the following command to run ADK Web UI:
 uv run adk web --log_level debug src/
 ```
 """
+order_assistant = RemoteA2aAgent(
+    name="order_assistant",
+    agent_card=(
+        f"http://localhost:24211/a2a/order_assistant{AGENT_CARD_WELL_KNOWN_PATH}"
+    ),
+)
 root_agent = create_agent(False, sub_agents=[order_assistant])
 app = create_adk_app(root_agent)

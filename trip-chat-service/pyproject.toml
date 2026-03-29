@@ -4,7 +4,7 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "ag-ui-adk>=0.5.1",
+    "ag-ui-adk>=0.5.2",
     "fastapi[standard]>=0.123.10",
     "google-adk[a2a,otel-gcp]>=1.20.0",
     "grpcio>=1.75.1",
@@ -36,6 +36,7 @@ dev = [
 ]
 
 [tool.uv.sources]
+ag-ui-adk = { git = "https://github.com/ag-ui-protocol/ag-ui", subdirectory = "integrations/adk-middleware/python", branch = "main" }
 tripsphere = { workspace = true }
 
 [tool.uv.workspace]
