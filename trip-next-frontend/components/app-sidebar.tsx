@@ -33,7 +33,7 @@ const travelLinks = [
 ];
 
 const aiLinks = [
-  { title: "AI行程助手", url: "/itinerary", icon: Sparkles },
+  { title: "AI行程规划", url: "/itinerary", icon: Sparkles },
   { title: "笔记攻略", url: "/notes", icon: Notebook },
 ];
 

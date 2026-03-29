@@ -4,8 +4,8 @@ import { SiteHeader } from "@/components/site-header";
 import { CopilotSidebar } from "@copilotkit/react-core/v2";
 
 const COPILOT_LABELS = {
-  modalHeaderTitle: "AI 旅行助手",
-  chatInputPlaceholder: "输入你的旅行需求：目的地/时间/偏好，我来帮你规划",
+  modalHeaderTitle: "AI旅行助手",
+  chatInputPlaceholder: "询问我任何旅游相关的问题",
 };
 
 export default function MainLayout({
@@ -15,7 +15,7 @@ export default function MainLayout({
 }) {
   return (
     <SidebarProvider
-      defaultOpen={true}
+      defaultOpen
       style={
         {
           "--sidebar-width": "10rem",
@@ -30,7 +30,7 @@ export default function MainLayout({
           {children}
           <CopilotSidebar
             agentId="default"
-            defaultOpen={true}
+            defaultOpen
             width="30rem"
             labels={COPILOT_LABELS}
           />

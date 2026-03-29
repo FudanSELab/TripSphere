@@ -76,7 +76,7 @@ export function HotelHeroSearch({ today: todayStr }: HotelHeroSearchProps) {
         aria-hidden="true"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1920&q=80')",
+            "url('/images/photo-1564501049412-61c2a3083791.jfif')",
         }}
       />
       <div
