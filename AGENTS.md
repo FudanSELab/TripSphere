@@ -2,6 +2,6 @@
 
 For all coding agents working in this repository:
 
-- JavaScript/TypeScript runtime and package manager: use `bun`.
+- JavaScript/TypeScript runtime and package manager: use `bun` with `-b` flag.
 - Python package and environment manager: use `uv`.
 - Java build and project management: use Maven Wrapper (`./mvnw`), not a global Maven install.

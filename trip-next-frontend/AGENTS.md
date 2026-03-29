@@ -8,8 +8,8 @@ Before any Next.js work, find and read the relevant doc in `node_modules/next/di
 
 From Next.js 16 onward, use `proxy.ts` instead of `middleware.ts`.
 
-## CopilotKit V2 API usage
-
-Provider component `CopilotKit` is shared across v1 and v2 APIs. It must be imported from the root package `@copilotkit/react-core`, not from the v2 subpackage. There is no need to migrate to `CopilotKitProvider` from `@copilotkit/react-core/v2`.
-
 <!-- END:nextjs-agent-rules -->
+
+# CopilotKit V2 API usage
+
+Provider component `CopilotKit` is shared across v1 and v2 APIs. It must be imported from the root package `@copilotkit/react-core`, not from the v2 subpackage. No need to migrate to `CopilotKitProvider` in `@copilotkit/react-core/v2`.
