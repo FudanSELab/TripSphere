@@ -21,5 +21,5 @@ volumes/
 .agents/
 .claude/
 
-# Environment variables
+# Environment configuration
 .env

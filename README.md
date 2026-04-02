@@ -12,7 +12,9 @@ This monorepo contains the TripSphere, an AI-native distributed system based on 
 
 ### Docker Compose
 
-
+```bash
+docker compose -f deploy/docker-compose/docker-compose.yaml --env-file .env up --force-recreate --remove-orphans --detach
+```
 
 ### Kubernetes
 

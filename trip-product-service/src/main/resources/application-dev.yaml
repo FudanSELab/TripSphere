@@ -7,8 +7,8 @@ spring:
         group: DEFAULT_GROUP
   data:
     mongodb:
-      uri: mongodb://root:fudanse@localhost:27017
-      database: product_db
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://root:fudanse@localhost:27017}
+      database: ${SPRING_DATA_MONGODB_DATABASE:product_db}
 
 grpc:
   server:
