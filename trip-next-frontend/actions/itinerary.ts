@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { getAuthMetadata, getItineraryService } from "@/lib/grpc/client";
+import { config } from "@/lib/env";
 import type { Address } from "@/lib/grpc/generated/tripsphere/common/v1/map";
 import {
   ActivityKind,
@@ -342,8 +343,7 @@ function callGrpc<Req, Res>(
 
 // ── Planning (HTTP to planner) ─────────────────────────────────────────────
 
-const PLANNER_URL =
-  process.env.HTTP_ITINERARY_PLANNER_URL || "http://localhost:24215";
+const PLANNER_URL = config.copilot.itineraryPlannerUrl.replace(/\/$/, "");
 
 export async function createItineraryPlan(
   input: PlanItineraryInput,

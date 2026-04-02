@@ -52,8 +52,7 @@ async def search_hotels_nearby(
     )
 
     instance = await nacos_naming.get_service_instance("trip-hotel-service")
-    # ip = instance.ip
-    ip = "localhost"
+    ip = instance.ip
     port = instance.metadata["gRPC_port"]  # pyright: ignore
 
     location = map_pb2.GeoPoint(latitude=center_latitude, longitude=center_longitude)

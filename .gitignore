@@ -20,3 +20,6 @@ volumes/
 # Agent Skills
 .agents/
 .claude/
+
+# Environment configuration (contains credentials — never commit)
+.env
