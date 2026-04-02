@@ -30,7 +30,6 @@ export default function MainLayout({
           {children}
           <CopilotSidebar
             agentId="default"
-            defaultOpen
             width="30rem"
             labels={COPILOT_LABELS}
           />

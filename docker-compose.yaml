@@ -531,6 +531,23 @@ services:
   #       condition: service_healthy
   #   restart: unless-stopped
 
+  # trip-note-service:
+  #   build:
+  #     context: trip-note-service
+  #     dockerfile: Dockerfile
+  #   image: tripsphere/trip-note-service:latest
+  #   container_name: trip-note-service
+  #   logging: *logging
+  #   ports:
+  #     - "24216:24216" # HTTP
+  #     - "50055:50055" # gRPC
+  #   environment:
+  #     - SPRING_CLOUD_NACOS_SERVER_ADDR=${NACOS_HOST}:${NACOS_PORT}
+  #   depends_on:
+  #     nacos:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+
   trip-order-service:
     build:
       context: trip-order-service
