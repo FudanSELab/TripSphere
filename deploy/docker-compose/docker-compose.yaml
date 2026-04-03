@@ -221,7 +221,7 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-      otel-collector:
+      higress:
         condition: service_started
     healthcheck:
       test:
@@ -298,6 +298,8 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+      higress:
+        condition: service_started
     restart: unless-stopped
 
   trip-itinerary-service:
@@ -329,7 +331,7 @@ services:
     container_name: trip-order-assistant
     logging: *logging
     ports:
-      - "24211:24211"
+      - "24211:24211"  # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -337,6 +339,8 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+      higress:
+        condition: service_started
     restart: unless-stopped
 
   trip-next-frontend:
@@ -362,9 +366,11 @@ services:
     depends_on:
       trip-chat-service:
         condition: service_healthy
-      trip-itinerary-planner:
-        condition: service_started
       trip-user-service:
+        condition: service_started
+      trip-hotel-service:
+        condition: service_started
+      trip-product-service:
         condition: service_started
     restart: unless-stopped
 
