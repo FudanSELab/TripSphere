@@ -471,6 +471,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.144.0
     container_name: otel-collector
     logging: *default-logging
+    command: ["--config", "/etc/otelcol/config.yaml"]
     volumes:
       - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml
     ports:
