@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package tripsphere.attraction.v1;
 
-import "google/protobuf/field_mask.proto";
 import "google/protobuf/struct.proto";
 import "tripsphere/common/v1/dayofweek.proto";
 import "tripsphere/common/v1/map.proto";
@@ -20,6 +19,9 @@ service AttractionService {
 
   // Find attractions within a radius from a location and list them in order from near to far
   rpc GetAttractionsNearby(GetAttractionsNearbyRequest) returns (GetAttractionsNearbyResponse);
+
+  // List attractions in a city with optional tag filter and pagination
+  rpc ListAttractionsByCity(ListAttractionsByCityRequest) returns (ListAttractionsByCityResponse);
 }
 
 message Attraction {
@@ -34,6 +36,7 @@ message Attraction {
   OpeningHours opening_hours = 9;
   bool temporarily_closed = 10;
   TicketInfo ticket_info = 11;
+  RecommendTime recommend_time = 12;
 }
 
 message OpeningHours {
@@ -50,14 +53,19 @@ message OpenRule {
 message TimeRange {
   tripsphere.common.v1.TimeOfDay open_time = 1;
   tripsphere.common.v1.TimeOfDay close_time = 2;
-  // The time of the day when the last entry is allowed.
-  // (Optional) If not set, it is the same as the close time.
+  // (Optional) The time of the day when the last entry is allowed.
   tripsphere.common.v1.TimeOfDay last_entry_time = 3;
 }
 
 message TicketInfo {
+  // Usually set to the price of adult ticket.
   tripsphere.common.v1.Money estimated_price = 1;
   google.protobuf.Struct metadata = 2;
+}
+
+message RecommendTime {
+  double min_hours = 1;
+  double max_hours = 2;
 }
 
 message GetAttractionByIdRequest {
@@ -70,8 +78,6 @@ message GetAttractionByIdResponse {
 
 message BatchGetAttractionsRequest {
   repeated string ids = 1;
-  // Field mask to specify which fields to return.
-  google.protobuf.FieldMask field_mask = 2;
 }
 
 message BatchGetAttractionsResponse {
@@ -87,4 +93,18 @@ message GetAttractionsNearbyRequest {
 
 message GetAttractionsNearbyResponse {
   repeated Attraction attractions = 1;
+}
+
+message ListAttractionsByCityRequest {
+  string city = 1;
+  // Optional filter by tags
+  repeated string tags = 2;
+  int32 page_size = 3;
+  // Skip-offset encoded as string; empty string means start from beginning
+  string page_token = 4;
+}
+
+message ListAttractionsByCityResponse {
+  repeated Attraction attractions = 1;
+  string next_page_token = 2;
 }

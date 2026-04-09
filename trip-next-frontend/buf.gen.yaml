@@ -3,8 +3,8 @@ managed:
   enabled: true
 clean: true
 plugins:
-  - remote: buf.build/community/stephenh-ts-proto:v2.6.1
-    out: lib/grpc/gen
+  - remote: buf.build/community/stephenh-ts-proto:v2.11.2
+    out: lib/grpc/generated
     opt:
       - outputServices=grpc-js
       - esModuleInterop=true

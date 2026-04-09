@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 
 	"trip-file-service/clients"
-	pb "trip-file-service/clients/grpc/gen/tripsphere/file/v1"
+	pb "trip-file-service/clients/grpc/generated/tripsphere/file/v1"
 	"trip-file-service/clients/nacos"
 	"trip-file-service/config"
 	server "trip-file-service/services"

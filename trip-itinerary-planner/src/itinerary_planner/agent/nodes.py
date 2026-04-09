@@ -1,4 +1,5 @@
 import logging
+import random
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
@@ -9,14 +10,24 @@ from pydantic import BaseModel
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
-from itinerary_planner.models.itinerary import DayPlan, Itinerary, ItinerarySummary
-from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
-from itinerary_planner.prompts.workflow import RESEARCH_AND_PLAN_PROMPT
-from itinerary_planner.tools.attractions import (
-    AttractionDetail,
-    search_attractions_nearby,
+from itinerary_planner.models.itinerary import (
+    DayPlan,
+    Itinerary,
+    ItinerarySummary,
+    get_attraction_tags_for_interests,
 )
-from itinerary_planner.tools.geocoding import GeocodeResult, geocoding_tool
+from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
+from itinerary_planner.prompts.workflow import (
+    MARKDOWN_GENERATION_PROMPT,
+    RESEARCH_AND_PLAN_PROMPT,
+)
+from itinerary_planner.tools import (
+    AttractionDetail,
+    GeocodeResult,
+    geocoding_tool,
+    search_attractions_nearby,
+    search_hotels_nearby,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +52,11 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     # Step 1: Geocode destination
     try:
-        geocode_result: GeocodeResult = await geocoding_tool.ainvoke(  # pyright: ignore
-            {"address": state["destination"], "city": state["destination"]}
+        geocode_result: GeocodeResult = await geocoding_tool.ainvoke(
+            {
+                "address": state["destination"],
+                "city": state["destination"],
+            }
         )
         destination_coords = {
             "longitude": geocode_result.longitude,
@@ -58,18 +72,25 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             "address": state["destination"],
         }
 
+    travel_interests = state.get("interests", [])
+    logger.info(f"Travel interests: {travel_interests}")
+    tags = get_attraction_tags_for_interests(travel_interests)
+    logger.info(f"Attraction tags: {tags}")
+
     # Step 2: Search for attractions
     try:
-        search_result = await search_attractions_nearby.ainvoke(  # pyright: ignore
-            {
-                "nacos_naming": state["nacos_naming"],
-                "center_longitude": destination_coords["longitude"],
-                "center_latitude": destination_coords["latitude"],
-                "radius_km": 25.0,
-                "limit": 35,
-            }
+        search_result = await search_attractions_nearby(
+            nacos_naming=state["nacos_naming"],
+            center_longitude=float(destination_coords.get("longitude") or 0),  # type: ignore[arg-type]
+            center_latitude=float(destination_coords.get("latitude") or 0),  # type: ignore[arg-type]
+            radius_km=25.0,
+            tags=tags,
+            limit=35,
         )
-        attractions: list[AttractionDetail] = search_result.attractions
+        # shuffle the attractions and sample 10
+        attractions: list[AttractionDetail] = random.sample(
+            search_result.attractions, 15
+        )
         logger.info(f"Found {len(attractions)} attractions via gRPC service")
     except Exception as e:
         logger.error(f"Attraction search failed: {e}")
@@ -101,7 +122,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             [
                 f"- {attraction.name}: {attraction.description} "
                 f"(Tags: {', '.join(attraction.tags)})"
-                for attraction in attractions[:35]  # Limit for token efficiency
+                for attraction in attractions[:10]
             ]
         )
     else:
@@ -153,6 +174,44 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
                 for activity in day_plan.activities
             ]
 
+        # Step 4: Geometric center of planned attractions -> search hotels nearby
+        lats: list[float] = []
+        lons: list[float] = []
+        for day_plan in itinerary_plan.day_plans:
+            for activity in day_plan.activities:
+                att = _find_matching_attraction(activity.name, attraction_details)
+                if att:
+                    lats.append(att["latitude"])
+                    lons.append(att["longitude"])
+        if lats and lons:
+            center_lat = sum(lats) / len(lats)
+            center_lon = sum(lons) / len(lons)
+        else:
+            center_lat = destination_coords["latitude"]
+            center_lon = destination_coords["longitude"]
+
+        hotel_limit = (
+            3 if num_days <= 4 else 5
+        )  # Short trip: one hotel; longer: multiple options
+        try:
+            hotel_result = await search_hotels_nearby(
+                nacos_naming=state["nacos_naming"],
+                center_longitude=center_lon,
+                center_latitude=center_lat,
+                radius_km=12.0,
+                limit=hotel_limit,
+            )
+            hotel_details = [h.model_dump() for h in hotel_result.hotels]
+            logger.info(
+                "Found %d hotels near attractions center (%.4f, %.4f)",
+                len(hotel_details),
+                center_lat,
+                center_lon,
+            )
+        except Exception as e:
+            logger.error("Hotel search failed: %s", e)
+            hotel_details = []
+
     except Exception as e:
         logger.error(f"LLM planning failed: {e}")
         # Create fallback plan
@@ -164,6 +223,19 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             highlights=[f"Explore {state['destination']}", "Experience local culture"],
             total_estimated_cost=0.0,
         )
+        # Still search hotels by destination center
+        try:
+            hotel_result = await search_hotels_nearby(
+                nacos_naming=state["nacos_naming"],
+                center_longitude=destination_coords["longitude"],
+                center_latitude=destination_coords["latitude"],
+                radius_km=12.0,
+                limit=5,
+            )
+            hotel_details = [h.model_dump() for h in hotel_result.hotels]
+        except Exception as eh:
+            logger.error("Hotel search failed: %s", eh)
+            hotel_details = []
 
     # Create progress event
     progress_event = PlanningProgressEvent(
@@ -178,6 +250,7 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
         "destination_coords": destination_coords,
         "attraction_details": attraction_details,
         "daily_schedule": daily_schedule,
+        "hotel_details": hotel_details,
         "progress_percentage": 70,
         "events": [progress_event],
     }
@@ -225,6 +298,20 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
 
     attraction_details = state.get("attraction_details", {})
     daily_schedule = state.get("daily_schedule", {})
+    hotel_details: list[dict[str, Any]] = state.get("hotel_details", [])
+
+    # Assign which hotel for each night: short trip 1 hotel, longer trip can use multiple
+    def _hotel_for_night(night_index: int) -> dict[str, Any] | None:
+        if not hotel_details:
+            return None
+        if len(hotel_details) == 1:
+            return hotel_details[0]
+        # Spread multiple hotels over nights (e.g. 6 days -> hotel0 for nights 0,1,2 and hotel1 for 3,4,5)
+        nights_per_hotel = max(
+            1, (num_days + len(hotel_details) - 1) // len(hotel_details)
+        )
+        hotel_idx = min(night_index // nights_per_hotel, len(hotel_details) - 1)
+        return hotel_details[hotel_idx]
 
     # Build day plans with coordinates
     day_plans: list[DayPlan] = []
@@ -289,6 +376,37 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
             )
             formatted_activities.append(activity)
 
+        # Append accommodation for this night (hotel near attractions center)
+        hotel_for_night = _hotel_for_night(day_num - 1)
+        if hotel_for_night:
+            hotel_name = hotel_for_night.get("name", "酒店")
+            stay_label = (
+                "入住: " + hotel_name if day_num == 1 else "当晚住宿: " + hotel_name
+            )
+            price_per_night = hotel_for_night.get("estimated_price") or 0.0
+            formatted_activities.append(
+                Activity(
+                    id=str(uuid.uuid4()),
+                    name=stay_label,
+                    description=hotel_for_night.get("introduction", "")
+                    or hotel_for_night.get("address", ""),
+                    start_time="20:00",
+                    end_time="08:00",
+                    location=ActivityLocation(
+                        name=hotel_name,
+                        latitude=hotel_for_night.get("latitude", 0.0),
+                        longitude=hotel_for_night.get("longitude", 0.0),
+                        address=hotel_for_night.get("address", ""),
+                    ),
+                    category="accommodation",
+                    estimated_cost=Cost(amount=price_per_night, currency="CNY"),
+                    kind="hotel_stay",
+                    hotel_id=hotel_for_night.get("id"),
+                )
+            )
+            total_cost += price_per_night
+            total_activities += 1
+
         day_plan = DayPlan(
             day_number=day_num,
             date=date,
@@ -322,10 +440,10 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         summary=summary,
     )
 
-    # Create final progress event
+    # Create progress event — 85% because markdown + conversation context follow
     progress_event = PlanningProgressEvent(
-        progress_percentage=100,
-        status_message=f"Your {num_days}-day trip to {state['destination']} is ready!",
+        progress_percentage=85,
+        status_message=f"Itinerary structure ready for {state['destination']}…",
         current_step=PlanningStep.FINALIZING,
         itinerary=itinerary,
     )
@@ -340,3 +458,49 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         "events": [progress_event],
         "error": None,
     }
+
+
+async def generate_markdown(state: PlanningState) -> dict[str, Any]:
+    """Step 3: Generate natural-language Markdown from the structured itinerary."""
+    logger.info("Generating Markdown itinerary content")
+
+    itinerary = state.get("itinerary")
+    if itinerary is None:
+        return {"markdown_content": "", "events": []}
+
+    itinerary_json = itinerary.model_dump_json(indent=2)
+
+    prompt = MARKDOWN_GENERATION_PROMPT.format(itinerary_json=itinerary_json)
+
+    try:
+        result = await chat_model.ainvoke(prompt)
+        markdown_content = str(result.content)
+    except Exception as e:
+        logger.error(f"Markdown generation failed: {e}")
+        markdown_content = _build_fallback_markdown(itinerary)
+
+    progress_event = PlanningProgressEvent(
+        progress_percentage=95,
+        status_message="生成行程文案中……",
+        current_step=PlanningStep.OPTIMIZING_ROUTE,
+        itinerary=None,
+    )
+
+    return {"markdown_content": markdown_content, "events": [progress_event]}
+
+
+def _build_fallback_markdown(itinerary: Itinerary) -> str:
+    """Build a simple Markdown fallback when LLM generation fails."""
+    lines: list[str] = [
+        f"# {itinerary.destination} 旅行计划",
+        f"\n**日期**: {itinerary.start_date} ~ {itinerary.end_date}\n",
+    ]
+    for day in itinerary.day_plans:
+        lines.append(f"## 第{day.day_number}天 ({day.date})\n")
+        for act in day.activities:
+            lines.append(
+                f"- **{act.start_time}-{act.end_time}** {act.name}  "
+                f"\n  {act.description}"
+            )
+        lines.append("")
+    return "\n".join(lines)

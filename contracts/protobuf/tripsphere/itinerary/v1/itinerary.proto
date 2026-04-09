@@ -2,13 +2,16 @@ syntax = "proto3";
 
 package tripsphere.itinerary.v1;
 
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "tripsphere/attraction/v1/attraction.proto";
 import "tripsphere/common/v1/date.proto";
+import "tripsphere/common/v1/map.proto";
 import "tripsphere/common/v1/money.proto";
 import "tripsphere/common/v1/timeofday.proto";
 import "tripsphere/hotel/v1/hotel.proto";
-import "tripsphere/poi/v1/poi.proto";
+import "tripsphere/poi/v1/types.proto";
 
 option go_package = "tripsphere/itinerary/v1";
 option java_multiple_files = true;
@@ -19,9 +22,17 @@ service ItineraryService {
 
   rpc GetItinerary(GetItineraryRequest) returns (GetItineraryResponse);
 
-  rpc ArchiveItinerary(ArchiveItineraryRequest) returns (ArchiveItineraryResponse);
-
   rpc ListUserItineraries(ListUserItinerariesRequest) returns (ListUserItinerariesResponse);
+
+  rpc DeleteItinerary(DeleteItineraryRequest) returns (DeleteItineraryResponse);
+
+  // Update the meta information, such as title, start_date, end_date, etc.
+  // Do not update the DayPlans and Activities through this method.
+  rpc UpdateItinerary(UpdateItineraryRequest) returns (UpdateItineraryResponse);
+
+  // Replace the full itinerary content including all day plans and activities.
+  // Used by the AI planner after bulk modifications to sync the complete state.
+  rpc ReplaceItinerary(ReplaceItineraryRequest) returns (ReplaceItineraryResponse);
 
   rpc AddDayPlan(AddDayPlanRequest) returns (AddDayPlanResponse);
 
@@ -42,6 +53,13 @@ enum ActivityKind {
   ACTIVITY_KIND_CUSTOM = 4;
 }
 
+// Summary statistics for a planned itinerary.
+message ItinerarySummary {
+  tripsphere.common.v1.Money total_estimated_cost = 1;
+  int32 total_activities = 2;
+  repeated string highlights = 3;
+}
+
 message Activity {
   string id = 1;
   ActivityKind kind = 2;
@@ -55,6 +73,12 @@ message Activity {
     tripsphere.hotel.v1.Hotel hotel = 9;
   }
   google.protobuf.Struct metadata = 10;
+  // GCJ02 coordinates for this activity (same semantics as POI.location).
+  tripsphere.common.v1.GeoPoint location = 11;
+  // Category label (e.g. "sightseeing", "dining", "shopping").
+  string category = 12;
+  // Structured address (same shape as POI.address).
+  tripsphere.common.v1.Address address = 13;
 }
 
 message DayPlan {
@@ -64,6 +88,8 @@ message DayPlan {
   repeated Activity activities = 4;
   string notes = 5;
   google.protobuf.Struct metadata = 6;
+  // 1-indexed day number within the itinerary.
+  int32 day_number = 7;
 }
 
 message Itinerary {
@@ -75,6 +101,16 @@ message Itinerary {
   tripsphere.common.v1.Date end_date = 6;
   repeated DayPlan day_plans = 7;
   google.protobuf.Struct metadata = 8;
+  // Plain-text destination name (e.g. "上海"). Populated when no POI record exists.
+  string destination_name = 9;
+  // AI-generated trip summary with totals and highlights.
+  ItinerarySummary summary = 10;
+  // AI-generated Markdown narrative.
+  string markdown_content = 11;
+  // Server-assigned creation timestamp (read-only).
+  google.protobuf.Timestamp created_at = 12;
+  // Server-assigned last-modified timestamp (read-only).
+  google.protobuf.Timestamp updated_at = 13;
 }
 
 message CreateItineraryRequest {
@@ -93,12 +129,6 @@ message GetItineraryResponse {
   Itinerary itinerary = 1;
 }
 
-message ArchiveItineraryRequest {
-  string id = 1;
-}
-
-message ArchiveItineraryResponse {}
-
 message ListUserItinerariesRequest {
   string user_id = 1;
   int32 page_size = 2;
@@ -114,21 +144,36 @@ message ListUserItinerariesResponse {
   string next_page_token = 2;
 }
 
+message DeleteItineraryRequest {
+  string id = 1;
+}
+
+message DeleteItineraryResponse {}
+
+message UpdateItineraryRequest {
+  Itinerary itinerary = 1;
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message UpdateItineraryResponse {
+  Itinerary itinerary = 1;
+}
+
+message ReplaceItineraryRequest {
+  string id = 1;
+  Itinerary itinerary = 2;
+}
+
+message ReplaceItineraryResponse {
+  Itinerary itinerary = 1;
+}
+
 message AddDayPlanRequest {
   string itinerary_id = 1;
   DayPlan day_plan = 2;
 }
 
 message AddDayPlanResponse {
-  DayPlan day_plan = 1;
-}
-
-message UpdateDayPlanRequest {
-  string itinerary_id = 1;
-  DayPlan day_plan = 2;
-}
-
-message UpdateDayPlanResponse {
   DayPlan day_plan = 1;
 }
 
@@ -143,7 +188,7 @@ message AddActivityRequest {
   string itinerary_id = 1;
   string day_plan_id = 2;
   Activity activity = 3;
-  // The index of the activity to be inserted before.
+  // The 0-based index of the activity to be inserted before.
   // If not set or out of range, the activity will be added to the end of the day plan.
   int32 insert_index = 4;
 }
@@ -153,9 +198,8 @@ message AddActivityResponse {
 }
 
 message UpdateActivityRequest {
-  string itinerary_id = 1;
-  string day_plan_id = 2;
-  Activity activity = 3;
+  Activity activity = 1;
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 message UpdateActivityResponse {

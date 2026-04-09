@@ -63,8 +63,8 @@ ENV JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar \
 USER nonroot
 
 # Default gRPC port
-EXPOSE 50056
+EXPOSE 50058
 # Default HTTP port
-EXPOSE 24217
+EXPOSE 24218
 
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

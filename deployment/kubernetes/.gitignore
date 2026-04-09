@@ -1,9 +1,0 @@
-# Ignore sensitive files
-manifests/02-secrets.yaml
-
-# Ignore generated files
-*.generated.yaml
-
-# Ignore local overrides
-*.local.yaml
-helm-values/*.local.yaml

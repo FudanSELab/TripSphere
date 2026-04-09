@@ -12,7 +12,7 @@ enum Reason {
   REASON_ERROR = 1;
 }
 
-// gRPC details structure
+// gRPC Status details structure
 message Details {
   Reason reason = 1;
   string message = 2;

@@ -1,0 +1,37 @@
+spring:
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      discovery:
+        namespace: public
+        group: DEFAULT_GROUP
+  datasource:
+    url: jdbc:postgresql://localhost:5432/order_db
+    username: postgres
+    password: fudanse
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+grpc:
+  server:
+    port: 50062
+    enable-reflection: true
+  client:
+    trip-product-service:
+      negotiationType: plaintext
+    trip-inventory-service:
+      negotiationType: plaintext
+
+logging:
+  level:
+    org.tripsphere.order: DEBUG

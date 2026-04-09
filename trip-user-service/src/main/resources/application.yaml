@@ -5,18 +5,17 @@ spring:
     nacos:
       server-addr: localhost:8848
   datasource:
-    url: jdbc:mysql://localhost:3306/user_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
+    url: jdbc:postgresql://localhost:5432/user_db
+    username: postgres
     password: fudanse
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
-          dialect: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
 server:
   port: 24217
@@ -27,5 +26,6 @@ grpc:
     enable-reflection: true
 
 jwt:
-  secret: MySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm
+  private-key: classpath:keys/private.pem
+  public-key: classpath:keys/public.pem
   expiration: 86400000

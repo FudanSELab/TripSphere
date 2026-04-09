@@ -9,9 +9,9 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	App   AppConfig
-	Nacos NacosConfig
-	MySQL MySQLConfig
+	App     AppConfig
+	Nacos   NacosConfig
+	MongoDB MongoDBConfig
 }
 
 // AppConfig holds application configuration
@@ -32,22 +32,13 @@ type NacosConfig struct {
 	Password  string
 }
 
-// MySQLConfig holds MySQL configuration
-type MySQLConfig struct {
-	Host            string
-	Port            int
-	User            string
-	Password        string
-	Database        string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-}
-
-// DSN returns the MySQL data source name
-func (c *MySQLConfig) DSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&loc=Local",
-		c.User, c.Password, c.Host, c.Port, c.Database)
+// MongoDBConfig holds MongoDB configuration
+type MongoDBConfig struct {
+	URI            string
+	Database       string
+	ConnectTimeout time.Duration
+	MaxPoolSize    uint64
+	MinPoolSize    uint64
 }
 
 // Load loads configuration from environment variables
@@ -60,11 +51,6 @@ func Load() (*Config, error) {
 	nacosPort, err := strconv.Atoi(getEnv("NACOS_PORT", "8848"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid NACOS_PORT: %w", err)
-	}
-
-	mysqlPort, err := strconv.Atoi(getEnv("MYSQL_PORT", "3306"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid MYSQL_PORT: %w", err)
 	}
 
 	return &Config{
@@ -82,15 +68,12 @@ func Load() (*Config, error) {
 			Username:  getEnv("NACOS_USERNAME", "nacos"),
 			Password:  getEnv("NACOS_PASSWORD", "nacos"),
 		},
-		MySQL: MySQLConfig{
-			Host:            getEnv("MYSQL_HOST", "localhost"),
-			Port:            mysqlPort,
-			User:            getEnv("MYSQL_USER", "root"),
-			Password:        getEnv("MYSQL_PASSWORD", ""),
-			Database:        getEnv("MYSQL_DATABASE", "review_db"),
-			MaxOpenConns:    getEnvAsInt("MYSQL_MAX_OPEN_CONN", 100),
-			MaxIdleConns:    getEnvAsInt("MYSQL_MAX_IDLE_CONN", 10),
-			ConnMaxLifetime: getEnvAsDuration("MYSQL_CONN_MAX_LIFETIME", time.Hour),
+		MongoDB: MongoDBConfig{
+			URI:            getEnv("MONGODB_URI", "mongodb://localhost:27017"),
+			Database:       getEnv("MONGODB_DATABASE", "review_db"),
+			ConnectTimeout: getEnvAsDuration("MONGODB_CONNECT_TIMEOUT", 10*time.Second),
+			MaxPoolSize:    getEnvAsUint64("MONGODB_MAX_POOL_SIZE", 100),
+			MinPoolSize:    getEnvAsUint64("MONGODB_MIN_POOL_SIZE", 10),
 		},
 	}, nil
 }
@@ -102,9 +85,9 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func getEnvAsInt(key string, defaultValue int) int {
+func getEnvAsUint64(key string, defaultValue uint64) uint64 {
 	if value := os.Getenv(key); value != "" {
-		if i, err := strconv.Atoi(value); err == nil {
+		if i, err := strconv.ParseUint(value, 10, 64); err == nil {
 			return i
 		}
 	}

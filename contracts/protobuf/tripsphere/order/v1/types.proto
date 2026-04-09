@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package tripsphere.order.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "tripsphere/common/v1/date.proto";
+import "tripsphere/common/v1/money.proto";
+
+option go_package = "tripsphere/order/v1";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.order.v1";
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING_PAYMENT = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_COMPLETED = 3;
+  ORDER_STATUS_CANCELLED = 4;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  ORDER_TYPE_ATTRACTION = 1;
+  ORDER_TYPE_HOTEL = 2;
+  ORDER_TYPE_FLIGHT = 3;
+  ORDER_TYPE_TRAIN = 4;
+}
+
+message Order {
+  string id = 1;
+  string order_no = 2;
+  string user_id = 3;
+  OrderStatus status = 4;
+  repeated OrderItem items = 5;
+  ContactInfo contact = 6;
+  tripsphere.common.v1.Money total_amount = 7;
+  OrderSource source = 8;
+  string cancel_reason = 9;
+  // Payment deadline. Order auto-cancels after this time.
+  google.protobuf.Timestamp expire_at = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+  google.protobuf.Timestamp paid_at = 13;
+  google.protobuf.Timestamp cancelled_at = 14;
+  OrderType type = 15;
+  // Hotel ID or attraction ID shared by all items in this order.
+  string resource_id = 16;
+}
+
+message OrderItem {
+  string id = 1;
+  string spu_id = 2;
+  string sku_id = 3;
+  // Snapshots captured at order creation time,
+  // so the order stays correct even if the SPU/SKU changes later.
+  string spu_name = 4;
+  string sku_name = 5;
+  // Visit date or hotel check-in date.
+  tripsphere.common.v1.Date date = 6;
+  // Hotel check-out date. Only set for hotel room item.
+  tripsphere.common.v1.Date end_date = 7;
+  int32 quantity = 8;
+  tripsphere.common.v1.Money unit_price = 9;
+  tripsphere.common.v1.Money subtotal = 10;
+  // The inventory lock that backs this item.
+  string inventory_lock_id = 11;
+  // Snapshot of the first SPU image at order creation time.
+  string spu_image = 12;
+  // Snapshot of the SPU description at order creation time.
+  string spu_description = 13;
+  // Hotel ID or attraction ID of the resource backing this item.
+  string resource_id = 14;
+  // Snapshot of SKU attributes at order creation time (e.g. {"passenger_type": "adult"}).
+  google.protobuf.Struct sku_attributes = 15;
+}
+
+message ContactInfo {
+  string name = 1;
+  string phone = 2;
+  string email = 3;
+}
+
+message OrderSource {
+  // Origin channel: "web", "app", "agent", etc.
+  string channel = 1;
+  // Set when the order is created by an AI agent.
+  string agent_id = 2;
+  // Conversation session that triggered this order.
+  string session_id = 3;
+}

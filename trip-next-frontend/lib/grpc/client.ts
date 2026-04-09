@@ -1,70 +1,71 @@
-import * as grpc from "@grpc/grpc-js";
+import "server-only";
 
-// Attraction
-import { AttractionServiceClient } from "@/lib/grpc/gen/tripsphere/attraction/v1/attraction";
+import { credentials, Metadata, type ChannelCredentials } from "@grpc/grpc-js";
+import { headers } from "next/headers";
+import { config } from "@/lib/env";
+import { UserServiceClient } from "./generated/tripsphere/user/v1/user";
+import { HotelServiceClient } from "./generated/tripsphere/hotel/v1/hotel";
+import { AttractionServiceClient } from "./generated/tripsphere/attraction/v1/attraction";
+import { ItineraryServiceClient } from "./generated/tripsphere/itinerary/v1/itinerary";
+import { PoiServiceClient } from "./generated/tripsphere/poi/v1/poi";
+import { OrderServiceClient } from "./generated/tripsphere/order/v1/order";
+import { ProductServiceClient } from "./generated/tripsphere/product/v1/product";
 
-// File
-import { FileServiceClient } from "@/lib/grpc/gen/tripsphere/file/v1/file";
+const clientCache = new Map<string, unknown>();
 
-// Hotel
-import { HotelServiceClient } from "@/lib/grpc/gen/tripsphere/hotel/v1/hotel";
-import { MetadataServiceClient as HotelMetadataServiceClient } from "@/lib/grpc/gen/tripsphere/hotel/v1/metadata";
-
-// Itinerary
-import { MetadataServiceClient as ItineraryMetadataServiceClient } from "@/lib/grpc/gen/tripsphere/itinerary/v1/metadata";
-
-// Note
-import { MetadataServiceClient as NoteMetadataServiceClient } from "@/lib/grpc/gen/tripsphere/note/v1/metadata";
-
-// Review
-import { ReviewServiceClient } from "@/lib/grpc/gen/tripsphere/review/v1/review";
-
-// User
-import { UserServiceClient } from "@/lib/grpc/gen/tripsphere/user/v1/user";
-
-// Use environment variables with Docker service names as defaults
-const AttractionUrl = process.env.GRPC_ATTRACTION_URL || "localhost:50053";
-const FileUrl = process.env.GRPC_FILE_URL || "localhost:50051";
-const HotelUrl = process.env.GRPC_HOTEL_URL || "localhost:50054";
-const ItineraryUrl = process.env.GRPC_ITINERARY_URL || "localhost:50052";
-const NoteUrl = process.env.GRPC_NOTE_URL || "localhost:50055";
-const ReviewUrl = process.env.GRPC_REVIEW_URL || "localhost:50057";
-const UserUrl = process.env.GRPC_USER_URL || "localhost:50056";
-
-export class GrpcClient {
-  private static instance: GrpcClient;
-
-  public attraction: AttractionServiceClient;
-  public file: FileServiceClient;
-  public hotel: HotelServiceClient;
-  public hotelMetadata: HotelMetadataServiceClient;
-  public itineraryMetadata: ItineraryMetadataServiceClient;
-  public noteMetadata: NoteMetadataServiceClient;
-  public review: ReviewServiceClient;
-  public user: UserServiceClient;
-
-  private constructor(credentials?: grpc.ChannelCredentials) {
-    const creds = credentials ?? grpc.credentials.createInsecure();
-
-    this.attraction = new AttractionServiceClient(AttractionUrl, creds);
-    this.file = new FileServiceClient(FileUrl, creds);
-    this.hotel = new HotelServiceClient(HotelUrl, creds);
-    this.hotelMetadata = new HotelMetadataServiceClient(HotelUrl, creds);
-    this.itineraryMetadata = new ItineraryMetadataServiceClient(
-      ItineraryUrl,
-      creds,
+function getGrpcClient<T>(
+  ClientConstructor: new (
+    address: string,
+    credentials: ChannelCredentials,
+  ) => T,
+  address: string,
+): T {
+  const key = `${ClientConstructor.name}@${address}`;
+  if (!clientCache.has(key)) {
+    clientCache.set(
+      key,
+      new ClientConstructor(address, credentials.createInsecure()),
     );
-    this.noteMetadata = new NoteMetadataServiceClient(NoteUrl, creds);
-    this.review = new ReviewServiceClient(ReviewUrl, creds);
-    this.user = new UserServiceClient(UserUrl, creds);
   }
-
-  public static getInstance(credentials?: grpc.ChannelCredentials): GrpcClient {
-    if (!GrpcClient.instance) {
-      GrpcClient.instance = new GrpcClient(credentials);
-    }
-    return GrpcClient.instance;
-  }
+  return clientCache.get(key) as T;
 }
 
-export const grpcClient = GrpcClient.getInstance();
+export function getUserService() {
+  return getGrpcClient(UserServiceClient, config.grpc.userService);
+}
+
+export function getHotelService() {
+  return getGrpcClient(HotelServiceClient, config.grpc.hotelService);
+}
+
+export function getAttractionService() {
+  return getGrpcClient(AttractionServiceClient, config.grpc.attractionService);
+}
+
+export function getItineraryService() {
+  return getGrpcClient(ItineraryServiceClient, config.grpc.itineraryService);
+}
+
+export function getPoiService() {
+  return getGrpcClient(PoiServiceClient, config.grpc.poiService);
+}
+
+export function getProductService() {
+  return getGrpcClient(ProductServiceClient, config.grpc.productService);
+}
+
+export function getOrderService() {
+  return getGrpcClient(OrderServiceClient, config.grpc.orderService);
+}
+
+export async function getAuthMetadata(): Promise<Metadata> {
+  const metadata = new Metadata();
+  const reqHeaders = await headers();
+  const authorization = reqHeaders.get("authorization");
+  const userId = reqHeaders.get("x-user-id");
+  const userRoles = reqHeaders.get("x-user-roles");
+  if (authorization) metadata.set("authorization", authorization);
+  if (userId) metadata.set("x-user-id", userId);
+  if (userRoles) metadata.set("x-user-roles", userRoles);
+  return metadata;
+}

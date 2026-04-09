@@ -12,7 +12,7 @@ tasks:
     sources:
       - ../contracts/protobuf/**/*.proto
     generates:
-      - clients/grpc/gen/**/*.go
+      - clients/grpc/generated/**/*.go
     cmds:
       - buf generate
 

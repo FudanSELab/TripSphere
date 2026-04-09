@@ -1,0 +1,32 @@
+[project]
+name = "initializer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "SenyuXie", email = "senyuxie@qq.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.3.3",
+    "pydantic-settings>=2.13.1",
+    "pymongo>=4.16.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.32.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.8,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pyright>=1.1.408",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]

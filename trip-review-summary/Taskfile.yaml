@@ -27,12 +27,13 @@ tasks:
     sources:
       - ../contracts/protobuf/**/*.proto
     generates:
-      - libs/tripsphere/src/**/*_pb2.py
-      - libs/tripsphere/src/**/*_pb2_grpc.py
+      - libs/tripsphere/src/tripsphere/**/*.py
+      - libs/tripsphere/src/tripsphere/**/*.pyi
+      - libs/tripsphere/src/tripsphere/py.typed
     cmds:
       - buf generate
-      - echo "" > libs/tripsphere/src/tripsphere/__init__.py
       - echo "" > libs/tripsphere/src/tripsphere/py.typed
+      - for dir in $(find libs/tripsphere/src/tripsphere -type d); do echo "" > "$dir/__init__.py"; done
 
   protoc-gen:
     desc: Generate protobuf and gRPC codes using grpcio-tools
@@ -40,7 +41,9 @@ tasks:
       - ../contracts/protobuf/**/*.proto
     generates:
       - libs/tripsphere/src/**/*_pb2.py
+      - libs/tripsphere/src/**/*_pb2.pyi
       - libs/tripsphere/src/**/*_pb2_grpc.py
+      - libs/tripsphere/src/**/*_pb2_grpc.pyi
     cmds:
       - for: sources
         cmd: |

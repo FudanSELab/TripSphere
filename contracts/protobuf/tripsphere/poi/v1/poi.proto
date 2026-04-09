@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package tripsphere.poi.v1;
 
-import "google/protobuf/field_mask.proto";
 import "tripsphere/common/v1/map.proto";
+import "tripsphere/poi/v1/types.proto";
 
 option go_package = "tripsphere/poi/v1";
 option java_multiple_files = true;
@@ -23,20 +23,6 @@ service PoiService {
   rpc BatchCreatePois(BatchCreatePoisRequest) returns (BatchCreatePoisResponse);
 }
 
-message Poi {
-  string id = 1;
-  string name = 2;
-  // GCJ02 coordinate system location
-  tripsphere.common.v1.GeoPoint location = 3;
-  tripsphere.common.v1.Address address = 4;
-  // China Area Division Code
-  string adcode = 5;
-  // Amap POI ID (optional)
-  string amap_id = 6;
-  repeated string categories = 7;
-  repeated string images = 8;
-}
-
 message GetPoiByIdRequest {
   string id = 1;
 }
@@ -48,8 +34,6 @@ message GetPoiByIdResponse {
 message BatchGetPoisRequest {
   // The IDs of POIs to retrieve.
   repeated string ids = 1;
-  // Field mask to specify which fields to return.
-  google.protobuf.FieldMask field_mask = 2;
 }
 
 message BatchGetPoisResponse {

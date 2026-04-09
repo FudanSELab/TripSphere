@@ -1,0 +1,20 @@
+spring:
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      discovery:
+        namespace: public
+        group: DEFAULT_GROUP
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://root:fudanse@localhost:27017}
+      database: ${SPRING_DATA_MONGODB_DATABASE:product_db}
+
+grpc:
+  server:
+    port: 50060
+    enable-reflection: true
+
+logging:
+  level:
+    org.tripsphere.product: DEBUG

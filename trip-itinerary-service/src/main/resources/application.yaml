@@ -4,10 +4,13 @@ spring:
   cloud:
     nacos:
       server-addr: localhost:8848
+      discovery:
+        metadata:
+          gRPC_port: ${grpc.server.port:50052}
   data:
     mongodb:
-      uri: mongodb://root:fudanse@localhost:27017
-      database: itinerary_db
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://root:fudanse@localhost:27017}
+      database: ${SPRING_DATA_MONGODB_DATABASE:itinerary_db}
 
 server:
   port: 24219

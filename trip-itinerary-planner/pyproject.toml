@@ -4,9 +4,9 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "a2a-sdk[http-server,telemetry]>=0.3.22",
+    "ag-ui-langgraph>=0.0.26",
     "grpcio>=1.75.1",
-    "langgraph>=0.2.55",
+    "langgraph>=0.3.25",
     "langchain>=0.3.14",
     "langchain-core>=0.3.28",
     "langchain-openai>=0.2.14",
@@ -16,10 +16,11 @@ dependencies = [
     "pydantic-settings>=2.11.0",
     "tripsphere>=0.1.0",
     "uvicorn>=0.40.0",
+    "fastapi>=0.135.1",
 ]
 
 [build-system]
-requires = ["uv_build>=0.9.1,<0.10.0"]
+requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
 
 [dependency-groups]

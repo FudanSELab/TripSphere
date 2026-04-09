@@ -14,14 +14,14 @@ tasks:
     sources:
       - ../contracts/protobuf/**/*.proto
     generates:
-      - lib/grpc/gen/**/*.ts
+      - lib/grpc/generated/**/*.ts
     cmds:
       - buf generate
 
   format:
     desc: Format code with Prettier
     cmds:
-      - bunx prettier . --write
+      - bunx --bun prettier . --write
 
   build:
     desc: Build Docker image

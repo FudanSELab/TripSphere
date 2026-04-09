@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package tripsphere.order.v1;
+
+import "tripsphere/common/v1/date.proto";
+import "tripsphere/order/v1/types.proto";
+
+option go_package = "tripsphere/order/v1";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.order.v1";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+
+  rpc GetOrderByNo(GetOrderByNoRequest) returns (GetOrderByNoResponse);
+
+  rpc ListUserOrders(ListUserOrdersRequest) returns (ListUserOrdersResponse);
+
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+
+  // Simulate payment confirmation.
+  // In production this would be triggered by a payment gateway callback.
+  rpc ConfirmPayment(ConfirmPaymentRequest) returns (ConfirmPaymentResponse);
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  // Idempotency key
+  string request_id = 2;
+  repeated CreateOrderItem items = 3;
+  ContactInfo contact = 4;
+  OrderSource source = 5;
+}
+
+message CreateOrderItem {
+  string sku_id = 1;
+  tripsphere.common.v1.Date date = 2;
+  // Hotel check-out date. Omit for non-hotel items.
+  tripsphere.common.v1.Date end_date = 3;
+  int32 quantity = 4;
+}
+
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+message GetOrderByNoRequest {
+  string order_no = 1;
+}
+
+message GetOrderByNoResponse {
+  Order order = 1;
+}
+
+message ListUserOrdersRequest {
+  string user_id = 1;
+  // Optional filter by status.
+  OrderStatus status = 2;
+  // Optional filter by order type
+  OrderType type = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListUserOrdersResponse {
+  repeated Order orders = 1;
+  string next_page_token = 2;
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+  string reason = 2;
+}
+
+message CancelOrderResponse {
+  Order order = 1;
+}
+
+message ConfirmPaymentRequest {
+  string order_id = 1;
+  // e.g. "alipay", "wechat", "mock"
+  string payment_method = 2;
+}
+
+message ConfirmPaymentResponse {
+  Order order = 1;
+}

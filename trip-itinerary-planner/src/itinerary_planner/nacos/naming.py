@@ -66,8 +66,13 @@ class NacosNaming:
 
     async def shutdown(self) -> None:
         if self.naming_service is None:
-            raise RuntimeError("Nacos naming service is not initialized")
-        await self.naming_service.shutdown()
+            return
+        try:
+            await self.naming_service.shutdown()
+        except TypeError:
+            # v2 nacos may await None internally
+            # (e.g. service_info_updater.stop()); avoid crashing teardown
+            pass
 
     async def get_service_instance(self, service_name: str) -> Instance:
         if self.naming_service is None:

@@ -5,6 +5,9 @@ Thumbs.db
 # Visual Studio Code
 .vscode/
 
+# Cursor
+.cursor/
+
 # JetBrains
 .idea/
 
@@ -13,3 +16,10 @@ Thumbs.db
 
 # Docker volumes
 volumes/
+
+# Agent Skills
+.agents/
+.claude/
+
+# Environment configuration
+.env

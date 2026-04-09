@@ -5,26 +5,28 @@ networks:
     name: tripsphere
     driver: bridge
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 configs:
   qdrant_config:
     content: |
       log_level: INFO
 
 services:
-  # ===================================================================
-  # TripSphere Services & Agents
-  # ===================================================================
-
-  # Attraction Service
   trip-attraction-service:
     build:
       context: trip-attraction-service
       dockerfile: Dockerfile
     image: tripsphere/trip-attraction-service:latest
     container_name: trip-attraction-service
+    logging: *default-logging
     ports:
-      - "24213:24213"  # HTTP
-      - "50053:50053"  # gRPC
+      - "24213:24213" # HTTP
+      - "50053:50053" # gRPC
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
@@ -36,20 +38,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Chat Service
   trip-chat-service:
     build:
       context: trip-chat-service
       dockerfile: Dockerfile
     image: tripsphere/trip-chat-service:latest
     container_name: trip-chat-service
+    logging: *default-logging
     ports:
-      - "24210:24210"  # HTTP
+      - "24210:24210" # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
       nacos:
@@ -62,25 +64,25 @@ services:
         condition: service_started
     healthcheck:
       test:
-        - "CMD" 
+        - "CMD"
         - "python"
         - "-c"
-        - "import urllib.request; urllib.request.urlopen('http://localhost:24210/health').read()"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:24210/api/v1/health').read()"
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     restart: unless-stopped
 
-  # File Service
   trip-file-service:
     build:
       context: trip-file-service
       dockerfile: Dockerfile
     image: tripsphere/trip-file-service:latest
     container_name: trip-file-service
+    logging: *default-logging
     ports:
-      - "50051:50051"  # gRPC
+      - "50051:50051" # gRPC
     environment:
       - APP_ENV=dev
       - APP_NAME=trip-file-service
@@ -98,26 +100,27 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      test: [ "CMD", "nc", "-z", "localhost", "50051" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     restart: unless-stopped
 
-  # Hotel Service
   trip-hotel-service:
     build:
       context: trip-hotel-service
       dockerfile: Dockerfile
     image: tripsphere/trip-hotel-service:latest
     container_name: trip-hotel-service
+    logging: *default-logging
     ports:
-      - "50054:50054"  # gRPC
-      - "24214:24214"  # HTTP
+      - "50054:50054" # gRPC
+      - "24214:24214" # HTTP
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       mongodb:
         condition: service_healthy
@@ -125,34 +128,61 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Itinerary Planner
+  trip-inventory-service:
+    build:
+      context: trip-inventory-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-inventory-service:latest
+    container_name: trip-inventory-service
+    logging: *default-logging
+    ports:
+      - "24221:24221" # HTTP
+      - "50061:50061" # gRPC
+    environment:
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - SPRING_DATA_REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   trip-itinerary-planner:
     build:
       context: trip-itinerary-planner
       dockerfile: Dockerfile
     image: tripsphere/trip-itinerary-planner:latest
     container_name: trip-itinerary-planner
+    logging: *default-logging
     ports:
       - "24215:24215"
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
       nacos:
         condition: service_healthy
     restart: unless-stopped
 
-  # Itinerary Service
   trip-itinerary-service:
     build:
       context: trip-itinerary-service
       dockerfile: Dockerfile
     image: tripsphere/trip-itinerary-service:latest
     container_name: trip-itinerary-service
+    logging: *default-logging
     ports:
-      - "24219:24219"  # HTTP
-      - "50052:50052"  # gRPC
+      - "24219:24219" # HTTP
+      - "50052:50052" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
@@ -160,76 +190,107 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Journey Assistant
-  trip-journey-assistant:
+  trip-order-assistant:
     build:
-      context: trip-journey-assistant
+      context: trip-order-assistant
       dockerfile: Dockerfile
-    image: tripsphere/trip-journey-assistant:latest
-    container_name: trip-journey-assistant
+    image: tripsphere/trip-order-assistant:latest
+    container_name: trip-order-assistant
+    logging: *default-logging
     ports:
-      - "24211:24211"  # HTTP
+      - "24211:24211" # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
       nacos:
         condition: service_healthy
     restart: unless-stopped
 
-  # Next.js Frontend
   trip-next-frontend:
     build:
       context: trip-next-frontend
       dockerfile: Dockerfile
     image: tripsphere/trip-next-frontend:latest
     container_name: trip-next-frontend
+    logging: *default-logging
     ports:
-      - "3000:3000"  # HTTP
+      - "3000:3000" # HTTP
     environment:
-      - NODE_ENV=production
-      - GRPC_ATTRACTION_URL=trip-attraction-service:50053
-      - HTTP_CHAT_URL=http://trip-chat-service:24210
-      - HTTP_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215
-      - GRPC_REVIEW_URL=trip-review-service:50057
-      - GRPC_USER_URL=trip-user-service:50056
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - COPILOT_DEFAULT_AGENT_URL=http://trip-chat-service:24210/
+      - COPILOT_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215/
+      - ATTRACTION_SERVICE_ADDR=trip-attraction-service:50053
+      - HOTEL_SERVICE_ADDR=trip-hotel-service:50054
+      - USER_SERVICE_ADDR=trip-user-service:50056
+      - ITINERARY_SERVICE_ADDR=trip-itinerary-service:50052
+      - ORDER_SERVICE_ADDR=trip-order-service:50062
+      - PRODUCT_SERVICE_ADDR=trip-product-service:50060
     depends_on:
       trip-chat-service:
         condition: service_healthy
-      trip-itinerary-planner:
-        condition: service_started
-      trip-review-service:
+      trip-hotel-service:
         condition: service_started
       trip-user-service:
         condition: service_started
     restart: unless-stopped
 
-  # Note Service
   trip-note-service:
     build:
       context: trip-note-service
       dockerfile: Dockerfile
     image: tripsphere/trip-note-service:latest
     container_name: trip-note-service
+    logging: *default-logging
     ports:
-      - "24216:24216"  # HTTP
-      - "50055:50055"  # gRPC
+      - "24216:24216" # HTTP
+      - "50055:50055" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
     restart: unless-stopped
 
-  # POI Service
+  trip-order-service:
+    build:
+      context: trip-order-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-order-service:latest
+    container_name: trip-order-service
+    logging: *default-logging
+    ports:
+      - "24222:24222" # HTTP
+      - "50062:50062" # gRPC
+    environment:
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - SPRING_DATA_REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   trip-poi-service:
     build:
       context: trip-poi-service
       dockerfile: Dockerfile
     image: tripsphere/trip-poi-service:latest
     container_name: trip-poi-service
+    logging: *default-logging
     ports:
-      - "24218:24218"  # HTTP
-      - "50058:50058"  # gRPC
+      - "24218:24218" # HTTP
+      - "50058:50058" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
       nacos:
         condition: service_healthy
@@ -237,15 +298,35 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Review Service
+  trip-product-service:
+    build:
+      context: trip-product-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-product-service:latest
+    container_name: trip-product-service
+    logging: *default-logging
+    ports:
+      - "24220:24220" # HTTP
+      - "50060:50060" # gRPC
+    environment:
+      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
   trip-review-service:
     build:
       context: trip-review-service
       dockerfile: Dockerfile
     image: tripsphere/trip-review-service:latest
     container_name: trip-review-service
+    logging: *default-logging
     ports:
-      - "50057:50057"  # gRPC
+      - "50057:50057" # gRPC
     environment:
       - APP_ENV=dev
       - APP_NAME=trip-review-service
@@ -256,45 +337,38 @@ services:
       - NACOS_GROUP=DEFAULT_GROUP
       - NACOS_USERNAME=nacos
       - NACOS_PASSWORD=nacos
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=fudanse
-      - MYSQL_MAX_OPEN_CONN=100
-      - MYSQL_MAX_IDLE_CONN=10
-      - MYSQL_CONN_MAX_LIFETIME=1h
       - ROCKETMQ_ENDPOINT=rmq-proxy:8081
     depends_on:
       nacos:
         condition: service_healthy
-      mysql:
+      mongodb:
         condition: service_healthy
       rmq-proxy:
         condition: service_started
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50057"]
+      test: [ "CMD", "nc", "-z", "localhost", "50057" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     restart: unless-stopped
 
-  # Review Summary
   trip-review-summary:
     build:
       context: trip-review-summary
       dockerfile: Dockerfile
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary
+    logging: *default-logging
     ports:
-      - "24212:24212"  # HTTP
+      - "24212:24212" # HTTP
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=fudanse@fudan.edu.cn
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     command:
       - uvicorn
@@ -311,33 +385,10 @@ services:
       higress:
         condition: service_started
 
-  # Review Summary RocketMQ Consumer
-  trip-review-summary-consumer:
-    image: tripsphere/trip-review-summary:latest
-    container_name: trip-review-summary-consumer
-    environment:
-      - OTEL_SERVICE_NAME=trip-review-summary-consumer
-      - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
-      - QDRANT_URL=http://qdrant:6333
-      - ROCKETMQ_ENDPOINTS=rmq-proxy:8081
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
-    command:
-      - python
-      - -m
-      - review_summary.rocketmq
-    depends_on:
-      rmq-proxy:
-        condition: service_started
-      rmq-broker:
-        condition: service_started
-      qdrant:
-        condition: service_started
-
-  # Review Summary Celery Worker
   trip-review-summary-worker:
     image: tripsphere/trip-review-summary:latest
     container_name: trip-review-summary-worker
+    logging: *default-logging
     environment:
       - OTEL_SERVICE_NAME=trip-review-summary-worker
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
@@ -350,7 +401,7 @@ services:
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     command:
       - celery
@@ -369,38 +420,32 @@ services:
       neo4j:
         condition: service_started
 
-  # User Service
   trip-user-service:
     build:
       context: trip-user-service
       dockerfile: Dockerfile
     image: tripsphere/trip-user-service:latest
     container_name: trip-user-service
+    logging: *default-logging
     ports:
-      - "50056:50056"  # gRPC
-      - "24217:24217"  # HTTP
+      - "50056:50056" # gRPC
+      - "24217:24217" # HTTP
     environment:
-      - "SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/user_db?\
-        useUnicode=true&characterEncoding=utf8&useSSL=false&\
-        serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
-      - SPRING_DATASOURCE_USERNAME=root
+      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
+      - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       nacos:
         condition: service_healthy
     restart: unless-stopped
 
-  # ===================================================================
-  # TripSphere Middlewares & Databases
-  # ===================================================================
-
-  # Nacos
   nacos:
     image: nacos/nacos-server:v3.1.1
     container_name: nacos
+    logging: *default-logging
     environment:
       - PREFER_HOST_MODE=hostname
       - MODE=standalone
@@ -408,11 +453,11 @@ services:
       - NACOS_AUTH_IDENTITY_VALUE=security
       - NACOS_AUTH_TOKEN=VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=
     ports:
-      - "18080:8080"  # Console
+      - "18080:8080" # Console
       - "8848:8848"
       - "9848:9848"
     healthcheck:
-      test: 
+      test:
         - "CMD"
         - "curl"
         - "-f"
@@ -422,53 +467,50 @@ services:
       retries: 20
       start_period: 90s
 
-  # OpenTelemetry Collector
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.144.0
     container_name: otel-collector
+    logging: *default-logging
     volumes:
-      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml
+      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml
     ports:
-      - "4317:4317"  # OTLP gRPC receiver
-      - "4318:4318"  # OTLP HTTP receiver
-      - "8889:8889"  # Prometheus exporter metrics
-    depends_on:
-      tempo:
-        condition: service_started
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "8889:8889" # Prometheus exporter metrics
 
-  # Tempo
   tempo:
     image: grafana/tempo:2.8.3
     container_name: tempo
-    command: ["-config.file=/etc/tempo.yaml"]
-    user: root  # r/w permissions to the mounted directory
+    logging: *default-logging
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    user: root # r/w permissions to the mounted directory
     volumes:
-      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml
       - ./volumes/tempo:/var/tempo
     ports:
-      - "3200:3200"  # Tempo HTTP API
-      - "4317"       # OTLP gRPC receiver (internal only)
+      - "3200:3200" # Tempo HTTP API
+      - "4317" # OTLP gRPC receiver (internal only)
     restart: unless-stopped
 
-  # Prometheus
   prometheus:
     image: prom/prometheus:v3.9.1
     container_name: prometheus
+    logging: *default-logging
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
       - ./volumes/prometheus:/prometheus
     ports:
       - "9090:9090"
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--config.file=/etc/prometheus/prometheus.yaml'
       - '--web.enable-lifecycle'
       - '--storage.tsdb.path=/prometheus'
 
-  # Grafana
   grafana:
     image: grafana/grafana:12.3.1
     container_name: grafana
-    user: root  # r/w permissions to the mounted directory
+    logging: *default-logging
+    user: root # r/w permissions to the mounted directory
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -476,30 +518,30 @@ services:
     volumes:
       - ./volumes/grafana:/var/lib/grafana
     ports:
-      - "13000:3000"  # Use port 13000 to avoid conflict with frontend
+      - "13000:3000" # Use port 13000 to avoid conflict with frontend
     depends_on:
       tempo:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     restart: unless-stopped
 
-  # RocketMQ Name Server
   rmq-namesrv:
     image: apache/rocketmq:5.3.2
     container_name: rmq-namesrv
+    logging: *default-logging
     ports:
       - "9876:9876"
     command: sh mqnamesrv
 
-  # RocketMQ Broker
   rmq-broker:
     image: apache/rocketmq:5.3.2
     container_name: rmq-broker
+    logging: *default-logging
     ports:
       - "10909:10909"
       - "10911:10911"
@@ -511,10 +553,10 @@ services:
         condition: service_started
     command: sh mqbroker
 
-  # RocketMQ Proxy
   rmq-proxy:
     image: apache/rocketmq:5.3.2
     container_name: rmq-proxy
+    logging: *default-logging
     depends_on:
       rmq-broker:
         condition: service_started
@@ -528,10 +570,10 @@ services:
       - NAMESRV_ADDR=rmq-namesrv:9876
     command: sh mqproxy
 
-  # RocketMQ Dashboard
   rmq-dashboard:
     image: apacherocketmq/rocketmq-dashboard:latest
     container_name: rmq-dashboard
+    logging: *default-logging
     ports:
       - "8082:8082"
     environment:
@@ -540,11 +582,11 @@ services:
       rmq-namesrv:
         condition: service_started
 
-  # MongoDB
   mongodb:
     image: mongodb/mongodb-community-server:8.0-ubi8
     container_name: mongodb
-    user: root  # r/w permissions to the mounted directory
+    logging: *default-logging
+    user: root # r/w permissions to the mounted directory
     environment:
       MONGODB_INITDB_ROOT_USERNAME: root
       MONGODB_INITDB_ROOT_PASSWORD: fudanse
@@ -553,39 +595,34 @@ services:
     volumes:
       - ./volumes/mongodb:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
-  # MySQL
-  mysql:
-    image: mysql:8.4.7
-    container_name: mysql
+  postgres:
+    image: postgres:16.13-alpine
+    container_name: postgres
+    logging: *default-logging
     environment:
-      MYSQL_ROOT_PASSWORD: fudanse
-      TZ: Asia/Shanghai
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --default-time-zone=+08:00
+      POSTGRES_PASSWORD: fudanse
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - ./volumes/mysql:/var/lib/mysql
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./volumes/postgres:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: mysql --user=root --password=fudanse --execute="SHOW DATABASES;"
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 30s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
-  # MinIO
   minio:
     container_name: minio
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    logging: *default-logging
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -596,16 +633,16 @@ services:
       - ./volumes/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
       retries: 3
 
-  # Qdrant
   qdrant:
     image: qdrant/qdrant:v1.16
     restart: always
     container_name: qdrant
+    logging: *default-logging
     ports:
       - "6333:6333"
       - "6334:6334"
@@ -619,10 +656,10 @@ services:
     volumes:
       - ./volumes/qdrant:/qdrant/storage
 
-  # Neo4j
   neo4j:
     image: neo4j:5.26.19
     container_name: neo4j
+    logging: *default-logging
     volumes:
       - ./volumes/neo4j/logs:/logs
       - ./volumes/neo4j/config:/config
@@ -636,30 +673,31 @@ services:
       - "7687:7687"
     restart: always
 
-  # Redis
   redis:
     image: redis:8.4
     container_name: redis
+    logging: *default-logging
     volumes:
       - ./volumes/redis/data:/data
     ports:
       - "6379:6379"
     restart: "always"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
 
-  # Higress
   higress:
-    image: |
-      higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
+    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.11
     container_name: higress
+    logging: *default-logging
+    environment:
+      - O11Y=on
     ports:
-      - "8001:8001"  # Console
-      - "28080:8080"  # HTTP
-      - "8443:8443"  # HTTPS
+      - "8001:8001" # Console
+      - "28080:8080" # HTTP
+      - "8443:8443" # HTTPS
     volumes:
-      - ./higress:/etc/higress/config:ro
+      - ./volumes/higress:/data
     restart: unless-stopped

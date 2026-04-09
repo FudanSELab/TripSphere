@@ -9,9 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	pd "trip-review-service/api/grpc/gen/tripsphere/review/v1"
+	pb "trip-review-service/api/grpc/generated/tripsphere/review/v1"
 	"trip-review-service/internal/domain"
 	domainmock "trip-review-service/internal/domain/mock"
 )
@@ -20,7 +21,7 @@ import (
 // Test Helpers
 // ============================================================
 
-func setupTest(t *testing.T) (*ReviewService, *domainmock.MockReviewRepository) {
+func setupTest(_ *testing.T) (*ReviewService, *domainmock.MockReviewRepository) {
 	mockRepo := domainmock.NewMockReviewRepository()
 	service := NewReviewService(mockRepo)
 	return service, mockRepo
@@ -34,6 +35,47 @@ func assertGRPCErrorCode(t *testing.T, err error, expectedCode codes.Code) {
 	assert.Equal(t, expectedCode, st.Code())
 }
 
+// contextWithUserID creates a context with user ID in metadata
+func contextWithUserID(userID string) context.Context {
+	md := metadata.Pairs("x-user-id", userID)
+	return metadata.NewIncomingContext(context.Background(), md)
+}
+
+// ============================================================
+// extractUserID Tests
+// ============================================================
+
+func TestExtractUserID(t *testing.T) {
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		expectedUserID string
+	}{
+		{
+			name:           "with user id in metadata",
+			ctx:            contextWithUserID("user-123"),
+			expectedUserID: "user-123",
+		},
+		{
+			name:           "without metadata",
+			ctx:            context.Background(),
+			expectedUserID: "",
+		},
+		{
+			name:           "with empty metadata",
+			ctx:            metadata.NewIncomingContext(context.Background(), metadata.MD{}),
+			expectedUserID: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userID := extractUserID(tt.ctx)
+			assert.Equal(t, tt.expectedUserID, userID)
+		})
+	}
+}
+
 // ============================================================
 // CreateReview Tests
 // ============================================================
@@ -41,67 +83,86 @@ func assertGRPCErrorCode(t *testing.T, err error, expectedCode codes.Code) {
 func TestCreateReview(t *testing.T) {
 	tests := []struct {
 		name          string
-		request       *pd.CreateReviewRequest
+		request       *pb.CreateReviewRequest
 		setupMock     func(*domainmock.MockReviewRepository)
 		expectedCode  codes.Code
 		expectedError bool
-		checkResponse func(*testing.T, *pd.CreateReviewResponse)
+		checkResponse func(*testing.T, *pb.CreateReviewResponse)
 	}{
 		{
 			name: "successfully create review",
-			request: &pd.CreateReviewRequest{
-				UserId:     "user-123",
-				TargetId:   "hotel-456",
-				TargetType: "hotel",
-				Rating:     5,
-				Text:       "Great hotel!",
-				Images:     []string{"img1.jpg", "img2.jpg"},
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "user-123",
+					EntityId:   "hotel-456",
+					EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+					Rating:     4,
+					Content:    "Great hotel!",
+					Images:     []string{"img1.jpg", "img2.jpg"},
+					Dimensions: map[string]uint32{"view": 4, "service": 5},
+				},
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
 				m.On("Create", mock.Anything, mock.MatchedBy(func(r *domain.Review) bool {
 					return r.UserID == "user-123" &&
-						r.TargetID == "hotel-456" &&
-						r.TargetType == domain.ReviewTargetHotel &&
-						r.Rating == 5
+						r.EntityID == "hotel-456" &&
+						r.EntityType == domain.EntityTypeHotel &&
+						r.Rating == 4
 				})).Return(nil)
 			},
 			expectedError: false,
-			checkResponse: func(t *testing.T, resp *pd.CreateReviewResponse) {
-				assert.True(t, resp.Status)
-				assert.NotEmpty(t, resp.Id)
+			checkResponse: func(t *testing.T, resp *pb.CreateReviewResponse) {
+				assert.NotNil(t, resp.Review)
+				assert.NotEmpty(t, resp.Review.Id)
+				assert.Equal(t, "user-123", resp.Review.UserId)
 			},
+		},
+		{
+			name: "nil review",
+			request: &pb.CreateReviewRequest{
+				Review: nil,
+			},
+			setupMock:     func(m *domainmock.MockReviewRepository) {},
+			expectedCode:  codes.InvalidArgument,
+			expectedError: true,
 		},
 		{
 			name: "empty user ID",
-			request: &pd.CreateReviewRequest{
-				UserId:     "",
-				TargetId:   "hotel-456",
-				TargetType: "hotel",
-				Rating:     5,
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "",
+					EntityId:   "hotel-456",
+					EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+					Rating:     4,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
 			expectedError: true,
 		},
 		{
-			name: "empty target ID",
-			request: &pd.CreateReviewRequest{
-				UserId:     "user-123",
-				TargetId:   "",
-				TargetType: "hotel",
-				Rating:     5,
+			name: "empty entity ID",
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "user-123",
+					EntityId:   "",
+					EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+					Rating:     4,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
 			expectedError: true,
 		},
 		{
-			name: "empty target type",
-			request: &pd.CreateReviewRequest{
-				UserId:     "user-123",
-				TargetId:   "hotel-456",
-				TargetType: "",
-				Rating:     5,
+			name: "unspecified entity type",
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "user-123",
+					EntityId:   "hotel-456",
+					EntityType: pb.EntityType_ENTITY_TYPE_UNSPECIFIED,
+					Rating:     4,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
@@ -109,11 +170,13 @@ func TestCreateReview(t *testing.T) {
 		},
 		{
 			name: "rating less than 1",
-			request: &pd.CreateReviewRequest{
-				UserId:     "user-123",
-				TargetId:   "hotel-456",
-				TargetType: "hotel",
-				Rating:     0,
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "user-123",
+					EntityId:   "hotel-456",
+					EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+					Rating:     0,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
@@ -121,11 +184,13 @@ func TestCreateReview(t *testing.T) {
 		},
 		{
 			name: "rating greater than 5",
-			request: &pd.CreateReviewRequest{
-				UserId:     "user-123",
-				TargetId:   "hotel-456",
-				TargetType: "hotel",
-				Rating:     6,
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "user-123",
+					EntityId:   "hotel-456",
+					EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+					Rating:     6,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
@@ -133,11 +198,13 @@ func TestCreateReview(t *testing.T) {
 		},
 		{
 			name: "database error",
-			request: &pd.CreateReviewRequest{
-				UserId:     "user-123",
-				TargetId:   "hotel-456",
-				TargetType: "hotel",
-				Rating:     5,
+			request: &pb.CreateReviewRequest{
+				Review: &pb.Review{
+					UserId:     "user-123",
+					EntityId:   "hotel-456",
+					EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+					Rating:     4,
+				},
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
 				m.On("Create", mock.Anything, mock.Anything).Return(errors.New("database error"))
@@ -175,22 +242,37 @@ func TestCreateReview(t *testing.T) {
 // ============================================================
 
 func TestUpdateReview(t *testing.T) {
+	now := time.Now()
+	existingReview := &domain.Review{
+		ID:         "review-123",
+		UserID:     "user-123",
+		EntityType: domain.EntityTypeHotel,
+		EntityID:   "hotel-456",
+		Rating:     3,
+		Content:    "Original content",
+		CreatedAt:  now.Add(-time.Hour),
+		UpdatedAt:  now.Add(-time.Hour),
+	}
+
 	tests := []struct {
 		name          string
-		request       *pd.UpdateReviewRequest
+		request       *pb.UpdateReviewRequest
 		setupMock     func(*domainmock.MockReviewRepository)
 		expectedCode  codes.Code
 		expectedError bool
 	}{
 		{
 			name: "successfully update review",
-			request: &pd.UpdateReviewRequest{
-				Id:     "review-123",
-				Rating: 4,
-				Text:   "Updated review",
-				Images: []string{"new-img.jpg"},
+			request: &pb.UpdateReviewRequest{
+				Review: &pb.Review{
+					Id:      "review-123",
+					Rating:  4,
+					Content: "Updated content",
+					Images:  []string{"new-img.jpg"},
+				},
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
+				m.On("GetByID", mock.Anything, "review-123").Return(existingReview, nil)
 				m.On("Update", mock.Anything, mock.MatchedBy(func(r *domain.Review) bool {
 					return r.ID == "review-123" && r.Rating == 4
 				})).Return(nil)
@@ -198,10 +280,21 @@ func TestUpdateReview(t *testing.T) {
 			expectedError: false,
 		},
 		{
+			name: "nil review",
+			request: &pb.UpdateReviewRequest{
+				Review: nil,
+			},
+			setupMock:     func(m *domainmock.MockReviewRepository) {},
+			expectedCode:  codes.InvalidArgument,
+			expectedError: true,
+		},
+		{
 			name: "empty review ID",
-			request: &pd.UpdateReviewRequest{
-				Id:     "",
-				Rating: 4,
+			request: &pb.UpdateReviewRequest{
+				Review: &pb.Review{
+					Id:     "",
+					Rating: 4,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
@@ -209,9 +302,11 @@ func TestUpdateReview(t *testing.T) {
 		},
 		{
 			name: "invalid rating - less than 1",
-			request: &pd.UpdateReviewRequest{
-				Id:     "review-123",
-				Rating: 0,
+			request: &pb.UpdateReviewRequest{
+				Review: &pb.Review{
+					Id:     "review-123",
+					Rating: 0,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
@@ -219,9 +314,11 @@ func TestUpdateReview(t *testing.T) {
 		},
 		{
 			name: "invalid rating - greater than 5",
-			request: &pd.UpdateReviewRequest{
-				Id:     "review-123",
-				Rating: 6,
+			request: &pb.UpdateReviewRequest{
+				Review: &pb.Review{
+					Id:     "review-123",
+					Rating: 6,
+				},
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
@@ -229,12 +326,28 @@ func TestUpdateReview(t *testing.T) {
 		},
 		{
 			name: "review not found",
-			request: &pd.UpdateReviewRequest{
-				Id:     "non-existent",
-				Rating: 4,
+			request: &pb.UpdateReviewRequest{
+				Review: &pb.Review{
+					Id:     "non-existent",
+					Rating: 4,
+				},
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("review not found or permission denied"))
+				m.On("GetByID", mock.Anything, "non-existent").Return(nil, nil)
+			},
+			expectedCode:  codes.NotFound,
+			expectedError: true,
+		},
+		{
+			name: "database error on get",
+			request: &pb.UpdateReviewRequest{
+				Review: &pb.Review{
+					Id:     "review-123",
+					Rating: 4,
+				},
+			},
+			setupMock: func(m *domainmock.MockReviewRepository) {
+				m.On("GetByID", mock.Anything, "review-123").Return(nil, errors.New("database error"))
 			},
 			expectedCode:  codes.Internal,
 			expectedError: true,
@@ -253,7 +366,7 @@ func TestUpdateReview(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, resp)
-				assert.True(t, resp.Status)
+				assert.NotNil(t, resp.Review)
 			}
 
 			mockRepo.AssertExpectations(t)
@@ -268,14 +381,14 @@ func TestUpdateReview(t *testing.T) {
 func TestDeleteReview(t *testing.T) {
 	tests := []struct {
 		name          string
-		request       *pd.DeleteReviewRequest
+		request       *pb.DeleteReviewRequest
 		setupMock     func(*domainmock.MockReviewRepository)
 		expectedCode  codes.Code
 		expectedError bool
 	}{
 		{
 			name: "successfully delete review",
-			request: &pd.DeleteReviewRequest{
+			request: &pb.DeleteReviewRequest{
 				Id: "review-123",
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
@@ -285,7 +398,7 @@ func TestDeleteReview(t *testing.T) {
 		},
 		{
 			name: "empty review ID",
-			request: &pd.DeleteReviewRequest{
+			request: &pb.DeleteReviewRequest{
 				Id: "",
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
@@ -294,11 +407,22 @@ func TestDeleteReview(t *testing.T) {
 		},
 		{
 			name: "review not found",
-			request: &pd.DeleteReviewRequest{
+			request: &pb.DeleteReviewRequest{
 				Id: "non-existent",
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("Delete", mock.Anything, "non-existent").Return(errors.New("review not found"))
+				m.On("Delete", mock.Anything, "non-existent").Return(domain.ErrReviewNotFound)
+			},
+			expectedCode:  codes.NotFound,
+			expectedError: true,
+		},
+		{
+			name: "database error",
+			request: &pb.DeleteReviewRequest{
+				Id: "review-123",
+			},
+			setupMock: func(m *domainmock.MockReviewRepository) {
+				m.On("Delete", mock.Anything, "review-123").Return(errors.New("database error"))
 			},
 			expectedCode:  codes.Internal,
 			expectedError: true,
@@ -325,109 +449,188 @@ func TestDeleteReview(t *testing.T) {
 }
 
 // ============================================================
-// GetReviewByTargetID Tests
+// ListReviewsByEntity Tests
 // ============================================================
 
-func TestGetReviewByTargetID(t *testing.T) {
+func TestListReviewsByEntity(t *testing.T) {
 	now := time.Now()
-	sampleReviews := []domain.Review{
+
+	userReview := &domain.Review{
+		ID:         "user-review-1",
+		UserID:     "current-user",
+		EntityType: domain.EntityTypeHotel,
+		EntityID:   "hotel-123",
+		Rating:     4,
+		Content:    "My review",
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	otherReviews := []domain.Review{
 		{
 			ID:         "review-1",
-			UserID:     "user-1",
-			TargetType: domain.ReviewTargetHotel,
-			TargetID:   "hotel-123",
-			Rating:     5,
-			Text:       "Excellent!",
-			Images:     []string{"img1.jpg"},
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		},
-		{
-			ID:         "review-2",
-			UserID:     "user-2",
-			TargetType: domain.ReviewTargetHotel,
-			TargetID:   "hotel-123",
+			UserID:     "other-user-1",
+			EntityType: domain.EntityTypeHotel,
+			EntityID:   "hotel-123",
 			Rating:     4,
-			Text:       "Good",
+			Content:    "Great!",
 			CreatedAt:  now.Add(-time.Hour),
 			UpdatedAt:  now.Add(-time.Hour),
 		},
+		{
+			ID:         "review-2",
+			UserID:     "other-user-2",
+			EntityType: domain.EntityTypeHotel,
+			EntityID:   "hotel-123",
+			Rating:     3,
+			Content:    "Good",
+			CreatedAt:  now.Add(-2 * time.Hour),
+			UpdatedAt:  now.Add(-2 * time.Hour),
+		},
 	}
 
 	tests := []struct {
-		name           string
-		request        *pd.GetReviewByTargetIDRequest
-		setupMock      func(*domainmock.MockReviewRepository)
-		expectedCode   codes.Code
-		expectedError  bool
-		expectedLength int
+		name              string
+		ctx               context.Context
+		request           *pb.ListReviewsByEntityRequest
+		setupMock         func(*domainmock.MockReviewRepository)
+		expectedCode      codes.Code
+		expectedError     bool
+		expectedLength    int
+		expectUserReview  bool
+		expectedNextToken string
 	}{
 		{
-			name: "successfully get review list",
-			request: &pd.GetReviewByTargetIDRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
+			name: "first page with logged in user - returns user_review separately",
+			ctx:  contextWithUserID("current-user"),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
 				PageSize:   10,
-				PageNumber: 1,
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTarget", mock.Anything, domain.ReviewTargetType("hotel"), "hotel-123", int64(0), int64(10)).
-					Return(sampleReviews, nil)
+				m.On("GetByEntityAndUser", mock.Anything, domain.EntityTypeHotel, "hotel-123", "current-user").
+					Return(userReview, nil)
+				m.On("ListByEntity", mock.Anything, mock.MatchedBy(func(opts domain.ListReviewsOptions) bool {
+					return opts.ExcludeUserID == "current-user"
+				})).Return(&domain.ListReviewsResult{
+					Reviews:       otherReviews,
+					NextPageToken: "next-token",
+				}, nil)
 			},
-			expectedError:  false,
-			expectedLength: 2,
+			expectedError:     false,
+			expectedLength:    2,
+			expectUserReview:  true,
+			expectedNextToken: "next-token",
 		},
 		{
-			name: "use default pagination params",
-			request: &pd.GetReviewByTargetIDRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
-				PageSize:   0, // should default to 10
-				PageNumber: 0, // should default to 1
+			name: "first page with logged in user - user has no review",
+			ctx:  contextWithUserID("new-user"),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+				PageSize:   10,
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTarget", mock.Anything, domain.ReviewTargetType("hotel"), "hotel-123", int64(0), int64(10)).
-					Return(sampleReviews, nil)
+				m.On("GetByEntityAndUser", mock.Anything, domain.EntityTypeHotel, "hotel-123", "new-user").
+					Return(nil, nil)
+				m.On("ListByEntity", mock.Anything, mock.MatchedBy(func(opts domain.ListReviewsOptions) bool {
+					return opts.ExcludeUserID == "new-user"
+				})).Return(&domain.ListReviewsResult{
+					Reviews: otherReviews,
+				}, nil)
 			},
-			expectedError:  false,
-			expectedLength: 2,
+			expectedError:    false,
+			expectedLength:   2,
+			expectUserReview: false,
 		},
 		{
-			name: "empty target ID",
-			request: &pd.GetReviewByTargetIDRequest{
-				TargetId:   "",
-				TargetType: "hotel",
+			name: "second page with logged in user - no user_review",
+			ctx:  contextWithUserID("current-user"),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+				PageSize:   10,
+				PageToken:  "some-token",
+			},
+			setupMock: func(m *domainmock.MockReviewRepository) {
+				// Should NOT call GetByEntityAndUser on non-first page
+				m.On("ListByEntity", mock.Anything, mock.MatchedBy(func(opts domain.ListReviewsOptions) bool {
+					return opts.PageToken == "some-token" && opts.ExcludeUserID == "current-user"
+				})).Return(&domain.ListReviewsResult{
+					Reviews: otherReviews,
+				}, nil)
+			},
+			expectedError:    false,
+			expectedLength:   2,
+			expectUserReview: false, // No user_review on non-first page
+		},
+		{
+			name: "not logged in - normal list without user_review",
+			ctx:  context.Background(),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+				PageSize:   10,
+			},
+			setupMock: func(m *domainmock.MockReviewRepository) {
+				// Should NOT call GetByEntityAndUser when not logged in
+				m.On("ListByEntity", mock.Anything, mock.MatchedBy(func(opts domain.ListReviewsOptions) bool {
+					return opts.ExcludeUserID == "" // No exclusion when not logged in
+				})).Return(&domain.ListReviewsResult{
+					Reviews: otherReviews,
+				}, nil)
+			},
+			expectedError:    false,
+			expectedLength:   2,
+			expectUserReview: false,
+		},
+		{
+			name: "empty entity ID",
+			ctx:  context.Background(),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
 			},
 			setupMock:     func(m *domainmock.MockReviewRepository) {},
 			expectedCode:  codes.InvalidArgument,
 			expectedError: true,
 		},
 		{
-			name: "second page data",
-			request: &pd.GetReviewByTargetIDRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
-				PageSize:   10,
-				PageNumber: 2,
+			name: "unspecified entity type",
+			ctx:  context.Background(),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_UNSPECIFIED,
+			},
+			setupMock:     func(m *domainmock.MockReviewRepository) {},
+			expectedCode:  codes.InvalidArgument,
+			expectedError: true,
+		},
+		{
+			name: "invalid page token",
+			ctx:  context.Background(),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+				PageToken:  "invalid-token",
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTarget", mock.Anything, domain.ReviewTargetType("hotel"), "hotel-123", int64(10), int64(10)).
-					Return([]domain.Review{}, nil)
+				m.On("ListByEntity", mock.Anything, mock.Anything).Return(nil, domain.ErrInvalidPageToken)
 			},
-			expectedError:  false,
-			expectedLength: 0,
+			expectedCode:  codes.InvalidArgument,
+			expectedError: true,
 		},
 		{
 			name: "database error",
-			request: &pd.GetReviewByTargetIDRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
+			ctx:  context.Background(),
+			request: &pb.ListReviewsByEntityRequest{
+				EntityId:   "hotel-123",
+				EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
 				PageSize:   10,
-				PageNumber: 1,
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, errors.New("database error"))
+				m.On("ListByEntity", mock.Anything, mock.Anything).Return(nil, errors.New("database error"))
 			},
 			expectedCode:  codes.Internal,
 			expectedError: true,
@@ -439,7 +642,7 @@ func TestGetReviewByTargetID(t *testing.T) {
 			service, mockRepo := setupTest(t)
 			tt.setupMock(mockRepo)
 
-			resp, err := service.GetReviewByTargetID(context.Background(), tt.request)
+			resp, err := service.ListReviewsByEntity(tt.ctx, tt.request)
 
 			if tt.expectedError {
 				assertGRPCErrorCode(t, err, tt.expectedCode)
@@ -447,131 +650,16 @@ func TestGetReviewByTargetID(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, resp)
 				assert.Len(t, resp.Reviews, tt.expectedLength)
-				assert.True(t, resp.Status)
-			}
 
-			mockRepo.AssertExpectations(t)
-		})
-	}
-}
+				if tt.expectUserReview {
+					assert.NotNil(t, resp.UserReview)
+					assert.Equal(t, "user-review-1", resp.UserReview.Id)
+				} else {
+					assert.Nil(t, resp.UserReview)
+				}
 
-// ============================================================
-// GetReviewByTargetIDWithCursor Tests
-// ============================================================
-
-func TestGetReviewByTargetIDWithCursor(t *testing.T) {
-	now := time.Now()
-	sampleReviews := []domain.Review{
-		{
-			ID:         "review-1",
-			UserID:     "user-1",
-			TargetType: domain.ReviewTargetHotel,
-			TargetID:   "hotel-123",
-			Rating:     5,
-			Text:       "Excellent!",
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		},
-	}
-
-	tests := []struct {
-		name           string
-		request        *pd.GetReviewByTargetIDWithCursorRequest
-		setupMock      func(*domainmock.MockReviewRepository)
-		expectedCode   codes.Code
-		expectedError  bool
-		expectedLength int
-		expectedCursor string
-	}{
-		{
-			name: "successfully get reviews - no cursor",
-			request: &pd.GetReviewByTargetIDWithCursorRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
-				Limit:      10,
-				Cursor:     "",
-			},
-			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTargetWithCursor", mock.Anything, domain.ReviewTargetType("hotel"), "hotel-123", "", int64(10)).
-					Return(sampleReviews, "1234567890", nil)
-			},
-			expectedError:  false,
-			expectedLength: 1,
-			expectedCursor: "1234567890",
-		},
-		{
-			name: "successfully get reviews - with cursor",
-			request: &pd.GetReviewByTargetIDWithCursorRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
-				Limit:      10,
-				Cursor:     "1234567890",
-			},
-			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTargetWithCursor", mock.Anything, domain.ReviewTargetType("hotel"), "hotel-123", "1234567890", int64(10)).
-					Return(sampleReviews, "1234567800", nil)
-			},
-			expectedError:  false,
-			expectedLength: 1,
-			expectedCursor: "1234567800",
-		},
-		{
-			name: "use default limit",
-			request: &pd.GetReviewByTargetIDWithCursorRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
-				Limit:      0, // should default to 10
-			},
-			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTargetWithCursor", mock.Anything, domain.ReviewTargetType("hotel"), "hotel-123", "", int64(10)).
-					Return(sampleReviews, "1234567890", nil)
-			},
-			expectedError:  false,
-			expectedLength: 1,
-		},
-		{
-			name: "empty target ID",
-			request: &pd.GetReviewByTargetIDWithCursorRequest{
-				TargetId:   "",
-				TargetType: "hotel",
-				Limit:      10,
-			},
-			setupMock:     func(m *domainmock.MockReviewRepository) {},
-			expectedCode:  codes.InvalidArgument,
-			expectedError: true,
-		},
-		{
-			name: "database error",
-			request: &pd.GetReviewByTargetIDWithCursorRequest{
-				TargetId:   "hotel-123",
-				TargetType: "hotel",
-				Limit:      10,
-			},
-			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("FindByTargetWithCursor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, "", errors.New("database error"))
-			},
-			expectedCode:  codes.Internal,
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			service, mockRepo := setupTest(t)
-			tt.setupMock(mockRepo)
-
-			resp, err := service.GetReviewByTargetIDWithCursor(context.Background(), tt.request)
-
-			if tt.expectedError {
-				assertGRPCErrorCode(t, err, tt.expectedCode)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, resp)
-				assert.Len(t, resp.Reviews, tt.expectedLength)
-				assert.True(t, resp.Status)
-				if tt.expectedCursor != "" {
-					assert.Equal(t, tt.expectedCursor, resp.NextCursor)
+				if tt.expectedNextToken != "" {
+					assert.Equal(t, tt.expectedNextToken, resp.NextPageToken)
 				}
 			}
 
@@ -589,11 +677,12 @@ func TestDomainToProto(t *testing.T) {
 	review := &domain.Review{
 		ID:         "review-123",
 		UserID:     "user-456",
-		TargetType: domain.ReviewTargetHotel,
-		TargetID:   "hotel-789",
-		Rating:     5,
-		Text:       "Great experience!",
+		EntityType: domain.EntityTypeHotel,
+		EntityID:   "hotel-789",
+		Rating:     4,
+		Content:    "Great experience!",
 		Images:     []string{"img1.jpg", "img2.jpg"},
+		Dimensions: map[string]uint32{"view": 4, "service": 5},
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
@@ -602,13 +691,14 @@ func TestDomainToProto(t *testing.T) {
 
 	assert.Equal(t, review.ID, proto.Id)
 	assert.Equal(t, review.UserID, proto.UserId)
-	assert.Equal(t, string(review.TargetType), proto.TargetType)
-	assert.Equal(t, review.TargetID, proto.TargetId)
+	assert.Equal(t, pb.EntityType(review.EntityType), proto.EntityType)
+	assert.Equal(t, review.EntityID, proto.EntityId)
 	assert.Equal(t, review.Rating, proto.Rating)
-	assert.Equal(t, review.Text, proto.Text)
+	assert.Equal(t, review.Content, proto.Content)
 	assert.Equal(t, review.Images, proto.Images)
-	assert.Equal(t, review.CreatedAt.Unix(), proto.CreatedAt)
-	assert.Equal(t, review.UpdatedAt.Unix(), proto.UpdatedAt)
+	assert.Equal(t, review.Dimensions, proto.Dimensions)
+	assert.NotNil(t, proto.CreatedAt)
+	assert.NotNil(t, proto.UpdatedAt)
 }
 
 // ============================================================
@@ -620,12 +710,14 @@ func BenchmarkCreateReview(b *testing.B) {
 	mockRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 	service := NewReviewService(mockRepo)
 
-	req := &pd.CreateReviewRequest{
-		UserId:     "user-123",
-		TargetId:   "hotel-456",
-		TargetType: "hotel",
-		Rating:     5,
-		Text:       "Great hotel!",
+	req := &pb.CreateReviewRequest{
+		Review: &pb.Review{
+			UserId:     "user-123",
+			EntityId:   "hotel-456",
+			EntityType: pb.EntityType_ENTITY_TYPE_HOTEL,
+			Rating:     4,
+			Content:    "Great hotel!",
+		},
 	}
 
 	ctx := context.Background()
@@ -641,11 +733,12 @@ func BenchmarkDomainToProto(b *testing.B) {
 	review := &domain.Review{
 		ID:         "review-123",
 		UserID:     "user-456",
-		TargetType: domain.ReviewTargetHotel,
-		TargetID:   "hotel-789",
-		Rating:     5,
-		Text:       "Great experience!",
+		EntityType: domain.EntityTypeHotel,
+		EntityID:   "hotel-789",
+		Rating:     4,
+		Content:    "Great experience!",
 		Images:     []string{"img1.jpg", "img2.jpg"},
+		Dimensions: map[string]uint32{"view": 4, "service": 5},
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}

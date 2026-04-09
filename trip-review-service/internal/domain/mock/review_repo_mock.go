@@ -33,22 +33,13 @@ func (m *MockReviewRepository) GetByID(ctx context.Context, id string) (*domain.
 	return args.Get(0).(*domain.Review), args.Error(1)
 }
 
-// FindByTarget mock implementation
-func (m *MockReviewRepository) FindByTarget(ctx context.Context, targetType domain.ReviewTargetType, targetID string, offset, limit int64) ([]domain.Review, error) {
-	args := m.Called(ctx, targetType, targetID, offset, limit)
+// GetByEntityAndUser mock implementation
+func (m *MockReviewRepository) GetByEntityAndUser(ctx context.Context, entityType domain.EntityType, entityID, userID string) (*domain.Review, error) {
+	args := m.Called(ctx, entityType, entityID, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]domain.Review), args.Error(1)
-}
-
-// FindByTargetWithCursor mock implementation
-func (m *MockReviewRepository) FindByTargetWithCursor(ctx context.Context, targetType domain.ReviewTargetType, targetID string, cursor string, limit int64) ([]domain.Review, string, error) {
-	args := m.Called(ctx, targetType, targetID, cursor, limit)
-	if args.Get(0) == nil {
-		return nil, args.String(1), args.Error(2)
-	}
-	return args.Get(0).([]domain.Review), args.String(1), args.Error(2)
+	return args.Get(0).(*domain.Review), args.Error(1)
 }
 
 // Update mock implementation
@@ -61,6 +52,15 @@ func (m *MockReviewRepository) Update(ctx context.Context, review *domain.Review
 func (m *MockReviewRepository) Delete(ctx context.Context, id string) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
+}
+
+// ListByEntity mock implementation
+func (m *MockReviewRepository) ListByEntity(ctx context.Context, opts domain.ListReviewsOptions) (*domain.ListReviewsResult, error) {
+	args := m.Called(ctx, opts)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.ListReviewsResult), args.Error(1)
 }
 
 // Ensure MockReviewRepository implements the domain.ReviewRepository interface

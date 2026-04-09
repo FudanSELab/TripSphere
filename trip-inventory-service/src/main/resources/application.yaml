@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: trip-inventory-service
+  profiles:
+    active: dev
+
+server:
+  port: 24221
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.tripsphere.inventory: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -1,0 +1,15 @@
+# Byte-compiled
+__pycache__/
+
+# Logs
+logs/
+
+# Environment variables
+.env
+.env.development
+
+# Taskfile
+.task/
+
+# Google ADK
+.adk/

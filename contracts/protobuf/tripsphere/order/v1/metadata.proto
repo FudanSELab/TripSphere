@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tripsphere.order.v1;
+
+option go_package = "tripsphere/order/v1";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.order.v1";
+
+service MetadataService {
+  // Get the version of order service.
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
+}
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  string version = 1; // e.g., "0.1.0"
+}

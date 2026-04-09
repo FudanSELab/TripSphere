@@ -42,15 +42,26 @@ func run() error {
 		"port", cfg.App.Port,
 	)
 
-	// Initialize database
-	db, err := repository.NewDB(ctx, cfg.MySQL)
+	// Initialize MongoDB
+	db, mongoClient, err := repository.NewMongoDB(ctx, cfg.MongoDB)
 	if err != nil {
 		return err
 	}
-	defer repository.CloseDB(db)
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := repository.CloseMongoDB(shutdownCtx, mongoClient); err != nil {
+			slog.Error("failed to close MongoDB connection", "error", err)
+		}
+	}()
 
 	// Initialize repository
 	reviewRepo := repository.NewReviewRepo(db)
+
+	// Ensure indexes are created
+	if err := reviewRepo.EnsureIndexes(ctx); err != nil {
+		slog.Warn("failed to create indexes", "error", err)
+	}
 
 	// Initialize service
 	reviewService := service.NewReviewService(reviewRepo)

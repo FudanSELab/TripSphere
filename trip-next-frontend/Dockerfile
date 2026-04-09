@@ -1,64 +1,81 @@
-# Build stage
-FROM oven/bun:alpine AS builder
+# ============================================
+# Stage 1: Dependencies Installation Stage
+# ============================================
 
+FROM oven/bun:1 AS dependencies
+
+# Set working directory
 WORKDIR /app
 
-# Build arguments for rewrites destinations
-ARG HTTP_CHAT_URL=http://trip-chat-service:24210
-ARG HTTP_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215
+# Copy package-related files first to leverage Docker's caching mechanism
+COPY package.json bun.lock* ./
 
-# Convert ARGs to ENVs for next build
-ENV HTTP_CHAT_URL=$HTTP_CHAT_URL
-ENV HTTP_ITINERARY_PLANNER_URL=$HTTP_ITINERARY_PLANNER_URL
+# Install project dependencies with frozen lockfile for reproducible builds
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --no-save --frozen-lockfile
 
-# Copy package files
-COPY package.json bun.lock ./
+# ============================================
+# Stage 2: Build Next.js application
+# ============================================
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+FROM oven/bun:1 AS builder
 
-# Copy configuration files
-COPY next.config.ts tsconfig.json ./
-COPY postcss.config.mjs eslint.config.mjs ./
+# Set working directory
+WORKDIR /app
 
-# Copy source code and generated proto files
-COPY lib ./lib
-COPY app ./app
-COPY components ./components
-COPY public ./public
-COPY proxy.ts ./proxy.ts
+# Copy project dependencies from dependencies stage
+COPY --from=dependencies /app/node_modules ./node_modules
 
-# Build the application
+# Copy application source code
+COPY . .
+
+ENV NODE_ENV=production
+
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+# ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build Next.js application
 RUN bun run build
 
+# ============================================
+# Stage 3: Run Next.js application
+# ============================================
 
-# Production stage
-FROM oven/bun:alpine AS runner
+FROM oven/bun:1 AS runner
 
+# Set working directory
 WORKDIR /app
 
+# Set production environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Runtime environment variables for API Routes (SSE proxy)
-# These can be overridden by docker-compose environment
-ENV HTTP_CHAT_URL=http://trip-chat-service:24210
-ENV HTTP_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the run time.
+# ENV NEXT_TELEMETRY_DISABLED=1
 
-# Setup a non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Copy production assets
+COPY --from=builder --chown=bun:bun /app/public ./public
+COPY --from=builder --chown=bun:bun /app/.next ./.next
+COPY --from=dependencies --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=builder --chown=bun:bun /app/package.json ./package.json
 
-# Copy necessary files from builder
-# Note: standalone output includes all necessary dependencies
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Set the correct permission for prerender cache
+RUN chown -R bun:bun .next
 
-# Use the non-root user
-USER nextjs
+# If you want to persist the fetch cache generated during the build so that
+# cached responses are available immediately on startup, uncomment this line:
+# COPY --from=builder --chown=bun:bun /app/.next/cache ./.next/cache
 
+# Switch to non-root user for security best practices
+USER bun
+
+# Expose port 3000 to allow HTTP traffic
 EXPOSE 3000
 
-CMD ["bun", "server.js"]
+# Start Next.js with next start via bun
+CMD ["bun", "run", "start"]

@@ -3,6 +3,8 @@ syntax = "proto3";
 package tripsphere.hotel.v1;
 
 import "tripsphere/common/v1/map.proto";
+import "tripsphere/common/v1/money.proto";
+import "tripsphere/common/v1/timeofday.proto";
 
 option go_package = "tripsphere/hotel/v1";
 option java_multiple_files = true;
@@ -11,17 +13,78 @@ option java_package = "org.tripsphere.hotel.v1";
 service HotelService {
   rpc GetHotelById(GetHotelByIdRequest) returns (GetHotelByIdResponse);
 
-  rpc DeleteHotel(DeleteHotelRequest) returns (DeleteHotelResponse);
+  rpc BatchGetHotels(BatchGetHotelsRequest) returns (BatchGetHotelsResponse);
+
+  rpc GetHotelsNearby(GetHotelsNearbyRequest) returns (GetHotelsNearbyResponse);
+
+  rpc ListHotels(ListHotelsRequest) returns (ListHotelsResponse);
+
+  rpc GetRoomTypesByHotelId(GetRoomTypesByHotelIdRequest) returns (GetRoomTypesByHotelIdResponse);
 }
 
 message Hotel {
   string id = 1;
   string name = 2;
-  string poi_id = 3;
-  tripsphere.common.v1.Address address = 4;
-  tripsphere.common.v1.GeoPoint location = 5;
-  string introduction = 6;
+  // Hotel name in English.
+  string name_en = 3;
+  string poi_id = 4;
+  tripsphere.common.v1.Address address = 5;
+  tripsphere.common.v1.GeoPoint location = 6;
+  // Suggested for soft tags, e.g., ["拍照出片", "氛围浪漫"]
   repeated string tags = 7;
+  repeated string images = 8;
+  HotelInformation information = 9;
+  // Estimated price for a night. Must never be used for pricing.
+  // Usually set to the lowest price of all room types.
+  tripsphere.common.v1.Money estimated_price = 10;
+  HotelPolicy policy = 11;
+  // For example, ["健身房", "游泳池", "免费停车场"]
+  repeated string amenities = 12;
+}
+
+message HotelInformation {
+  // The year the hotel was opened. For example, 2017.
+  int32 opening_since = 1;
+  string phone_number = 2;
+  int32 room_count = 3;
+  string introduction = 4;
+}
+
+message HotelPolicy {
+  tripsphere.common.v1.TimeOfDay check_in_time = 1;
+  tripsphere.common.v1.TimeOfDay check_out_time = 2;
+  // If not set, the hotel does not provide breakfast.
+  BreakfastPolicy breakfast = 3;
+  bool pets_allowed = 4;
+}
+
+message BreakfastPolicy {
+  // For example, "自助餐"
+  string format = 1;
+  // For example, ["中式", "西式"]
+  repeated string cuisines = 2;
+  // A formatted string of opening hours.
+  // For example, "周一至周日07:00-10:00开放"
+  string opening_hours = 3;
+  // Price for a single adult.
+  tripsphere.common.v1.Money price = 4;
+}
+
+message RoomType {
+  string id = 1;
+  string hotel_id = 2;
+  // For example, "高级大床房"
+  string name = 3;
+  // For example, "20-30平方米" or "15平方米"
+  string area_description = 4;
+  // For example, "1张2米特大床"
+  string bed_description = 5;
+  int32 max_occupancy = 6;
+  bool has_window = 7;
+  repeated string images = 8;
+  string description = 9;
+  // For example, ["浴缸", "智能马桶", "迷你吧"]
+  repeated string amenities = 10;
 }
 
 message GetHotelByIdRequest {
@@ -32,8 +95,45 @@ message GetHotelByIdResponse {
   Hotel hotel = 1;
 }
 
-message DeleteHotelRequest {
-  string id = 1;
+message BatchGetHotelsRequest {
+  repeated string ids = 1;
 }
 
-message DeleteHotelResponse {}
+message BatchGetHotelsResponse {
+  repeated Hotel hotels = 1;
+}
+
+message GetHotelsNearbyRequest {
+  tripsphere.common.v1.GeoPoint location = 1;
+  double radius_meters = 2;
+}
+
+message GetHotelsNearbyResponse {
+  repeated Hotel hotels = 1;
+}
+
+message GetRoomTypesByHotelIdRequest {
+  string hotel_id = 1;
+}
+
+message GetRoomTypesByHotelIdResponse {
+  repeated RoomType room_types = 1;
+}
+
+message ListHotelsRequest {
+  // For example, "上海市"
+  string province = 1;
+  // For example, "上海市"
+  string city = 2;
+  int32 page_size = 3;
+  // A page token, received from a previous `ListHotels` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 4;
+}
+
+message ListHotelsResponse {
+  repeated Hotel hotels = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}

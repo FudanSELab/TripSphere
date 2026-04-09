@@ -40,8 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# protobuf & gRPC
-lib/grpc/gen/
+# Generated protobuf & gRPC codes
+lib/grpc/generated/
 
 # Taskfile
 .task/

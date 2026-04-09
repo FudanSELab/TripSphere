@@ -1,0 +1,14 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: java_package_prefix
+      value: org
+clean: true
+plugins:
+  - remote: buf.build/protocolbuffers/java:v33.5
+    out: target/generated-sources/protobuf/java
+  - remote: buf.build/grpc/java:v1.78.0
+    out: target/generated-sources/protobuf/grpc-java
+inputs:
+  - directory: ../contracts/protobuf

@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	pd "trip-review-service/api/grpc/gen/tripsphere/review/v1"
+	pd "trip-review-service/api/grpc/generated/tripsphere/review/v1"
 )
 
 // Server wraps a gRPC server

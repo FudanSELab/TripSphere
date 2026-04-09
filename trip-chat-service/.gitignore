@@ -10,3 +10,6 @@ logs/
 
 # Taskfile
 .task/
+
+# Google ADK
+.adk/

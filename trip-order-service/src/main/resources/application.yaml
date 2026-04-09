@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: trip-order-service
+  profiles:
+    active: dev
+
+server:
+  port: 24222
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.tripsphere.order: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

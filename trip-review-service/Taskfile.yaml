@@ -12,7 +12,7 @@ tasks:
     sources:
       - ../contracts/protobuf/**/*.proto
     generates:
-      - api/grpc/gen/**/*.go
+      - api/grpc/generated/**/*.go
     cmds:
       - buf generate
 
@@ -34,3 +34,23 @@ tasks:
         --build-arg ALPINE_MIRROR=s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g \
         --build-arg GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
 
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test -v ./...
+
+  test:integration:
+    desc: Run integration tests only (requires Docker)
+    cmds:
+      - go test -v -tags=integration -run Integration ./...
+
+  test:all:
+    desc: Run all tests (unit + integration)
+    cmds:
+      - go test -v -tags=integration ./...
+
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - go test -v -tags=integration -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html

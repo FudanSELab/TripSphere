@@ -1,0 +1,52 @@
+[project]
+name = "order-assistant"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.135.1",
+    "google-adk[a2a,otel-gcp]>=1.28.1",
+    "litellm>=1.80.7",
+    "nacos-sdk-python>=3.0.3",
+    "openinference-instrumentation-google-adk>=0.1.8",
+    "openinference-instrumentation-litellm>=0.1.29",
+    "opentelemetry-distro[otlp]>=0.59b0",
+    "pydantic-settings>=2.12.0",
+    "python-dotenv>=1.2.1",
+    "tripsphere>=0.1.0",
+    "uvicorn>=0.38.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pyright>=1.1.408",
+    "types-grpcio>=1.0.0.20251009",
+    "types-grpcio-status>=1.0.0.20250506",
+    "types-protobuf>=6.32.1.20260221",
+]
+
+[tool.uv.sources]
+tripsphere = { workspace = true }
+
+[tool.uv.workspace]
+members = ["libs/tripsphere"]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["libs/tripsphere"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src", "tests"]

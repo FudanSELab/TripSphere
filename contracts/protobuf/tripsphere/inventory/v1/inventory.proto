@@ -1,0 +1,181 @@
+syntax = "proto3";
+
+package tripsphere.inventory.v1;
+
+import "google/protobuf/timestamp.proto";
+import "tripsphere/common/v1/date.proto";
+import "tripsphere/common/v1/money.proto";
+
+option go_package = "tripsphere/inventory/v1";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.inventory.v1";
+
+service InventoryService {
+  // ---------- Calendar inventory management (admin/operations) ----------
+
+  // Set or update the inventory and price for a specific SKU on a specific date.
+  // Upsert semantics: creates if not exists, updates if exists.
+  rpc SetDailyInventory(SetDailyInventoryRequest) returns (SetDailyInventoryResponse);
+
+  rpc BatchSetDailyInventory(BatchSetDailyInventoryRequest) returns (BatchSetDailyInventoryResponse);
+
+  // ---------- Query ----------
+
+  // Get inventory for a single SKU + date.
+  rpc GetDailyInventory(GetDailyInventoryRequest) returns (GetDailyInventoryResponse);
+
+  // Get inventory calendar for a SKU over a date range.
+  rpc QueryInventoryCalendar(QueryInventoryCalendarRequest) returns (QueryInventoryCalendarResponse);
+
+  // Quick availability check for a specific SKU + date + quantity.
+  rpc CheckAvailability(CheckAvailabilityRequest) returns (CheckAvailabilityResponse);
+
+  // ---------- Inventory lock lifecycle (called by Order service) ----------
+
+  // Atomically lock inventory for one or more (sku, date, quantity) tuples.
+  // All items succeed or all fail.
+  rpc LockInventory(LockInventoryRequest) returns (LockInventoryResponse);
+
+  // Confirm a lock after payment succeeds. Moves locked quantity to sold.
+  rpc ConfirmLock(ConfirmLockRequest) returns (ConfirmLockResponse);
+
+  // Release a lock on cancellation or timeout. Returns locked quantity to available.
+  rpc ReleaseLock(ReleaseLockRequest) returns (ReleaseLockResponse);
+}
+
+// ======================== Messages ========================
+
+// Represents the inventory and price for a single SKU on a single date.
+message DailyInventory {
+  string sku_id = 1;
+  tripsphere.common.v1.Date date = 2;
+
+  int32 total_quantity = 3;
+  int32 available_quantity = 4;
+  int32 locked_quantity = 5;
+  int32 sold_quantity = 6;
+
+  // Calendar price for this date.
+  // If not set, consumers should fall back to the SKU's base_price.
+  tripsphere.common.v1.Money price = 7;
+}
+
+enum LockStatus {
+  LOCK_STATUS_UNSPECIFIED = 0;
+  LOCK_STATUS_LOCKED = 1;
+  LOCK_STATUS_CONFIRMED = 2;
+  LOCK_STATUS_RELEASED = 3;
+  LOCK_STATUS_EXPIRED = 4;
+}
+
+message InventoryLock {
+  string lock_id = 1;
+  string order_id = 2;
+  repeated LockItem items = 3;
+  LockStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp expire_at = 6;
+}
+
+// A single (sku, date, quantity) tuple to lock.
+message LockItem {
+  string sku_id = 1;
+  tripsphere.common.v1.Date date = 2;
+  int32 quantity = 3;
+}
+
+// ======================== Requests / Responses ========================
+
+// --- SetDailyInventory ---
+
+message SetDailyInventoryRequest {
+  string sku_id = 1;
+  tripsphere.common.v1.Date date = 2;
+  int32 total_quantity = 3;
+  tripsphere.common.v1.Money price = 4;
+}
+
+message SetDailyInventoryResponse {
+  DailyInventory inventory = 1;
+}
+
+message BatchSetDailyInventoryRequest {
+  repeated SetDailyInventoryRequest items = 1;
+}
+
+message BatchSetDailyInventoryResponse {
+  repeated DailyInventory inventories = 1;
+}
+
+// --- GetDailyInventory ---
+
+message GetDailyInventoryRequest {
+  string sku_id = 1;
+  tripsphere.common.v1.Date date = 2;
+}
+
+message GetDailyInventoryResponse {
+  DailyInventory inventory = 1;
+}
+
+// --- QueryInventoryCalendar ---
+
+message QueryInventoryCalendarRequest {
+  string sku_id = 1;
+  tripsphere.common.v1.Date start_date = 2;
+  tripsphere.common.v1.Date end_date = 3;
+}
+
+message QueryInventoryCalendarResponse {
+  repeated DailyInventory entries = 1;
+}
+
+// --- CheckAvailability ---
+
+message CheckAvailabilityRequest {
+  string sku_id = 1;
+  tripsphere.common.v1.Date date = 2;
+  int32 quantity = 3;
+}
+
+message CheckAvailabilityResponse {
+  bool available = 1;
+  int32 available_quantity = 2;
+  // The effective price for this date.
+  tripsphere.common.v1.Money price = 3;
+}
+
+// --- LockInventory ---
+
+message LockInventoryRequest {
+  // All items are locked atomically: all succeed or all fail.
+  repeated LockItem items = 1;
+  string order_id = 2;
+  // Lock timeout in seconds. Defaults to 900 (15 minutes) if not set.
+  int32 lock_timeout_seconds = 3;
+}
+
+message LockInventoryResponse {
+  InventoryLock lock = 1;
+}
+
+// --- ConfirmLock ---
+
+message ConfirmLockRequest {
+  string lock_id = 1;
+}
+
+message ConfirmLockResponse {
+  InventoryLock lock = 1;
+}
+
+// --- ReleaseLock ---
+
+message ReleaseLockRequest {
+  string lock_id = 1;
+  string reason = 2;
+}
+
+message ReleaseLockResponse {
+  InventoryLock lock = 1;
+}

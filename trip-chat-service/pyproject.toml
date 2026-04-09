@@ -4,22 +4,23 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "ag-ui-adk>=0.6.0",
     "fastapi[standard]>=0.123.10",
-    "google-adk[a2a,otel-gcp]>=1.20.0",
-    "grpcio>=1.75.1",
+    "google-adk[a2a,otel-gcp]>=1.28.1",
     "litellm>=1.80.5",
+    "mcp-weather-server>=0.6.1",
     "mem0ai>=0.1.115",
     "nacos-sdk-python>=3.0.3",
     "openinference-instrumentation-google-adk>=0.1.8",
     "openinference-instrumentation-litellm>=0.1.29",
-    "opentelemetry-distro[otlp]>=0.58b0",
+    "opentelemetry-distro[otlp]>=0.59b0",
     "pydantic-settings>=2.11.0",
     "pymongo>=4.15.3",
     "tripsphere>=0.1.0",
 ]
 
 [build-system]
-requires = ["uv_build>=0.9.1,<0.10.0"]
+requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
 
 [dependency-groups]

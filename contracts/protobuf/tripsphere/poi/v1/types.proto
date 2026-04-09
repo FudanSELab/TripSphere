@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package tripsphere.poi.v1;
+
+import "tripsphere/common/v1/map.proto";
+
+option go_package = "tripsphere/poi/v1";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.poi.v1";
+
+message Poi {
+  string id = 1;
+  string name = 2;
+  // GCJ02 coordinate system location
+  tripsphere.common.v1.GeoPoint location = 3;
+  tripsphere.common.v1.Address address = 4;
+  // China Area Division Code
+  string adcode = 5;
+  // Amap POI ID (optional)
+  string amap_id = 6;
+  repeated string categories = 7;
+  repeated string images = 8;
+}

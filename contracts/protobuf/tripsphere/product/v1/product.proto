@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package tripsphere.product.v1;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "tripsphere/common/v1/money.proto";
+
+option go_package = "tripsphere/product/v1";
+option java_multiple_files = true;
+option java_package = "org.tripsphere.product.v1";
+
+service ProductService {
+  rpc GetSpuById(GetSpuByIdRequest) returns (GetSpuByIdResponse);
+
+  rpc BatchGetSpus(BatchGetSpusRequest) returns (BatchGetSpusResponse);
+
+  rpc ListSpusByResource(ListSpusByResourceRequest) returns (ListSpusByResourceResponse);
+
+  rpc CreateSpu(CreateSpuRequest) returns (CreateSpuResponse);
+
+  rpc BatchCreateSpus(BatchCreateSpusRequest) returns (BatchCreateSpusResponse);
+
+  rpc UpdateSpu(UpdateSpuRequest) returns (UpdateSpuResponse);
+
+  rpc GetSkuById(GetSkuByIdRequest) returns (GetSkuByIdResponse);
+
+  rpc BatchGetSkus(BatchGetSkusRequest) returns (BatchGetSkusResponse);
+}
+
+enum ResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  RESOURCE_TYPE_HOTEL_ROOM = 1;
+  RESOURCE_TYPE_ATTRACTION = 2;
+}
+
+enum SpuStatus {
+  SPU_STATUS_UNSPECIFIED = 0;
+  SPU_STATUS_DRAFT = 1;
+  SPU_STATUS_ON_SHELF = 2;
+  SPU_STATUS_OFF_SHELF = 3;
+}
+
+message Spu {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  ResourceType resource_type = 4;
+  // ID of the resource.
+  // For example, attraction ID "019cc3b4-3163-751c-9d82-edb85c27c4ae"
+  string resource_id = 5;
+  repeated string images = 6;
+  repeated Sku skus = 7;
+  SpuStatus status = 8;
+  // For example, {"hotel_id": "019cc379-11a6-75a2-9311-802eaab55887"}
+  google.protobuf.Struct attributes = 9;
+}
+
+enum SkuStatus {
+  SKU_STATUS_UNSPECIFIED = 0;
+  SKU_STATUS_ACTIVE = 1;
+  SKU_STATUS_INACTIVE = 2;
+}
+
+message Sku {
+  string id = 1;
+  string name = 2;
+  string spu_id = 3;
+  string description = 4;
+  SkuStatus status = 5;
+  google.protobuf.Struct attributes = 6;
+  // Base price for display/reference.
+  // The actual selling price per date is managed by the Inventory service.
+  tripsphere.common.v1.Money base_price = 7;
+}
+
+message GetSpuByIdRequest {
+  string id = 1;
+}
+
+message GetSpuByIdResponse {
+  Spu spu = 1;
+}
+
+message BatchGetSpusRequest {
+  repeated string ids = 1;
+}
+
+message BatchGetSpusResponse {
+  repeated Spu spus = 1;
+}
+
+message ListSpusByResourceRequest {
+  ResourceType resource_type = 1;
+  string resource_id = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListSpusByResourceResponse {
+  repeated Spu spus = 1;
+  string next_page_token = 2;
+}
+
+message CreateSpuRequest {
+  Spu spu = 1;
+}
+
+message CreateSpuResponse {
+  Spu spu = 1;
+}
+
+message BatchCreateSpusRequest {
+  repeated CreateSpuRequest requests = 1;
+}
+
+message BatchCreateSpusResponse {
+  repeated Spu spus = 1;
+}
+
+message UpdateSpuRequest {
+  Spu spu = 1;
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message UpdateSpuResponse {
+  Spu spu = 1;
+}
+
+message GetSkuByIdRequest {
+  string id = 1;
+}
+
+message GetSkuByIdResponse {
+  Sku sku = 1;
+}
+
+message BatchGetSkusRequest {
+  repeated string ids = 1;
+}
+
+message BatchGetSkusResponse {
+  repeated Sku skus = 1;
+}

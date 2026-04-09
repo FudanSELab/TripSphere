@@ -40,4 +40,4 @@ Thumbs.db
 .env
 .env.local
 
-clients/grpc/gen/
+clients/grpc/generated/
