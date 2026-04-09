@@ -4,9 +4,8 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "ag-ui-adk>=0.5.1",
     "fastapi>=0.135.1",
-    "google-adk[a2a,otel-gcp]>=1.28.0",
+    "google-adk[a2a,otel-gcp]>=1.28.1",
     "litellm>=1.80.7",
     "nacos-sdk-python>=3.0.3",
     "openinference-instrumentation-google-adk>=0.1.8",
