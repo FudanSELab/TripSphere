@@ -150,7 +150,16 @@ function PlannerContent() {
     const agentMarkdown = (agent.state as { markdown_content?: string } | null)
       ?.markdown_content;
 
-    if (!agentItinerary) return;
+    if (!agentItinerary?.id) {
+      if (itinerary?.id) {
+        selfWriteRef.current = true;
+        agent.setState({
+          itinerary,
+          markdown_content: markdownContent,
+        });
+      }
+      return;
+    }
 
     const snap = JSON.stringify(agentItinerary);
     if (snap === snapshotRef.current) return;

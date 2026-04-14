@@ -51,6 +51,17 @@ _SEP = "─" * 60
 
 # ── State ──────────────────────────────────────────────────────────────────
 
+
+def _keep_itinerary(
+    current: dict[str, Any] | None,
+    incoming: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Keep current itinerary unless the incoming one carries a valid id."""
+    if incoming and incoming.get("id"):
+        return incoming
+    return current
+
+
 ChatState = TypedDict(
     "ChatState",
     {
@@ -60,7 +71,7 @@ ChatState = TypedDict(
         # Initialised by the frontend via useCoAgent initialState / setState.
         # Tools update it via Command; ag_ui_langgraph streams it back via
         # StateSnapshotEvent so the frontend ItineraryViewer re-renders live.
-        "itinerary": dict[str, Any] | None,
+        "itinerary": Annotated[dict[str, Any] | None, _keep_itinerary],
         # Markdown narrative synced alongside the itinerary.
         "markdown_content": str,
     },

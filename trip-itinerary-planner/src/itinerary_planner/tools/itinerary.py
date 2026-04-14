@@ -69,6 +69,10 @@ def _update(
     new_itinerary: dict[str, Any],
 ) -> Command:  # type: ignore[type-arg]
     """Return a Command that updates itinerary + adds a ToolMessage."""
+    if not new_itinerary.get("id"):
+        logger.warning("Skipping itinerary update because itinerary.id is missing.")
+        return _ok(tool_call_id, "No itinerary id found; skipping update.")
+
     return Command(
         update={
             "itinerary": _recompute_summary(new_itinerary),
