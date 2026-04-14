@@ -6,10 +6,10 @@ requires-python = ">=3.12"
 dependencies = [
     "ag-ui-adk>=0.6.0",
     "fastapi[standard]>=0.123.10",
-    "google-adk[a2a,otel-gcp]>=1.28.1",
+    "google-adk[a2a,otel-gcp]>=1.29.0",
     "litellm>=1.80.5",
     "mcp-weather-server>=0.6.1",
-    "mem0ai>=0.1.115",
+    "mem0ai>=1.0.0",
     "nacos-sdk-python>=3.0.3",
     "openinference-instrumentation-google-adk>=0.1.8",
     "openinference-instrumentation-litellm>=0.1.29",

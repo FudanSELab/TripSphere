@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { getAuthMetadata, getItineraryService } from "@/lib/grpc/client";
 import { config } from "@/lib/env";
@@ -373,7 +374,10 @@ export async function createItineraryPlan(
     throw new Error(`Planning failed (${res.status}): ${text}`);
   }
 
-  return res.json();
+  const result = (await res.json()) as PlanItineraryResult;
+  revalidatePath("/itinerary");
+  revalidatePath("/itinerary/my");
+  return result;
 }
 
 // ── Persistence CRUD (gRPC to trip-itinerary-service) ─────────────────────

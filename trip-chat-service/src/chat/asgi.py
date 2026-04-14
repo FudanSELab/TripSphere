@@ -35,7 +35,7 @@ GoogleADKInstrumentor().instrument()
 
 async def _init_infra(app: FastAPI, settings: Settings) -> None:
     app.state.mongo_client = AsyncMongoClient[Any](settings.mongo.uri)
-    app.state.memory_engine = await AsyncMemory.from_config(get_mem0_config())
+    app.state.memory_engine = AsyncMemory.from_config(get_mem0_config())
     app.state.nacos_naming = await NacosNaming.create_naming(
         service_name=settings.app.name,
         port=settings.uvicorn.port,

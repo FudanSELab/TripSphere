@@ -183,6 +183,7 @@ services:
       - "50052:50052" # gRPC
     environment:
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
       nacos:
         condition: service_healthy
@@ -471,6 +472,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.144.0
     container_name: otel-collector
     logging: *default-logging
+    command: ["--config", "/etc/otelcol/config.yaml"]
     volumes:
       - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml
     ports:

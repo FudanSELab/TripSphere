@@ -50,8 +50,6 @@ class OrderDraftToolset(BaseToolset):
 
     def create_order_draft(self, tool_context: ToolContext) -> dict[str, Any]:
         """Create a new order draft.
-        User should confirm the contact information before creating the order draft.
-        Submit the order draft to create the real order.
 
         Returns:
             dict[str, Any]: A dictionary with the ID of the created draft, \
