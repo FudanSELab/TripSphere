@@ -11,6 +11,7 @@ def get_mem0_config() -> dict[str, Any]:
             "config": {
                 "collection_name": "chat_memories",
                 "url": settings.qdrant.url,
+                "embedding_model_dims": 3072,
             },
         },
         "llm": {
@@ -26,6 +27,7 @@ def get_mem0_config() -> dict[str, Any]:
             "provider": "openai",
             "config": {
                 "model": "text-embedding-3-large",
+                "embedding_dims": 3072,
                 "api_key": settings.openai.api_key.get_secret_value(),
                 "openai_base_url": settings.openai.base_url,
             },
