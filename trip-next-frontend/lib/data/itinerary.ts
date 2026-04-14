@@ -1,6 +1,5 @@
 import "server-only";
 
-import { cache } from "react";
 import { headers } from "next/headers";
 import { getAuthMetadata, getItineraryService } from "@/lib/grpc/client";
 import { formatDateMessage } from "@/lib/format";
@@ -30,41 +29,39 @@ function toIsoString(value: Date | Timestamp | undefined): string {
     : date.toISOString();
 }
 
-export const listMyItineraries = cache(
-  async (): Promise<SavedItinerarySummary[]> => {
-    const reqHeaders = await headers();
-    const userId = reqHeaders.get("x-user-id") ?? "";
-    if (!userId) return [];
+export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
+  const reqHeaders = await headers();
+  const userId = reqHeaders.get("x-user-id") ?? "";
+  if (!userId) return [];
 
-    const client = getItineraryService();
-    const metadata = await getAuthMetadata();
+  const client = getItineraryService();
+  const metadata = await getAuthMetadata();
 
-    try {
-      const response = await new Promise<ListUserItinerariesResponse>(
-        (resolve, reject) => {
-          const request: ListUserItinerariesRequest = {
-            userId,
-            pageSize: 50,
-            pageToken: "",
-          };
-          client.listUserItineraries(request, metadata, (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          });
-        },
-      );
+  try {
+    const response = await new Promise<ListUserItinerariesResponse>(
+      (resolve, reject) => {
+        const request: ListUserItinerariesRequest = {
+          userId,
+          pageSize: 50,
+          pageToken: "",
+        };
+        client.listUserItineraries(request, metadata, (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        });
+      },
+    );
 
-      return response.itineraries.map((itinerary) => ({
-        id: itinerary.id,
-        destination: itinerary.destinationName || itinerary.title,
-        start_date: formatDateMessage(itinerary.startDate),
-        end_date: formatDateMessage(itinerary.endDate),
-        day_count: itinerary.dayPlans.length,
-        created_at: toIsoString(itinerary.createdAt),
-        updated_at: toIsoString(itinerary.updatedAt),
-      }));
-    } catch {
-      return [];
-    }
-  },
-);
+    return response.itineraries.map((itinerary) => ({
+      id: itinerary.id,
+      destination: itinerary.destinationName || itinerary.title,
+      start_date: formatDateMessage(itinerary.startDate),
+      end_date: formatDateMessage(itinerary.endDate),
+      day_count: itinerary.dayPlans.length,
+      created_at: toIsoString(itinerary.createdAt),
+      updated_at: toIsoString(itinerary.updatedAt),
+    }));
+  } catch {
+    return [];
+  }
+}

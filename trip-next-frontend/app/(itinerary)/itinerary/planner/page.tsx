@@ -46,6 +46,7 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
 
 function PlannerContent() {
   const searchParams = useSearchParams();
+  const queryItineraryId = searchParams.get("id");
   const [loaded, setLoaded] = useState(false);
   const [itineraryId, setItineraryId] = useState<string | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
@@ -57,6 +58,10 @@ function PlannerContent() {
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef<string | null>(null);
   const selfWriteRef = useRef(false);
+  const activeItineraryIdRef = useRef<string | null>(null);
+  const itineraryIdRef = useRef<string | null>(null);
+  const localItineraryRef = useRef<Itinerary | null>(null);
+  const localMarkdownRef = useRef("");
 
   const syncToBackend = useCallback(
     async (it: Itinerary, md: string, id: string) => {
@@ -64,7 +69,8 @@ function PlannerContent() {
       try {
         await updateSavedItinerary(id, it, md);
         setSyncStatus("saved");
-      } catch {
+      } catch (error) {
+        console.error("[Planner] Failed to sync itinerary", { id, error });
         setSyncStatus("error");
       }
     },
@@ -78,18 +84,36 @@ function PlannerContent() {
   }, []);
 
   useEffect(() => {
+    localItineraryRef.current = itinerary;
+  }, [itinerary]);
+
+  useEffect(() => {
+    localMarkdownRef.current = markdownContent;
+  }, [markdownContent]);
+
+  useEffect(() => {
+    itineraryIdRef.current = itineraryId;
+    activeItineraryIdRef.current = itineraryId;
+  }, [itineraryId]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      const idParam = searchParams.get("id");
+      setLoaded(false);
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+
       let data: { itinerary: Itinerary; markdown_content: string } | null =
         null;
       let resolvedId: string | null = null;
 
-      if (idParam) {
+      if (queryItineraryId) {
         try {
-          data = await getItinerary(idParam);
-          resolvedId = idParam;
+          data = await getItinerary(queryItineraryId);
+          resolvedId = queryItineraryId;
         } catch {
           /* leave empty */
         }
@@ -98,13 +122,18 @@ function PlannerContent() {
         if (raw) {
           try {
             const parsed = JSON.parse(raw) as PlanItineraryResult;
-            data = parsed;
-            resolvedId = parsed.itinerary.id;
-            const url = new URL(window.location.href);
-            url.searchParams.set("id", resolvedId);
-            window.history.replaceState({}, "", url.toString());
+            if (parsed.itinerary?.id) {
+              data = parsed;
+              resolvedId = parsed.itinerary.id;
+              const url = new URL(window.location.href);
+              url.searchParams.set("id", resolvedId);
+              window.history.replaceState({}, "", url.toString());
+            }
           } catch {
             /* ignore */
+          } finally {
+            // Prevent stale session data from overriding future plans.
+            sessionStorage.removeItem("itinerary_plan_result");
           }
         }
       }
@@ -118,12 +147,26 @@ function PlannerContent() {
         setItinerary(data.itinerary);
         setMarkdownContent(data.markdown_content);
         setItineraryId(resolvedId);
+        itineraryIdRef.current = resolvedId;
+        activeItineraryIdRef.current = resolvedId;
+        localItineraryRef.current = data.itinerary;
+        localMarkdownRef.current = data.markdown_content;
+        setSyncStatus("saved");
 
         selfWriteRef.current = true;
         agent.setState({
           itinerary: data.itinerary,
           markdown_content: data.markdown_content,
         });
+      } else {
+        snapshotRef.current = null;
+        setItinerary(null);
+        setMarkdownContent("");
+        setItineraryId(null);
+        itineraryIdRef.current = null;
+        activeItineraryIdRef.current = null;
+        localItineraryRef.current = null;
+        localMarkdownRef.current = "";
       }
 
       setLoaded(true);
@@ -133,8 +176,7 @@ function PlannerContent() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [agent, queryItineraryId]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -150,25 +192,54 @@ function PlannerContent() {
     const agentMarkdown = (agent.state as { markdown_content?: string } | null)
       ?.markdown_content;
 
-    if (!agentItinerary) return;
+    const activeId = activeItineraryIdRef.current;
+    const localItinerary = localItineraryRef.current;
+    if (!activeId) return;
+
+    if (!agentItinerary?.id) {
+      if (localItinerary?.id && localItinerary.id === activeId) {
+        selfWriteRef.current = true;
+        agent.setState({
+          itinerary: localItinerary,
+          markdown_content: localMarkdownRef.current,
+        });
+      }
+      return;
+    }
+
+    if (activeId && agentItinerary.id !== activeId) {
+      if (localItinerary?.id === activeId) {
+        selfWriteRef.current = true;
+        agent.setState({
+          itinerary: localItinerary,
+          markdown_content: localMarkdownRef.current,
+        });
+      }
+      return;
+    }
 
     const snap = JSON.stringify(agentItinerary);
     if (snap === snapshotRef.current) return;
 
     snapshotRef.current = snap;
     setItinerary(agentItinerary);
+    setItineraryId(agentItinerary.id);
+    itineraryIdRef.current = agentItinerary.id;
+    activeItineraryIdRef.current = agentItinerary.id;
+    localItineraryRef.current = agentItinerary;
     if (agentMarkdown !== undefined) setMarkdownContent(agentMarkdown);
+    if (agentMarkdown !== undefined) localMarkdownRef.current = agentMarkdown;
 
-    if (itineraryId) {
+    const saveId = itineraryIdRef.current;
+    if (saveId && saveId === agentItinerary.id) {
       setSyncStatus("unsaved");
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(
-        () => syncToBackend(agentItinerary, agentMarkdown ?? "", itineraryId),
+        () => syncToBackend(agentItinerary, agentMarkdown ?? "", saveId),
         1500,
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agent.state]);
+  }, [agent, agent.state, loaded, syncToBackend]);
 
   if (!loaded) {
     return (
@@ -230,6 +301,7 @@ function PlannerContent() {
         </div>
 
         <CopilotSidebar
+          key={itinerary.id}
           agentId="itinerary_planner"
           defaultOpen={true}
           width="30rem"
