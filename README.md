@@ -4,7 +4,7 @@
 
 This monorepo contains TripSphere, an AI-native distributed system. It simulates an online travel platform where AI agents incorporate with complex business workflows, orchestrating and composing backend capabilities across services to fulfill end-to-end tasks.
 
-![TripSphere Architecture](./docs/assets/architecture_1.jpg "TripSphere Architecture")
+![TripSphere Architecture](./docs/assets/architecture_v0_1_0.jpg "TripSphere Architecture")
 
 ## Motivation
 
