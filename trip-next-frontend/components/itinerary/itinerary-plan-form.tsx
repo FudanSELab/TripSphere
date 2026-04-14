@@ -93,8 +93,13 @@ export function ItineraryPlanForm({ today: todayStr }: ItineraryPlanFormProps) {
           additionalPreferences,
         });
 
+        const itineraryId = result.itinerary?.id;
+        if (!itineraryId) {
+          throw new Error("规划结果缺少行程ID，无法进入编辑页");
+        }
+
         sessionStorage.setItem("itinerary_plan_result", JSON.stringify(result));
-        router.push("/itinerary/planner");
+        router.push(`/itinerary/planner?id=${itineraryId}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "规划失败，请重试");
       }

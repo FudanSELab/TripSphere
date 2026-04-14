@@ -109,18 +109,30 @@ async def plan_itinerary(
             "conversation_messages", []
         )
 
-        # Persist to itinerary service via gRPC
+        # Persist to itinerary service via gRPC. This must succeed so the
+        # planner page can always edit a durable itinerary ID.
         try:
             saved = await svc.create_itinerary(
                 itinerary=itinerary,
                 user_id=user_id,
                 markdown_content=markdown_content,
             )
-            # Use the server-assigned ID for subsequent operations
-            itinerary = itinerary.model_copy(update={"id": saved.id})
         except Exception as exc:
-            # Non-fatal: the itinerary is still returned even if save fails
-            logger.error("Failed to persist itinerary via gRPC: %s", exc)
+            logger.exception("Failed to persist itinerary via gRPC")
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to persist generated itinerary",
+            ) from exc
+
+        if not saved.id:
+            logger.error("Itinerary service returned empty id after create")
+            raise HTTPException(
+                status_code=502,
+                detail="Itinerary persistence returned empty id",
+            )
+
+        # Use the server-assigned ID for all follow-up edits/saves.
+        itinerary = itinerary.model_copy(update={"id": saved.id})
 
         return PlanItineraryResponse(
             itinerary=itinerary,
