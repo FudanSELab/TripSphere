@@ -300,13 +300,15 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
     daily_schedule = state.get("daily_schedule", {})
     hotel_details: list[dict[str, Any]] = state.get("hotel_details", [])
 
-    # Assign which hotel for each night: short trip 1 hotel, longer trip can use multiple
+    # Assign which hotel for each night:
+    # short trip 1 hotel, longer trip can use multiple
     def _hotel_for_night(night_index: int) -> dict[str, Any] | None:
         if not hotel_details:
             return None
         if len(hotel_details) == 1:
             return hotel_details[0]
-        # Spread multiple hotels over nights (e.g. 6 days -> hotel0 for nights 0,1,2 and hotel1 for 3,4,5)
+        # Spread multiple hotels over nights
+        # (e.g. 6 days -> hotel0 for nights 0,1,2 and hotel1 for 3,4,5)
         nights_per_hotel = max(
             1, (num_days + len(hotel_details) - 1) // len(hotel_details)
         )
