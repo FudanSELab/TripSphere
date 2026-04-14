@@ -596,7 +596,7 @@ requires-dist = [
     { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.29.0" },
     { name = "litellm", specifier = ">=1.80.5" },
     { name = "mcp-weather-server", specifier = ">=0.6.1" },
-    { name = "mem0ai", specifier = ">=0.1.115" },
+    { name = "mem0ai", specifier = ">=1.0.0" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },
     { name = "openinference-instrumentation-litellm", specifier = ">=0.1.29" },
@@ -2382,19 +2382,20 @@ wheels = [
 
 [[package]]
 name = "mem0ai"
-version = "0.1.115"
+version = "1.0.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openai" },
     { name = "posthog" },
+    { name = "protobuf" },
     { name = "pydantic" },
     { name = "pytz" },
     { name = "qdrant-client" },
     { name = "sqlalchemy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/72/2a/ccf4a8b79a4e67d3a2475599ff8276d3bdccce5c5da2e14deb449e7dfb1a/mem0ai-0.1.115.tar.gz", hash = "sha256:147a6593604188acd30281c40171112aed9f16e196fa528627430c15e00f1e32", size = 115605, upload-time = "2025-07-24T09:49:10.467Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/1e/2f8a8cc4b8e7f6126f3367d27dc65eac5cd4ceb854888faa3a8f62a2c0a0/mem0ai-1.0.11.tar.gz", hash = "sha256:ddb803bedc22bd514606d262407782e88df929f6991b59f6972fb8a25cc06001", size = 201758, upload-time = "2026-04-06T11:31:43.695Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/d5/55a5504077c175f4ff18259672df6fd0eae863236d730c87677d6de43f9a/mem0ai-0.1.115-py3-none-any.whl", hash = "sha256:29310bd5bcab644f7a4dbf87bd1afd878eb68458a2fb36cfcbf20bdff46fbdaf", size = 178065, upload-time = "2025-07-24T09:49:08.54Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/b5/f822c94e1b901f8a700af134c2473646de9a7db26364566f6a72d527d235/mem0ai-1.0.11-py3-none-any.whl", hash = "sha256:bcf4d678dc0a4d4e8eccaebe05562eae022fcdc825a0e3095d02f28cf61a5b6d", size = 297138, upload-time = "2026-04-06T11:31:41.716Z" },
 ]
 
 [[package]]
