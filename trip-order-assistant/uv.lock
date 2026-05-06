@@ -804,7 +804,7 @@ wheels = [
 
 [[package]]
 name = "google-adk"
-version = "1.30.0"
+version = "1.32.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -824,7 +824,8 @@ dependencies = [
     { name = "google-cloud-secret-manager" },
     { name = "google-cloud-spanner" },
     { name = "google-cloud-speech" },
-    { name = "google-cloud-storage" },
+    { name = "google-cloud-storage", version = "3.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "google-cloud-storage", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "google-genai" },
     { name = "graphviz" },
     { name = "httpx" },
@@ -853,9 +854,9 @@ dependencies = [
     { name = "watchdog" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5e/4c/2d8eb9313e7c5e2dc23fac8aa74155c5628151eb037e5a33f21146220346/google_adk-1.30.0.tar.gz", hash = "sha256:53cf7330e76c14e44a8518e6d548bed7bf351537b3a98d9cfd29dc5d2f90de49", size = 2356985, upload-time = "2026-04-13T23:17:15.673Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/cb/6c5ad3f7135071ed6465494acb88084b071c750e2215a55c842649f353e4/google_adk-1.32.0.tar.gz", hash = "sha256:539df330a695d8ae5dc1bc3f1155ef03c6c620620cd0b690b8d47865e722e51c", size = 2424585, upload-time = "2026-05-01T00:20:47.888Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/33/da2e72278ebbf0a41eb0dfc178def875f4ec781e71a0046b2bf11869ef58/google_adk-1.30.0-py3-none-any.whl", hash = "sha256:5e33f37a77d2af663296ad4e77eeaa78af20fff0ab0cb131059382f24347e21e", size = 2792492, upload-time = "2026-04-13T23:17:17.432Z" },
+    { url = "https://files.pythonhosted.org/packages/03/68/c02dee93b09c0af4cc68a6a4fdb330a8e4935ffa9c8ad9640590ca29cca4/google_adk-1.32.0-py3-none-any.whl", hash = "sha256:cee8e8bd1d869f7e01ba3e5aac44b255f70ee3f9bb78cb50b3253ce605703b0d", size = 2869333, upload-time = "2026-05-01T00:20:49.851Z" },
 ]
 
 [package.optional-dependencies]
@@ -941,7 +942,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-aiplatform"
-version = "1.140.0"
+version = "1.150.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docstring-parser" },
@@ -949,7 +950,8 @@ dependencies = [
     { name = "google-auth" },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-resource-manager" },
-    { name = "google-cloud-storage" },
+    { name = "google-cloud-storage", version = "3.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "google-cloud-storage", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "google-genai" },
     { name = "packaging" },
     { name = "proto-plus" },
@@ -957,13 +959,14 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1b/14/1c223faf986afffdd61c994a10c30a04985ed5ba072201058af2c6e1e572/google_cloud_aiplatform-1.140.0.tar.gz", hash = "sha256:ea7eb1870b4cf600f8c2472102e21c3a1bcaf723d6e49f00ed51bc6b88d54fff", size = 10146640, upload-time = "2026-03-04T00:56:38.95Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/a6/9f61a5c4086f6261ff9a1af72b414e7b0822cafba9819ef7834881fe1b5e/google_cloud_aiplatform-1.150.0.tar.gz", hash = "sha256:ff413e527cb753257957985acdcfebef697faf20a72587b59848d8208aaea0a2", size = 10566354, upload-time = "2026-05-05T22:54:25.219Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/5c/bb64aee2da24895d57611eed00fac54739bfa34f98ab344020a6605875bf/google_cloud_aiplatform-1.140.0-py2.py3-none-any.whl", hash = "sha256:e94493a2682b9d17efa7146a53bb3665bf1595c3394fd3d0f45d18f71623fddc", size = 8355660, upload-time = "2026-03-04T00:56:34.441Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/fd/0c0ec7a989d36908da67463074261ff79b4b6c1536a615477ef463c5f45b/google_cloud_aiplatform-1.150.0-py2.py3-none-any.whl", hash = "sha256:cdddf054712820048d14e2084fc2a86e58937332f2ac44ce73eb06af1ee8f5b2", size = 8669358, upload-time = "2026-05-05T22:54:21.526Z" },
 ]
 
 [package.optional-dependencies]
 agent-engines = [
+    { name = "aiohttp" },
     { name = "cloudpickle" },
     { name = "google-cloud-iam" },
     { name = "google-cloud-logging" },
@@ -1255,17 +1258,41 @@ wheels = [
 name = "google-cloud-storage"
 version = "3.9.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.13'",
+]
 dependencies = [
-    { name = "google-api-core" },
-    { name = "google-auth" },
-    { name = "google-cloud-core" },
-    { name = "google-crc32c" },
-    { name = "google-resumable-media" },
-    { name = "requests" },
+    { name = "google-api-core", marker = "python_full_version < '3.13'" },
+    { name = "google-auth", marker = "python_full_version < '3.13'" },
+    { name = "google-cloud-core", marker = "python_full_version < '3.13'" },
+    { name = "google-crc32c", marker = "python_full_version < '3.13'" },
+    { name = "google-resumable-media", marker = "python_full_version < '3.13'" },
+    { name = "requests", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f7/b1/4f0798e88285b50dfc60ed3a7de071def538b358db2da468c2e0deecbb40/google_cloud_storage-3.9.0.tar.gz", hash = "sha256:f2d8ca7db2f652be757e92573b2196e10fbc09649b5c016f8b422ad593c641cc", size = 17298544, upload-time = "2026-02-02T13:36:34.119Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/46/0b/816a6ae3c9fd096937d2e5f9670558908811d57d59ddf69dd4b83b326fd1/google_cloud_storage-3.9.0-py3-none-any.whl", hash = "sha256:2dce75a9e8b3387078cbbdad44757d410ecdb916101f8ba308abf202b6968066", size = 321324, upload-time = "2026-02-02T13:36:32.271Z" },
+]
+
+[[package]]
+name = "google-cloud-storage"
+version = "3.10.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
+]
+dependencies = [
+    { name = "google-api-core", marker = "python_full_version >= '3.13'" },
+    { name = "google-auth", marker = "python_full_version >= '3.13'" },
+    { name = "google-cloud-core", marker = "python_full_version >= '3.13'" },
+    { name = "google-crc32c", marker = "python_full_version >= '3.13'" },
+    { name = "google-resumable-media", marker = "python_full_version >= '3.13'" },
+    { name = "requests", marker = "python_full_version >= '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4c/47/205eb8e9a1739b5345843e5a425775cbdc472cc38e7eda082ba5b8d02450/google_cloud_storage-3.10.1.tar.gz", hash = "sha256:97db9aa4460727982040edd2bd13ff3d5e2260b5331ad22895802da1fc2a5286", size = 17309950, upload-time = "2026-03-23T09:35:23.409Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/ff/ca9ab2417fa913d75aae38bf40bf856bb2749a604b2e0f701b37cfcd23cc/google_cloud_storage-3.10.1-py3-none-any.whl", hash = "sha256:a72f656759b7b99bda700f901adcb3425a828d4a29f911bc26b3ea79c5b1217f", size = 324453, upload-time = "2026-03-23T09:35:21.368Z" },
 ]
 
 [[package]]
@@ -2663,7 +2690,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.135.1" },
-    { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.29.0" },
+    { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.32.0" },
     { name = "litellm", specifier = ">=1.80.7" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },

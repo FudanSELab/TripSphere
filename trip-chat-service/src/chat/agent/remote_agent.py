@@ -54,5 +54,5 @@ class RemoteAgentsFactory:
             name=agent_card.name,
             agent_card=agent_card,
             a2a_request_meta_provider=a2a_request_meta_provider,
-            # use_legacy=False,
+            use_legacy=False,
         )

@@ -58,7 +58,7 @@ class MongoSessionService(BaseSessionService):
                 app_name=app_name, user_id=user_id, session_id=session_id
             )
             if existing:
-                raise AlreadyExistsError(  # type: ignore
+                raise AlreadyExistsError(
                     f"Session with id {session_id} already exists."
                 )
 
