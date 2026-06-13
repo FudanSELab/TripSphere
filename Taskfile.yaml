@@ -43,11 +43,6 @@ includes:
     dir: trip-next-frontend
     internal: true
 
-  note:
-    taskfile: trip-note-service/Taskfile.yaml
-    dir: trip-note-service
-    internal: true
-
   order-assistant:
     taskfile: trip-order-assistant/Taskfile.yaml
     dir: trip-order-assistant
@@ -108,7 +103,6 @@ tasks:
       - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: next-frontend:gen-proto
-      - task: note:gen-proto
       - task: order-assistant:gen-proto
       - task: order:gen-proto
       - task: poi:gen-proto
@@ -128,7 +122,6 @@ tasks:
       - task: itinerary-planner:build
       - task: itinerary:build
       - task: next-frontend:build
-      - task: note:build
       - task: order-assistant:build
       - task: order:build
       - task: poi:build
