@@ -137,6 +137,26 @@ tasks:
       - task: review-summary:build
       - task: user:build
 
+  build-aliyun:
+    desc: Build Docker images for all services with Aliyun mirrors
+    cmds:
+      - task: attraction:build-aliyun
+      - task: chat:build-aliyun
+      - task: file:build-aliyun
+      - task: hotel:build-aliyun
+      - task: inventory:build-aliyun
+      - task: itinerary-planner:build-aliyun
+      - task: itinerary:build-aliyun
+      - task: next-frontend:build-aliyun
+      - task: note:build-aliyun
+      - task: order-assistant:build-aliyun
+      - task: order:build-aliyun
+      - task: poi:build-aliyun
+      - task: product:build-aliyun
+      - task: review:build-aliyun
+      - task: review-summary:build-aliyun
+      - task: user:build-aliyun
+
   start:
     desc: Start all services by Docker Compose
     cmds:
