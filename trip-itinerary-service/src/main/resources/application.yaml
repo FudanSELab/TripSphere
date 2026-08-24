@@ -7,6 +7,7 @@ spring:
       discovery:
         metadata:
           gRPC_port: ${grpc.server.port:50052}
+          protocol: grpc
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://root:fudanse@localhost:27017}

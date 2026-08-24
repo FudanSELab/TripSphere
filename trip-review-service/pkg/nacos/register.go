@@ -3,6 +3,7 @@ package nacos
 import (
 	"context"
 	"net"
+	"strconv"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
@@ -27,13 +28,8 @@ func getLocalIP() string {
 	return "127.0.0.1"
 }
 
-// Register registers the service to Nacos
-func (c *Client) Register(ctx context.Context, serviceName string, port uint64) error {
-	if c == nil {
-		return nil
-	}
-	registerIP := getLocalIP()
-	return c.RegisterInstance(ctx, vo.RegisterInstanceParam{
+func newRegisterInstanceParam(serviceName, registerIP string, port uint64) vo.RegisterInstanceParam {
+	return vo.RegisterInstanceParam{
 		Ip:          registerIP,
 		Port:        port,
 		ServiceName: serviceName,
@@ -41,7 +37,20 @@ func (c *Client) Register(ctx context.Context, serviceName string, port uint64) 
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,
-	})
+		Metadata: map[string]string{
+			"gRPC_port": strconv.FormatUint(port, 10),
+			"protocol":  "grpc",
+		},
+	}
+}
+
+// Register registers the service to Nacos
+func (c *Client) Register(ctx context.Context, serviceName string, port uint64) error {
+	if c == nil {
+		return nil
+	}
+	registerIP := getLocalIP()
+	return c.RegisterInstance(ctx, newRegisterInstanceParam(serviceName, registerIP, port))
 }
 
 // Deregister deregisters the service from Nacos
