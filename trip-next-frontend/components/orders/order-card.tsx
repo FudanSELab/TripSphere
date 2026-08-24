@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Hotel, Plane, TrainFront, Ticket, User, Calendar } from "lucide-react";
+import { Hotel, Ticket, User, Calendar } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -25,15 +25,11 @@ import {
   ORDER_STATUS_COMPLETED,
   ORDER_STATUS_CANCELLED,
   ORDER_TYPE_HOTEL,
-  ORDER_TYPE_FLIGHT,
-  ORDER_TYPE_TRAIN,
   ORDER_TYPE_ATTRACTION,
 } from "@/lib/order-types";
 
 const TYPE_ICON: Record<number, React.ReactNode> = {
   [ORDER_TYPE_HOTEL]: <Hotel className="size-4" />,
-  [ORDER_TYPE_FLIGHT]: <Plane className="size-4" />,
-  [ORDER_TYPE_TRAIN]: <TrainFront className="size-4" />,
   [ORDER_TYPE_ATTRACTION]: <Ticket className="size-4" />,
 };
 

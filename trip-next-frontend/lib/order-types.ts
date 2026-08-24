@@ -5,8 +5,6 @@ export const ORDER_STATUS_CANCELLED = 4;
 
 export const ORDER_TYPE_ATTRACTION = 1;
 export const ORDER_TYPE_HOTEL = 2;
-export const ORDER_TYPE_FLIGHT = 3;
-export const ORDER_TYPE_TRAIN = 4;
 
 export interface OrderItemData {
   id: string;

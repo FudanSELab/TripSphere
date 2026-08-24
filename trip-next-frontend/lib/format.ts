@@ -166,8 +166,6 @@ const ORDER_TYPE_LABELS: Record<number, string> = {
   0: "全部类型",
   1: "景点门票",
   2: "酒店住宿",
-  3: "机票",
-  4: "火车票",
 };
 
 export function formatOrderType(type: number): string {

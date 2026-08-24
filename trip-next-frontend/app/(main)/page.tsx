@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Hotel, Notebook, Sailboat, Sparkles, Ticket } from "lucide-react";
+import { Hotel, Sailboat, Sparkles, Ticket } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { HomeAtmosphereStrip } from "@/components/home/home-atmosphere-strip";
@@ -72,13 +72,6 @@ const HOME_SHORTCUTS: readonly HomeShortcut[] = [
     href: "/itinerary",
     ctaLabel: "打开规划",
     icon: Sparkles,
-  },
-  {
-    title: "笔记攻略",
-    description: "整理你的旅行记录与攻略，未来再次出发更从容。",
-    href: "/notes",
-    ctaLabel: "查看笔记",
-    icon: Notebook,
   },
 ];
 
@@ -156,7 +149,7 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             {HOME_SHORTCUTS.map((shortcut) => (
               <HomeEntryCard
                 key={shortcut.href}

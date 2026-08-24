@@ -7,9 +7,6 @@ import {
   PanelLeft,
   Sparkles,
   Ticket,
-  Notebook,
-  Plane,
-  Train,
 } from "lucide-react";
 
 import {
@@ -27,14 +24,11 @@ import {
 
 const travelLinks = [
   { title: "酒店", url: "/hotels", icon: Hotel },
-  { title: "机票", url: "/flights", icon: Plane },
-  { title: "火车票", url: "/trains", icon: Train },
   { title: "景点", url: "/attractions", icon: Ticket },
 ];
 
 const aiLinks = [
   { title: "AI行程规划", url: "/itinerary", icon: Sparkles },
-  { title: "笔记攻略", url: "/notes", icon: Notebook },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

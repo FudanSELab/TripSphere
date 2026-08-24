@@ -9,8 +9,6 @@ const TYPE_OPTIONS = [
   { value: "", label: "全部类型" },
   { value: "1", label: "景点门票" },
   { value: "2", label: "酒店住宿" },
-  { value: "3", label: "机票" },
-  { value: "4", label: "火车票" },
 ] as const;
 
 export function OrderFilters() {
