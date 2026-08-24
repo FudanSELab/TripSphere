@@ -5,6 +5,9 @@ spring:
       discovery:
         namespace: public
         group: DEFAULT_GROUP
+        metadata:
+          gRPC_port: ${grpc.server.port:50061}
+          protocol: grpc
   datasource:
     url: jdbc:postgresql://localhost:5432/inventory_db
     username: postgres

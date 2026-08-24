@@ -5,6 +5,9 @@ spring:
       discovery:
         namespace: public
         group: DEFAULT_GROUP
+        metadata:
+          gRPC_port: ${grpc.server.port:50062}
+          protocol: grpc
   datasource:
     url: jdbc:postgresql://localhost:5432/order_db
     username: postgres
