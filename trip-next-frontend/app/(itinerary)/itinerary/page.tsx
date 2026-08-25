@@ -6,9 +6,10 @@ import { ItineraryList } from "@/components/itinerary/itinerary-list";
 import { ItineraryListSkeleton } from "@/components/itinerary/itinerary-list-skeleton";
 import { MapPlaceholder } from "@/components/itinerary/map-placeholder";
 import { Sparkles } from "lucide-react";
+import { formatDateInTimeZone } from "@/lib/format";
 
 export default function ItineraryPage() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = formatDateInTimeZone(new Date());
 
   const itinerariesPromise = listMyItineraries();
 

@@ -1,5 +1,6 @@
 /** Default locale for date/time formatting (UI copy is mostly Chinese). */
 export const APP_DATE_LOCALE = "zh-CN";
+export const APP_TIME_ZONE = "Asia/Shanghai";
 
 const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -17,7 +18,15 @@ export function parseDateOnly(iso: string): Date | null {
   const d = Number(m[3]);
   if (y < 1 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
   const dt = new Date(`${trimmed}T12:00:00`);
-  return Number.isNaN(dt.getTime()) ? null : dt;
+  if (
+    Number.isNaN(dt.getTime()) ||
+    dt.getFullYear() !== y ||
+    dt.getMonth() + 1 !== mo ||
+    dt.getDate() !== d
+  ) {
+    return null;
+  }
+  return dt;
 }
 
 /**
@@ -32,6 +41,34 @@ export function formatDate(date: Date): string {
     weekday: "short",
   }).format(date);
   return `${datePart}(${wd})`;
+}
+
+/** Serialize a local calendar date without applying a UTC timezone shift. */
+export function formatDateOnly(date: Date): string {
+  const year = date.getFullYear().toString().padStart(4, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/** Format a date using the application's explicit business timezone. */
+export function formatDateInTimeZone(
+  date: Date,
+  timeZone = APP_TIME_ZONE,
+): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (!year || !month || !day) {
+    throw new Error("Unable to format date in application timezone");
+  }
+  return `${year}-${month}-${day}`;
 }
 
 /**

@@ -22,17 +22,20 @@ from langchain_core.tools import tool
 from langchain_core.tools.base import InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
+from itinerary_planner.agent.exceptions import InvalidPlanningResultError
+from itinerary_planner.agent.validation import (
+    coordinates_are_valid,
+    validate_itinerary,
+)
 from itinerary_planner.config.settings import get_settings
+from itinerary_planner.models.itinerary import Itinerary
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.tools.attractions import search_attractions_nearby
+from itinerary_planner.tools.geocoding import GeocodeResult, geocoding_tool
 
 logger = logging.getLogger(__name__)
-
-_FALLBACK_LONGITUDE = 121.4737
-_FALLBACK_LATITUDE = 31.2304
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -52,8 +55,20 @@ def _recompute_summary(itinerary: dict[str, Any]) -> dict[str, Any]:
     )
     summary: dict[str, Any] = dict(itinerary.get("summary") or {})
     summary["total_activities"] = len(all_activities)
-    summary["total_estimated_cost"] = round(total_cost)
+    summary["total_estimated_cost"] = round(total_cost, 2)
     return {**itinerary, "summary": summary}
+
+
+def _normalize_activity(activity: dict[str, Any]) -> dict[str, Any]:
+    estimated_cost = activity.get("estimated_cost") or {}
+    return {
+        **activity,
+        "id": activity.get("id") or f"activity-{uuid.uuid4().hex[:8]}",
+        "estimated_cost": {
+            "amount": float(estimated_cost.get("amount", 0)),
+            "currency": estimated_cost.get("currency", "CNY"),
+        },
+    }
 
 
 def _ok(tool_call_id: str, message: str) -> Command:  # type: ignore[type-arg]
@@ -63,19 +78,94 @@ def _ok(tool_call_id: str, message: str) -> Command:  # type: ignore[type-arg]
     )
 
 
+def _trusted_entity_coordinates(
+    itinerary: dict[str, Any],
+) -> tuple[dict[str, tuple[float, float]], dict[str, tuple[float, float]]]:
+    attractions: dict[str, tuple[float, float]] = {}
+    hotels: dict[str, tuple[float, float]] = {}
+    for day_plan in itinerary.get("day_plans") or []:
+        for activity in day_plan.get("activities") or []:
+            location = activity.get("location") or {}
+            try:
+                coordinates = (
+                    float(location.get("longitude")),
+                    float(location.get("latitude")),
+                )
+            except (TypeError, ValueError):
+                continue
+            attraction_id = activity.get("attraction_id")
+            hotel_id = activity.get("hotel_id")
+            if isinstance(attraction_id, str) and attraction_id:
+                attractions[attraction_id] = coordinates
+            if isinstance(hotel_id, str) and hotel_id:
+                hotels[hotel_id] = coordinates
+    return attractions, hotels
+
+
+def _entity_coordinates_match(
+    itinerary: Itinerary,
+    trusted_attractions: dict[str, tuple[float, float]],
+    trusted_hotels: dict[str, tuple[float, float]],
+) -> bool:
+    for day_plan in itinerary.day_plans:
+        for activity in day_plan.activities:
+            entity_id = activity.attraction_id or activity.hotel_id
+            if not entity_id:
+                continue
+            trusted = (
+                trusted_attractions.get(entity_id)
+                if activity.attraction_id
+                else trusted_hotels.get(entity_id)
+            )
+            actual = (activity.location.longitude, activity.location.latitude)
+            if trusted != actual:
+                return False
+    return True
+
+
 def _update(
     tool_call_id: str,
     message: str,
+    current_itinerary: dict[str, Any],
     new_itinerary: dict[str, Any],
+    verified_attractions: dict[str, tuple[float, float]] | None = None,
 ) -> Command:  # type: ignore[type-arg]
-    """Return a Command that updates itinerary + adds a ToolMessage."""
+    """Validate and return an itinerary state update."""
     if not new_itinerary.get("id"):
         logger.warning("Skipping itinerary update because itinerary.id is missing.")
         return _ok(tool_call_id, "No itinerary id found; skipping update.")
 
+    trusted_attractions, trusted_hotels = _trusted_entity_coordinates(
+        current_itinerary
+    )
+    trusted_attractions.update(verified_attractions or {})
+    try:
+        recomputed_itinerary = _recompute_summary(new_itinerary)
+        validated_itinerary = Itinerary.model_validate(recomputed_itinerary)
+        validate_itinerary(
+            validated_itinerary,
+            valid_attraction_ids=set(trusted_attractions),
+            valid_hotel_ids=set(trusted_hotels),
+        )
+        if not _entity_coordinates_match(
+            validated_itinerary,
+            trusted_attractions,
+            trusted_hotels,
+        ):
+            raise InvalidPlanningResultError(
+                "Referenced entity coordinates do not match trusted service data"
+            )
+    except (InvalidPlanningResultError, ValidationError, TypeError, ValueError) as exc:
+        logger.warning("Rejected invalid itinerary edit: %s", exc)
+        return _ok(
+            tool_call_id,
+            "The requested change was not applied because it would make the "
+            "itinerary invalid.",
+        )
+
     return Command(
         update={
-            "itinerary": _recompute_summary(new_itinerary),
+            "itinerary": validated_itinerary.model_dump(mode="json"),
             "messages": [ToolMessage(content=message, tool_call_id=tool_call_id)],
         }
     )
@@ -108,18 +198,13 @@ def update_itinerary_day(
     """
     itinerary: dict[str, Any] = dict(state.get("itinerary") or {})
     day_plans: list[dict[str, Any]] = list(itinerary.get("day_plans") or [])
+    if not any(dp.get("day_number") == day for dp in day_plans):
+        return _ok(tool_call_id, f"Day {day} not found in itinerary.")
 
-    cleaned_activities = [
-        {
-            **a,
-            "id": a.get("id") or f"activity-{uuid.uuid4().hex[:8]}",
-            "estimated_cost": {
-                "amount": float((a.get("estimated_cost") or {}).get("amount", 0)),
-                "currency": (a.get("estimated_cost") or {}).get("currency", "CNY"),
-            },
-        }
-        for a in activities
-    ]
+    try:
+        cleaned_activities = [_normalize_activity(activity) for activity in activities]
+    except (AttributeError, TypeError, ValueError):
+        return _ok(tool_call_id, "Day activities contain invalid data.")
 
     updated_plans = [
         (
@@ -133,6 +218,7 @@ def update_itinerary_day(
     return _update(
         tool_call_id,
         f"Day {day} activities replaced ({len(cleaned_activities)} activities).",
+        itinerary,
         new_itinerary,
     )
 
@@ -161,15 +247,13 @@ def add_activity(
     """
     itinerary: dict[str, Any] = dict(state.get("itinerary") or {})
     day_plans: list[dict[str, Any]] = list(itinerary.get("day_plans") or [])
+    if not any(dp.get("day_number") == day for dp in day_plans):
+        return _ok(tool_call_id, f"Day {day} not found in itinerary.")
 
-    act = {
-        **activity,
-        "id": activity.get("id") or f"activity-{uuid.uuid4().hex[:8]}",
-        "estimated_cost": {
-            "amount": float((activity.get("estimated_cost") or {}).get("amount", 0)),
-            "currency": (activity.get("estimated_cost") or {}).get("currency", "CNY"),
-        },
-    }
+    try:
+        act = _normalize_activity(activity)
+    except (AttributeError, TypeError, ValueError):
+        return _ok(tool_call_id, "The activity contains invalid data.")
     updated_plans = [
         (
             {**dp, "activities": [*dp.get("activities", []), act]}
@@ -182,6 +266,7 @@ def add_activity(
     return _update(
         tool_call_id,
         f'Added "{act.get("name", "activity")}" to day {day}.',
+        itinerary,
         new_itinerary,
     )
 
@@ -237,7 +322,7 @@ def remove_spot(
         if removed
         else f'"{spot_name}" not found in day {day}; no change.'
     )
-    return _update(tool_call_id, msg, new_itinerary)
+    return _update(tool_call_id, msg, itinerary, new_itinerary)
 
 
 @tool
@@ -263,9 +348,12 @@ def delete_day(
     itinerary: dict[str, Any] = dict(state.get("itinerary") or {})
     day_plans: list[dict[str, Any]] = list(itinerary.get("day_plans") or [])
 
+    if not any(dp.get("day_number") == day for dp in day_plans):
+        return _ok(tool_call_id, f"Day {day} not found in itinerary.")
+
     filtered = [dp for dp in day_plans if dp.get("day_number") != day]
     if not filtered:
-        return _ok(tool_call_id, f"Day {day} deleted; itinerary is now empty.")
+        return _ok(tool_call_id, "An itinerary must contain at least one day.")
 
     first_date: str = filtered[0]["date"]
     renumbered = [
@@ -284,6 +372,7 @@ def delete_day(
             f"Day {day} deleted; {len(renumbered)} remaining day(s) "
             "renumbered with consecutive dates."
         ),
+        itinerary,
         new_itinerary,
     )
 
@@ -317,20 +406,17 @@ def add_day(
 
     new_day_number = len(day_plans) + 1
     clean_notes = notes if notes not in ("", "undefined", "null", None) else ""
+    try:
+        normalized_activities = [
+            _normalize_activity(activity) for activity in activities
+        ]
+    except (AttributeError, TypeError, ValueError):
+        return _ok(tool_call_id, "Day activities contain invalid data.")
+
     new_day: dict[str, Any] = {
         "day_number": new_day_number,
         "date": date,
-        "activities": [
-            {
-                **a,
-                "id": a.get("id") or f"activity-{uuid.uuid4().hex[:8]}",
-                "estimated_cost": {
-                    "amount": float((a.get("estimated_cost") or {}).get("amount", 0)),
-                    "currency": (a.get("estimated_cost") or {}).get("currency", "CNY"),
-                },
-            }
-            for a in activities
-        ],
+        "activities": normalized_activities,
         "notes": clean_notes,
     }
     new_itinerary = {
@@ -338,7 +424,12 @@ def add_day(
         "day_plans": [*day_plans, new_day],
         "end_date": date,
     }
-    return _update(tool_call_id, f"Day {new_day_number} ({date}) added.", new_itinerary)
+    return _update(
+        tool_call_id,
+        f"Day {new_day_number} ({date}) added.",
+        itinerary,
+        new_itinerary,
+    )
 
 
 @tool
@@ -379,17 +470,14 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
     """
 
     class _RegActivity(BaseModel):
-        name: str = Field(description="Activity / attraction name")
+        attraction_id: str = Field(description="Exact attraction ID from the list")
         description: str = Field(description="Short description (≤ 40 chars)")
         category: str = Field(
             description="sightseeing|cultural|shopping|dining|entertainment|transportation|nature"
         )
-        start_time: str = Field(description="HH:MM")
-        end_time: str = Field(description="HH:MM")
-        estimated_cost: float = Field(description="Estimated cost in CNY")
-        longitude: float = Field(description="Actual longitude of the location")
-        latitude: float = Field(description="Actual latitude of the location")
-        address: str = Field(description="Full address")
+        start_time: str = Field(pattern=r"^\d{2}:\d{2}$", description="HH:MM")
+        end_time: str = Field(pattern=r"^\d{2}:\d{2}$", description="HH:MM")
+        estimated_cost: float = Field(ge=0, description="Estimated cost in CNY")
 
     class _RegResult(BaseModel):
         activities: list[_RegActivity] = Field(
@@ -427,19 +515,51 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
         destination: str = itinerary.get("destination", "")
 
-        # Pick destination coords from first activity with valid coordinates
-        dest_lon = _FALLBACK_LONGITUDE
-        dest_lat = _FALLBACK_LATITUDE
+        destination_coordinates: tuple[float, float] | None = None
         for dp in day_plans:
             for act in dp.get("activities", []):
                 loc = act.get("location") or {}
-                if loc.get("longitude") and loc.get("latitude"):
-                    dest_lon = float(loc["longitude"])
-                    dest_lat = float(loc["latitude"])
+                try:
+                    longitude = float(loc.get("longitude") or 0)
+                    latitude = float(loc.get("latitude") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if coordinates_are_valid(longitude, latitude):
+                    destination_coordinates = (longitude, latitude)
                     break
-            else:
-                continue
-            break
+            if destination_coordinates:
+                break
+
+        if destination_coordinates is None:
+            try:
+                geocode_result: GeocodeResult = await geocoding_tool.ainvoke(
+                    {"address": destination, "city": destination}
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Geocoding failed for regenerate_day in %s: %s",
+                    destination,
+                    exc,
+                )
+                return _ok(
+                    tool_call_id,
+                    f"Cannot regenerate day {day}: destination coordinates are unavailable.",
+                )
+
+            if not coordinates_are_valid(
+                geocode_result.longitude,
+                geocode_result.latitude,
+            ):
+                return _ok(
+                    tool_call_id,
+                    f"Cannot regenerate day {day}: geocoding returned invalid coordinates.",
+                )
+            destination_coordinates = (
+                geocode_result.longitude,
+                geocode_result.latitude,
+            )
+
+        dest_lon, dest_lat = destination_coordinates
 
         # Search for fresh attractions
         try:
@@ -450,18 +570,35 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
                 radius_km=25.0,
                 limit=20,
             )
+            valid_attractions = [
+                attraction
+                for attraction in search_result.attractions
+                if attraction.id.strip()
+                and attraction.name.strip()
+                and coordinates_are_valid(
+                    attraction.longitude,
+                    attraction.latitude,
+                )
+            ]
+            if not valid_attractions:
+                return _ok(
+                    tool_call_id,
+                    f"Cannot regenerate day {day}: no usable attractions were found.",
+                )
             attractions_text = "\n".join(
                 (
-                    f"- {a.name}: {a.description} "
-                    f"(lat={a.latitude:.4f}, lon={a.longitude:.4f}, tags={a.tags})"
+                    f"- id={a.id}; name={a.name}; description={a.description}; "
+                    f"tags={a.tags}"
                 )
-                for a in search_result.attractions
+                for a in valid_attractions
             )
-            attraction_map = {a.name: a for a in search_result.attractions}
+            attraction_map = {a.id: a for a in valid_attractions}
         except Exception as exc:
             logger.warning("Attraction search failed for regenerate_day: %s", exc)
-            attractions_text = f"General attractions in {destination}"
-            attraction_map = {}
+            return _ok(
+                tool_call_id,
+                f"Cannot regenerate day {day}: attraction service is unavailable.",
+            )
 
         # Ask LLM to regenerate the day
         from langchain_openai import ChatOpenAI  # local import to avoid circular deps
@@ -480,7 +617,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
             f"User preference / style: {preference}\n\n"
             f"Available attractions:\n{attractions_text}\n\n"
             f"Generate 3–4 varied activities. "
-            f"When available, use the EXACT name and coordinates from the list above. "
+            f"Every activity must use an exact attraction_id from the list above. "
             f"Keep all activities within {destination}."
         )
 
@@ -492,32 +629,39 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
             new_activities: list[dict[str, Any]] = []
             for act in result.activities:
-                # Try to enrich with exact coordinates from attraction service
-                matched = attraction_map.get(act.name)
-                lon = matched.longitude if matched else act.longitude
-                lat = matched.latitude if matched else act.latitude
-                addr = matched.address if matched else act.address
-                attraction_id = matched.id if matched else None
+                start_time = datetime.strptime(act.start_time, "%H:%M").time()
+                end_time = datetime.strptime(act.end_time, "%H:%M").time()
+                if start_time >= end_time:
+                    return _ok(
+                        tool_call_id,
+                        f"Cannot regenerate day {day}: the model returned an invalid time range.",
+                    )
+                matched = attraction_map.get(act.attraction_id)
+                if matched is None:
+                    return _ok(
+                        tool_call_id,
+                        f"Cannot regenerate day {day}: the model selected an unknown attraction.",
+                    )
                 new_activities.append(
                     {
                         "id": f"activity-{uuid.uuid4().hex[:8]}",
-                        "name": act.name,
+                        "name": matched.name,
                         "description": act.description,
                         "start_time": act.start_time,
                         "end_time": act.end_time,
                         "category": act.category,
                         "location": {
-                            "name": act.name,
-                            "longitude": lon,
-                            "latitude": lat,
-                            "address": addr,
+                            "name": matched.name,
+                            "longitude": matched.longitude,
+                            "latitude": matched.latitude,
+                            "address": matched.address,
                         },
                         "estimated_cost": {
                             "amount": act.estimated_cost,
                             "currency": "CNY",
                         },
                         "kind": "attraction_visit",
-                        "attraction_id": attraction_id,
+                        "attraction_id": matched.id,
                         "hotel_id": None,
                     }
                 )
@@ -540,7 +684,12 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
                 f"Day {day} regenerated with {len(new_activities)} "
                 f'new activities (preference: "{preference}").'
             ),
+            itinerary,
             new_itinerary,
+            verified_attractions={
+                attraction.id: (attraction.longitude, attraction.latitude)
+                for attraction in attraction_map.values()
+            },
         )
 
     return regenerate_day

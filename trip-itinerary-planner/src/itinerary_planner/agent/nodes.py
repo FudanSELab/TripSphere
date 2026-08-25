@@ -1,13 +1,21 @@
 import logging
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
 
+from itinerary_planner.agent.exceptions import (
+    InvalidPlanningResultError,
+    PlanningDependencyError,
+)
 from itinerary_planner.agent.state import PlanningState
+from itinerary_planner.agent.validation import (
+    coordinates_are_valid,
+    validate_generated_plan,
+    validate_itinerary,
+)
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.activity import Activity, ActivityLocation, Cost
 from itinerary_planner.models.itinerary import (
@@ -16,7 +24,11 @@ from itinerary_planner.models.itinerary import (
     ItinerarySummary,
     get_attraction_tags_for_interests,
 )
-from itinerary_planner.models.planning import PlanningProgressEvent, PlanningStep
+from itinerary_planner.models.planning import (
+    GeneratedItineraryPlan,
+    PlanningProgressEvent,
+    PlanningStep,
+)
 from itinerary_planner.prompts.workflow import (
     MARKDOWN_GENERATION_PROMPT,
     RESEARCH_AND_PLAN_PROMPT,
@@ -31,6 +43,8 @@ from itinerary_planner.tools import (
 
 logger = logging.getLogger(__name__)
 
+_ATTRACTION_SAMPLE_SIZE = 15
+
 chat_model = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.0,
@@ -39,45 +53,37 @@ chat_model = ChatOpenAI(
 )
 
 
-async def research_and_plan(state: PlanningState) -> dict[str, Any]:
-    """Step 1: Research destination and plan activities."""
-    logger.info(
-        f"Researching destination and planning activities for {state['destination']}"
-    )
-
-    # Calculate trip details
-    start = datetime.fromisoformat(state["start_date"])
-    end = datetime.fromisoformat(state["end_date"])
-    num_days = (end - start).days + 1
-
-    # Step 1: Geocode destination
+async def _geocode_destination(destination: str) -> dict[str, Any]:
     try:
         geocode_result: GeocodeResult = await geocoding_tool.ainvoke(
-            {
-                "address": state["destination"],
-                "city": state["destination"],
-            }
+            {"address": destination, "city": destination}
         )
-        destination_coords = {
-            "longitude": geocode_result.longitude,
-            "latitude": geocode_result.latitude,
-            "address": geocode_result.address,
-        }
-        logger.info(f"Geocoded {state['destination']} to coordinates")
-    except Exception as e:
-        logger.error(f"Geocoding failed: {e}")
-        destination_coords = {
-            "longitude": 121.4737,
-            "latitude": 31.2304,
-            "address": state["destination"],
-        }
+    except Exception as exc:
+        raise PlanningDependencyError(
+            f"Unable to resolve coordinates for destination '{destination}'"
+        ) from exc
 
-    travel_interests = state.get("interests", [])
-    logger.info(f"Travel interests: {travel_interests}")
-    tags = get_attraction_tags_for_interests(travel_interests)
-    logger.info(f"Attraction tags: {tags}")
+    if not coordinates_are_valid(
+        geocode_result.longitude,
+        geocode_result.latitude,
+    ):
+        raise PlanningDependencyError(
+            f"Geocoding returned invalid coordinates for destination '{destination}'"
+        )
 
-    # Step 2: Search for attractions
+    logger.info("Geocoded %s to valid coordinates", destination)
+    return {
+        "longitude": geocode_result.longitude,
+        "latitude": geocode_result.latitude,
+        "address": geocode_result.address or destination,
+    }
+
+
+async def _find_attraction_candidates(
+    state: PlanningState,
+    destination_coords: dict[str, Any],
+) -> list[AttractionDetail]:
+    tags = get_attraction_tags_for_interests(state.get("interests", []))
     try:
         search_result = await search_attractions_nearby(
             nacos_naming=state["nacos_naming"],
@@ -87,55 +93,49 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
             tags=tags,
             limit=35,
         )
-        # shuffle the attractions and sample 10
-        attractions: list[AttractionDetail] = random.sample(
-            search_result.attractions, 15
+    except Exception as exc:
+        raise PlanningDependencyError(
+            "Unable to load attraction candidates for itinerary planning"
+        ) from exc
+
+    valid_attractions = [
+        attraction
+        for attraction in search_result.attractions
+        if attraction.id.strip()
+        and attraction.name.strip()
+        and coordinates_are_valid(attraction.longitude, attraction.latitude)
+    ]
+    if not valid_attractions:
+        raise PlanningDependencyError(
+            "Attraction service returned no usable candidates for the destination"
         )
-        logger.info(f"Found {len(attractions)} attractions via gRPC service")
-    except Exception as e:
-        logger.error(f"Attraction search failed: {e}")
-        attractions = []
 
-    # Step 3: Use LLM to create complete itinerary
-    class DailyActivity(BaseModel):
-        name: str
-        description: str
-        category: str
-        start_time: str  # HH:MM
-        end_time: str
-        estimated_cost: float
+    sample_size = min(_ATTRACTION_SAMPLE_SIZE, len(valid_attractions))
+    selected = random.sample(valid_attractions, sample_size)
+    logger.info(
+        "Selected %d of %d valid attraction candidates",
+        len(selected),
+        len(valid_attractions),
+    )
+    return selected
 
-    class DailyPlan(BaseModel):
-        day_number: int
-        activities: list[DailyActivity]
-        notes: str = ""
 
-    class CompleteItineraryPlan(BaseModel):
-        destination_info: str
-        day_plans: list[DailyPlan]
-        highlights: list[str]
-        total_estimated_cost: float
-
-    # Format attractions for LLM
-    if len(attractions) > 0:
-        attractions_text = "\n".join(
-            [
-                f"- {attraction.name}: {attraction.description} "
-                f"(Tags: {', '.join(attraction.tags)})"
-                for attraction in attractions[:10]
-            ]
-        )
-    else:
-        attractions_text = "No specific attractions found - generate general activities"
+async def _generate_itinerary_plan(
+    state: PlanningState,
+    attractions: list[AttractionDetail],
+    num_days: int,
+) -> GeneratedItineraryPlan:
+    attractions_text = "\n".join(
+        f"- {attraction.name}: {attraction.description} "
+        f"(Tags: {', '.join(attraction.tags)})"
+        for attraction in attractions
+    )
 
     interests_str = ", ".join(state.get("interests", [])) or "general travel"
     pace = state.get("pace", "moderate")
-
-    # Adjust activities per day based on pace
     pace_activities = {"relaxed": 2, "moderate": 3, "intense": 4}
     activities_per_day = pace_activities.get(pace, 3)
-
-    structured_llm = chat_model.with_structured_output(CompleteItineraryPlan)  # pyright: ignore
+    structured_llm = chat_model.with_structured_output(GeneratedItineraryPlan)  # pyright: ignore
 
     prompt = RESEARCH_AND_PLAN_PROMPT.format(
         num_days=num_days,
@@ -151,91 +151,114 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 
     try:
         itinerary_plan = await structured_llm.ainvoke(prompt)  # pyright: ignore
-        itinerary_plan = CompleteItineraryPlan.model_validate(itinerary_plan)
+        validated_plan = GeneratedItineraryPlan.model_validate(itinerary_plan)
+        validate_generated_plan(validated_plan, num_days)
+        return validated_plan
+    except InvalidPlanningResultError:
+        raise
+    except Exception as exc:
+        raise PlanningDependencyError(
+            "The itinerary model returned an invalid planning result"
+        ) from exc
 
-        # Store attraction details for coordinate lookup
-        attraction_details = {
-            attraction.name: attraction.model_dump() for attraction in attractions
-        }
 
-        # Convert to expected format
-        daily_schedule = {}
-        for day_plan in itinerary_plan.day_plans:
-            daily_schedule[day_plan.day_number] = [
+async def _find_hotel_candidates(
+    state: PlanningState,
+    itinerary_plan: GeneratedItineraryPlan,
+    attraction_details: dict[str, dict[str, Any]],
+    destination_coords: dict[str, Any],
+    num_days: int,
+) -> list[dict[str, Any]]:
+    matched_attractions = [
+        match
+        for day_plan in itinerary_plan.day_plans
+        for activity in day_plan.activities
+        if (match := _find_matching_attraction(activity.name, attraction_details))
+    ]
+    if matched_attractions:
+        center_lat = sum(item["latitude"] for item in matched_attractions) / len(
+            matched_attractions
+        )
+        center_lon = sum(item["longitude"] for item in matched_attractions) / len(
+            matched_attractions
+        )
+    else:
+        center_lat = destination_coords["latitude"]
+        center_lon = destination_coords["longitude"]
+
+    try:
+        hotel_result = await search_hotels_nearby(
+            nacos_naming=state["nacos_naming"],
+            center_longitude=center_lon,
+            center_latitude=center_lat,
+            radius_km=12.0,
+            limit=3 if num_days <= 4 else 5,
+        )
+    except Exception as exc:
+        raise PlanningDependencyError(
+            "Unable to load hotel candidates for itinerary planning"
+        ) from exc
+
+    valid_hotels = [
+        hotel.model_dump()
+        for hotel in hotel_result.hotels
+        if hotel.id.strip()
+        and hotel.name.strip()
+        and coordinates_are_valid(hotel.longitude, hotel.latitude)
+    ]
+    logger.info(
+        "Found %d valid hotels near attractions center (%.4f, %.4f)",
+        len(valid_hotels),
+        center_lat,
+        center_lon,
+    )
+    return valid_hotels
+
+
+async def research_and_plan(state: PlanningState) -> dict[str, Any]:
+    """Research the destination and build a validated planning schedule."""
+    destination = state["destination"]
+    logger.info("Researching destination and planning activities for %s", destination)
+
+    start = date.fromisoformat(state["start_date"])
+    end = date.fromisoformat(state["end_date"])
+    num_days = (end - start).days + 1
+
+    destination_coords = await _geocode_destination(destination)
+    attractions = await _find_attraction_candidates(state, destination_coords)
+    itinerary_plan = await _generate_itinerary_plan(state, attractions, num_days)
+    attraction_details = {
+        attraction.name: attraction.model_dump() for attraction in attractions
+    }
+
+    daily_schedule: dict[int, list[dict[str, Any]]] = {}
+    for day_plan in itinerary_plan.day_plans:
+        daily_schedule[day_plan.day_number] = []
+        for activity in day_plan.activities:
+            attraction = _find_matching_attraction(
+                activity.name,
+                attraction_details,
+            )
+            daily_schedule[day_plan.day_number].append(
                 {
                     "name": activity.name,
                     "start_time": activity.start_time,
                     "end_time": activity.end_time,
                     "description": activity.description,
                     "category": activity.category,
-                    "location": activity.name,  # Will be geocoded later
+                    "location": activity.name,
                     "estimated_cost": activity.estimated_cost,
+                    "attraction_id": attraction.get("id") if attraction else None,
                 }
-                for activity in day_plan.activities
-            ]
-
-        # Step 4: Geometric center of planned attractions -> search hotels nearby
-        lats: list[float] = []
-        lons: list[float] = []
-        for day_plan in itinerary_plan.day_plans:
-            for activity in day_plan.activities:
-                att = _find_matching_attraction(activity.name, attraction_details)
-                if att:
-                    lats.append(att["latitude"])
-                    lons.append(att["longitude"])
-        if lats and lons:
-            center_lat = sum(lats) / len(lats)
-            center_lon = sum(lons) / len(lons)
-        else:
-            center_lat = destination_coords["latitude"]
-            center_lon = destination_coords["longitude"]
-
-        hotel_limit = (
-            3 if num_days <= 4 else 5
-        )  # Short trip: one hotel; longer: multiple options
-        try:
-            hotel_result = await search_hotels_nearby(
-                nacos_naming=state["nacos_naming"],
-                center_longitude=center_lon,
-                center_latitude=center_lat,
-                radius_km=12.0,
-                limit=hotel_limit,
             )
-            hotel_details = [h.model_dump() for h in hotel_result.hotels]
-            logger.info(
-                "Found %d hotels near attractions center (%.4f, %.4f)",
-                len(hotel_details),
-                center_lat,
-                center_lon,
-            )
-        except Exception as e:
-            logger.error("Hotel search failed: %s", e)
-            hotel_details = []
 
-    except Exception as e:
-        logger.error(f"LLM planning failed: {e}")
-        # Create fallback plan
-        attraction_details = {}
-        daily_schedule = {}
-        itinerary_plan = CompleteItineraryPlan(
-            destination_info=f"General information about {state['destination']}",
-            day_plans=[],
-            highlights=[f"Explore {state['destination']}", "Experience local culture"],
-            total_estimated_cost=0.0,
-        )
-        # Still search hotels by destination center
-        try:
-            hotel_result = await search_hotels_nearby(
-                nacos_naming=state["nacos_naming"],
-                center_longitude=destination_coords["longitude"],
-                center_latitude=destination_coords["latitude"],
-                radius_km=12.0,
-                limit=5,
-            )
-            hotel_details = [h.model_dump() for h in hotel_result.hotels]
-        except Exception as eh:
-            logger.error("Hotel search failed: %s", eh)
-            hotel_details = []
+    hotel_details = await _find_hotel_candidates(
+        state,
+        itinerary_plan,
+        attraction_details,
+        destination_coords,
+        num_days,
+    )
 
     # Create progress event
     progress_event = PlanningProgressEvent(
@@ -259,29 +282,13 @@ async def research_and_plan(state: PlanningState) -> dict[str, Any]:
 def _find_matching_attraction(
     location_name: str, attraction_details: dict[str, dict[str, Any]]
 ) -> dict[str, Any] | None:
-    """Find matching attraction using exact match first, then fuzzy match."""
-    # 1. Exact match
+    """Find an attraction without guessing across different entity names."""
     if location_name in attraction_details:
         return attraction_details[location_name]
 
-    # 2. Case-insensitive match
     location_lower = location_name.lower()
     for name, details in attraction_details.items():
         if name.lower() == location_lower:
-            return details
-
-    # 3. Partial match (location_name contains attraction name or vice versa)
-    for name, details in attraction_details.items():
-        if name in location_name or location_name in name:
-            logger.debug(f"Fuzzy matched '{location_name}' -> '{name}'")
-            return details
-
-    # 4. Partial match case-insensitive
-    for name, details in attraction_details.items():
-        if name.lower() in location_lower or location_lower in name.lower():
-            logger.debug(
-                f"Fuzzy matched (case-insensitive) '{location_name}' -> '{name}'"
-            )
             return details
 
     return None
@@ -291,9 +298,8 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
     """Step 2: Finalize the itinerary with proper data structures."""
     logger.info("Finalizing itinerary with proper data structures")
 
-    # Calculate dates
-    start = datetime.fromisoformat(state["start_date"])
-    end = datetime.fromisoformat(state["end_date"])
+    start = date.fromisoformat(state["start_date"])
+    end = date.fromisoformat(state["end_date"])
     num_days = (end - start).days + 1
 
     attraction_details = state.get("attraction_details", {})
@@ -321,7 +327,7 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
     total_activities = 0
 
     for day_num in range(1, num_days + 1):
-        date = (start + timedelta(days=day_num - 1)).isoformat()
+        day_date = (start + timedelta(days=day_num - 1)).isoformat()
         daily_activities = daily_schedule.get(day_num, [])
 
         formatted_activities: list[Activity] = []
@@ -329,8 +335,6 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
             activity_name = activity_data.get("name", "Activity")
             location_name = activity_data.get("location", activity_name)
 
-            # Try to get real coordinates from
-            # stored attraction details (with fuzzy matching)
             attraction_info = _find_matching_attraction(
                 location_name, attraction_details
             )
@@ -342,21 +346,23 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
                     latitude=attraction_info["latitude"],
                     address=attraction_info["address"],
                 )
-                attraction_id = attraction_info.get("id")
+                attraction_id = attraction_info["id"]
+                activity_kind = "attraction_visit"
             else:
-                # Fallback: use destination coordinates directly (avoid extra geocoding)
                 logger.info(
-                    f"No matching attraction for '{location_name}',"
-                    " using destination coords"
+                    "No matching attraction for '%s'; treating it as a custom "
+                    "activity at the validated destination coordinates",
+                    location_name,
                 )
                 dest_coords = state.get("destination_coords", {})
                 location = ActivityLocation(
                     name=location_name,
-                    latitude=dest_coords.get("latitude", 31.2304),
-                    longitude=dest_coords.get("longitude", 121.4737),
+                    latitude=dest_coords["latitude"],
+                    longitude=dest_coords["longitude"],
                     address=dest_coords.get("address", location_name),
                 )
                 attraction_id = None
+                activity_kind = "custom"
 
             # Calculate cost
             activity_cost = activity_data.get("estimated_cost", 0)
@@ -373,7 +379,7 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
                 location=location,
                 category=activity_data.get("category", "sightseeing"),
                 estimated_cost=Cost(amount=activity_cost, currency="CNY"),
-                kind="attraction_visit",
+                kind=activity_kind,
                 attraction_id=attraction_id,
             )
             formatted_activities.append(activity)
@@ -411,7 +417,7 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
 
         day_plan = DayPlan(
             day_number=day_num,
-            date=date,
+            date=day_date,
             activities=formatted_activities,
             notes=f"Day {day_num} in {state['destination']}",
         )
@@ -440,6 +446,13 @@ async def finalize_itinerary(state: PlanningState) -> dict[str, Any]:
         end_date=state["end_date"],
         day_plans=day_plans,
         summary=summary,
+    )
+    validate_itinerary(
+        itinerary,
+        valid_attraction_ids={
+            details["id"] for details in attraction_details.values()
+        },
+        valid_hotel_ids={hotel["id"] for hotel in hotel_details},
     )
 
     # Create progress event — 85% because markdown + conversation context follow

@@ -19,14 +19,31 @@ import {
 
 type SyncStatus = "saved" | "saving" | "unsaved" | "error";
 
+interface PendingSave {
+  id: string;
+  itinerary: Itinerary;
+  markdown: string;
+  snapshot: string;
+}
+
+function createPersistenceSnapshot(itinerary: Itinerary, markdown: string) {
+  return JSON.stringify({ itinerary, markdown });
+}
+
 const SYNC_STATUS_LABEL: Record<SyncStatus, string> = {
   saved: "✓ 已保存",
   saving: "⟳ 保存中…",
   unsaved: "● 未保存",
-  error: "✕ 保存失败",
+  error: "✕ 保存失败，点击重试",
 };
 
-function SyncStatusBadge({ status }: { status: SyncStatus }) {
+function SyncStatusBadge({
+  status,
+  onRetry,
+}: {
+  status: SyncStatus;
+  onRetry: () => void;
+}) {
   const variantMap = {
     saved: "success",
     unsaved: "warning",
@@ -34,13 +51,26 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
     saving: "outline",
   } as const;
 
-  return (
+  const badge = (
     <Badge
       variant={variantMap[status]}
       className={cn("rounded-full", status === "saving" && "animate-pulse")}
     >
       {SYNC_STATUS_LABEL[status]}
     </Badge>
+  );
+
+  if (status !== "error") return badge;
+
+  return (
+    <button
+      type="button"
+      onClick={onRetry}
+      className="cursor-pointer"
+      aria-label="重新保存行程"
+    >
+      {badge}
+    </button>
   );
 }
 
@@ -55,31 +85,86 @@ function PlannerContent() {
 
   const { agent } = useAgent({ agentId: "itinerary_planner" });
 
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const snapshotRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+  const persistedSnapshotsRef = useRef(new Map<string, string>());
+  const pendingSavesRef = useRef(new Map<string, PendingSave>());
+  const failedSnapshotsRef = useRef(new Set<string>());
+  const saveInFlightRef = useRef(false);
   const selfWriteRef = useRef(false);
   const activeItineraryIdRef = useRef<string | null>(null);
   const itineraryIdRef = useRef<string | null>(null);
   const localItineraryRef = useRef<Itinerary | null>(null);
   const localMarkdownRef = useRef("");
 
-  const syncToBackend = useCallback(
-    async (it: Itinerary, md: string, id: string) => {
-      setSyncStatus("saving");
+  const processSaveQueue = useCallback(
+    async function processSaveQueue() {
+      if (saveInFlightRef.current) return;
+
+      const pendingSave = [...pendingSavesRef.current.values()].find(
+        (candidate) => !failedSnapshotsRef.current.has(candidate.snapshot),
+      );
+      if (!pendingSave) return;
+
+      saveInFlightRef.current = true;
+      if (
+        mountedRef.current &&
+        activeItineraryIdRef.current === pendingSave.id
+      ) {
+        setSyncStatus("saving");
+      }
+
       try {
-        await updateSavedItinerary(id, it, md);
-        setSyncStatus("saved");
+        await updateSavedItinerary(
+          pendingSave.id,
+          pendingSave.itinerary,
+          pendingSave.markdown,
+        );
+
+        const latestSave = pendingSavesRef.current.get(pendingSave.id);
+        if (latestSave?.snapshot === pendingSave.snapshot) {
+          pendingSavesRef.current.delete(pendingSave.id);
+        }
+        failedSnapshotsRef.current.delete(pendingSave.snapshot);
+        persistedSnapshotsRef.current.set(
+          pendingSave.id,
+          pendingSave.snapshot,
+        );
+
+        if (
+          mountedRef.current &&
+          activeItineraryIdRef.current === pendingSave.id
+        ) {
+          setSyncStatus(
+            pendingSavesRef.current.has(pendingSave.id) ? "unsaved" : "saved",
+          );
+        }
       } catch (error) {
-        console.error("[Planner] Failed to sync itinerary", { id, error });
-        setSyncStatus("error");
+        failedSnapshotsRef.current.add(pendingSave.snapshot);
+        console.error("[Planner] Failed to sync itinerary", {
+          id: pendingSave.id,
+          error,
+        });
+        if (
+          mountedRef.current &&
+          activeItineraryIdRef.current === pendingSave.id
+        ) {
+          setSyncStatus("error");
+        }
+      } finally {
+        saveInFlightRef.current = false;
+        const hasProcessableSave = [...pendingSavesRef.current.values()].some(
+          (candidate) => !failedSnapshotsRef.current.has(candidate.snapshot),
+        );
+        if (hasProcessableSave) void processSaveQueue();
       }
     },
     [],
   );
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      mountedRef.current = false;
     };
   }, []);
 
@@ -101,10 +186,6 @@ function PlannerContent() {
 
     async function load() {
       setLoaded(false);
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-        debounceTimer.current = null;
-      }
 
       let data: { itinerary: Itinerary; markdown_content: string } | null =
         null;
@@ -141,8 +222,11 @@ function PlannerContent() {
       if (cancelled) return;
 
       if (data) {
-        const snap = JSON.stringify(data.itinerary);
-        snapshotRef.current = snap;
+        const snap = createPersistenceSnapshot(
+          data.itinerary,
+          data.markdown_content,
+        );
+        persistedSnapshotsRef.current.set(resolvedId ?? data.itinerary.id, snap);
 
         setItinerary(data.itinerary);
         setMarkdownContent(data.markdown_content);
@@ -159,7 +243,6 @@ function PlannerContent() {
           markdown_content: data.markdown_content,
         });
       } else {
-        snapshotRef.current = null;
         setItinerary(null);
         setMarkdownContent("");
         setItineraryId(null);
@@ -218,28 +301,46 @@ function PlannerContent() {
       return;
     }
 
-    const snap = JSON.stringify(agentItinerary);
-    if (snap === snapshotRef.current) return;
+    const nextMarkdown = agentMarkdown ?? localMarkdownRef.current;
+    const snap = createPersistenceSnapshot(agentItinerary, nextMarkdown);
+    const persistedSnapshot = persistedSnapshotsRef.current.get(activeId);
+    const pendingSnapshot = pendingSavesRef.current.get(activeId)?.snapshot;
+    if (snap === persistedSnapshot || snap === pendingSnapshot) return;
 
-    snapshotRef.current = snap;
     setItinerary(agentItinerary);
     setItineraryId(agentItinerary.id);
     itineraryIdRef.current = agentItinerary.id;
     activeItineraryIdRef.current = agentItinerary.id;
     localItineraryRef.current = agentItinerary;
     if (agentMarkdown !== undefined) setMarkdownContent(agentMarkdown);
-    if (agentMarkdown !== undefined) localMarkdownRef.current = agentMarkdown;
+    localMarkdownRef.current = nextMarkdown;
 
     const saveId = itineraryIdRef.current;
     if (saveId && saveId === agentItinerary.id) {
       setSyncStatus("unsaved");
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(
-        () => syncToBackend(agentItinerary, agentMarkdown ?? "", saveId),
-        1500,
-      );
+      const previousSave = pendingSavesRef.current.get(saveId);
+      if (previousSave) {
+        failedSnapshotsRef.current.delete(previousSave.snapshot);
+      }
+      pendingSavesRef.current.set(saveId, {
+        id: saveId,
+        itinerary: agentItinerary,
+        markdown: nextMarkdown,
+        snapshot: snap,
+      });
+      void processSaveQueue();
     }
-  }, [agent, agent.state, loaded, syncToBackend]);
+  }, [agent, agent.state, loaded, processSaveQueue]);
+
+  const retrySave = useCallback(() => {
+    const activeId = activeItineraryIdRef.current;
+    if (!activeId) return;
+    const pendingSave = pendingSavesRef.current.get(activeId);
+    if (!pendingSave) return;
+    failedSnapshotsRef.current.delete(pendingSave.snapshot);
+    setSyncStatus("unsaved");
+    void processSaveQueue();
+  }, [processSaveQueue]);
 
   if (!loaded) {
     return (
@@ -278,7 +379,7 @@ function PlannerContent() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <SyncStatusBadge status={syncStatus} />
+          <SyncStatusBadge status={syncStatus} onRetry={retrySave} />
           <Link
             href="/itinerary"
             className="text-primary text-xs hover:underline"

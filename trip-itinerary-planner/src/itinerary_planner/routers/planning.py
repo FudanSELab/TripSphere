@@ -1,10 +1,15 @@
 import logging
-from typing import Annotated, AsyncGenerator
+from datetime import date
+from typing import Annotated, AsyncGenerator, Self
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
+from itinerary_planner.agent.exceptions import (
+    InvalidPlanningResultError,
+    PlanningDependencyError,
+)
 from itinerary_planner.agent.state import PlanningState
 from itinerary_planner.agent.workflow import create_planning_workflow
 from itinerary_planner.common.deps import (
@@ -26,7 +31,11 @@ _workflow = create_planning_workflow()
 
 
 class PlanItineraryRequest(BaseModel):
-    destination: str = Field(description="Destination name")
+    destination: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Destination name",
+    )
     start_date: str = Field(description="Start date in YYYY-MM-DD format")
     end_date: str = Field(description="End date in YYYY-MM-DD format")
     interests: list[TravelInterest] = Field(
@@ -38,6 +47,32 @@ class PlanItineraryRequest(BaseModel):
     additional_preferences: str = Field(
         default="", description="Additional preferences"
     )
+
+    @field_validator("destination")
+    @classmethod
+    def normalize_destination(cls, value: str) -> str:
+        destination = value.strip()
+        if not destination:
+            raise ValueError("destination must not be blank")
+        return destination
+
+    @field_validator("start_date", "end_date")
+    @classmethod
+    def validate_date_format(cls, value: str) -> str:
+        normalized = value.strip()
+        try:
+            parsed_date = date.fromisoformat(normalized)
+        except ValueError as exc:
+            raise ValueError("date must use YYYY-MM-DD format") from exc
+        if parsed_date.isoformat() != normalized:
+            raise ValueError("date must use YYYY-MM-DD format")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_date_range(self) -> Self:
+        if date.fromisoformat(self.end_date) < date.fromisoformat(self.start_date):
+            raise ValueError("end_date must be on or after start_date")
+        return self
 
 
 class PlanItineraryResponse(BaseModel):
@@ -141,6 +176,9 @@ async def plan_itinerary(
         )
     except HTTPException:
         raise
+    except (PlanningDependencyError, InvalidPlanningResultError) as exc:
+        logger.warning("Itinerary planning rejected an unusable result: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
     except Exception as e:
         logger.exception("Error planning itinerary: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e

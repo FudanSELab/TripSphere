@@ -25,7 +25,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { type DateRange } from "react-day-picker";
 import { zhCN } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateOnly } from "@/lib/format";
 import {
   createItineraryPlan,
   type TravelInterest,
@@ -86,8 +86,8 @@ export function ItineraryPlanForm({ today: todayStr }: ItineraryPlanFormProps) {
       try {
         const result = await createItineraryPlan({
           destination: destination.trim(),
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: endDate.toISOString().split("T")[0],
+          startDate: formatDateOnly(startDate),
+          endDate: formatDateOnly(endDate),
           interests,
           pace,
           additionalPreferences,
