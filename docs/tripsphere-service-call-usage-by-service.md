@@ -54,9 +54,9 @@
 | `trip-itinerary-planner` | Copilot `HttpAgent` | `agentId="itinerary_planner"` |
 | `trip-order-assistant` | Copilot `HttpAgent` 配置存在 | 没有发现可见页面直接使用 |
 
-### 声明了但没有实际业务调用
+### 声明过但已清理的入口
 
-- `POI_SERVICE_ADDR` 和 `getPoiService()` 存在，但没有页面、action 或 data loader 调用 POI。
+- 前端已移除 `POI_SERVICE_ADDR` 和 `getPoiService()`；POI 只保留为共享类型和历史数据概念。
 - `INVENTORY_SERVICE_ADDR` 存在，但没有 `getInventoryService()`，库存只通过订单服务间接使用。
 - Review、File、Note、Review Summary 没有前端客户端。
 - 酒店详情页评论 Tab 是占位内容。
@@ -398,7 +398,7 @@ gRPC `PoiService`：
 
 ### 相关但不是调用
 
-- `trip-next-frontend` 有 `getPoiService()` 和 `POI_SERVICE_ADDR`，但没有页面或 action 调用。
+- `trip-next-frontend` 不再保留 POI 客户端入口。
 - `Itinerary` proto 使用了 `tripsphere.poi.v1.Poi` 类型作为目的地结构，但这不是对 POI 服务的运行时调用。
 - 行程规划器当前用目的地名称和地理坐标工作，没有发现调用 POI 服务。
 
