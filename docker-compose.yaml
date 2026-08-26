@@ -60,6 +60,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+      trip-order-assistant:
+        condition: service_healthy
       trip-review-summary:
         condition: service_healthy
       otel-collector:
@@ -209,6 +211,16 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:24211/.well-known/agent-card.json').read()"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
   trip-next-frontend:

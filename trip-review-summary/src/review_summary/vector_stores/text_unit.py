@@ -166,8 +166,8 @@ class TextUnitVectorStore:
             )
             for text_unit_id, payload in points_payloads
         ]
-        if len(tasks) > 0:
-            await asyncio.wait(tasks)
+        if tasks:
+            await asyncio.gather(*tasks)
 
 
 def _target_filter(
