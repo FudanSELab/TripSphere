@@ -58,14 +58,15 @@ class TextUnitVectorStore:
     async def find_by_target(
         self,
         target_id: str,
-        target_type: str = "attraction",
+        target_type: str,
         limit: int | None = None,
+        review_snapshot: str | None = None,
     ) -> list[TextUnit]:
         """Find text units (without embedding) by target ID and target type."""
         if limit is not None and limit <= 0:
             return []
 
-        target_filter = _target_filter(target_id, target_type)
+        target_filter = _target_filter(target_id, target_type, review_snapshot)
         offset: Any = None
         seen_offsets: set[str] = set()
         text_units: list[TextUnit] = []
@@ -106,13 +107,14 @@ class TextUnitVectorStore:
         self,
         embedding_vector: list[float],
         target_id: str,
-        target_type: str = "attraction",
+        target_type: str,
+        review_snapshot: str | None = None,
         top_k: int = 10,
     ) -> list[TextUnit]:
         response = await self.client.query_points(
             collection_name=self.COLLECTION_NAME,
             query=embedding_vector,
-            query_filter=_target_filter(target_id, target_type),
+            query_filter=_target_filter(target_id, target_type, review_snapshot),
             limit=top_k,
         )
         # Convert response to list of TextUnit
@@ -168,16 +170,26 @@ class TextUnitVectorStore:
             await asyncio.wait(tasks)
 
 
-def _target_filter(target_id: str, target_type: str) -> models.Filter:
-    return models.Filter(
-        must=[
+def _target_filter(
+    target_id: str,
+    target_type: str,
+    review_snapshot: str | None = None,
+) -> models.Filter:
+    conditions = [
+        models.FieldCondition(
+            key="attributes.target_id",
+            match=models.MatchValue(value=target_id),
+        ),
+        models.FieldCondition(
+            key="attributes.target_type",
+            match=models.MatchValue(value=target_type),
+        ),
+    ]
+    if review_snapshot is not None:
+        conditions.append(
             models.FieldCondition(
-                key="attributes.target_id",
-                match=models.MatchValue(value=target_id),
-            ),
-            models.FieldCondition(
-                key="attributes.target_type",
-                match=models.MatchValue(value=target_type),
-            ),
-        ]
-    )
+                key="attributes.review_snapshot",
+                match=models.MatchValue(value=review_snapshot),
+            )
+        )
+    return models.Filter(must=conditions)

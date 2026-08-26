@@ -68,11 +68,42 @@ class EntityVectorStore:
             wait=True,
         )
 
+    async def find_by_target(
+        self,
+        target_id: str,
+        target_type: str,
+    ) -> list[Entity]:
+        target_filter = _target_filter(target_id, target_type)
+        offset: Any = None
+        seen_offsets: set[str] = set()
+        entities: list[Entity] = []
+
+        while True:
+            records, next_offset = await self.client.scroll(
+                collection_name=self.COLLECTION_NAME,
+                scroll_filter=target_filter,
+                limit=256,
+                offset=offset,
+            )
+            entities.extend(
+                Entity.model_validate({"id": record.id, **(record.payload or {})})
+                for record in records
+            )
+            if next_offset is None:
+                return entities
+
+            offset_key = repr(next_offset)
+            if next_offset == offset or offset_key in seen_offsets:
+                raise RuntimeError("Qdrant returned a repeated scroll offset")
+            seen_offsets.add(offset_key)
+            offset = next_offset
+
     async def search_by_vector(
         self,
         embedding_vector: list[float],
         target_id: str,
-        target_type: str = "attraction",
+        target_type: str,
+        review_snapshot: str | None = None,
         top_k: int = 10,
         vector_name: str = "description",  # Add parameter to specify which vector
     ) -> list[Entity]:
@@ -80,7 +111,7 @@ class EntityVectorStore:
             collection_name=self.COLLECTION_NAME,
             query=embedding_vector,
             using=vector_name,  # Specify which named vector to use
-            query_filter=_target_filter(target_id, target_type),
+            query_filter=_target_filter(target_id, target_type, review_snapshot),
             limit=top_k,
         )
         # Convert response to list of Entity
@@ -97,16 +128,26 @@ class EntityVectorStore:
         return entities
 
 
-def _target_filter(target_id: str, target_type: str) -> models.Filter:
-    return models.Filter(
-        must=[
+def _target_filter(
+    target_id: str,
+    target_type: str,
+    review_snapshot: str | None = None,
+) -> models.Filter:
+    conditions = [
+        models.FieldCondition(
+            key="attributes.target_id",
+            match=models.MatchValue(value=target_id),
+        ),
+        models.FieldCondition(
+            key="attributes.target_type",
+            match=models.MatchValue(value=target_type),
+        ),
+    ]
+    if review_snapshot is not None:
+        conditions.append(
             models.FieldCondition(
-                key="attributes.target_id",
-                match=models.MatchValue(value=target_id),
-            ),
-            models.FieldCondition(
-                key="attributes.target_type",
-                match=models.MatchValue(value=target_type),
-            ),
-        ]
-    )
+                key="attributes.review_snapshot",
+                match=models.MatchValue(value=review_snapshot),
+            )
+        )
+    return models.Filter(must=conditions)

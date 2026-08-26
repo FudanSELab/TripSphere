@@ -27,6 +27,7 @@ class ReviewRecord:
 
 class ReviewServiceClient:
     _PAGE_SIZE = 100
+    _REQUEST_TIMEOUT_SECONDS = 10.0
 
     def __init__(
         self,
@@ -87,7 +88,8 @@ class ReviewServiceClient:
                     entity_id=target_id,
                     page_size=self._PAGE_SIZE,
                     page_token=page_token,
-                )
+                ),
+                timeout=self._REQUEST_TIMEOUT_SECONDS,
             )
             records.extend(
                 _to_review_record(review, target_id, target_type)

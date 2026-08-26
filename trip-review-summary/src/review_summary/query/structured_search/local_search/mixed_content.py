@@ -58,6 +58,9 @@ class LocalSearchMixedContext:
     async def build_context(
         self,
         query: str,
+        target_id: str,
+        target_type: str,
+        review_snapshot: str,
         conversation_history: ConversationHistory | None = None,
         include_entity_names: list[str] | None = None,
         exclude_entity_names: list[str] | None = None,
@@ -77,7 +80,6 @@ class LocalSearchMixedContext:
         min_community_rank: int = 0,
         community_context_name: str = "Reports",
         column_delimiter: str = "|",
-        target_id: str = "",
     ) -> ContextBuilderResult:
         """Build data context for local search prompt.
 
@@ -107,16 +109,26 @@ class LocalSearchMixedContext:
         selected_entities = await self.entity_vector_store.search_by_vector(
             embedding_vector=query_embedding,
             target_id=target_id,
+            target_type=target_type,
+            review_snapshot=review_snapshot,
             top_k=top_k_mapped_entities,
         )
         # get relationships
         relationships: list[Relationship] = []
         relationships = await fetch_relationships_for_entities(
-            driver=self.neo4j_driver, entities=selected_entities
+            driver=self.neo4j_driver,
+            entities=selected_entities,
+            target_id=target_id,
+            target_type=target_type,
+            review_snapshot=review_snapshot,
         )
         # get text_units
         text_units: list[TextUnit] = []
-        text_units = await self.text_unit_vector_store.find_by_target(target_id)
+        text_units = await self.text_unit_vector_store.find_by_target(
+            target_id,
+            target_type,
+            review_snapshot=review_snapshot,
+        )
 
         # build context
         final_context = list[str]()
