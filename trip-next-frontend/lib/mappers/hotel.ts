@@ -8,8 +8,6 @@ export function hotelToCardData(hotel: Hotel): HotelCardData {
     name: hotel.name,
     image: hotel.images[0] ?? null,
     stars: getStarCount(hotel.tags),
-    rating: null,
-    reviews: 0,
     location: hotel.address
       ? `${hotel.address.city} · ${hotel.address.district}`
       : "",
