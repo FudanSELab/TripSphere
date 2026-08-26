@@ -13,8 +13,11 @@ def create_graph(
     attributes: dict[str, str],
 ) -> None:
     """Create a neo4j graph from nodes and edges DataFrames."""
-    if "target_id" not in attributes or "target_type" not in attributes:
-        raise ValueError("Attributes must include 'target_id' and 'target_type' keys.")
+    required_attributes = {"target_id", "target_type", "review_snapshot"}
+    if missing_attributes := required_attributes.difference(attributes):
+        raise ValueError(
+            f"Attributes must include {sorted(missing_attributes)} keys."
+        )
 
     # Create mapping from title to id
     title_to_id = nodes.set_index("title")["id"]
@@ -32,6 +35,14 @@ def create_graph(
         session.run(
             "CREATE INDEX relationship_target_id "
             "IF NOT EXISTS FOR ()-[r:RELATES]-() ON (r.target_id)"
+        )
+        session.run(
+            "CREATE INDEX entity_target_type "
+            "IF NOT EXISTS FOR (n:Entity) ON (n.target_type)"
+        )
+        session.run(
+            "CREATE INDEX entity_review_snapshot "
+            "IF NOT EXISTS FOR (n:Entity) ON (n.review_snapshot)"
         )
 
         # Add attributes using assign for better performance
@@ -51,7 +62,8 @@ def create_graph(
                 n.description = entity.description,
                 n.frequency = entity.frequency,
                 n.target_id = entity.target_id,
-                n.target_type = entity.target_type
+                n.target_type = entity.target_type,
+                n.review_snapshot = entity.review_snapshot
             """,
             entities=entities_dicts,
         )
@@ -70,10 +82,27 @@ def create_graph(
                 r.description = rel.description,
                 r.weight = rel.weight,
                 r.target_id = rel.target_id,
-                r.target_type = rel.target_type
+                r.target_type = rel.target_type,
+                r.review_snapshot = rel.review_snapshot
             """,
             relationships=relationships_dicts,
         )
         logger.debug(f"Relationships import result: {result}")
 
         logger.info("Imported entities and relationships to Neo4j")
+
+
+def delete_graph_by_target(
+    neo4j_driver: Driver,
+    target_id: str,
+    target_type: str,
+) -> None:
+    with neo4j_driver.session() as session:  # pyright: ignore
+        session.run(
+            """
+            MATCH (entity:Entity {target_id: $target_id, target_type: $target_type})
+            DETACH DELETE entity
+            """,
+            target_id=target_id,
+            target_type=target_type,
+        )

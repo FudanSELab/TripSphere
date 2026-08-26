@@ -54,8 +54,19 @@ class EntityVectorStore:
             point = models.PointStruct(id=entity_id, vector=vector, payload=payload)
             points.append(point)
 
+        if not points:
+            return
         result = await self.client.upsert(self.COLLECTION_NAME, points=points)
         logger.debug(f"Qdrant upsert result: {result}")
+
+    async def delete_by_target(self, target_id: str, target_type: str) -> None:
+        await self.client.delete(
+            collection_name=self.COLLECTION_NAME,
+            points_selector=models.FilterSelector(
+                filter=_target_filter(target_id, target_type)
+            ),
+            wait=True,
+        )
 
     async def search_by_vector(
         self,
@@ -69,18 +80,7 @@ class EntityVectorStore:
             collection_name=self.COLLECTION_NAME,
             query=embedding_vector,
             using=vector_name,  # Specify which named vector to use
-            query_filter=models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="attributes.target_id",
-                        match=models.MatchValue(value=target_id),
-                    ),
-                    models.FieldCondition(
-                        key="attributes.target_type",
-                        match=models.MatchValue(value=target_type),
-                    ),
-                ]
-            ),
+            query_filter=_target_filter(target_id, target_type),
             limit=top_k,
         )
         # Convert response to list of Entity
@@ -95,3 +95,18 @@ class EntityVectorStore:
             for point in response.points
         ]
         return entities
+
+
+def _target_filter(target_id: str, target_type: str) -> models.Filter:
+    return models.Filter(
+        must=[
+            models.FieldCondition(
+                key="attributes.target_id",
+                match=models.MatchValue(value=target_id),
+            ),
+            models.FieldCondition(
+                key="attributes.target_type",
+                match=models.MatchValue(value=target_type),
+            ),
+        ]
+    )

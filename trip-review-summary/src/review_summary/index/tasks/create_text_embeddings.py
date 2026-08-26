@@ -68,6 +68,27 @@ async def _internal(
 
     # Save entities with embeddings to vector store
     if entities is not None:
-        await entity_vector_store.save_multiple(
-            [Entity.model_validate(row.to_dict()) for _, row in entities.iterrows()]
-        )
+        entity_models = [
+            Entity.model_validate(row.to_dict()) for _, row in entities.iterrows()
+        ]
+        _validate_entity_snapshots(entity_models, context)
+        await entity_vector_store.save_multiple(entity_models)
+
+
+def _validate_entity_snapshots(
+    entities: list[Entity], context: dict[str, Any]
+) -> None:
+    review_snapshot = context.get("review_snapshot")
+    if review_snapshot is None:
+        return
+
+    for entity in entities:
+        attributes = entity.attributes or {}
+        if (
+            attributes.get("target_id") != context["target_id"]
+            or attributes.get("target_type") != context["target_type"]
+            or attributes.get("review_snapshot") != review_snapshot
+        ):
+            raise RuntimeError(
+                f"Entity {entity.id} does not belong to the active review snapshot"
+            )

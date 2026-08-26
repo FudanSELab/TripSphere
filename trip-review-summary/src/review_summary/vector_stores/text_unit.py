@@ -50,33 +50,57 @@ class TextUnitVectorStore:
             )
             points.append(point)
 
+        if not points:
+            return
         result = await self.client.upsert(self.COLLECTION_NAME, points=points)
         logger.debug(f"Qdrant upsert result: {result}")
 
     async def find_by_target(
-        self, target_id: str, target_type: str = "attraction", limit: int = 1024
+        self,
+        target_id: str,
+        target_type: str = "attraction",
+        limit: int | None = None,
     ) -> list[TextUnit]:
         """Find text units (without embedding) by target ID and target type."""
-        filter = models.Filter(
-            must=[
-                models.FieldCondition(
-                    key="attributes.target_id",
-                    match=models.MatchValue(value=target_id),
-                ),
-                models.FieldCondition(
-                    key="attributes.target_type",
-                    match=models.MatchValue(value=target_type),
-                ),
-            ]
-        )
-        records, _ = await self.client.scroll(
-            collection_name=self.COLLECTION_NAME, scroll_filter=filter, limit=limit
-        )
-        text_units: list[TextUnit] = [
-            TextUnit.model_validate({"id": record.id, **(record.payload or {})})
-            for record in records
-        ]
+        if limit is not None and limit <= 0:
+            return []
+
+        target_filter = _target_filter(target_id, target_type)
+        offset: Any = None
+        seen_offsets: set[str] = set()
+        text_units: list[TextUnit] = []
+        while limit is None or len(text_units) < limit:
+            remaining = None if limit is None else limit - len(text_units)
+            page_limit = 256 if remaining is None else min(256, remaining)
+            records, next_offset = await self.client.scroll(
+                collection_name=self.COLLECTION_NAME,
+                scroll_filter=target_filter,
+                limit=page_limit,
+                offset=offset,
+            )
+            text_units.extend(
+                TextUnit.model_validate({"id": record.id, **(record.payload or {})})
+                for record in records
+            )
+            if next_offset is None:
+                break
+
+            offset_key = repr(next_offset)
+            if next_offset == offset or offset_key in seen_offsets:
+                raise RuntimeError("Qdrant returned a repeated scroll offset")
+            seen_offsets.add(offset_key)
+            offset = next_offset
+
         return text_units
+
+    async def delete_by_target(self, target_id: str, target_type: str) -> None:
+        await self.client.delete(
+            collection_name=self.COLLECTION_NAME,
+            points_selector=models.FilterSelector(
+                filter=_target_filter(target_id, target_type)
+            ),
+            wait=True,
+        )
 
     async def search_by_vector(
         self,
@@ -88,18 +112,7 @@ class TextUnitVectorStore:
         response = await self.client.query_points(
             collection_name=self.COLLECTION_NAME,
             query=embedding_vector,
-            query_filter=models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="attributes.target_id",
-                        match=models.MatchValue(value=target_id),
-                    ),
-                    models.FieldCondition(
-                        key="attributes.target_type",
-                        match=models.MatchValue(value=target_type),
-                    ),
-                ]
-            ),
+            query_filter=_target_filter(target_id, target_type),
             limit=top_k,
         )
         # Convert response to list of TextUnit
@@ -153,3 +166,18 @@ class TextUnitVectorStore:
         ]
         if len(tasks) > 0:
             await asyncio.wait(tasks)
+
+
+def _target_filter(target_id: str, target_type: str) -> models.Filter:
+    return models.Filter(
+        must=[
+            models.FieldCondition(
+                key="attributes.target_id",
+                match=models.MatchValue(value=target_id),
+            ),
+            models.FieldCondition(
+                key="attributes.target_type",
+                match=models.MatchValue(value=target_type),
+            ),
+        ]
+    )

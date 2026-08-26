@@ -99,6 +99,12 @@ def _internal(
 
     target_id = context["target_id"]
     target_type = context["target_type"]
+    review_snapshot = context["review_snapshot"]
+    target_attributes = {
+        "target_id": target_id,
+        "target_type": target_type,
+        "review_snapshot": review_snapshot,
+    }
 
     # Finalize entities by adding columns: id, readable_id, and attributes
     final_entities = entities.drop_duplicates(subset="title")
@@ -107,8 +113,7 @@ def _internal(
         id=[str(uuid7()) for _ in range(len(final_entities))],
         readable_id=final_entities.index.astype(str),
         attributes=pd.Series(
-            {"target_id": target_id, "target_type": target_type}
-            for _ in range(len(final_entities))
+            target_attributes.copy() for _ in range(len(final_entities))
         ),
     )[["id", "readable_id", *entities.columns, "attributes"]]
 
@@ -119,8 +124,7 @@ def _internal(
         id=[str(uuid7()) for _ in range(len(final_relationships))],
         readable_id=final_relationships.index.astype(str),
         attributes=pd.Series(
-            {"target_id": target_id, "target_type": target_type}
-            for _ in range(len(final_relationships))
+            target_attributes.copy() for _ in range(len(final_relationships))
         ),
     )[["id", "readable_id", *relationships.columns, "attributes"]]
 
@@ -157,10 +161,7 @@ def _internal(
         neo4j_driver=neo4j_driver,
         nodes=final_entities,
         edges=final_relationships,
-        attributes={
-            "target_id": context["target_id"],
-            "target_type": context["target_type"],
-        },
+        attributes=target_attributes,
     )
 
     if config.embed_graph_enabled and isinstance(gds, GraphDataScience):
