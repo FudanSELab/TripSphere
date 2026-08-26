@@ -1,6 +1,8 @@
 import json
 import logging
-from typing import Any
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any, Literal
 
 from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.tools.base_tool import BaseTool
@@ -9,6 +11,70 @@ from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 
 logger = logging.getLogger(__name__)
+
+ReviewTargetType = Literal["hotel", "attraction"]
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewTarget:
+    target_id: str
+    target_type: ReviewTargetType
+
+
+def extract_review_target(
+    state: Mapping[str, Any] | None,
+) -> ReviewTarget | None:
+    if state is None:
+        return None
+
+    raw_contexts = state.get("_ag_ui_context")
+    if not isinstance(raw_contexts, list):
+        return None
+
+    targets: set[ReviewTarget] = set()
+    for raw_context in raw_contexts:
+        if not isinstance(raw_context, Mapping):
+            continue
+        if raw_context.get("description") != "review target context":
+            continue
+
+        target = _parse_review_target_value(raw_context.get("value"))
+        if target is None:
+            return None
+        targets.add(target)
+
+    if len(targets) != 1:
+        return None
+    return next(iter(targets))
+
+
+def _parse_review_target_value(value: Any) -> ReviewTarget | None:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+    if not isinstance(value, Mapping):
+        return None
+
+    raw_target_id = value.get("targetId")
+    raw_target_type = value.get("targetType")
+    if not isinstance(raw_target_id, str) or not raw_target_id.strip():
+        return None
+    if not isinstance(raw_target_type, str):
+        return None
+
+    normalized_target_type = raw_target_type.strip().lower()
+    if normalized_target_type == "hotel":
+        target_type: ReviewTargetType = "hotel"
+    elif normalized_target_type == "attraction":
+        target_type = "attraction"
+    else:
+        return None
+    return ReviewTarget(
+        target_id=raw_target_id.strip(),
+        target_type=target_type,
+    )
 
 
 class HotelViewingToolset(BaseToolset):
