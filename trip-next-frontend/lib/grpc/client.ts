@@ -9,6 +9,7 @@ import { AttractionServiceClient } from "./generated/tripsphere/attraction/v1/at
 import { ItineraryServiceClient } from "./generated/tripsphere/itinerary/v1/itinerary";
 import { OrderServiceClient } from "./generated/tripsphere/order/v1/order";
 import { ProductServiceClient } from "./generated/tripsphere/product/v1/product";
+import { ReviewServiceClient } from "./generated/tripsphere/review/v1/review";
 
 const clientCache = new Map<string, unknown>();
 
@@ -51,6 +52,10 @@ export function getProductService() {
 
 export function getOrderService() {
   return getGrpcClient(OrderServiceClient, config.grpc.orderService);
+}
+
+export function getReviewService() {
+  return getGrpcClient(ReviewServiceClient, config.grpc.reviewService);
 }
 
 export async function getAuthMetadata(): Promise<Metadata> {
