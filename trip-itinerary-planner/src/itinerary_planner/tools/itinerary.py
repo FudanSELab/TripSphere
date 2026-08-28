@@ -86,10 +86,14 @@ def _trusted_entity_coordinates(
     for day_plan in itinerary.get("day_plans") or []:
         for activity in day_plan.get("activities") or []:
             location = activity.get("location") or {}
+            raw_longitude = location.get("longitude")
+            raw_latitude = location.get("latitude")
+            if raw_longitude is None or raw_latitude is None:
+                continue
             try:
                 coordinates = (
-                    float(location.get("longitude")),
-                    float(location.get("latitude")),
+                    float(raw_longitude),
+                    float(raw_latitude),
                 )
             except (TypeError, ValueError):
                 continue
@@ -543,7 +547,8 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
                 )
                 return _ok(
                     tool_call_id,
-                    f"Cannot regenerate day {day}: destination coordinates are unavailable.",
+                    f"Cannot regenerate day {day}: destination coordinates "
+                    "are unavailable.",
                 )
 
             if not coordinates_are_valid(
@@ -552,7 +557,8 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
             ):
                 return _ok(
                     tool_call_id,
-                    f"Cannot regenerate day {day}: geocoding returned invalid coordinates.",
+                    f"Cannot regenerate day {day}: geocoding returned "
+                    "invalid coordinates.",
                 )
             destination_coordinates = (
                 geocode_result.longitude,
@@ -605,7 +611,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
         settings = get_settings()
         chat_model = ChatOpenAI(
-            model="gpt-4o-mini",
+            model="gpt-5.5",
             temperature=0.6,
             api_key=settings.openai.api_key,
             base_url=settings.openai.base_url,
@@ -634,13 +640,15 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
                 if start_time >= end_time:
                     return _ok(
                         tool_call_id,
-                        f"Cannot regenerate day {day}: the model returned an invalid time range.",
+                        f"Cannot regenerate day {day}: the model returned "
+                        "an invalid time range.",
                     )
                 matched = attraction_map.get(act.attraction_id)
                 if matched is None:
                     return _ok(
                         tool_call_id,
-                        f"Cannot regenerate day {day}: the model selected an unknown attraction.",
+                        f"Cannot regenerate day {day}: the model selected "
+                        "an unknown attraction.",
                     )
                 new_activities.append(
                     {

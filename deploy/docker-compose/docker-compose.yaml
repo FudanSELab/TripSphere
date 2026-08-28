@@ -293,6 +293,7 @@ services:
       - "24215:24215"
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
+      - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
     depends_on:

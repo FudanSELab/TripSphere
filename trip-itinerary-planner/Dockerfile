@@ -56,7 +56,8 @@ ENV OTEL_SERVICE_NAME="trip-itinerary-planner" \
     OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317" \
     OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
     OTEL_PYTHON_LOG_LEVEL="info" \
-    OTEL_PYTHON_LOG_CORRELATION="true"
+    OTEL_PYTHON_LOG_CORRELATION="true" \
+    OTEL_PYTHON_HTTPX_EXCLUDED_URLS="https://restapi.amap.com/v3/geocode/geo"
 
 # Use the non-root user to run our application
 USER nonroot
@@ -73,4 +74,3 @@ EXPOSE $UVICORN_PORT
 # Run the agent server with uvicorn
 ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "itinerary_planner.asgi:app"]
 CMD []
-

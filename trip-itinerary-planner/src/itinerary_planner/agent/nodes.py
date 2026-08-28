@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 _ATTRACTION_SAMPLE_SIZE = 15
 
 chat_model = ChatOpenAI(
-    model="gpt-4o-mini",
+    model="gpt-5.5",
     temperature=0.0,
     api_key=get_settings().openai.api_key,
     base_url=get_settings().openai.base_url,
@@ -87,8 +87,8 @@ async def _find_attraction_candidates(
     try:
         search_result = await search_attractions_nearby(
             nacos_naming=state["nacos_naming"],
-            center_longitude=float(destination_coords.get("longitude") or 0),  # type: ignore[arg-type]
-            center_latitude=float(destination_coords.get("latitude") or 0),  # type: ignore[arg-type]
+            center_longitude=float(destination_coords.get("longitude") or 0),
+            center_latitude=float(destination_coords.get("latitude") or 0),
             radius_km=25.0,
             tags=tags,
             limit=35,

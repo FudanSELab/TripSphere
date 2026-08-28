@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class A2aAgentExecutor(AgentExecutor):
     # Model configuration constants
-    CHAT_MODEL = "gpt-4o-mini"
+    CHAT_MODEL = "gpt-5.5"
     CHAT_TEMPERATURE = 0.0
     EMBEDDING_MODEL = "text-embedding-3-large"
 
