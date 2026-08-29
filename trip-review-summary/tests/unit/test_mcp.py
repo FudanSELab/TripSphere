@@ -1,9 +1,11 @@
+import json
 from typing import Any, cast
 
 import pytest
 from mcp.server.fastmcp import Context
 from mcp.shared.context import RequestContext
 from starlette.requests import Request
+from v2.nacos.transport.grpc_util import GrpcUtils  # type: ignore
 
 from review_summary.clients.reviews import TargetType
 from review_summary.infra.nacos.ai import NacosAI
@@ -97,14 +99,13 @@ async def test_nacos_ai_registers_review_summary_mcp_endpoint() -> None:
     class FakeAIService:
         def __init__(self) -> None:
             self.released = None
-            self.registered = None
 
         async def release_mcp_server(self, param: Any) -> None:
             self.released = param
             return "mcp-id"
 
-        async def register_mcp_server_endpoint(self, param: Any) -> None:
-            self.registered = param
+        async def get_mcp_server(self, param: Any) -> None:
+            raise RuntimeError("not found")
 
     client = NacosAI("review-summary", 24212, "nacos:8848", "public", "1.0.0")
     service = FakeAIService()
@@ -112,29 +113,30 @@ async def test_nacos_ai_registers_review_summary_mcp_endpoint() -> None:
 
     await client.register_mcp_server()
 
+    json.dumps(service.released, default=GrpcUtils.to_json)
+
     assert service.released.server_spec.name == "review-summary"
     assert service.released.server_spec.versionDetail.version == "1.0.0"
-    assert service.released.server_spec.protocol == "streamable"
-    assert service.released.mcp_endpoint_spec.type == "DIRECT"
-    assert service.released.mcp_endpoint_spec.data["address"] == client.ip
-    assert service.registered.mcp_name == "review-summary"
-    assert service.registered.version == "1.0.0"
+    assert service.released.server_spec.protocol == "mcp-streamable"
+    assert service.released.server_spec.remoteServerConfig.exportPath == "/mcp"
+    assert service.released.mcp_endpoint_spec.type == "REF"
+    assert service.released.mcp_endpoint_spec.data == {
+        "serviceName": "trip-review-summary",
+        "groupName": "DEFAULT_GROUP",
+        "namespaceId": "public",
+    }
 
 
 @pytest.mark.asyncio
-async def test_nacos_ai_deregisters_review_summary_mcp_endpoint() -> None:
+async def test_nacos_ai_skips_release_for_existing_mcp_version() -> None:
     class FakeAIService:
-        def __init__(self) -> None:
-            self.deregistered = None
+        async def get_mcp_server(self, param: Any) -> object:
+            return object()
 
-        async def deregister_mcp_server_endpoint(self, param: Any) -> None:
-            self.deregistered = param
+        async def release_mcp_server(self, param: Any) -> None:
+            raise AssertionError("existing MCP version was released again")
 
     client = NacosAI("review-summary", 24212, "nacos:8848", "public", "1.0.0")
-    service = FakeAIService()
-    client.ai_service = cast(Any, service)
+    client.ai_service = cast(Any, FakeAIService())
 
-    await client.deregister_mcp_server()
-
-    assert service.deregistered.mcp_name == "review-summary"
-    assert service.deregistered.port == 24212
+    await client.register_mcp_server()

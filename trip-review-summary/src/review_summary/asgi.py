@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             namespace_id=settings.nacos.namespace_id,
             version=settings.mcp.version,
         )
-        await app.state.nacos_ai.register_mcp_server()
+        await app.state.nacos_ai.register_mcp_server(path=settings.mcp.path)
         app.state.review_summary_service = ReviewSummaryService(
             neo4j_driver=app.state.neo4j_driver,
             qdrant_client=app.state.qdrant_client,
@@ -76,8 +76,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     finally:
         app.state.ready = False
-        if isinstance(app.state.nacos_ai, NacosAI):
-            await app.state.nacos_ai.deregister_mcp_server()
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)

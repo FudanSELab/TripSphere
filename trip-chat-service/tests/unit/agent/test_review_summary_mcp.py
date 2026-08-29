@@ -121,3 +121,34 @@ async def test_review_summary_url_accepts_nacos_backend_endpoint() -> None:
     url = await resolve_review_summary_url(FakeNacosAI(), "http://fallback:24212")
 
     assert url == "https://review-summary.internal:443/mcp"
+
+
+@pytest.mark.asyncio
+async def test_review_summary_url_resolves_nacos_service_reference() -> None:
+    class FakeNacosAI:
+        async def get_mcp_server(self, name: str, version: str | None = None):
+            return SimpleNamespace(
+                remoteServerConfig=SimpleNamespace(
+                    serviceRef=SimpleNamespace(
+                        serviceName="trip-review-summary",
+                        groupName="DEFAULT_GROUP",
+                    ),
+                    exportPath="/mcp",
+                )
+            )
+
+    class FakeNaming:
+        async def get_service_instance(
+            self, service_name: str, group_name: str = "DEFAULT_GROUP"
+        ):
+            assert service_name == "trip-review-summary"
+            assert group_name == "DEFAULT_GROUP"
+            return SimpleNamespace(ip="review-summary", port=24212)
+
+    url = await resolve_review_summary_url(
+        FakeNacosAI(),
+        "http://fallback:24212",
+        nacos_naming=FakeNaming(),
+    )
+
+    assert url == "http://review-summary:24212/mcp"

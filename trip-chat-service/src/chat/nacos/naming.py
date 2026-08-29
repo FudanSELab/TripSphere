@@ -1,8 +1,11 @@
+import random
 from typing import Self
 
 from v2.nacos import (  # type: ignore
     ClientConfigBuilder,
     DeregisterInstanceParam,
+    Instance,
+    ListInstanceParam,
     NacosNamingService,
     RegisterInstanceParam,
 )  # pyright: ignore[reportMissingTypeStubs]
@@ -65,3 +68,24 @@ class NacosNaming:
         if self.naming_service is None:
             raise RuntimeError("Nacos naming service is not initialized")
         await self.naming_service.shutdown()
+
+    async def get_service_instance(
+        self, service_name: str, group_name: str = "DEFAULT_GROUP"
+    ) -> Instance:
+        if self.naming_service is None:
+            raise RuntimeError("Nacos naming service is not initialized")
+        instances = await self.naming_service.list_instances(
+            ListInstanceParam(
+                service_name=service_name,
+                group_name=group_name,
+                healthy_only=True,
+            )
+        )
+        eligible = [
+            instance
+            for instance in instances
+            if instance.healthy and instance.enabled and instance.weight > 0
+        ]
+        if not eligible:
+            raise RuntimeError(f"No healthy {service_name} instance found")
+        return random.choice(eligible)

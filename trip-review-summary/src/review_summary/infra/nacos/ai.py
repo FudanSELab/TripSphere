@@ -3,15 +3,16 @@ from typing import Self
 from v2.nacos import ClientConfigBuilder  # type: ignore
 from v2.nacos.ai.model.ai_constant import AIConstants  # type: ignore
 from v2.nacos.ai.model.ai_param import (  # type: ignore
-    DeregisterMcpServerEndpointParam,
     GetMcpServerParam,
     McpEndpointSpec,
     McpServerBasicInfo,
     McpToolSpecification,
-    RegisterMcpServerEndpointParam,
     ReleaseMcpServerParam,
 )
-from v2.nacos.ai.model.mcp.mcp import McpCapability, McpTool  # type: ignore
+from v2.nacos.ai.model.mcp.mcp import (  # type: ignore
+    McpServerRemoteServiceConfig,
+    McpTool,
+)
 from v2.nacos.ai.model.mcp.registry import ServerVersionDetail  # type: ignore
 from v2.nacos.ai.nacos_ai_service import NacosAIService  # type: ignore
 
@@ -28,6 +29,8 @@ class NacosAI:
         server_address: str,
         namespace_id: str,
         version: str,
+        service_name: str = "trip-review-summary",
+        group_name: str = "DEFAULT_GROUP",
     ) -> None:
         self.server_address = server_address
         self.namespace_id = namespace_id
@@ -42,6 +45,8 @@ class NacosAI:
         self.ip = get_local_ip()
         self.port = port
         self.version = version
+        self.service_name = service_name
+        self.group_name = group_name
 
     @classmethod
     async def create_nacos_ai(
@@ -51,26 +56,45 @@ class NacosAI:
         server_address: str,
         namespace_id: str,
         version: str,
+        service_name: str = "trip-review-summary",
+        group_name: str = "DEFAULT_GROUP",
     ) -> Self:
-        instance = cls(mcp_name, port, server_address, namespace_id, version)
+        instance = cls(
+            mcp_name,
+            port,
+            server_address,
+            namespace_id,
+            version,
+            service_name,
+            group_name,
+        )
         instance.ai_service = await NacosAIService.create_ai_service(
             client_config=instance.client_config
         )
         return instance
 
-    async def register_mcp_server(self) -> None:
+    async def register_mcp_server(self, path: str = "/mcp") -> None:
         service = self._require_service()
+        try:
+            await service.get_mcp_server(
+                GetMcpServerParam(mcp_name=self.mcp_name, version=self.version)
+            )
+            return
+        except Exception:
+            pass
         await service.release_mcp_server(
             ReleaseMcpServerParam(
                 server_spec=McpServerBasicInfo(
                     name=self.mcp_name,
-                    protocol="streamable",
-                    frontProtocol="streamable",
+                    protocol="mcp-streamable",
+                    frontProtocol="mcp-streamable",
                     versionDetail=ServerVersionDetail(
                         version=self.version,
                         is_latest=True,
                     ),
-                    capabilities=[McpCapability.TOOL],
+                    remoteServerConfig=McpServerRemoteServiceConfig(
+                        exportPath=path,
+                    ),
                 ),
                 tool_spec=McpToolSpecification(
                     tools=[
@@ -88,36 +112,14 @@ class NacosAI:
                     ]
                 ),
                 mcp_endpoint_spec=McpEndpointSpec(
-                    type=AIConstants.MCP_ENDPOINT_TYPE_DIRECT,
+                    type=AIConstants.MCP_ENDPOINT_TYPE_REF,
                     data={
-                        "address": self.ip,
-                        "port": str(self.port),
+                        "serviceName": self.service_name,
+                        "groupName": self.group_name,
+                        "namespaceId": self.namespace_id,
                     },
                 ),
             )
-        )
-        await service.register_mcp_server_endpoint(
-            RegisterMcpServerEndpointParam(
-                mcp_name=self.mcp_name,
-                address=self.ip,
-                port=self.port,
-                version=self.version,
-            )
-        )
-
-    async def deregister_mcp_server(self) -> None:
-        service = self._require_service()
-        param = DeregisterMcpServerEndpointParam(
-            mcp_name=self.mcp_name,
-            address=self.ip,
-            port=self.port,
-        )
-        deregister = getattr(service, "deregister_mcp_server_endpoint", None)
-        if deregister is not None:
-            await deregister(param)
-            return
-        await service.grpc_client_proxy.deregister_mcp_server_endpoint(
-            self.mcp_name, self.ip, self.port
         )
 
     async def get_mcp_server(self, version: str | None = None):

@@ -58,6 +58,7 @@ async def _init_adk_app(app: FastAPI) -> None:
         review_summary.url,
         service_name=review_summary.name,
         version=review_summary.version,
+        nacos_naming=app.state.nacos_naming,
     )
     root_agent = create_agent(
         True,
