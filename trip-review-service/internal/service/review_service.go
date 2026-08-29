@@ -48,9 +48,19 @@ func extractUserID(ctx context.Context) string {
 	return values[0]
 }
 
+func isValidEntityType(entityType pb.EntityType) bool {
+	return entityType == pb.EntityType_ENTITY_TYPE_HOTEL ||
+		entityType == pb.EntityType_ENTITY_TYPE_ATTRACTION
+}
+
 // CreateReview creates a new review
 func (s *ReviewService) CreateReview(ctx context.Context, req *pb.CreateReviewRequest) (*pb.CreateReviewResponse, error) {
-	if req.Review == nil {
+	userID := extractUserID(ctx)
+	if userID == "" {
+		return nil, status.Error(codes.Unauthenticated, "authentication is required")
+	}
+
+	if req == nil || req.Review == nil {
 		return nil, status.Error(codes.InvalidArgument, "review is required")
 	}
 
@@ -60,11 +70,14 @@ func (s *ReviewService) CreateReview(ctx context.Context, req *pb.CreateReviewRe
 	if review.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
+	if review.UserId != userID {
+		return nil, status.Error(codes.PermissionDenied, "user_id does not match authenticated user")
+	}
 	if review.EntityId == "" {
 		return nil, status.Error(codes.InvalidArgument, "entity_id is required")
 	}
-	if review.EntityType == pb.EntityType_ENTITY_TYPE_UNSPECIFIED {
-		return nil, status.Error(codes.InvalidArgument, "entity_type is required")
+	if !isValidEntityType(review.EntityType) {
+		return nil, status.Error(codes.InvalidArgument, "entity_type must be HOTEL or ATTRACTION")
 	}
 	if review.Rating < 1 || review.Rating > 5 {
 		return nil, status.Error(codes.InvalidArgument, "rating must be between 1 and 5")
@@ -87,6 +100,9 @@ func (s *ReviewService) CreateReview(ctx context.Context, req *pb.CreateReviewRe
 	}
 
 	if err := s.repo.Create(ctx, domainReview); err != nil {
+		if domain.IsAlreadyExistsError(err) {
+			return nil, status.Error(codes.AlreadyExists, "review already exists")
+		}
 		slog.ErrorContext(ctx, "failed to create review",
 			"error", err,
 			"user_id", review.UserId,
@@ -108,7 +124,12 @@ func (s *ReviewService) CreateReview(ctx context.Context, req *pb.CreateReviewRe
 
 // UpdateReview updates an existing review
 func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRequest) (*pb.UpdateReviewResponse, error) {
-	if req.Review == nil {
+	userID := extractUserID(ctx)
+	if userID == "" {
+		return nil, status.Error(codes.Unauthenticated, "authentication is required")
+	}
+
+	if req == nil || req.Review == nil {
 		return nil, status.Error(codes.InvalidArgument, "review is required")
 	}
 
@@ -125,6 +146,9 @@ func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRe
 	// Fetch existing review first
 	existingReview, err := s.repo.GetByID(ctx, review.Id)
 	if err != nil {
+		if domain.IsNotFoundError(err) {
+			return nil, status.Error(codes.NotFound, "review not found")
+		}
 		slog.ErrorContext(ctx, "failed to get review for update",
 			"error", err,
 			"id", review.Id,
@@ -133,6 +157,9 @@ func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRe
 	}
 	if existingReview == nil {
 		return nil, status.Error(codes.NotFound, "review not found")
+	}
+	if existingReview.UserID != userID {
+		return nil, status.Error(codes.PermissionDenied, "review belongs to another user")
 	}
 
 	// Update fields
@@ -143,6 +170,9 @@ func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRe
 	existingReview.UpdatedAt = time.Now()
 
 	if err := s.repo.Update(ctx, existingReview); err != nil {
+		if domain.IsNotFoundError(err) {
+			return nil, status.Error(codes.NotFound, "review not found")
+		}
 		slog.ErrorContext(ctx, "failed to update review",
 			"error", err,
 			"id", review.Id,
@@ -159,8 +189,31 @@ func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRe
 
 // DeleteReview deletes a review by ID
 func (s *ReviewService) DeleteReview(ctx context.Context, req *pb.DeleteReviewRequest) (*pb.DeleteReviewResponse, error) {
-	if req.Id == "" {
+	userID := extractUserID(ctx)
+	if userID == "" {
+		return nil, status.Error(codes.Unauthenticated, "authentication is required")
+	}
+
+	if req == nil || req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+
+	existingReview, err := s.repo.GetByID(ctx, req.Id)
+	if err != nil {
+		if domain.IsNotFoundError(err) {
+			return nil, status.Error(codes.NotFound, "review not found")
+		}
+		slog.ErrorContext(ctx, "failed to get review for delete",
+			"error", err,
+			"id", req.Id,
+		)
+		return nil, status.Errorf(codes.Internal, "failed to get review: %v", err)
+	}
+	if existingReview == nil {
+		return nil, status.Error(codes.NotFound, "review not found")
+	}
+	if existingReview.UserID != userID {
+		return nil, status.Error(codes.PermissionDenied, "review belongs to another user")
 	}
 
 	if err := s.repo.Delete(ctx, req.Id); err != nil {
@@ -185,11 +238,14 @@ func (s *ReviewService) DeleteReview(ctx context.Context, req *pb.DeleteReviewRe
 // and excluded from the reviews list to avoid duplication.
 func (s *ReviewService) ListReviewsByEntity(ctx context.Context, req *pb.ListReviewsByEntityRequest) (*pb.ListReviewsByEntityResponse, error) {
 	// Input validation
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "request is required")
+	}
 	if req.EntityId == "" {
 		return nil, status.Error(codes.InvalidArgument, "entity_id is required")
 	}
-	if req.EntityType == pb.EntityType_ENTITY_TYPE_UNSPECIFIED {
-		return nil, status.Error(codes.InvalidArgument, "entity_type is required")
+	if !isValidEntityType(req.EntityType) {
+		return nil, status.Error(codes.InvalidArgument, "entity_type must be HOTEL or ATTRACTION")
 	}
 
 	// Extract user ID from metadata

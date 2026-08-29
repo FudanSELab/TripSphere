@@ -49,6 +49,9 @@ var _ domain.ReviewRepository = (*ReviewRepo)(nil)
 func (r *ReviewRepo) Create(ctx context.Context, review *domain.Review) error {
 	_, err := r.collection.InsertOne(ctx, review)
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return fmt.Errorf("failed to insert review: %w", domain.ErrReviewAlreadyExists)
+		}
 		return fmt.Errorf("failed to insert review: %w", err)
 	}
 	return nil

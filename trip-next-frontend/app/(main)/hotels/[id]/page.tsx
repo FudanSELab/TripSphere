@@ -17,12 +17,16 @@ import {
   RoomListSkeleton,
 } from "@/components/hotel-detail/hotel-room-list";
 import { AmenityIcon } from "@/components/hotel-detail/amenity-icon";
+import { ReviewTargetContext } from "@/components/context/review-target-context";
+import { ReviewSection } from "@/components/review/review-section";
 import { getHotelById } from "@/lib/data/hotel";
+import { getReviewOverview } from "@/lib/data/review";
 import {
   getCityFromAddress,
   getFullAddress,
   formatTime,
 } from "@/lib/hotel-helpers";
+import { getSession } from "@/lib/session";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -56,9 +60,18 @@ export default async function HotelDetailPage({ params }: PageProps) {
 
   const city = getCityFromAddress(hotel);
   const address = getFullAddress(hotel);
+  const [reviewOverview, session] = await Promise.all([
+    getReviewOverview(hotel.id, "hotel"),
+    getSession(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
+      <ReviewTargetContext
+        targetId={hotel.id}
+        targetType="hotel"
+        targetName={hotel.name}
+      />
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -128,7 +141,12 @@ export default async function HotelDetailPage({ params }: PageProps) {
             </TabsContent>
 
             <TabsContent value="reviews" className="p-6">
-              <p className="text-muted-foreground">用户点评内容...</p>
+              <ReviewSection
+                targetId={hotel.id}
+                targetType="hotel"
+                overview={reviewOverview}
+                isAuthenticated={Boolean(session)}
+              />
             </TabsContent>
 
             <TabsContent value="facilities" className="p-6">

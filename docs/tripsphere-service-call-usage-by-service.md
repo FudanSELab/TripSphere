@@ -544,7 +544,7 @@ gRPC `ReviewService`：
 
 ### 接入缺口和风险
 
-- 远程 Agent 列表默认只有 `order_assistant`，不会发现 `review_summary`。
+- `review_summary` 通过 MCP 直连，不再参与远程 A2A Agent 发现；远程 Agent 列表默认只有 `order_assistant`。
 - 健康检查逻辑目前是固定成功值。
 - 缺少有效业务测试。
 
@@ -640,20 +640,16 @@ gRPC `ReviewService`：
 - FastAPI 应用。
 - HTTP 索引接口：`POST /api/v1/indices`。
 - HTTP 删除索引接口：`DELETE /api/v1/indices/{target_id}`，当前未实现。
-- HTTP 摘要接口：`GET /api/v1/summaries`，当前未实现。
-- HTTP 生成摘要接口：`POST /api/v1/summaries`，会提交 Celery task，但 task 内部未实现。
-- A2A Agent，AgentCard 发布到 Nacos AI。
+- HTTP 评论问答接口：`POST /api/v1/review-summaries`。
+- MCP Streamable HTTP 接口：`/mcp`，提供 `summarize_reviews` 工具。
 - Nacos Naming 服务注册。
 
 ### 当前被调用方式
 
-当前没有发现 `trip-next-frontend`、`trip-chat-service` 或其他主业务服务调用它。
-
-已有调用方式主要是：
-
-- 外部或人工调用 `POST /api/v1/indices` 触发索引构建。
-- 外部或人工通过 A2A client 调用评论总结 Agent。
-- `examples/a2a_client.py` 是示例调用，不是业务接入。
+| 调用方 | 协议 | 方式 | 用途 |
+| --- | --- | --- | --- |
+| `trip-chat-service` | MCP Streamable HTTP | `summarize_reviews` | 回答当前页面酒店或景点的评论问题 |
+| 外部或人工 | HTTP | `POST /api/v1/indices` | 触发索引构建 |
 
 ### 它调用或依赖
 
@@ -663,20 +659,17 @@ gRPC `ReviewService`：
 | Qdrant | vector store | 文本单元、实体向量检索 |
 | Neo4j | graph store | 图查询和上下文构建 |
 | OpenAI/Higress | LLM/embedding | 图抽取、摘要、向量 |
+| `trip-review-service` | Nacos + gRPC | 拉取目标评论作为查询事实来源 |
 | Nacos Naming | SDK | 服务注册 |
-| Nacos AI | SDK | 发布 AgentCard |
 | MinIO/文件存储相关配置 | 任务链依赖配置 | 存储或读取索引中间产物 |
 
 ### 没有调用的服务
 
-- 没有调用 `trip-review-service` 拉取评论。
-- 没有被 `trip-chat-service` 作为默认远程 Agent 发现；Chat 的默认远程 Agent 只有 `order_assistant`。
+- 不再使用 A2A 或 Nacos AI 发布/发现评论总结 Agent。
 - 没有接入酒店详情页或评论展示页。
 
 ### 未完整实现点
 
-- `GET /api/v1/summaries` 直接 `NotImplemented`。
-- `create_static_summary` task 直接 `NotImplemented`。
 - 删除索引接口未实现。
 - 图嵌入相关流程存在未实现分支。
 
@@ -716,5 +709,5 @@ gRPC `ReviewService`：
 | `trip-chat-service` | `trip-next-frontend` |
 | `trip-itinerary-planner` | `trip-next-frontend` |
 | `trip-order-assistant` | `trip-chat-service`，前端有配置但没有自然业务入口 |
-| `trip-review-summary` | 未发现主业务调用方，只有人工 HTTP/A2A 入口 |
+| `trip-review-summary` | `trip-chat-service`（MCP），以及人工/运维 HTTP 索引入口 |
 | `trip-note-creator` | 未发现业务调用方 |

@@ -38,6 +38,12 @@ class MongoSettings(BaseModel):
     database: str = Field(default="chat_db")
 
 
+class ReviewSummarySettings(BaseModel):
+    url: str = Field(default="http://localhost:24212")
+    name: str = Field(default="review-summary")
+    version: str = Field(default="1.0.0")
+
+
 class OpenAISettings(BaseModel):
     api_key: SecretStr = Field(default=SecretStr("api-key"))
     base_url: str = Field(default="https://api.openai.com/v1")
@@ -69,6 +75,9 @@ class Settings(BaseSettings):
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
+    review_summary: ReviewSummarySettings = Field(
+        default_factory=ReviewSummarySettings
+    )
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)
 
