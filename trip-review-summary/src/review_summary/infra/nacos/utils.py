@@ -2,6 +2,7 @@ import socket
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from review_summary.infra.nacos.ai import NacosAI
     from review_summary.infra.nacos.naming import NacosNaming
 
 
@@ -14,6 +15,10 @@ def get_local_ip() -> str:
         return socket.gethostbyname(socket.gethostname())
 
 
-async def client_shutdown(nacos_naming: "NacosNaming | None") -> None:
+async def client_shutdown(
+    nacos_ai: "NacosAI | None", nacos_naming: "NacosNaming | None"
+) -> None:
+    if nacos_ai is not None:
+        await nacos_ai.shutdown()
     if nacos_naming is not None:
         await nacos_naming.shutdown()

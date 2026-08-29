@@ -1,12 +1,14 @@
 from types import SimpleNamespace
 from typing import Any, cast
 
+import pytest
 from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams
 
 from chat.agent.remote_agent import RemoteAgentsFactory
 from chat.agent.review_summary_mcp import (
     create_review_summary_toolset,
+    resolve_review_summary_url,
     review_summary_headers,
 )
 
@@ -44,7 +46,9 @@ def test_review_summary_headers_omit_untrusted_or_missing_target_context() -> No
                     },
                     {
                         "description": "review target context",
-                        "value": '{"targetId":"attraction-7","targetType":"attraction"}',
+                        "value": (
+                            '{"targetId":"attraction-7","targetType":"attraction"}'
+                        ),
                     },
                 ]
             }
@@ -66,3 +70,54 @@ def test_review_summary_toolset_uses_streamable_http_mcp() -> None:
     assert toolset.tool_filter == ["summarize_reviews"]
     assert toolset.tool_name_prefix == "review_summary"
     assert toolset.header_provider is review_summary_headers
+
+
+@pytest.mark.asyncio
+async def test_review_summary_url_uses_nacos_ai_endpoint() -> None:
+    class FakeNacosAI:
+        async def get_mcp_server(self, name: str, version: str | None = None):
+            assert name == "review-summary"
+            return SimpleNamespace(
+                frontendEndpoints=[
+                    SimpleNamespace(
+                        protocol="http",
+                        address="review-summary",
+                        port=24212,
+                        path="/mcp",
+                    )
+                ]
+            )
+
+    url = await resolve_review_summary_url(FakeNacosAI(), "http://fallback:24212")
+
+    assert url == "http://review-summary:24212/mcp"
+
+
+@pytest.mark.asyncio
+async def test_review_summary_url_falls_back_when_nacos_ai_discovery_fails() -> None:
+    class FakeNacosAI:
+        async def get_mcp_server(self, name: str, version: str | None = None):
+            raise RuntimeError("nacos unavailable")
+
+    url = await resolve_review_summary_url(FakeNacosAI(), "http://fallback:24212/")
+
+    assert url == "http://fallback:24212/mcp"
+
+
+@pytest.mark.asyncio
+async def test_review_summary_url_accepts_nacos_backend_endpoint() -> None:
+    class FakeNacosAI:
+        async def get_mcp_server(self, name: str, version: str | None = None):
+            return SimpleNamespace(
+                backendEndpoints=[
+                    SimpleNamespace(
+                        protocol="https",
+                        address="review-summary.internal",
+                        port=443,
+                    )
+                ]
+            )
+
+    url = await resolve_review_summary_url(FakeNacosAI(), "http://fallback:24212")
+
+    assert url == "https://review-summary.internal:443/mcp"

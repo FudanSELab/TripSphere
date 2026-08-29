@@ -40,6 +40,8 @@ class MongoSettings(BaseModel):
 
 class ReviewSummarySettings(BaseModel):
     url: str = Field(default="http://localhost:24212")
+    name: str = Field(default="review-summary")
+    version: str = Field(default="1.0.0")
 
 
 class OpenAISettings(BaseModel):

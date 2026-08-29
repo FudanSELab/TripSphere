@@ -15,6 +15,7 @@ from pymongo import AsyncMongoClient
 from chat.agent import create_adk_app, create_agent
 from chat.agent.memory import Mem0MemoryService
 from chat.agent.remote_agent import RemoteAgentsFactory
+from chat.agent.review_summary_mcp import resolve_review_summary_url
 from chat.agent.session import MongoSessionService
 from chat.config.logging import setup_logging
 from chat.config.mem0 import get_mem0_config
@@ -43,14 +44,26 @@ async def _init_infra(app: FastAPI, settings: Settings) -> None:
         namespace_id=settings.nacos.namespace_id,
     )
     app.state.nacos_ai = await NacosAI.create_nacos_ai(
-        server_address=settings.nacos.server_address
+        server_address=settings.nacos.server_address,
+        namespace_id=settings.nacos.namespace_id,
     )
 
 
 async def _init_adk_app(app: FastAPI) -> None:
     remote_agents_factory = RemoteAgentsFactory(app.state.nacos_ai)
     remote_agents = await remote_agents_factory.get_remote_agents()
-    root_agent = create_agent(True, sub_agents=remote_agents)  # type: ignore
+    review_summary = get_settings().review_summary
+    review_summary_url = await resolve_review_summary_url(
+        app.state.nacos_ai,
+        review_summary.url,
+        service_name=review_summary.name,
+        version=review_summary.version,
+    )
+    root_agent = create_agent(
+        True,
+        sub_agents=cast(Any, remote_agents),
+        review_summary_url=review_summary_url,
+    )  # type: ignore
     adk_app = create_adk_app(root_agent)
 
     def user_id_extractor(input: RunAgentInput) -> str:

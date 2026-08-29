@@ -10,6 +10,7 @@ from qdrant_client import AsyncQdrantClient
 
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
+from review_summary.infra.nacos.ai import NacosAI
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.nacos.utils import client_shutdown
 from review_summary.mcp import create_review_summary_mcp_server
@@ -32,6 +33,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     app.state.ready = False
     app.state.nacos_naming = None
+    app.state.nacos_ai = None
     app.state.neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
         uri=settings.neo4j.uri,
         auth=(
@@ -49,6 +51,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
+        app.state.nacos_ai = await NacosAI.create_nacos_ai(
+            mcp_name=settings.mcp.name,
+            port=settings.uvicorn.port,
+            server_address=settings.nacos.server_address,
+            namespace_id=settings.nacos.namespace_id,
+            version=settings.mcp.version,
+        )
+        await app.state.nacos_ai.register_mcp_server()
         app.state.review_summary_service = ReviewSummaryService(
             neo4j_driver=app.state.neo4j_driver,
             qdrant_client=app.state.qdrant_client,
@@ -66,11 +76,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     finally:
         app.state.ready = False
+        if isinstance(app.state.nacos_ai, NacosAI):
+            await app.state.nacos_ai.deregister_mcp_server()
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)
 
-        await client_shutdown(app.state.nacos_naming)
+        await client_shutdown(app.state.nacos_ai, app.state.nacos_naming)
         await app.state.qdrant_client.close()
         await app.state.neo4j_driver.close()
 

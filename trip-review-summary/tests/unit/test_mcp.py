@@ -6,6 +6,7 @@ from mcp.shared.context import RequestContext
 from starlette.requests import Request
 
 from review_summary.clients.reviews import TargetType
+from review_summary.infra.nacos.ai import NacosAI
 from review_summary.mcp import create_review_summary_mcp_server, target_from_headers
 from review_summary.query.review_state import ReviewState
 from review_summary.services.summarizer import ReviewSummaryService
@@ -61,8 +62,8 @@ async def test_mcp_tool_uses_the_request_target_headers() -> None:
 
     service = cast(ReviewSummaryService, RecordingService())
     mcp_server = create_review_summary_mcp_server(lambda: service)
-    tool_manager = getattr(mcp_server, "_tool_manager")
-    tool = getattr(tool_manager, "_tools")["summarize_reviews"]
+    tool_manager = mcp_server._tool_manager
+    tool = tool_manager._tools["summarize_reviews"]
     request = Request(
         {
             "type": "http",
@@ -89,3 +90,51 @@ async def test_mcp_tool_uses_the_request_target_headers() -> None:
     payload = await tool.fn("隔音怎么样？", context)
 
     assert payload["status"] == "empty_reviews"
+
+
+@pytest.mark.asyncio
+async def test_nacos_ai_registers_review_summary_mcp_endpoint() -> None:
+    class FakeAIService:
+        def __init__(self) -> None:
+            self.released = None
+            self.registered = None
+
+        async def release_mcp_server(self, param: Any) -> None:
+            self.released = param
+            return "mcp-id"
+
+        async def register_mcp_server_endpoint(self, param: Any) -> None:
+            self.registered = param
+
+    client = NacosAI("review-summary", 24212, "nacos:8848", "public", "1.0.0")
+    service = FakeAIService()
+    client.ai_service = cast(Any, service)
+
+    await client.register_mcp_server()
+
+    assert service.released.server_spec.name == "review-summary"
+    assert service.released.server_spec.versionDetail.version == "1.0.0"
+    assert service.released.server_spec.protocol == "streamable"
+    assert service.released.mcp_endpoint_spec.type == "DIRECT"
+    assert service.released.mcp_endpoint_spec.data["address"] == client.ip
+    assert service.registered.mcp_name == "review-summary"
+    assert service.registered.version == "1.0.0"
+
+
+@pytest.mark.asyncio
+async def test_nacos_ai_deregisters_review_summary_mcp_endpoint() -> None:
+    class FakeAIService:
+        def __init__(self) -> None:
+            self.deregistered = None
+
+        async def deregister_mcp_server_endpoint(self, param: Any) -> None:
+            self.deregistered = param
+
+    client = NacosAI("review-summary", 24212, "nacos:8848", "public", "1.0.0")
+    service = FakeAIService()
+    client.ai_service = cast(Any, service)
+
+    await client.deregister_mcp_server()
+
+    assert service.deregistered.mcp_name == "review-summary"
+    assert service.deregistered.port == 24212

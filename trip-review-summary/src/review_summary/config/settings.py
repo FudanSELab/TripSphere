@@ -26,6 +26,12 @@ class NacosSettings(BaseModel):
     group_name: str = Field(default="DEFAULT_GROUP")
 
 
+class McpSettings(BaseModel):
+    name: str = Field(default="review-summary")
+    version: str = Field(default="1.0.0")
+    path: str = Field(default="/mcp")
+
+
 class QdrantSettings(BaseModel):
     url: str = Field(default="http://localhost:6333")
 
@@ -81,6 +87,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
+    mcp: McpSettings = Field(default_factory=McpSettings)
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
     neo4j: Neo4jSettings = Field(default_factory=Neo4jSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)

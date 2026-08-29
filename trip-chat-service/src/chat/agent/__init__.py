@@ -36,7 +36,9 @@ _ensure_openai_env()
 
 
 def create_agent(
-    agui_toolset: bool = False, sub_agents: list[BaseAgent] | None = None
+    agui_toolset: bool = False,
+    sub_agents: list[BaseAgent] | None = None,
+    review_summary_url: str | None = None,
 ) -> LlmAgent:
     sub_agents = sub_agents or []
     # weather_toolset is not stable due to network issues.
@@ -48,7 +50,7 @@ def create_agent(
             timeout=10,
         )
     )
-    review_summary_toolset = create_review_summary_toolset()
+    review_summary_toolset = create_review_summary_toolset(review_summary_url)
     tools: list[ToolUnion] = [  # pyright: ignore
         load_memory_tool,
         weather_toolset,
