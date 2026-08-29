@@ -32,7 +32,9 @@ function toIsoString(value: Date | Timestamp | undefined): string {
 export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
   const reqHeaders = await headers();
   const userId = reqHeaders.get("x-user-id") ?? "";
-  if (!userId) return [];
+  if (!userId) {
+    throw new Error("未获取到登录用户身份，无法加载行程。");
+  }
 
   const client = getItineraryService();
   const metadata = await getAuthMetadata();
@@ -61,7 +63,8 @@ export async function listMyItineraries(): Promise<SavedItinerarySummary[]> {
       created_at: toIsoString(itinerary.createdAt),
       updated_at: toIsoString(itinerary.updatedAt),
     }));
-  } catch {
-    return [];
+  } catch (error) {
+    console.error("[Itinerary] Failed to load itinerary list", error);
+    throw new Error("行程列表加载失败，请稍后重试。");
   }
 }

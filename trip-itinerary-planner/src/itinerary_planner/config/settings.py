@@ -30,6 +30,20 @@ class NacosSettings(BaseModel):
     group_name: str = Field(default="DEFAULT_GROUP")
 
 
+class AmapSettings(BaseModel):
+    """Loaded from the required AMAP_KEY environment variable."""
+
+    key: SecretStr
+
+    @field_validator("key")
+    @classmethod
+    def validate_key(cls, value: SecretStr) -> SecretStr:
+        key = value.get_secret_value().strip()
+        if not key:
+            raise ValueError("AMAP_KEY must not be empty")
+        return SecretStr(key)
+
+
 class OpenAISettings(BaseModel):
     api_key: SecretStr = Field(default=SecretStr("api-key"))
     base_url: str = Field(default="https://api.openai.com/v1")
@@ -59,6 +73,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
+    amap: AmapSettings
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)
 
@@ -69,7 +84,8 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
-    return Settings()
+    # Pydantic Settings injects required fields from the environment at runtime.
+    return Settings()  # type: ignore[call-arg]
 
 
 if __name__ == "__main__":

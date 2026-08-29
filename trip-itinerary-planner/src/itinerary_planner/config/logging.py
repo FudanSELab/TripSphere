@@ -48,7 +48,17 @@ def setup_logging() -> None:
                 "level": settings.log.level,
                 "handlers": logger_handlers,
                 "propagate": False,
-            }
+            },
+            "httpx": {
+                "level": "WARNING",
+                "handlers": logger_handlers,
+                "propagate": False,
+            },
+            "httpcore": {
+                "level": "WARNING",
+                "handlers": logger_handlers,
+                "propagate": False,
+            },
         },
     }
     config.dictConfig(logging_config)

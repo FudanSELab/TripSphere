@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 _ATTRACTION_SAMPLE_SIZE = 15
 
 chat_model = ChatOpenAI(
-    model="gpt-4o-mini",
+    model="gpt-5.5",
     temperature=0.0,
     api_key=get_settings().openai.api_key,
     base_url=get_settings().openai.base_url,

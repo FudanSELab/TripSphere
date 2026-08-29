@@ -2,9 +2,12 @@
 
 import logging
 
-from httpx import AsyncClient
+from httpx import AsyncClient, HTTPError
 from langchain_core.tools import tool
+from opentelemetry.instrumentation.utils import suppress_http_instrumentation
 from pydantic import BaseModel, Field
+
+from itinerary_planner.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,22 +36,28 @@ async def geocoding_tool(address: str, city: str = "") -> GeocodeResult:
 
     endpoint = "https://restapi.amap.com/v3/geocode/geo"
     params = {
-        "key": "90b08d9c9b136bf3543d05181b86cf5c",
+        "key": get_settings().amap.key.get_secret_value(),
         "address": address,
         "city": city,
     }
-    async with AsyncClient() as client:
-        response = await client.get(endpoint, params=params)
-        response.raise_for_status()
-        data = response.json()
-        if data["status"] == "1" and data["infocode"] == "10000":
-            longitude, latitude = data["geocodes"][0]["location"].split(",")
-            return GeocodeResult(
-                name=data["geocodes"][0]["formatted_address"],
-                latitude=float(latitude),
-                longitude=float(longitude),
-                address=data["geocodes"][0]["formatted_address"],
-            )
-        else:
-            logger.error("Geocoding failed: %s", data["info"])
-            raise ValueError(f"Geocoding failed: {data['info']}")
+    try:
+        with suppress_http_instrumentation():
+            async with AsyncClient() as client:
+                response = await client.get(endpoint, params=params)
+                response.raise_for_status()
+    except HTTPError:
+        logger.error("Geocoding request failed")
+        raise ValueError("Geocoding request failed") from None
+
+    data = response.json()
+    if data["status"] == "1" and data["infocode"] == "10000":
+        longitude, latitude = data["geocodes"][0]["location"].split(",")
+        return GeocodeResult(
+            name=data["geocodes"][0]["formatted_address"],
+            latitude=float(latitude),
+            longitude=float(longitude),
+            address=data["geocodes"][0]["formatted_address"],
+        )
+
+    logger.error("Geocoding failed: %s", data["info"])
+    raise ValueError(f"Geocoding failed: {data['info']}")
