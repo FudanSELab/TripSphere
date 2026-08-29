@@ -9,7 +9,7 @@ from a2a.server.tasks import (
     InMemoryPushNotificationConfigStore,
     InMemoryTaskStore,
 )
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
 from neo4j import AsyncDriver, AsyncGraphDatabase
@@ -24,7 +24,6 @@ from review_summary.infra.nacos.ai import NacosAI
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.nacos.utils import client_shutdown
 from review_summary.routers.indices import indices
-from review_summary.routers.summaries import summaries
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Loaded settings: {settings}")
 
+    app.state.ready = False
+    app.state.nacos_naming = None
+    app.state.nacos_ai = None
     app.state.httpx_client = AsyncClient()
     app.state.neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
         uri=settings.neo4j.uri,
@@ -63,6 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             httpx_client=app.state.httpx_client,
             neo4j_driver=app.state.neo4j_driver,
             qdrant_client=app.state.qdrant_client,
+            nacos_naming=app.state.nacos_naming,
         )
         a2a_app.add_routes_to_app(app)
 
@@ -75,6 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await app.state.nacos_ai.release_agent_card(agent_card)
         logger.info("Registering agent endpoint...")
         await app.state.nacos_ai.register(agent_card.version)
+        app.state.ready = True
         yield
 
     except Exception as e:
@@ -82,6 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         raise  # Re-raise to prevent app from starting with errors
 
     finally:
+        app.state.ready = False
         logger.info("Deregistering agent endpoint...")
         if isinstance(app.state.nacos_ai, NacosAI):
             await app.state.nacos_ai.deregister(agent_card.version)
@@ -100,12 +105,17 @@ def create_a2a_app(
     httpx_client: AsyncClient,
     neo4j_driver: AsyncDriver,
     qdrant_client: AsyncQdrantClient,
+    nacos_naming: NacosNaming,
 ) -> A2AStarletteApplication:
     """Create the A2A Starlette application."""
     push_config_store = InMemoryPushNotificationConfigStore()
     push_sender = BasePushNotificationSender(httpx_client, push_config_store)
     http_handler = DefaultRequestHandler(
-        agent_executor=A2aAgentExecutor(neo4j_driver, qdrant_client),
+        agent_executor=A2aAgentExecutor(
+            neo4j_driver,
+            qdrant_client,
+            nacos_naming,
+        ),
         task_store=InMemoryTaskStore(),
         push_config_store=push_config_store,
         push_sender=push_sender,
@@ -126,9 +136,14 @@ def create_fastapi_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.get("/ready", include_in_schema=False)
+    async def readiness(request: Request) -> dict[str, str]:
+        if not getattr(request.app.state, "ready", False):
+            raise HTTPException(status_code=503, detail="service is not ready")
+        return {"status": "ready"}
+
     # Include routers
     app.include_router(indices, prefix="/api/v1")
-    app.include_router(summaries, prefix="/api/v1")
     return app
 
 

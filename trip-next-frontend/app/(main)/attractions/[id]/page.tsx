@@ -14,12 +14,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AttractionHeaderCard } from "@/components/attraction-detail/attraction-header-card";
+import { ReviewTargetContext } from "@/components/context/review-target-context";
 import { OpeningHoursCard } from "@/components/attraction-detail/opening-hours-card";
 import {
   NearbyAttractions,
   NearbyAttractionsSkeleton,
 } from "@/components/attraction-detail/nearby-attractions";
+import { ReviewSection } from "@/components/review/review-section";
 import { getAttractionById } from "@/lib/data/attraction";
+import { getReviewOverview } from "@/lib/data/review";
+import { getSession } from "@/lib/session";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -53,9 +57,18 @@ export default async function AttractionDetailPage({ params }: PageProps) {
 
   const city = attraction.address?.city ?? "";
   const cityShort = city.replace("市", "");
+  const [reviewOverview, session] = await Promise.all([
+    getReviewOverview(attraction.id, "attraction"),
+    getSession(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
+      <ReviewTargetContext
+        targetId={attraction.id}
+        targetType="attraction"
+        targetName={attraction.name}
+      />
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -104,6 +117,9 @@ export default async function AttractionDetailPage({ params }: PageProps) {
                 </TabsTrigger>
                 <TabsTrigger value="policy" className="px-2 text-base">
                   政策
+                </TabsTrigger>
+                <TabsTrigger value="reviews" className="px-2 text-base">
+                  评论
                 </TabsTrigger>
               </TabsList>
 
@@ -189,6 +205,15 @@ export default async function AttractionDetailPage({ params }: PageProps) {
                 ) : (
                   <p className="text-muted-foreground">暂无政策信息</p>
                 )}
+              </TabsContent>
+
+              <TabsContent value="reviews" className="p-6">
+                <ReviewSection
+                  targetId={attraction.id}
+                  targetType="attraction"
+                  overview={reviewOverview}
+                  isAuthenticated={Boolean(session)}
+                />
               </TabsContent>
             </Tabs>
           </div>

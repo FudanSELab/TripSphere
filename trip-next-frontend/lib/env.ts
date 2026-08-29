@@ -12,6 +12,7 @@ export const config = {
     itineraryService: env("ITINERARY_SERVICE_ADDR", "localhost:50052"),
     orderService: env("ORDER_SERVICE_ADDR", "localhost:50062"),
     productService: env("PRODUCT_SERVICE_ADDR", "localhost:50060"),
+    reviewService: env("REVIEW_SERVICE_ADDR", "localhost:50057"),
     userService: env("USER_SERVICE_ADDR", "localhost:50056"),
   },
   copilot: {

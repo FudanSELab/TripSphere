@@ -49,8 +49,10 @@ class LocalSearch:
     async def search(
         self,
         query: str,
+        target_id: str,
+        target_type: str,
+        review_snapshot: str,
         conversation_history: ConversationHistory | None = None,
-        target_id: str = "",
     ) -> SearchResult:
         """Build local search context that fits a single
         context window and generate answer for the user query."""
@@ -60,71 +62,71 @@ class LocalSearch:
         prompt_tokens: dict[str, int] = {}
         output_tokens: dict[str, int] = {}
         context_result = await self.context_builder.build_context(
-            query=query, conversation_history=conversation_history, target_id=target_id
+            query=query,
+            target_id=target_id,
+            target_type=target_type,
+            review_snapshot=review_snapshot,
+            conversation_history=conversation_history,
         )
         llm_calls["build_context"] = context_result.llm_calls
         prompt_tokens["build_context"] = context_result.prompt_tokens
         output_tokens["build_context"] = context_result.output_tokens
 
         logger.debug("GENERATE ANSWER: %s. QUERY: %s", start_time, query)
-        try:
-            search_prompt = self.system_prompt.format(
-                context_data=context_result.context_chunks,
-                response_type=self.response_type,
-            )
+        search_prompt = self.system_prompt.format(
+            context_data=context_result.context_chunks,
+            response_type=self.response_type,
+        )
 
-            full_response = ""
-            async for chunk in self.chat_model.astream(
-                [SystemMessage(content=search_prompt), HumanMessage(content=query)]
-            ):
-                full_response += chunk.text
-                for callback in self.callbacks:
-                    callback.on_llm_new_token(chunk.text)
-
-            llm_calls["response"] = 1
-            prompt_tokens["response"] = len(self.tokenizer.encode(search_prompt))
-            output_tokens["response"] = len(self.tokenizer.encode(full_response))
-
+        full_response = ""
+        async for chunk in self.chat_model.astream(
+            [SystemMessage(content=search_prompt), HumanMessage(content=query)]
+        ):
+            full_response += chunk.text
             for callback in self.callbacks:
-                callback.on_context(context_result.context_records)
+                callback.on_llm_new_token(chunk.text)
 
-            return SearchResult(
-                response=full_response,
-                context_data=context_result.context_records,
-                context_text=context_result.context_chunks,
-                completion_time=time.time() - start_time,
-                llm_calls=sum(llm_calls.values()),
-                prompt_tokens=sum(prompt_tokens.values()),
-                output_tokens=sum(output_tokens.values()),
-                llm_calls_categories=llm_calls,
-                prompt_tokens_categories=prompt_tokens,
-                output_tokens_categories=output_tokens,
-            )
+        if not full_response.strip():
+            raise RuntimeError("The review analysis model returned an empty response")
 
-        except Exception:
-            logger.exception("Exception in _asearch")
-            return SearchResult(
-                response="",
-                context_data=context_result.context_records,
-                context_text=context_result.context_chunks,
-                completion_time=time.time() - start_time,
-                llm_calls=1,
-                prompt_tokens=len(self.tokenizer.encode(search_prompt)),
-                output_tokens=0,
-            )
+        llm_calls["response"] = 1
+        prompt_tokens["response"] = len(self.tokenizer.encode(search_prompt))
+        output_tokens["response"] = len(self.tokenizer.encode(full_response))
+
+        for callback in self.callbacks:
+            callback.on_context(context_result.context_records)
+
+        return SearchResult(
+            response=full_response,
+            context_data=context_result.context_records,
+            context_text=context_result.context_chunks,
+            completion_time=time.time() - start_time,
+            llm_calls=sum(llm_calls.values()),
+            prompt_tokens=sum(prompt_tokens.values()),
+            output_tokens=sum(output_tokens.values()),
+            llm_calls_categories=llm_calls,
+            prompt_tokens_categories=prompt_tokens,
+            output_tokens_categories=output_tokens,
+        )
 
     async def stream_search(
         self,
         query: str,
+        target_id: str,
+        target_type: str,
+        review_snapshot: str,
         conversation_history: ConversationHistory | None = None,
-        target_id: str = "",
     ) -> AsyncGenerator[str, None]:
         """Build local search context that fits a single
         context window and generate answer for the user query."""
         start_time = time.time()
 
         context_result = await self.context_builder.build_context(
-            query=query, conversation_history=conversation_history, target_id=target_id
+            query=query,
+            target_id=target_id,
+            target_type=target_type,
+            review_snapshot=review_snapshot,
+            conversation_history=conversation_history,
         )
         logger.debug("GENERATE ANSWER: %s. QUERY: %s", start_time, query)
         search_prompt = self.system_prompt.format(

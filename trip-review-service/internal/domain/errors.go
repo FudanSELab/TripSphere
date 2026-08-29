@@ -7,6 +7,9 @@ var (
 	// ErrReviewNotFound indicates the requested review does not exist
 	ErrReviewNotFound = errors.New("review not found")
 
+	// ErrReviewAlreadyExists indicates the user has already reviewed the entity
+	ErrReviewAlreadyExists = errors.New("review already exists")
+
 	// ErrInvalidRating indicates the rating value is invalid (must be between 1 and 5)
 	ErrInvalidRating = errors.New("rating must be between 1 and 5")
 
@@ -29,4 +32,9 @@ var (
 // IsNotFoundError checks if the error is a "not found" type
 func IsNotFoundError(err error) bool {
 	return errors.Is(err, ErrReviewNotFound)
+}
+
+// IsAlreadyExistsError checks if the error is an "already exists" type
+func IsAlreadyExistsError(err error) bool {
+	return errors.Is(err, ErrReviewAlreadyExists)
 }

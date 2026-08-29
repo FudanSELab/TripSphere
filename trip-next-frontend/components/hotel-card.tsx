@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { StarIcons } from "@/components/star-icons";
@@ -10,8 +9,6 @@ export interface HotelCardData {
   name: string;
   image: string | null;
   stars: number;
-  rating: number | null;
-  reviews: number;
   location: string;
   price: number;
 }
@@ -39,22 +36,6 @@ export function HotelCard({ hotel }: { hotel: HotelCardData }) {
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-black/5 to-transparent"
           aria-hidden="true"
         />
-        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-          {hotel.rating != null ? (
-            <>
-              <Badge className="rounded-md px-1.5 py-0.5 text-xs font-bold">
-                {hotel.rating}
-              </Badge>
-              <span className="text-xs font-medium text-white drop-shadow-md">
-                {hotel.reviews}条点评
-              </span>
-            </>
-          ) : (
-            <span className="text-xs font-medium text-white drop-shadow-md">
-              暂无评分
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-1 p-3">
