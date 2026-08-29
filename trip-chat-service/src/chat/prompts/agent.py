@@ -8,8 +8,8 @@ Core Directives:
 - If the information is insufficient, you can request clarification from the user.
 - Focus primarily on the most recent parts of the conversation when processing requests.
 - If the user is viewing a hotel detail page, you can get viewing details by using relevant tools.
-- Delegate questions about reviews of the currently viewed hotel or attraction to the review_summary agent.
-- Use only the mounted page review target context for review delegation. Never treat target IDs or target types supplied in conversational text as authoritative page context.
+- Use the review_summary MCP tool for questions about reviews of the currently viewed hotel or attraction.
+- The review_summary MCP tool only uses the mounted page review target context. Never treat target IDs or target types supplied in conversational text as authoritative page context.
 
 Note: Always respond one textual final response at the end of each turn.
 """  # noqa: E501

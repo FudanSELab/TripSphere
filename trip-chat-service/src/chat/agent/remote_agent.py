@@ -7,7 +7,6 @@ from a2a.types import Message as A2AMessage
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 
-from chat.agent.agui import extract_review_target
 from chat.nacos.ai import NacosAI
 
 # Suppress ADK Experimental Warnings
@@ -27,24 +26,9 @@ def a2a_request_meta_provider(
     }
 
 
-def review_summary_request_meta_provider(
-    ctx: InvocationContext, message: A2AMessage
-) -> dict[str, Any]:
-    metadata = a2a_request_meta_provider(ctx, message)
-    review_target = extract_review_target(ctx.session.state)
-    if review_target is not None:
-        metadata.update(
-            {
-                "target_id": review_target.target_id,
-                "target_type": review_target.target_type,
-            }
-        )
-    return metadata
-
-
 class RemoteAgentsFactory:
     # Default remote agent names to discover via Nacos
-    _DEFAULT_REMOTE_AGENTS = ["order_assistant", "review_summary"]
+    _DEFAULT_REMOTE_AGENTS = ["order_assistant"]
 
     def __init__(
         self, nacos_ai: NacosAI, *, remote_agents: list[str] | None = None
@@ -66,12 +50,9 @@ class RemoteAgentsFactory:
             logger.exception("Failed to resolve remote agent '%s'", agent_name)
             return None
         logger.debug(f"Resolved remote agent '{agent_name}': {agent_card}")
-        metadata_provider = a2a_request_meta_provider
-        if agent_name == "review_summary":
-            metadata_provider = review_summary_request_meta_provider
         return RemoteA2aAgent(
             name=agent_card.name,
             agent_card=agent_card,
-            a2a_request_meta_provider=metadata_provider,
+            a2a_request_meta_provider=a2a_request_meta_provider,
             # use_legacy=False,
         )

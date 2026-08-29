@@ -15,6 +15,7 @@ from google.adk.tools.mcp_tool import McpToolset, StdioConnectionParams
 from mcp import StdioServerParameters
 
 from chat.agent.agui import HotelViewingToolset
+from chat.agent.review_summary_mcp import create_review_summary_toolset
 from chat.config.settings import get_settings
 from chat.prompts.agent import DELEGATOR_INSTRUCTION
 
@@ -47,7 +48,12 @@ def create_agent(
             timeout=10,
         )
     )
-    tools: list[ToolUnion] = [load_memory_tool, weather_toolset]  # pyright: ignore
+    review_summary_toolset = create_review_summary_toolset()
+    tools: list[ToolUnion] = [  # pyright: ignore
+        load_memory_tool,
+        weather_toolset,
+        review_summary_toolset,
+    ]
     if agui_toolset is True:
         tools.extend([AGUIToolset(), HotelViewingToolset()])  # pyright: ignore
     return LlmAgent(

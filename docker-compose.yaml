@@ -51,6 +51,7 @@ services:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
+      - REVIEW_SUMMARY_URL=${REVIEW_SUMMARY_URL:-http://trip-review-summary:24212}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
