@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Install OpenTelemetry auto instrumentation
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv run --locked --no-dev opentelemetry-bootstrap -a requirements \
-    | uv pip install --requirements -
+    | uv pip install --no-deps --requirements -
 
 
 # Then, use a final image without uv
@@ -75,4 +75,3 @@ ENTRYPOINT ["opentelemetry-instrument", "uvicorn", "order_assistant.asgi:app"]
 # It must be overridden via environment variable.
 # Otherwise, app may register incorrect port in service registry.
 CMD []
-

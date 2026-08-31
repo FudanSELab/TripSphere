@@ -15,6 +15,7 @@ from google.adk.tools.mcp_tool import McpToolset, StdioConnectionParams
 from mcp import StdioServerParameters
 
 from chat.agent.agui import HotelViewingToolset
+from chat.agent.review_summary_mcp import create_review_summary_toolset
 from chat.config.settings import get_settings
 from chat.prompts.agent import DELEGATOR_INSTRUCTION
 
@@ -35,7 +36,9 @@ _ensure_openai_env()
 
 
 def create_agent(
-    agui_toolset: bool = False, sub_agents: list[BaseAgent] | None = None
+    agui_toolset: bool = False,
+    sub_agents: list[BaseAgent] | None = None,
+    review_summary_url: str | None = None,
 ) -> LlmAgent:
     sub_agents = sub_agents or []
     # weather_toolset is not stable due to network issues.
@@ -47,7 +50,12 @@ def create_agent(
             timeout=10,
         )
     )
-    tools: list[ToolUnion] = [load_memory_tool, weather_toolset]  # pyright: ignore
+    review_summary_toolset = create_review_summary_toolset(review_summary_url)
+    tools: list[ToolUnion] = [  # pyright: ignore
+        load_memory_tool,
+        weather_toolset,
+        review_summary_toolset,
+    ]
     if agui_toolset is True:
         tools.extend([AGUIToolset(), HotelViewingToolset()])  # pyright: ignore
     return LlmAgent(

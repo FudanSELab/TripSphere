@@ -20,6 +20,5 @@ async def client_shutdown(
 ) -> None:
     if nacos_ai is not None:
         await nacos_ai.shutdown()
-        return  # Return early to avoid double shutdown
     if nacos_naming is not None:
         await nacos_naming.shutdown()

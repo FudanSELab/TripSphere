@@ -2638,6 +2638,7 @@ name = "order-assistant"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "a2a-sdk" },
     { name = "fastapi" },
     { name = "google-adk", extra = ["a2a", "otel-gcp"] },
     { name = "grpcio-status" },
@@ -2646,6 +2647,7 @@ dependencies = [
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-litellm" },
     { name = "opentelemetry-distro", extra = ["otlp"] },
+    { name = "opentelemetry-util-genai" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "tripsphere" },
@@ -2663,14 +2665,16 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "a2a-sdk", specifier = ">=0.3.24,<1.0.0" },
     { name = "fastapi", specifier = ">=0.135.1" },
-    { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.29.0" },
+    { name = "google-adk", extras = ["a2a", "otel-gcp"], specifier = ">=1.29.0,<2.0.0" },
     { name = "grpcio-status", specifier = ">=1.75.1" },
     { name = "litellm", specifier = ">=1.80.7" },
     { name = "nacos-sdk-python", specifier = ">=3.0.3" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },
     { name = "openinference-instrumentation-litellm", specifier = ">=0.1.29" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.59b0" },
+    { name = "opentelemetry-util-genai", specifier = ">=0.3b0,<0.4b0" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "tripsphere", editable = "libs/tripsphere" },
