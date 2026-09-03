@@ -27,6 +27,7 @@ ReviewStateStatus = Literal[
     "dependency_failure",
 ]
 PreflightStatus = Literal["ready", "empty_reviews", "index_missing"]
+ReviewIndexValidationMode = Literal["strict", "pinned"]
 
 
 class ReviewEvidence(BaseModel):
@@ -73,34 +74,39 @@ class ReviewIndexPreflight:
         text_unit_store: TextUnitVectorStore,
         entity_store: EntityVectorStore,
         neo4j_driver: AsyncDriver,
+        validation_mode: ReviewIndexValidationMode = "strict",
     ) -> None:
         self._review_client = review_client
         self._text_unit_store = text_unit_store
         self._entity_store = entity_store
         self._neo4j_driver = neo4j_driver
+        self._validation_mode = validation_mode
 
     async def run(
         self,
         target_id: str,
         target_type: TargetType,
     ) -> ReviewPreflightResult:
-        try:
-            reviews = await self._review_client.list_all(target_id, target_type)
-        except Exception as exc:
-            raise ReviewDependencyError(
-                "review_service",
-                "REVIEW_SERVICE_UNAVAILABLE",
-                "Unable to read current reviews",
-            ) from exc
+        reviews: list[ReviewRecord] = []
+        snapshot: str | None = None
+        if self._validation_mode == "strict":
+            try:
+                reviews = await self._review_client.list_all(target_id, target_type)
+            except Exception as exc:
+                raise ReviewDependencyError(
+                    "review_service",
+                    "REVIEW_SERVICE_UNAVAILABLE",
+                    "Unable to read current reviews",
+                ) from exc
 
-        snapshot = compute_review_snapshot(reviews)
-        if not reviews:
-            return ReviewPreflightResult(
-                status="empty_reviews",
-                snapshot=snapshot,
-                reviews=reviews,
-                message="该目标目前还没有评论。",
-            )
+            snapshot = compute_review_snapshot(reviews)
+            if not reviews:
+                return ReviewPreflightResult(
+                    status="empty_reviews",
+                    snapshot=snapshot,
+                    reviews=reviews,
+                    message="该目标目前还没有评论。",
+                )
 
         try:
             text_units = await self._text_unit_store.find_by_target(
@@ -118,14 +124,22 @@ class ReviewIndexPreflight:
                 "Unable to inspect the review vector index",
             ) from exc
 
-        if not _text_units_match_live_reviews(
+        if self._validation_mode == "pinned":
+            snapshot = _pinned_text_unit_snapshot(
+                text_units,
+                target_id,
+                target_type,
+            )
+            if snapshot is None:
+                return _missing_index("", reviews, "固定评论文本索引缺失或不一致。")
+        elif snapshot is None or not _text_units_match_live_reviews(
             text_units,
             reviews,
             target_id,
             target_type,
             snapshot,
         ):
-            return _missing_index(snapshot, reviews, "评论文本索引缺失或已过期。")
+            return _missing_index(snapshot or "", reviews, "评论文本索引缺失或已过期。")
 
         if not _entities_match_snapshot(
             entities,
@@ -276,6 +290,46 @@ def _text_units_match_live_reviews(
         indexed_review_ids.add(review_id)
 
     return indexed_review_ids == set(live_reviews)
+
+
+def _pinned_text_unit_snapshot(
+    text_units: list[TextUnit],
+    target_id: str,
+    target_type: TargetType,
+) -> str | None:
+    if not text_units:
+        return None
+
+    snapshots: set[str] = set()
+    review_ids: set[str] = set()
+    for text_unit in text_units:
+        attributes = text_unit.attributes or {}
+        snapshot = attributes.get("review_snapshot")
+        review_id = attributes.get("review_id")
+        rating = attributes.get("rating")
+        updated_at = attributes.get("updated_at")
+        if (
+            not text_unit.text.strip()
+            or not isinstance(snapshot, str)
+            or not snapshot.strip()
+            or not isinstance(review_id, str)
+            or not review_id.strip()
+            or review_id in review_ids
+            or not isinstance(rating, int)
+            or isinstance(rating, bool)
+            or not 1 <= rating <= 5
+            or not isinstance(updated_at, str)
+            or not updated_at.strip()
+            or attributes.get("target_id") != target_id
+            or attributes.get("target_type") != target_type.value
+        ):
+            return None
+        snapshots.add(snapshot)
+        review_ids.add(review_id)
+
+    if len(snapshots) != 1:
+        return None
+    return snapshots.pop()
 
 
 def _entities_match_snapshot(

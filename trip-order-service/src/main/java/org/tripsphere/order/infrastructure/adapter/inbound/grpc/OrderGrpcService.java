@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.tripsphere.order.application.dto.*;
+import org.tripsphere.order.application.service.OrderAuthorizationService;
 import org.tripsphere.order.application.service.command.*;
 import org.tripsphere.order.application.service.query.*;
 import org.tripsphere.order.domain.model.ContactInfo;
@@ -16,6 +17,7 @@ import org.tripsphere.order.domain.model.OrderStatus;
 import org.tripsphere.order.domain.model.OrderType;
 import org.tripsphere.order.infrastructure.adapter.inbound.grpc.mapper.DateProtoMapper;
 import org.tripsphere.order.infrastructure.adapter.inbound.grpc.mapper.OrderProtoMapper;
+import org.tripsphere.order.infrastructure.security.GrpcAuthContext;
 import org.tripsphere.order.v1.*;
 
 @GrpcService
@@ -30,12 +32,15 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
     private final ListUserOrdersUseCase listUserOrdersUseCase;
     private final OrderProtoMapper orderProtoMapper;
     private final DateProtoMapper dateProtoMapper;
+    private final OrderAuthorizationService authorizationService;
 
     @Override
     public void createOrder(CreateOrderRequest request, StreamObserver<CreateOrderResponse> responseObserver) {
         if (request.getUserId().isEmpty()) {
             throw invalidArgument("user_id is required");
         }
+        String currentUserId =
+                authorizationService.requireRequestedUser(GrpcAuthContext.current(), request.getUserId());
         if (request.getItemsList().isEmpty()) {
             throw invalidArgument("Order items list is empty");
         }
@@ -56,9 +61,9 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
         ContactInfo contact = null;
         if (request.hasContact()) {
             contact = new ContactInfo(
-                    request.getContact().getName(),
-                    request.getContact().getPhone(),
-                    request.getContact().getEmail());
+                    request.getContact().getName().trim(),
+                    request.getContact().getPhone().trim(),
+                    request.getContact().getEmail().trim());
         }
 
         OrderSource source = null;
@@ -71,7 +76,7 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
 
         CreateOrderCommand command = new CreateOrderCommand(
                 request.getRequestId().isBlank() ? null : request.getRequestId(),
-                request.getUserId(),
+                currentUserId,
                 items,
                 contact,
                 source);
@@ -90,7 +95,8 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
             throw invalidArgument("id is required");
         }
 
-        Order order = getOrderUseCase.execute(request.getId());
+        String currentUserId = authorizationService.requireAuthenticated(GrpcAuthContext.current());
+        Order order = getOrderUseCase.execute(currentUserId, request.getId());
 
         responseObserver.onNext(GetOrderResponse.newBuilder()
                 .setOrder(orderProtoMapper.toProto(order))
@@ -104,7 +110,8 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
             throw invalidArgument("order_no is required");
         }
 
-        Order order = getOrderByNoUseCase.execute(request.getOrderNo());
+        String currentUserId = authorizationService.requireAuthenticated(GrpcAuthContext.current());
+        Order order = getOrderByNoUseCase.execute(currentUserId, request.getOrderNo());
 
         responseObserver.onNext(GetOrderByNoResponse.newBuilder()
                 .setOrder(orderProtoMapper.toProto(order))
@@ -117,6 +124,8 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
         if (request.getUserId().isEmpty()) {
             throw invalidArgument("user_id is required");
         }
+        String currentUserId =
+                authorizationService.requireRequestedUser(GrpcAuthContext.current(), request.getUserId());
 
         OrderStatus statusFilter = request.getStatus() != org.tripsphere.order.v1.OrderStatus.ORDER_STATUS_UNSPECIFIED
                 ? orderProtoMapper.mapStatusToDomain(request.getStatus())
@@ -134,7 +143,7 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
         }
 
         ListOrdersQuery query =
-                new ListOrdersQuery(request.getUserId(), statusFilter, typeFilter, request.getPageSize(), page);
+                new ListOrdersQuery(currentUserId, statusFilter, typeFilter, request.getPageSize(), page);
 
         OrderPage result = listUserOrdersUseCase.execute(query);
 
@@ -155,7 +164,8 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
             throw invalidArgument("order_id is required");
         }
 
-        Order order = cancelOrderUseCase.execute(request.getOrderId(), request.getReason());
+        String currentUserId = authorizationService.requireAuthenticated(GrpcAuthContext.current());
+        Order order = cancelOrderUseCase.executeForUser(currentUserId, request.getOrderId(), request.getReason());
 
         responseObserver.onNext(CancelOrderResponse.newBuilder()
                 .setOrder(orderProtoMapper.toProto(order))
@@ -169,7 +179,9 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
             throw invalidArgument("order_id is required");
         }
 
-        Order order = confirmPaymentUseCase.execute(request.getOrderId(), request.getPaymentMethod());
+        String currentUserId = authorizationService.requireAuthenticated(GrpcAuthContext.current());
+        Order order =
+                confirmPaymentUseCase.executeForUser(currentUserId, request.getOrderId(), request.getPaymentMethod());
 
         responseObserver.onNext(ConfirmPaymentResponse.newBuilder()
                 .setOrder(orderProtoMapper.toProto(order))

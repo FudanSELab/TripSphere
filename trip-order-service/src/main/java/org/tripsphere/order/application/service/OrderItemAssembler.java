@@ -8,17 +8,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.tripsphere.order.application.dto.CreateOrderItemCommand;
 import org.tripsphere.order.application.dto.DailyInventoryInfo;
 import org.tripsphere.order.application.dto.SkuInfo;
 import org.tripsphere.order.application.dto.SpuInfo;
+import org.tripsphere.order.application.exception.InvalidArgumentException;
 import org.tripsphere.order.application.port.InventoryPort;
 import org.tripsphere.order.domain.model.Money;
 import org.tripsphere.order.domain.model.OrderItem;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderItemAssembler {
@@ -35,7 +34,7 @@ public class OrderItemAssembler {
             String lockId,
             String resourceId) {
 
-        Map<String, Money> priceCache = fetchPrices(commandItems, skuMap);
+        Map<String, Money> priceCache = fetchPrices(commandItems);
 
         List<OrderItem> orderItems = new ArrayList<>();
         long totalUnits = 0;
@@ -67,7 +66,6 @@ public class OrderItemAssembler {
             itemSubtotalUnits += itemSubtotalNanos / 1_000_000_000;
             itemSubtotalNanos = itemSubtotalNanos % 1_000_000_000;
 
-            if (firstDayPrice == null) firstDayPrice = sku.basePrice();
             totalCurrency = firstDayPrice.currency().isEmpty() ? "CNY" : firstDayPrice.currency();
 
             OrderItem orderItem = OrderItem.builder()
@@ -101,7 +99,7 @@ public class OrderItemAssembler {
         return new AssembledOrder(orderItems, new Money(totalCurrency, totalUnits, totalNanos));
     }
 
-    private Map<String, Money> fetchPrices(List<CreateOrderItemCommand> items, Map<String, SkuInfo> skuMap) {
+    private Map<String, Money> fetchPrices(List<CreateOrderItemCommand> items) {
         Map<String, List<LocalDate>> skuDatesMap = new LinkedHashMap<>();
         for (CreateOrderItemCommand item : items) {
             List<LocalDate> dates = skuDatesMap.computeIfAbsent(item.skuId(), k -> new ArrayList<>());
@@ -122,15 +120,13 @@ public class OrderItemAssembler {
             LocalDate maxDate = dates.stream().max(LocalDate::compareTo).orElse(null);
             if (minDate == null) continue;
 
-            try {
-                List<DailyInventoryInfo> inventories = inventoryPort.queryInventoryCalendar(skuId, minDate, maxDate);
-                for (DailyInventoryInfo inv : inventories) {
-                    if (inv.price() != null && inv.price().units() > 0) {
-                        priceCache.put(skuId + ":" + inv.date(), inv.price());
-                    }
+            List<DailyInventoryInfo> inventories = inventoryPort.queryInventoryCalendar(skuId, minDate, maxDate);
+            for (DailyInventoryInfo inv : inventories) {
+                if (inv.price() != null
+                        && (inv.price().units() > 0
+                                || (inv.price().units() == 0 && inv.price().nanos() > 0))) {
+                    priceCache.put(skuId + ":" + inv.date(), inv.price());
                 }
-            } catch (Exception e) {
-                log.warn("Failed to fetch prices for sku={}, falling back to base price", skuId, e);
             }
         }
         return priceCache;
@@ -138,7 +134,10 @@ public class OrderItemAssembler {
 
     private Money lookupPrice(SkuInfo sku, LocalDate date, Map<String, Money> priceCache) {
         Money cached = priceCache.get(sku.id() + ":" + date);
-        return cached != null ? cached : sku.basePrice();
+        if (cached == null) {
+            throw new InvalidArgumentException("Inventory price not found for SKU " + sku.id() + " on " + date);
+        }
+        return cached;
     }
 
     private String extractFirstImage(SpuInfo spu) {

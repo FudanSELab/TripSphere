@@ -4,9 +4,18 @@ import { Button } from "@/components/ui/button";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { AmenityIcon } from "./amenity-icon";
 import { SkuRow } from "./sku-row";
+import type { HotelBookingDefaults } from "./hotel-booking-dialog";
 import { getLowestSkuPrice, type RoomTypeWithSpus } from "@/lib/hotel-helpers";
 
-export function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
+interface RoomTypeCardProps extends RoomTypeWithSpus {
+  bookingDefaults: HotelBookingDefaults;
+}
+
+export function RoomTypeCard({
+  roomType,
+  spus,
+  bookingDefaults,
+}: RoomTypeCardProps) {
   const lowestPrice = getLowestSkuPrice(spus);
   const hasImages = roomType.images.length > 0;
 
@@ -95,6 +104,7 @@ export function RoomTypeCard({ roomType, spus }: RoomTypeWithSpus) {
                       key={sku.id}
                       sku={sku}
                       maxOccupancy={roomType.maxOccupancy}
+                      bookingDefaults={bookingDefaults}
                       isLast={
                         skuIdx === spu.skus.length - 1 &&
                         spu === spus[spus.length - 1]

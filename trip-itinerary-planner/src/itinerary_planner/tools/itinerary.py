@@ -86,10 +86,14 @@ def _trusted_entity_coordinates(
     for day_plan in itinerary.get("day_plans") or []:
         for activity in day_plan.get("activities") or []:
             location = activity.get("location") or {}
+            raw_longitude = location.get("longitude")
+            raw_latitude = location.get("latitude")
+            if raw_longitude is None or raw_latitude is None:
+                continue
             try:
                 coordinates = (
-                    float(location.get("longitude")),
-                    float(location.get("latitude")),
+                    float(raw_longitude),
+                    float(raw_latitude),
                 )
             except (TypeError, ValueError):
                 continue

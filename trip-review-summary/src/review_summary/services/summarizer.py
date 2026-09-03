@@ -39,10 +39,12 @@ class ReviewSummaryService:
         qdrant_client: AsyncQdrantClient,
         nacos_naming: NacosNaming,
     ) -> None:
+        settings = get_settings()
         self.neo4j_driver = neo4j_driver
         self.qdrant_client = qdrant_client
         self.review_client = ReviewServiceClient(nacos_naming)
-        self.openai_settings = get_settings().openai
+        self.openai_settings = settings.openai
+        self.review_settings = settings.review
         self._chat_model: ChatOpenAI | None = None
         self._embedding_model: OpenAIEmbeddings | None = None
         self._tokenizer: TiktokenTokenizer | None = None
@@ -260,6 +262,7 @@ class ReviewSummaryService:
             text_unit_store=text_unit_store,
             entity_store=entity_store,
             neo4j_driver=self.neo4j_driver,
+            validation_mode=self.review_settings.index_validation_mode,
         ).run(target_id, target_type)
 
     @staticmethod

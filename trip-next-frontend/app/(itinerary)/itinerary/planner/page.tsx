@@ -82,6 +82,7 @@ function PlannerContent() {
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [markdownContent, setMarkdownContent] = useState("");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("saved");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { agent } = useAgent({ agentId: "itinerary_planner" });
 
@@ -186,6 +187,7 @@ function PlannerContent() {
 
     async function load() {
       setLoaded(false);
+      setLoadError(null);
 
       let data: { itinerary: Itinerary; markdown_content: string } | null =
         null;
@@ -195,8 +197,16 @@ function PlannerContent() {
         try {
           data = await getItinerary(queryItineraryId);
           resolvedId = queryItineraryId;
-        } catch {
-          /* leave empty */
+        } catch (error) {
+          console.error("[Planner] Failed to load itinerary", {
+            id: queryItineraryId,
+            error,
+          });
+          if (cancelled) return;
+          setItinerary(null);
+          setLoadError("行程加载失败，请稍后重试。");
+          setLoaded(true);
+          return;
         }
       } else {
         const raw = sessionStorage.getItem("itinerary_plan_result");
@@ -346,6 +356,30 @@ function PlannerContent() {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <p className="text-muted-foreground">加载中…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="text-center">
+          <p role="alert" className="text-destructive text-lg font-medium">
+            {loadError}
+          </p>
+          <div className="mt-3 flex justify-center gap-4 text-sm">
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => window.location.reload()}
+            >
+              重试
+            </button>
+            <Link href="/itinerary" className="text-primary hover:underline">
+              返回我的行程
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

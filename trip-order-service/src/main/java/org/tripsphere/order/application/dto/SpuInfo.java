@@ -7,6 +7,7 @@ public record SpuInfo(
         String id,
         String name,
         String description,
+        boolean active,
         String resourceType,
         String resourceId,
         List<String> images,

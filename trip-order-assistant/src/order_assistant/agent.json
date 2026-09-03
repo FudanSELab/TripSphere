@@ -4,9 +4,9 @@
         "text/plain"
     ],
     "defaultOutputModes": [
-        "application/json"
+        "text/plain"
     ],
-    "description": "An order assistant that handles order creation, retrieval, and cancellation requests.",
+    "description": "An order assistant that handles order creation, retrieval, cancellation, and simulated payment requests.",
     "name": "order_assistant",
     "skills": [
         {
@@ -34,6 +34,15 @@
             "tags": [
                 "order",
                 "cancel"
+            ]
+        },
+        {
+            "id": "confirm_payment",
+            "name": "Confirm Simulated Payment",
+            "description": "Confirm simulated payment for a pending order owned by the current user",
+            "tags": [
+                "order",
+                "payment"
             ]
         }
     ],

@@ -15,6 +15,7 @@ public class Order {
 
     private String id;
     private String orderNo;
+    private String requestId;
     private String userId;
     private OrderStatus status;
     private OrderType type;
@@ -35,6 +36,7 @@ public class Order {
     public static Order create(
             String id,
             String orderNo,
+            String requestId,
             String userId,
             OrderType type,
             String resourceId,
@@ -47,6 +49,7 @@ public class Order {
         return Order.builder()
                 .id(id)
                 .orderNo(orderNo)
+                .requestId(requestId)
                 .userId(userId)
                 .status(OrderStatus.PENDING_PAYMENT)
                 .type(type)
@@ -62,7 +65,7 @@ public class Order {
     }
 
     public void cancel(String reason) {
-        requireStatus(OrderStatus.PENDING_PAYMENT, "cancel");
+        validateCanCancel();
         long now = Instant.now().getEpochSecond();
         this.status = OrderStatus.CANCELLED;
         this.cancelReason = reason;
@@ -71,10 +74,7 @@ public class Order {
     }
 
     public void confirmPayment() {
-        requireStatus(OrderStatus.PENDING_PAYMENT, "confirm payment");
-        if (isExpired()) {
-            throw new InvalidOrderStateException(id, "EXPIRED", "confirm payment");
-        }
+        validateCanConfirmPayment();
         long now = Instant.now().getEpochSecond();
         this.status = OrderStatus.PAID;
         this.paidAt = now;
@@ -83,6 +83,17 @@ public class Order {
 
     public boolean isExpired() {
         return expireAt != null && Instant.now().getEpochSecond() > expireAt;
+    }
+
+    public void validateCanCancel() {
+        requireStatus(OrderStatus.PENDING_PAYMENT, "cancel");
+    }
+
+    public void validateCanConfirmPayment() {
+        requireStatus(OrderStatus.PENDING_PAYMENT, "confirm payment");
+        if (isExpired()) {
+            throw new InvalidOrderStateException(id, "EXPIRED", "confirm payment");
+        }
     }
 
     public Set<String> getDistinctLockIds() {

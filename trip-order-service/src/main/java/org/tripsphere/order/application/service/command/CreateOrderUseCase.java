@@ -36,14 +36,15 @@ public class CreateOrderUseCase {
     private final OrderItemAssembler itemAssembler;
     private final OrderConfigPort configPort;
 
+    @Transactional
     public Order execute(CreateOrderCommand command) {
         log.info(
                 "Creating order for user: {}, items: {}",
                 command.userId(),
-                command.items().size());
+                command.items() == null ? 0 : command.items().size());
 
         if (hasRequestId(command)) {
-            Optional<Order> existing = checkIdempotency(command.requestId());
+            Optional<Order> existing = checkIdempotency(command.userId(), command.requestId());
             if (existing.isPresent()) {
                 log.info(
                         "Idempotent request detected, returning existing order for request_id: {}",
@@ -65,7 +66,8 @@ public class CreateOrderUseCase {
         try {
             Order order = persistOrderAndCacheExpiry(orderId, orderNo, command, ctx, lockId);
             if (hasRequestId(command)) {
-                cachePort.saveIdempotentOrderId(command.requestId(), order.getId(), configPort.expireSeconds());
+                cachePort.saveIdempotentOrderId(
+                        command.userId(), command.requestId(), order.getId(), configPort.expireSeconds());
             }
             return order;
         } catch (Exception e) {
@@ -79,14 +81,23 @@ public class CreateOrderUseCase {
         return command.requestId() != null && !command.requestId().isBlank();
     }
 
-    private Optional<Order> checkIdempotency(String requestId) {
-        return cachePort.getIdempotentOrderId(requestId).flatMap(orderId -> {
-            Optional<Order> order = orderRepository.findById(orderId);
-            if (order.isEmpty()) {
-                log.warn("Idempotency key found but order not in repository, orderId={}", orderId);
-            }
-            return order;
-        });
+    private Optional<Order> checkIdempotency(String userId, String requestId) {
+        Optional<Order> cachedOrder = cachePort
+                .getIdempotentOrderId(userId, requestId)
+                .flatMap(orderId -> {
+                    Optional<Order> order = orderRepository.findById(orderId);
+                    if (order.isEmpty()
+                            || !userId.equals(order.get().getUserId())
+                            || !requestId.equals(order.get().getRequestId())) {
+                        log.warn("Ignoring stale or mismatched idempotency cache entry for orderId={}", orderId);
+                        return Optional.empty();
+                    }
+                    return order;
+                });
+        if (cachedOrder.isPresent()) {
+            return cachedOrder;
+        }
+        return orderRepository.findByUserIdAndRequestId(userId, requestId);
     }
 
     private String lockInventory(List<LockItemData> lockItems, String orderId) {
@@ -98,8 +109,7 @@ public class CreateOrderUseCase {
         }
     }
 
-    @Transactional
-    protected Order persistOrderAndCacheExpiry(
+    private Order persistOrderAndCacheExpiry(
             String orderId, String orderNo, CreateOrderCommand command, ValidatedOrderContext ctx, String lockId) {
 
         AssembledOrder assembled =
@@ -109,6 +119,7 @@ public class CreateOrderUseCase {
         Order order = Order.create(
                 orderId,
                 orderNo,
+                command.requestId(),
                 command.userId(),
                 ctx.orderType(),
                 ctx.resourceId(),

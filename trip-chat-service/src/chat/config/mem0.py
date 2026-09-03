@@ -17,7 +17,7 @@ def get_mem0_config() -> dict[str, Any]:
         "llm": {
             "provider": "openai",
             "config": {
-                "model": "gpt-4.1-mini",
+                "model": "gpt-4o-mini",
                 "temperature": 0.1,
                 "api_key": settings.openai.api_key.get_secret_value(),
                 "openai_base_url": settings.openai.base_url,

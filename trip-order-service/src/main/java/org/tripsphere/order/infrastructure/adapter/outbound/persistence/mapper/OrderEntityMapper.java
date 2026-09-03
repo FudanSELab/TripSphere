@@ -34,6 +34,7 @@ public interface OrderEntityMapper {
         return Order.builder()
                 .id(entity.getId())
                 .orderNo(entity.getOrderNo())
+                .requestId(entity.getRequestId())
                 .userId(entity.getUserId())
                 .status(OrderStatus.valueOf(entity.getStatus()))
                 .type(OrderType.valueOf(entity.getType()))
