@@ -55,6 +55,14 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
+    public Optional<Order> findByUserIdAndRequestId(String userId, String requestId) {
+        return orderJpaRepository.findByUserIdAndRequestId(userId, requestId).map(entity -> {
+            List<OrderItemEntity> items = orderItemJpaRepository.findByOrderId(entity.getId());
+            return mapper.toDomain(entity, items);
+        });
+    }
+
+    @Override
     public OrderPage findByUserIdWithFilters(ListOrdersQuery query) {
         int pageSize = query.pageSize() <= 0 ? 20 : Math.min(query.pageSize(), 100);
         PageRequest pageable = PageRequest.of(query.page(), pageSize);

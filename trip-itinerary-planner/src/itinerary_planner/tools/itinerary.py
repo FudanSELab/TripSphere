@@ -609,7 +609,7 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
 
         settings = get_settings()
         chat_model = ChatOpenAI(
-            model="gpt-5.5",
+            model="gpt-4o-mini",
             temperature=0.6,
             api_key=settings.openai.api_key,
             base_url=settings.openai.base_url,

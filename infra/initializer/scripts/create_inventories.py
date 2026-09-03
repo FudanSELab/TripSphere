@@ -59,7 +59,7 @@ def generate_id() -> str:
 # ---------------------------------------------------------------------------
 # Generation constants
 # ---------------------------------------------------------------------------
-SEED = 20260309
+SEED = 20260831
 INVENTORY_DAYS = 120
 HOTEL_TOTAL_QTY_RANGE = (5, 15)
 ATTRACTION_TOTAL_QTY_RANGE = (100, 500)

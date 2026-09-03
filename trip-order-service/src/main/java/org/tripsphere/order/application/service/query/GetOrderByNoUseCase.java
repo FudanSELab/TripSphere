@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.tripsphere.order.application.exception.NotFoundException;
 import org.tripsphere.order.application.port.OrderRepository;
+import org.tripsphere.order.application.service.OrderAuthorizationService;
 import org.tripsphere.order.domain.model.Order;
 
 @Slf4j
@@ -13,9 +14,12 @@ import org.tripsphere.order.domain.model.Order;
 public class GetOrderByNoUseCase {
 
     private final OrderRepository orderRepository;
+    private final OrderAuthorizationService authorizationService;
 
-    public Order execute(String orderNo) {
+    public Order execute(String currentUserId, String orderNo) {
         log.debug("Getting order by order no: {}", orderNo);
-        return orderRepository.findByOrderNo(orderNo).orElseThrow(() -> new NotFoundException("Order", orderNo));
+        Order order = orderRepository.findByOrderNo(orderNo).orElseThrow(() -> new NotFoundException("Order", orderNo));
+        authorizationService.requireOrderOwner(currentUserId, order);
+        return order;
     }
 }

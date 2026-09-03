@@ -13,7 +13,7 @@ public interface OrderCachePort {
 
     Set<String> getExpiredOrderIds(long now, int batchSize);
 
-    Optional<String> getIdempotentOrderId(String requestId);
+    Optional<String> getIdempotentOrderId(String userId, String requestId);
 
-    void saveIdempotentOrderId(String requestId, String orderId, long ttlSeconds);
+    void saveIdempotentOrderId(String userId, String requestId, String orderId, long ttlSeconds);
 }

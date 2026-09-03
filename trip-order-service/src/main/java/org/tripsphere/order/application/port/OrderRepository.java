@@ -13,6 +13,8 @@ public interface OrderRepository {
 
     Optional<Order> findByOrderNo(String orderNo);
 
+    Optional<Order> findByUserIdAndRequestId(String userId, String requestId);
+
     long getNextOrderSequence();
 
     void createSequenceIfNotExists();

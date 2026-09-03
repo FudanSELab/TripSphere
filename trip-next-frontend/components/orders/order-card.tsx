@@ -1,6 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Hotel, Ticket, User, Calendar } from "lucide-react";
 import {
   Card,
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import { cancelOrder } from "@/actions/order";
+import { cancelOrder, confirmPayment } from "@/actions/order";
 import {
   formatMoney,
   formatDateMessage,
@@ -44,15 +45,42 @@ const STATUS_VARIANT: Record<
 };
 
 export function OrderCard({ order }: { order: OrderData }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [pendingAction, setPendingAction] = useState<"cancel" | "payment">();
+  const [mutationError, setMutationError] = useState<string>();
 
   const totalPrice = formatMoney(order.totalAmount);
   const firstItem = order.items[0];
   const statusLabel = formatOrderStatus(order.status);
 
   const handleCancel = () => {
+    setMutationError(undefined);
+    setPendingAction("cancel");
     startTransition(async () => {
-      await cancelOrder(order.id, "用户主动取消");
+      const result = await cancelOrder(order.id, "用户主动取消");
+      if (!result.success) {
+        setMutationError(result.error);
+        setPendingAction(undefined);
+        return;
+      }
+      router.refresh();
+      setPendingAction(undefined);
+    });
+  };
+
+  const handlePayment = () => {
+    setMutationError(undefined);
+    setPendingAction("payment");
+    startTransition(async () => {
+      const result = await confirmPayment(order.id);
+      if (!result.success) {
+        setMutationError(result.error);
+        setPendingAction(undefined);
+        return;
+      }
+      router.refresh();
+      setPendingAction(undefined);
     });
   };
 
@@ -129,6 +157,11 @@ export function OrderCard({ order }: { order: OrderData }) {
       <Separator />
 
       <CardFooter className="justify-end gap-2 px-6 py-3">
+        {mutationError && (
+          <p className="text-destructive mr-auto text-sm" role="alert">
+            {mutationError}
+          </p>
+        )}
         {order.status === ORDER_STATUS_PENDING_PAYMENT && (
           <Button
             variant="outline"
@@ -136,7 +169,7 @@ export function OrderCard({ order }: { order: OrderData }) {
             disabled={isPending}
             onClick={handleCancel}
           >
-            {isPending ? (
+            {isPending && pendingAction === "cancel" ? (
               <>
                 <Spinner className="mr-1.5 size-3.5" />
                 取消中…
@@ -147,7 +180,16 @@ export function OrderCard({ order }: { order: OrderData }) {
           </Button>
         )}
         {order.status === ORDER_STATUS_PENDING_PAYMENT && (
-          <Button size="sm">去支付</Button>
+          <Button size="sm" disabled={isPending} onClick={handlePayment}>
+            {isPending && pendingAction === "payment" ? (
+              <>
+                <Spinner className="mr-1.5 size-3.5" />
+                支付中…
+              </>
+            ) : (
+              "去支付"
+            )}
+          </Button>
         )}
         {(order.status === ORDER_STATUS_PAID ||
           order.status === ORDER_STATUS_COMPLETED) && (

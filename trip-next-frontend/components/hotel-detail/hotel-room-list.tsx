@@ -14,9 +14,21 @@ import type { Hotel } from "@/lib/grpc/generated/tripsphere/hotel/v1/hotel";
 
 interface HotelRoomListProps {
   hotel: Hotel;
+  bookingContact?: { name: string; email: string };
 }
 
-export async function HotelRoomList({ hotel }: HotelRoomListProps) {
+function toIsoDate(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+export async function HotelRoomList({
+  hotel,
+  bookingContact,
+}: HotelRoomListProps) {
   const roomTypes = await getRoomTypesByHotelId(hotel.id);
 
   const roomTypesWithSpus: RoomTypeWithSpus[] = await Promise.all(
@@ -32,6 +44,13 @@ export async function HotelRoomList({ hotel }: HotelRoomListProps) {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+  const bookingDefaults = {
+    isAuthenticated: Boolean(bookingContact),
+    checkInDate: toIsoDate(today),
+    checkOutDate: toIsoDate(tomorrow),
+    contactName: bookingContact?.name ?? "",
+    contactEmail: bookingContact?.email ?? "",
+  };
 
   return (
     <>
@@ -53,7 +72,12 @@ export async function HotelRoomList({ hotel }: HotelRoomListProps) {
       <div className="flex flex-col gap-6">
         {roomTypesWithSpus.length > 0 ? (
           roomTypesWithSpus.map(({ roomType, spus }) => (
-            <RoomTypeCard key={roomType.id} roomType={roomType} spus={spus} />
+            <RoomTypeCard
+              key={roomType.id}
+              roomType={roomType}
+              spus={spus}
+              bookingDefaults={bookingDefaults}
+            />
           ))
         ) : (
           <div className="text-muted-foreground py-12 text-center">

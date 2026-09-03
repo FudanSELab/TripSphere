@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.tripsphere.order.application.exception.InvalidArgumentException;
 import org.tripsphere.order.application.exception.NotFoundException;
 import org.tripsphere.order.application.exception.OrderStateException;
 import org.tripsphere.order.application.port.InventoryPort;
 import org.tripsphere.order.application.port.OrderCachePort;
 import org.tripsphere.order.application.port.OrderRepository;
+import org.tripsphere.order.application.service.OrderAuthorizationService;
 import org.tripsphere.order.domain.model.Order;
 
 @Slf4j
@@ -19,12 +21,18 @@ public class ConfirmPaymentUseCase {
     private final OrderRepository orderRepository;
     private final InventoryPort inventoryPort;
     private final OrderCachePort cachePort;
+    private final OrderAuthorizationService authorizationService;
 
     @Transactional
-    public Order execute(String orderId, String paymentMethod) {
+    public Order executeForUser(String currentUserId, String orderId, String paymentMethod) {
+        if (!"mock".equals(paymentMethod)) {
+            throw new InvalidArgumentException("Only mock payment is supported");
+        }
         log.info("Confirming payment for order: {}, method: {}", orderId, paymentMethod);
 
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order", orderId));
+        authorizationService.requireOrderOwner(currentUserId, order);
+        order.validateCanConfirmPayment();
 
         confirmInventoryLocks(order);
 
