@@ -127,7 +127,14 @@ export default async function HotelDetailPage({ params }: PageProps) {
 
             <TabsContent value="rooms" className="py-4">
               <Suspense fallback={<RoomListSkeleton />}>
-                <HotelRoomList hotel={hotel} />
+                <HotelRoomList
+                  hotel={hotel}
+                  bookingContact={
+                    session
+                      ? { name: session.name, email: session.email }
+                      : undefined
+                  }
+                />
               </Suspense>
             </TabsContent>
 

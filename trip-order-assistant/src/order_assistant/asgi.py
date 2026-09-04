@@ -10,6 +10,7 @@ from openinference.instrumentation.litellm import LiteLLMInstrumentor
 from starlette.applications import Starlette
 
 from order_assistant.agent import AGENT_NAME, create_agent, load_agent_card
+from order_assistant.config.logging import setup_logging
 from order_assistant.config.settings import get_settings
 from order_assistant.nacos.ai import NacosAI
 from order_assistant.nacos.utils import client_shutdown
@@ -19,6 +20,8 @@ warnings.filterwarnings("ignore", module=".*")
 
 logger = logging.getLogger(__name__)
 
+setup_logging()
+
 # Enable OpenInference instrumentation
 LiteLLMInstrumentor().instrument()
 GoogleADKInstrumentor().instrument()
@@ -27,9 +30,10 @@ GoogleADKInstrumentor().instrument()
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Loaded settings: {settings}")
+    logger.info("Starting %s", settings.app.name)
 
     agent_card: AgentCard | None = None
+    app.state.nacos_ai = None
     try:
         app.state.nacos_ai = await NacosAI.create_nacos_ai(
             agent_name=AGENT_NAME,
@@ -47,11 +51,12 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
         raise
     finally:
         logger.info("Deregistering agent endpoint...")
-        if isinstance(app.state.nacos_ai, NacosAI) and agent_card:
-            await app.state.nacos_ai.deregister(agent_card.version)
+        nacos_ai = app.state.nacos_ai
+        if isinstance(nacos_ai, NacosAI) and agent_card:
+            await nacos_ai.deregister(agent_card.version)
         from order_assistant.nacos.naming import _nacos_naming  # pyright: ignore
 
-        await client_shutdown(app.state.nacos_ai, _nacos_naming)
+        await client_shutdown(nacos_ai, _nacos_naming)
 
 
 def create_app() -> Starlette:

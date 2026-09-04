@@ -14,6 +14,11 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
         name = "orders",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_orders_user_request_id",
+                    columnNames = {"userId", "requestId"})
+        },
         indexes = {
             @Index(name = "idx_user_id", columnList = "userId"),
             @Index(name = "idx_status", columnList = "status"),
@@ -27,6 +32,9 @@ public class OrderEntity {
 
     @Column(nullable = false, unique = true, length = 32)
     private String orderNo;
+
+    @Column(length = 128)
+    private String requestId;
 
     @Column(nullable = false, length = 64)
     private String userId;

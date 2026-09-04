@@ -37,14 +37,18 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags='-w -s -extldflags "-static"' \
     -o trip-review-service \
-    ./cmd/server/main.go
+    ./cmd/server/main.go && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -o trip-review-healthcheck \
+    ./cmd/healthcheck/main.go
 
 
 # Runtime stage
 FROM alpine:latest
 
-# Install ca-certificates and netcat for HTTPS connections and health checks
-RUN apk --no-cache add ca-certificates tzdata netcat-openbsd
+# Install runtime certificates and timezone data
+RUN apk --no-cache add ca-certificates tzdata
 
 # Set timezone
 ENV TZ=Asia/Shanghai
@@ -58,6 +62,7 @@ WORKDIR /app
 
 # Copy binary from build stage
 COPY --from=builder /build/trip-review-service .
+COPY --from=builder /build/trip-review-healthcheck .
 
 # Create directories for Nacos logs with proper permissions
 RUN mkdir -p /logs /tmp/nacos/log /tmp/nacos/cache && \
@@ -74,7 +79,7 @@ EXPOSE 50057
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD nc -z localhost 50057 || exit 1
+    CMD ./trip-review-healthcheck
 
 # Run application
 CMD ["./trip-review-service"]

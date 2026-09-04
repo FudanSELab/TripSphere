@@ -6,10 +6,12 @@ from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.base_toolset import BaseToolset
 from google.adk.tools.function_tool import FunctionTool
+from google.adk.tools.tool_context import ToolContext
 from google.protobuf.json_format import MessageToDict
 from tripsphere.order.v1 import order_pb2, order_pb2_grpc
 
 from order_assistant.nacos.naming import get_nacos_naming
+from order_assistant.tools.context import build_grpc_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,7 @@ class OrderToolset(BaseToolset):
         self._get_order_by_id = FunctionTool(self.get_order_by_id)
         self._get_order_by_no = FunctionTool(self.get_order_by_no)
         self._cancel_order = FunctionTool(self.cancel_order)
+        self._confirm_payment = FunctionTool(self.confirm_payment)
 
     async def _get_server_address(self) -> str:
         try:
@@ -32,7 +35,9 @@ class OrderToolset(BaseToolset):
         grpc_port = instance.metadata.get("gRPC_port", "50062")  # pyright: ignore
         return f"{instance.ip}:{grpc_port}"
 
-    async def get_order_by_id(self, order_id: str) -> dict[str, Any]:
+    async def get_order_by_id(
+        self, order_id: str, tool_context: ToolContext
+    ) -> dict[str, Any]:
         """Get the order by order ID.
 
         Args:
@@ -50,7 +55,10 @@ class OrderToolset(BaseToolset):
         async with grpc.aio.insecure_channel(server_address) as channel:
             stub = order_pb2_grpc.OrderServiceStub(channel)
             try:
-                response = await stub.GetOrder(order_pb2.GetOrderRequest(id=order_id))
+                response = await stub.GetOrder(
+                    order_pb2.GetOrderRequest(id=order_id),
+                    metadata=build_grpc_metadata(tool_context),
+                )
             except grpc.RpcError as e:
                 logger.error(f"Failed to get order by ID {order_id}: {e}")
                 message = e.details() or ""
@@ -62,7 +70,9 @@ class OrderToolset(BaseToolset):
             "result": MessageToDict(response.order),
         }
 
-    async def get_order_by_no(self, order_no: str) -> dict[str, Any]:
+    async def get_order_by_no(
+        self, order_no: str, tool_context: ToolContext
+    ) -> dict[str, Any]:
         """Get the order by order number.
 
         Args:
@@ -81,7 +91,8 @@ class OrderToolset(BaseToolset):
             stub = order_pb2_grpc.OrderServiceStub(channel)
             try:
                 response = await stub.GetOrderByNo(
-                    order_pb2.GetOrderByNoRequest(order_no=order_no)
+                    order_pb2.GetOrderByNoRequest(order_no=order_no),
+                    metadata=build_grpc_metadata(tool_context),
                 )
             except grpc.RpcError as e:
                 logger.error(f"Failed to get order by number {order_no}: {e}")
@@ -94,7 +105,9 @@ class OrderToolset(BaseToolset):
             "result": MessageToDict(response.order),
         }
 
-    async def cancel_order(self, order_id: str, reason: str) -> dict[str, Any]:
+    async def cancel_order(
+        self, order_id: str, reason: str, tool_context: ToolContext
+    ) -> dict[str, Any]:
         """Cancel a order by order ID.
 
         Args:
@@ -114,7 +127,8 @@ class OrderToolset(BaseToolset):
             stub = order_pb2_grpc.OrderServiceStub(channel)
             try:
                 response = await stub.CancelOrder(
-                    order_pb2.CancelOrderRequest(order_id=order_id, reason=reason)
+                    order_pb2.CancelOrderRequest(order_id=order_id, reason=reason),
+                    metadata=build_grpc_metadata(tool_context),
                 )
             except grpc.RpcError as e:
                 logger.error(f"Failed to cancel order by ID {order_id}: {e}")
@@ -127,10 +141,55 @@ class OrderToolset(BaseToolset):
             "result": MessageToDict(response.order),
         }
 
+    async def confirm_payment(
+        self, order_id: str, tool_context: ToolContext
+    ) -> dict[str, Any]:
+        """Confirm simulated payment for a pending order owned by the current user.
+
+        Args:
+            order_id (str): The ID of the order to pay.
+
+        Returns:
+            dict[str, Any]: A dictionary with the paid order.
+        """
+        try:
+            server_address = await self._get_server_address()
+        except Exception as e:
+            return {"status": "error", "message": str(e), "result": None}
+
+        async with grpc.aio.insecure_channel(server_address) as channel:
+            stub = order_pb2_grpc.OrderServiceStub(channel)
+            try:
+                response = await stub.ConfirmPayment(
+                    order_pb2.ConfirmPaymentRequest(
+                        order_id=order_id,
+                        payment_method="mock",
+                    ),
+                    metadata=build_grpc_metadata(tool_context),
+                )
+            except grpc.RpcError as e:
+                logger.error("Failed to confirm payment for order %s: %s", order_id, e)
+                return {
+                    "status": "error",
+                    "message": e.details() or "",
+                    "result": None,
+                }
+
+        return {
+            "status": "success",
+            "message": f"Payment for order {order_id} confirmed successfully.",
+            "result": MessageToDict(response.order),
+        }
+
     async def get_tools(
         self, readonly_context: ReadonlyContext | None = None
     ) -> list[BaseTool]:
-        return [self._get_order_by_id, self._get_order_by_no, self._cancel_order]
+        return [
+            self._get_order_by_id,
+            self._get_order_by_no,
+            self._cancel_order,
+            self._confirm_payment,
+        ]
 
     async def close(self) -> None:
         # Nacos client shutdown is handled by the application.

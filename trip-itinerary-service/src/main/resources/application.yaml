@@ -21,7 +21,22 @@ grpc:
     port: 50052
     enable-reflection: true
 
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 logging:
   level:
     org.tripsphere.itinerary: DEBUG
     net.devh.boot.grpc: INFO
+  pattern:
+    console: "level=%-5level timestamp=%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} service=trip-itinerary-service trace_id=%X{trace_id:-} span_id=%X{span_id:-} logger=%logger{36} message=%msg%n"

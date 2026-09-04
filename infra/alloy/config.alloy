@@ -1,0 +1,109 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+discovery.docker "tripsphere" {
+  host             = "tcp://docker-socket-proxy:2375"
+  refresh_interval = "5s"
+
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=tripsphere"]
+  }
+}
+
+discovery.relabel "tripsphere_logs" {
+  targets = discovery.docker.tripsphere.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    replacement   = "$1"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "tripsphere" {
+  host             = "tcp://docker-socket-proxy:2375"
+  targets          = discovery.docker.tripsphere.targets
+  relabel_rules    = discovery.relabel.tripsphere_logs.rules
+  refresh_interval = "5s"
+  forward_to       = [loki.process.tripsphere.receiver]
+}
+
+loki.process "tripsphere" {
+  stage.static_labels {
+    values = {
+      environment = "development",
+    }
+  }
+
+  stage.replace {
+    expression = `(?i)(?P<secret>(authorization|jwt|password|api[_-]?key|access[_-]?key|secret[_-]?key)["'=:\s]+((bearer|basic)\s+)?[^\s,;}"']+)`
+    replace    = "[REDACTED]"
+  }
+
+  stage.replace {
+    expression = `(?i)(?P<jwt>[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})`
+    replace    = "[JWT_REDACTED]"
+  }
+
+  stage.regex {
+    expression = "(?i)(?P<level>TRACE|DEBUG|INFO|WARN|WARNING|ERROR|FATAL|CRITICAL)"
+  }
+
+  stage.template {
+    source   = "level"
+    template = "{{ ToUpper .Value }}"
+  }
+
+  stage.regex {
+    expression = `(?i)(?P<request_id_key>request[_-]?id)["'=:\s]+(?P<request_id>[A-Za-z0-9._:-]+)`
+  }
+
+  stage.regex {
+    expression = `(?i)(?P<trace_id_key>trace[_-]?id|otelTraceID)["'=:\s]+(?P<trace_id>[0-9a-f]{16,32})`
+  }
+
+  stage.regex {
+    expression = `(?i)(?P<user_id_key>user[_-]?id)["'=:\s]+(?P<user_id>[A-Za-z0-9._:@-]+)`
+  }
+
+  stage.regex {
+    expression = `(?i)(?P<task_id_key>task[_-]?id)["'=:\s]+(?P<task_id>[A-Za-z0-9._:-]+)`
+  }
+
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      request_id = "",
+      trace_id   = "",
+      user_id    = "",
+      task_id    = "",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

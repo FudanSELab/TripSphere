@@ -14,6 +14,11 @@ Agentic AI is moving beyond isolated, lightweight tasks into real business syste
 
 ### Docker Compose
 
+Docker Compose 2.20.0 or newer is required. The root `docker-compose.yaml`
+is the canonical local stack; `deploy/docker-compose/docker-compose.yaml`
+includes it so both entrypoints always use the same service and infrastructure
+inventory.
+
 #### 1. Environment Configuration
 
 Copy the example environment file to `.env` file:
@@ -74,6 +79,38 @@ curl -sv http://<host>:28080/v1/chat/completions \
 ```
 
 You should see the response from the AI provider. All AI-enabled services connect to Higress at `http://higress:8080/v1` inside the Docker network.
+
+The route must expose aliases for the chat models used by the services
+(`gpt-4o` and `gpt-4o-mini`) and the `text-embedding-3-large` embedding model.
+Verify the embedding path separately:
+
+```bash
+curl -fsS http://<host>:28080/v1/embeddings \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"text-embedding-3-large","input":"TripSphere health check"}'
+```
+
+#### 5. Observability
+
+The local observability endpoints are:
+
+| Component | URL | Purpose |
+| --- | --- | --- |
+| Grafana | `http://<host>:13000` | Provisioned dashboards and Explore |
+| Prometheus | `http://<host>:9090` | Application and Collector metrics |
+| Tempo | `http://<host>:3200` | Trace lookup API |
+| Loki | `http://<host>:3100` | Log query API |
+| Grafana Alloy | `http://localhost:12345` | Log pipeline status (host-local only) |
+| OTel Collector | `http://<host>:13133` | Collector health |
+
+Grafana is provisioned with Prometheus, Tempo, and Loki data sources and a
+`TripSphere Overview` dashboard. In Loki, filter low-cardinality streams with
+`service`, `environment`, `container`, and `level`. Request correlation fields
+(`request_id`, `trace_id`, `user_id`, and `task_id`) are stored as structured
+metadata and remain searchable without becoming high-cardinality stream labels.
+Prometheus scrapes native application and infrastructure metrics plus the OTel
+Collector's aggregated application endpoint. Compose health checks cover
+components that do not expose Prometheus-formatted metrics.
 
 ### Kubernetes
 

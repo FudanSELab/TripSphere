@@ -14,6 +14,7 @@ dependencies = [
     "openinference-instrumentation-google-adk>=0.1.8",
     "openinference-instrumentation-litellm>=0.1.29",
     "opentelemetry-distro[otlp]>=0.59b0",
+    "orjson>=3.11.6,<4.0",
     "pydantic-settings>=2.11.0",
     "pymongo>=4.15.3",
     "tripsphere>=0.1.0",

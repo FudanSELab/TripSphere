@@ -1,0 +1,7 @@
+ARG BASE_IMAGE
+
+FROM busybox:1.37.0-musl AS healthcheck-tool
+
+FROM ${BASE_IMAGE}
+
+COPY --from=healthcheck-tool /bin/busybox /usr/local/bin/busybox

@@ -1,38 +1,49 @@
-# my global config
 global:
-  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
 
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          # - alertmanager:9093
-
-# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
-rule_files:
-# - "first_rules.yml"
-# - "second_rules.yml"
-
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: "prometheus"
-
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
-
+  - job_name: prometheus
     static_configs:
-      - targets: ["localhost:9090"]
-        # The label name is added as a label `label_name=<label_value>` to any timeseries scraped from this config.
+      - targets: [prometheus:9090]
         labels:
-          app: "prometheus"
+          service: prometheus
+          environment: development
 
-  - job_name: 'otel-collector'
+  - job_name: otel-collector
     static_configs:
-      - targets: ['otel-collector:8889']  # OpenTelemetry Collector
+      - targets: [otel-collector:8888]
         labels:
-          app: "otel-collector"
+          service: otel-collector
+          environment: development
+
+  - job_name: otel-application-metrics
+    static_configs:
+      - targets: [otel-collector:8889]
+        labels:
+          service: otel-application-metrics
+          environment: development
+
+  - job_name: spring-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - trip-attraction-service:24213
+          - trip-hotel-service:24214
+          - trip-inventory-service:24221
+          - trip-itinerary-service:24219
+          - trip-order-service:24222
+          - trip-product-service:24220
+          - trip-user-service:24217
+        labels:
+          environment: development
+
+  - job_name: observability-services
+    static_configs:
+      - targets:
+          - loki:3100
+          - tempo:3200
+          - alloy:12345
+        labels:
+          environment: development

@@ -43,6 +43,10 @@ ARG OTEL_JAVA_AGENT_VERSION=2.23.0
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Setup a non-root user
 RUN addgroup --system nonroot && adduser --system nonroot --ingroup nonroot
 

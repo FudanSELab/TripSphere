@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ import org.tripsphere.order.domain.model.OrderType;
 @RequiredArgsConstructor
 public class OrderValidationService {
 
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+
     private final ProductPort productPort;
 
     public record ValidatedOrderContext(
@@ -29,10 +32,52 @@ public class OrderValidationService {
     private record OrderContext(String resourceId, OrderType orderType) {}
 
     public ValidatedOrderContext validate(CreateOrderCommand command) {
+        validateInput(command);
         Map<String, SkuInfo> skuMap = fetchAndValidateSkus(command.items());
         Map<String, SpuInfo> spuMap = fetchSpus(skuMap);
         OrderContext ctx = validateHomogeneity(command.items(), skuMap, spuMap);
         return new ValidatedOrderContext(skuMap, spuMap, ctx.resourceId(), ctx.orderType());
+    }
+
+    private void validateInput(CreateOrderCommand command) {
+        if (command.userId() == null || command.userId().isBlank()) {
+            throw new InvalidArgumentException("User ID is required");
+        }
+        if (command.requestId() != null && command.requestId().length() > 128) {
+            throw new InvalidArgumentException("Request ID must not exceed 128 characters");
+        }
+        if (command.items() == null || command.items().isEmpty()) {
+            throw new InvalidArgumentException("Order items are required");
+        }
+        if (command.contact() == null) {
+            throw new InvalidArgumentException("Contact information is required");
+        }
+        if (command.contact().name() == null || command.contact().name().isBlank()) {
+            throw new InvalidArgumentException("Contact name is required");
+        }
+        if (command.contact().phone() == null || command.contact().phone().isBlank()) {
+            throw new InvalidArgumentException("Contact phone is required");
+        }
+        if (command.contact().email() == null
+                || !EMAIL_PATTERN.matcher(command.contact().email().trim()).matches()) {
+            throw new InvalidArgumentException("A valid contact email is required");
+        }
+
+        LocalDate today = LocalDate.now();
+        for (CreateOrderItemCommand item : command.items()) {
+            if (item.skuId() == null || item.skuId().isBlank()) {
+                throw new InvalidArgumentException("SKU ID is required");
+            }
+            if (item.date() == null) {
+                throw new InvalidArgumentException("Order date is required");
+            }
+            if (item.date().isBefore(today)) {
+                throw new InvalidArgumentException("Order date must not be in the past");
+            }
+            if (item.quantity() <= 0) {
+                throw new InvalidArgumentException("Order quantity must be greater than zero");
+            }
+        }
     }
 
     private Map<String, SkuInfo> fetchAndValidateSkus(List<CreateOrderItemCommand> items) {
@@ -103,7 +148,12 @@ public class OrderValidationService {
                 }
                 yield hotelId;
             }
-            case "ATTRACTION" -> spu.resourceId();
+            case "ATTRACTION" -> {
+                if (spu.resourceId() == null || spu.resourceId().isBlank()) {
+                    throw new InvalidArgumentException("SPU " + spu.id() + " is missing attraction resource_id");
+                }
+                yield spu.resourceId();
+            }
             default -> throw new InvalidArgumentException("Unsupported resource type: " + resourceType);
         };
     }
@@ -146,6 +196,9 @@ public class OrderValidationService {
         SpuInfo spu = spuMap.get(sku.spuId());
         if (spu == null) {
             throw new InvalidArgumentException("SPU not found for SKU: " + item.skuId());
+        }
+        if (!spu.active()) {
+            throw new InvalidArgumentException("SPU is not on shelf for SKU: " + item.skuId());
         }
         return spu;
     }

@@ -1,9 +1,15 @@
 # Docker Compose for Development Environment
 
+name: tripsphere
+
 networks:
   default:
     name: tripsphere
     driver: bridge
+  observability-docker-socket:
+    name: tripsphere-observability-docker-socket
+    driver: bridge
+    internal: true
 
 x-logging: &default-logging
   driver: json-file
@@ -28,14 +34,26 @@ services:
       - "24213:24213" # HTTP
       - "50053:50053" # gRPC
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME:-root}:${MONGODB_PASSWORD:-fudanse}@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       mongodb:
         condition: service_healthy
       nacos:
         condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24213/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   trip-chat-service:
@@ -50,23 +68,29 @@ services:
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
-      - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
+      - MONGO_URI=mongodb://${MONGODB_USERNAME:-root}:${MONGODB_PASSWORD:-fudanse}@mongodb:27017
       - REVIEW_SUMMARY_URL=${REVIEW_SUMMARY_URL:-http://trip-review-summary:24212}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       nacos:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
+      higress:
+        condition: service_healthy
       trip-order-assistant:
         condition: service_healthy
       trip-review-summary:
         condition: service_healthy
       otel-collector:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test:
         - "CMD"
@@ -76,7 +100,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     restart: unless-stopped
 
   trip-file-service:
@@ -123,14 +147,26 @@ services:
       - "50054:50054" # gRPC
       - "24214:24214" # HTTP
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME:-root}:${MONGODB_PASSWORD:-fudanse}@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       mongodb:
         condition: service_healthy
       nacos:
         condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24214/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   trip-inventory-service:
@@ -144,11 +180,15 @@ services:
       - "24221:24221" # HTTP
       - "50061:50061" # gRPC
     environment:
-      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-fudanse}
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_REDIS_HOST=redis
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       postgres:
         condition: service_healthy
@@ -156,6 +196,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24221/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
     restart: unless-stopped
 
   trip-itinerary-planner:
@@ -172,9 +220,27 @@ services:
       - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       nacos:
         condition: service_healthy
+      higress:
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:24215/ready').read()"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   trip-itinerary-service:
@@ -189,12 +255,25 @@ services:
       - "50052:50052" # gRPC
     environment:
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
-      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME:-root}:${MONGODB_PASSWORD:-fudanse}@mongodb:27017
+      - SPRING_DATA_MONGODB_DATABASE=itinerary_db
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       nacos:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24219/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   trip-order-assistant:
@@ -210,8 +289,16 @@ services:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       nacos:
+        condition: service_healthy
+      higress:
+        condition: service_healthy
+      otel-collector:
         condition: service_healthy
     healthcheck:
       test:
@@ -236,7 +323,10 @@ services:
       - "3000:3000" # HTTP
     environment:
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
       - COPILOT_DEFAULT_AGENT_URL=http://trip-chat-service:24210/
       - COPILOT_ITINERARY_PLANNER_URL=http://trip-itinerary-planner:24215/
       - ATTRACTION_SERVICE_ADDR=trip-attraction-service:50053
@@ -249,12 +339,34 @@ services:
     depends_on:
       trip-chat-service:
         condition: service_healthy
+      trip-itinerary-planner:
+        condition: service_healthy
+      trip-attraction-service:
+        condition: service_healthy
       trip-hotel-service:
-        condition: service_started
+        condition: service_healthy
+      trip-itinerary-service:
+        condition: service_healthy
+      trip-order-service:
+        condition: service_healthy
+      trip-product-service:
+        condition: service_healthy
       trip-review-service:
         condition: service_healthy
       trip-user-service:
-        condition: service_started
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - bun
+        - -e
+        - "const response = await fetch('http://localhost:3000'); if (!response.ok) process.exit(1)"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   trip-note-service:
@@ -285,11 +397,15 @@ services:
       - "24222:24222" # HTTP
       - "50062:50062" # gRPC
     environment:
-      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-fudanse}
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_REDIS_HOST=redis
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       postgres:
         condition: service_healthy
@@ -297,6 +413,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      trip-product-service:
+        condition: service_healthy
+      trip-inventory-service:
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24222/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
     restart: unless-stopped
 
   trip-poi-service:
@@ -330,12 +458,25 @@ services:
       - "50060:50060" # gRPC
     environment:
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
-      - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME:-root}:${MONGODB_PASSWORD:-fudanse}@mongodb:27017
+      - SPRING_DATA_MONGODB_DATABASE=product_db
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       nacos:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24220/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   trip-review-service:
@@ -355,9 +496,9 @@ services:
       - NACOS_PORT=8848
       - NACOS_NAMESPACE=public
       - NACOS_GROUP=DEFAULT_GROUP
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - MONGODB_URI=mongodb://root:fudanse@mongodb:27017
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - MONGODB_URI=mongodb://${MONGODB_USERNAME:-root}:${MONGODB_PASSWORD:-fudanse}@mongodb:27017
       - MONGODB_DATABASE=review_db
       - ROCKETMQ_ENDPOINT=rmq-proxy:8081
     depends_on:
@@ -367,8 +508,10 @@ services:
         condition: service_healthy
       rmq-proxy:
         condition: service_started
+      otel-collector:
+        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "50057" ]
+      test: ["CMD", "./trip-review-healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -387,13 +530,18 @@ services:
     environment:
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
+      - REVIEW_INDEX_VALIDATION_MODE=${REVIEW_INDEX_VALIDATION_MODE:-pinned}
       - NEO4J_URI=neo4j://neo4j:7687
       - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=fudanse@fudan.edu.cn
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     command:
       - uvicorn
       - review_summary.asgi:app
@@ -407,13 +555,15 @@ services:
       trip-review-service:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       neo4j:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
       higress:
-        condition: service_started
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
     healthcheck:
       test:
         - "CMD"
@@ -436,14 +586,18 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
       - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=fudanse@fudan.edu.cn
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     command:
       - celery
       - -A
@@ -461,11 +615,20 @@ services:
       minio:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       neo4j:
-        condition: service_started
+        condition: service_healthy
       higress:
-        condition: service_started
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A review_summary.celery.app inspect ping -d celery@$${HOSTNAME} --timeout=5 | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    restart: unless-stopped
 
   trip-user-service:
     build:
@@ -478,15 +641,27 @@ services:
       - "50056:50056" # gRPC
       - "24217:24217" # HTTP
     environment:
-      - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=fudanse
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-fudanse}
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development,service.namespace=tripsphere
     depends_on:
       postgres:
         condition: service_healthy
       nacos:
         condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:24217/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
     restart: unless-stopped
 
   nacos:
@@ -498,84 +673,216 @@ services:
       - MODE=standalone
       - NACOS_AUTH_IDENTITY_KEY=serverIdentity
       - NACOS_AUTH_IDENTITY_VALUE=security
-      - NACOS_AUTH_TOKEN=VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN:-VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=}
     ports:
       - "18080:8080" # Console
       - "8848:8848"
       - "9848:9848"
+    volumes:
+      - ./volumes/nacos:/home/nacos/data
     healthcheck:
-      test:
-        - "CMD"
-        - "curl"
-        - "-f"
-        - "http://localhost:8080/v3/console/health/readiness"
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/v3/console/health/readiness"]
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 90s
-
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.144.0
-    container_name: otel-collector
-    logging: *default-logging
-    command: ["--config", "/etc/otelcol/config.yaml"]
-    volumes:
-      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml
-    ports:
-      - "4317:4317" # OTLP gRPC receiver
-      - "4318:4318" # OTLP HTTP receiver
-      - "8889:8889" # Prometheus exporter metrics
-
-  tempo:
-    image: grafana/tempo:2.8.3
-    container_name: tempo
-    logging: *default-logging
-    command: [ "-config.file=/etc/tempo.yaml" ]
-    user: root # r/w permissions to the mounted directory
-    volumes:
-      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml
-      - ./volumes/tempo:/var/tempo
-    ports:
-      - "3200:3200" # Tempo HTTP API
-      - "4317" # OTLP gRPC receiver (internal only)
     restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus:v3.9.1
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: prom/prometheus:v3.9.1
+    image: tripsphere/prometheus:v3.9.1
     container_name: prometheus
     logging: *default-logging
+    user: root
     volumes:
-      - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
       - ./volumes/prometheus:/prometheus
     ports:
       - "9090:9090"
     command:
-      - '--config.file=/etc/prometheus/prometheus.yaml'
-      - '--web.enable-lifecycle'
-      - '--storage.tsdb.path=/prometheus'
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
+      - --storage.tsdb.path=/prometheus
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  tempo:
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: grafana/tempo:2.8.3
+    image: tripsphere/tempo:2.8.3
+    container_name: tempo
+    logging: *default-logging
+    command: ["-config.file=/etc/tempo.yaml"]
+    user: root
+    volumes:
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - ./volumes/tempo:/var/tempo
+    ports:
+      - "3200:3200" # Tempo HTTP API
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  otel-collector:
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: otel/opentelemetry-collector-contrib:0.144.0
+    image: tripsphere/otel-collector:0.144.0
+    container_name: otel-collector
+    logging: *default-logging
+    command: ["--config", "/etc/otelcol/config.yaml"]
+    volumes:
+      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "8888:8888" # Collector internal metrics
+      - "8889:8889" # Application metrics exporter
+      - "13133:13133" # Collector health endpoint
+    depends_on:
+      tempo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:13133/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  loki:
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: grafana/loki:3.7.2
+    image: tripsphere/loki:3.7.2
+    container_name: loki
+    logging: *default-logging
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    user: root
+    volumes:
+      - ./infra/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./volumes/loki:/loki
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  docker-socket-proxy:
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: haproxy:3.2-alpine
+    image: tripsphere/docker-socket-proxy:3.2
+    container_name: docker-socket-proxy
+    logging: *default-logging
+    user: root
+    volumes:
+      - ./infra/docker-socket-proxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - observability-docker-socket
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:2375/_ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  alloy:
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: grafana/alloy:v1.19.2
+    image: tripsphere/alloy:v1.19.2
+    container_name: alloy
+    logging: *default-logging
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./infra/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./volumes/alloy:/var/lib/alloy/data
+    networks:
+      - default
+      - observability-docker-socket
+    ports:
+      - "127.0.0.1:12345:12345"
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:12345/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:12.3.1
     container_name: grafana
     logging: *default-logging
-    user: root # r/w permissions to the mounted directory
+    user: root
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - ./volumes/grafana:/var/lib/grafana
     ports:
       - "13000:3000" # Use port 13000 to avoid conflict with frontend
     depends_on:
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
       tempo:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   rmq-namesrv:
@@ -636,32 +943,34 @@ services:
     logging: *default-logging
     user: root # r/w permissions to the mounted directory
     environment:
-      MONGODB_INITDB_ROOT_USERNAME: root
-      MONGODB_INITDB_ROOT_PASSWORD: fudanse
+      MONGODB_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-root}
+      MONGODB_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-fudanse}
     ports:
       - "27017:27017"
     volumes:
       - ./volumes/mongodb:/data/db
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$$MONGODB_INITDB_ROOT_USERNAME\" --password \"$$MONGODB_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    restart: unless-stopped
 
   postgres:
     image: postgres:16.13-alpine
     container_name: postgres
     logging: *default-logging
     environment:
-      POSTGRES_PASSWORD: fudanse
+      POSTGRES_USER: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fudanse}
     ports:
       - "5432:5432"
     volumes:
       - ./volumes/postgres:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -672,8 +981,8 @@ services:
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z
     logging: *default-logging
     environment:
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     ports:
       - "9001:9001"
       - "9000:9000"
@@ -681,14 +990,20 @@ services:
       - ./volumes/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
+      start_period: 10s
+    restart: unless-stopped
 
   qdrant:
-    image: qdrant/qdrant:v1.16
-    restart: always
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: qdrant/qdrant:v1.16
+    image: tripsphere/qdrant:v1.16
     container_name: qdrant
     logging: *default-logging
     ports:
@@ -703,6 +1018,13 @@ services:
         target: /qdrant/config/production.yaml
     volumes:
       - ./volumes/qdrant:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
 
   neo4j:
     image: neo4j:5.26.19
@@ -714,12 +1036,19 @@ services:
       - ./volumes/neo4j/data:/data
       - ./volumes/neo4j/plugins:/plugins
     environment:
-      - NEO4J_AUTH=neo4j/fudanse@fudan.edu.cn
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
       - NEO4J_PLUGINS=["graph-data-science"]
     ports:
       - "7474:7474"
       - "7687:7687"
-    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$$NEO4J_PASSWORD\" 'RETURN 1' >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    restart: unless-stopped
 
   redis:
     image: redis:8.4
@@ -729,7 +1058,7 @@ services:
       - ./volumes/redis/data:/data
     ports:
       - "6379:6379"
-    restart: "always"
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -737,7 +1066,12 @@ services:
       retries: 5
 
   higress:
-    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.11
+    build:
+      context: .
+      dockerfile: infra/observability/Dockerfile.healthcheck
+      args:
+        BASE_IMAGE: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.11
+    image: tripsphere/higress:2.1.11
     container_name: higress
     logging: *default-logging
     environment:
@@ -748,4 +1082,10 @@ services:
       - "8443:8443" # HTTPS
     volumes:
       - ./volumes/higress:/data
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://localhost:8001/"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
     restart: unless-stopped

@@ -29,7 +29,7 @@ LangChainInstrumentor().instrument()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Loaded settings: {settings}")
+    logger.info("Starting %s", settings.app.name)
 
     app.state.ready = False
     app.state.nacos_naming = None

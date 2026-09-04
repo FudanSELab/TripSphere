@@ -13,6 +13,8 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, String> {
 
     Optional<OrderEntity> findByOrderNo(String orderNo);
 
+    Optional<OrderEntity> findByUserIdAndRequestId(String userId, String requestId);
+
     @Query(value = "SELECT nextval('order_no_seq')", nativeQuery = true)
     long getNextOrderSequence();
 

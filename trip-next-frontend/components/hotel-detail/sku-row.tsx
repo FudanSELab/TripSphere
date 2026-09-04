@@ -6,17 +6,26 @@ import {
   Zap,
   CreditCard,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import type { Sku } from "@/lib/grpc/generated/tripsphere/product/v1/product";
+import {
+  HotelBookingDialog,
+  type HotelBookingDefaults,
+} from "./hotel-booking-dialog";
 
 interface SkuRowProps {
   sku: Sku;
   maxOccupancy: number;
   isLast: boolean;
+  bookingDefaults: HotelBookingDefaults;
 }
 
-export function SkuRow({ sku, maxOccupancy, isLast }: SkuRowProps) {
+export function SkuRow({
+  sku,
+  maxOccupancy,
+  isLast,
+  bookingDefaults,
+}: SkuRowProps) {
   const price = formatMoney(sku.basePrice);
   const attrs = sku.attributes as Record<string, unknown> | undefined;
   const hasBreakfast = attrs?.breakfast === true;
@@ -78,9 +87,12 @@ export function SkuRow({ sku, maxOccupancy, isLast }: SkuRowProps) {
           <span className="text-price text-xl font-bold">
             ¥{Math.round(price)}
           </span>
-          <Button size="sm" className="px-6">
-            预订
-          </Button>
+          <HotelBookingDialog
+            skuId={sku.id}
+            skuName={sku.name}
+            price={price}
+            defaults={bookingDefaults}
+          />
         </div>
       </td>
     </tr>

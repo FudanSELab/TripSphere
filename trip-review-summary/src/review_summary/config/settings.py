@@ -36,6 +36,10 @@ class QdrantSettings(BaseModel):
     url: str = Field(default="http://localhost:6333")
 
 
+class ReviewSettings(BaseModel):
+    index_validation_mode: Literal["strict", "pinned"] = Field(default="strict")
+
+
 class Neo4jSettings(BaseModel):
     uri: str = Field(default="neo4j://localhost:7687")
     username: str = Field(default="neo4j")
@@ -89,6 +93,7 @@ class Settings(BaseSettings):
     nacos: NacosSettings = Field(default_factory=NacosSettings)
     mcp: McpSettings = Field(default_factory=McpSettings)
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
+    review: ReviewSettings = Field(default_factory=ReviewSettings)
     neo4j: Neo4jSettings = Field(default_factory=Neo4jSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
     log: LogSettings = Field(default_factory=LogSettings)

@@ -59,9 +59,9 @@ public class RedisOrderCacheAdapter implements OrderCachePort {
     }
 
     @Override
-    public Optional<String> getIdempotentOrderId(String requestId) {
+    public Optional<String> getIdempotentOrderId(String userId, String requestId) {
         try {
-            String orderId = redisTemplate.opsForValue().get(IDEMPOTENCY_KEY_PREFIX + requestId);
+            String orderId = redisTemplate.opsForValue().get(idempotencyKey(userId, requestId));
             return Optional.ofNullable(orderId);
         } catch (Exception e) {
             log.warn("Redis idempotency check failed, proceeding without idempotency guard: {}", e.getMessage());
@@ -70,13 +70,15 @@ public class RedisOrderCacheAdapter implements OrderCachePort {
     }
 
     @Override
-    public void saveIdempotentOrderId(String requestId, String orderId, long ttlSeconds) {
+    public void saveIdempotentOrderId(String userId, String requestId, String orderId, long ttlSeconds) {
         try {
-            redisTemplate
-                    .opsForValue()
-                    .set(IDEMPOTENCY_KEY_PREFIX + requestId, orderId, Duration.ofSeconds(ttlSeconds));
+            redisTemplate.opsForValue().set(idempotencyKey(userId, requestId), orderId, Duration.ofSeconds(ttlSeconds));
         } catch (Exception e) {
             log.warn("Failed to save idempotency record for request_id={}: {}", requestId, e.getMessage());
         }
+    }
+
+    private String idempotencyKey(String userId, String requestId) {
+        return IDEMPOTENCY_KEY_PREFIX + userId + ":" + requestId;
     }
 }

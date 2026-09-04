@@ -8,13 +8,20 @@ server:
   port: 24221
 
 management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   level:
     org.tripsphere.inventory: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "level=%-5level timestamp=%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} service=trip-inventory-service trace_id=%X{trace_id:-} span_id=%X{span_id:-} logger=%logger{36} message=%msg%n"

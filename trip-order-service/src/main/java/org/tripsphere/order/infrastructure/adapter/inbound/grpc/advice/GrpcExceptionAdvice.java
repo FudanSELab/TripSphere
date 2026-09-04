@@ -56,6 +56,8 @@ public class GrpcExceptionAdvice {
             case INVALID_ARGUMENT -> Status.Code.INVALID_ARGUMENT;
             case ALREADY_EXISTS -> Status.Code.ALREADY_EXISTS;
             case ORDER_STATE_CONFLICT -> Status.Code.FAILED_PRECONDITION;
+            case UNAUTHENTICATED -> Status.Code.UNAUTHENTICATED;
+            case PERMISSION_DENIED -> Status.Code.PERMISSION_DENIED;
             case INTERNAL -> Status.Code.INTERNAL;
         };
     }

@@ -71,6 +71,7 @@ public class ProductGrpcAdapter implements ProductPort {
                 proto.getId(),
                 proto.getName(),
                 proto.getDescription(),
+                proto.getStatus() == SpuStatus.SPU_STATUS_ON_SHELF,
                 resourceType,
                 proto.getResourceId(),
                 proto.getImagesList(),
