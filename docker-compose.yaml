@@ -1037,13 +1037,13 @@ services:
       - ./volumes/neo4j/plugins:/plugins
     environment:
       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
-      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
+      - TRIPSPHERE_NEO4J_PASSWORD=${NEO4J_PASSWORD:-fudanse@fudan.edu.cn}
       - NEO4J_PLUGINS=["graph-data-science"]
     ports:
       - "7474:7474"
       - "7687:7687"
     healthcheck:
-      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$$NEO4J_PASSWORD\" 'RETURN 1' >/dev/null"]
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$$TRIPSPHERE_NEO4J_PASSWORD\" 'RETURN 1' >/dev/null"]
       interval: 15s
       timeout: 10s
       retries: 10
