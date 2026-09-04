@@ -24,6 +24,23 @@ spring:
 server:
   port: 24217
 
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  pattern:
+    console: "level=%-5level timestamp=%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} service=trip-user-service trace_id=%X{trace_id:-} span_id=%X{span_id:-} logger=%logger{36} message=%msg%n"
+
 grpc:
   server:
     port: 50056

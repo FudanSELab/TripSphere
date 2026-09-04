@@ -93,4 +93,4 @@ def get_settings() -> Settings:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logger.debug(f"{get_settings()}")
+    logger.debug("Loaded settings for %s", get_settings().app.name)

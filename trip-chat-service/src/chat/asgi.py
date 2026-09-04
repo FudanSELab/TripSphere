@@ -91,23 +91,31 @@ async def _init_adk_app(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Loaded settings: {settings}")
+    logger.info("Starting %s", settings.app.name)
+    app.state.ready = False
+    app.state.mongo_client = None
+    app.state.nacos_ai = None
+    app.state.nacos_naming = None
 
     try:
         await _init_infra(app, settings)
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
         await _init_adk_app(app)
+        app.state.ready = True
         yield
     except Exception as e:
         logger.error(f"Exception during lifespan startup: {e}")
         raise
     finally:
+        app.state.ready = False
         logger.info("Deregistering service instance...")
-        if isinstance(app.state.nacos_naming, NacosNaming):
-            await app.state.nacos_naming.deregister(ephemeral=True)
-        await client_shutdown(app.state.nacos_ai, app.state.nacos_naming)
-        await app.state.mongo_client.close()
+        nacos_naming = app.state.nacos_naming
+        if isinstance(nacos_naming, NacosNaming):
+            await nacos_naming.deregister(ephemeral=True)
+        await client_shutdown(app.state.nacos_ai, nacos_naming)
+        if app.state.mongo_client is not None:
+            await app.state.mongo_client.close()
 
 
 def create_app() -> FastAPI:

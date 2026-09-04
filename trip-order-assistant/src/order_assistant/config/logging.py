@@ -3,12 +3,9 @@ from logging import Filter, LogRecord
 from logging import config
 from pathlib import Path
 
-from chat.config.settings import get_settings
+from order_assistant.config.settings import get_settings
 
-# Module-level timestamp to ensure unique log filename
-# even if configure_logging is called multiple times
 timestamp = datetime.now().isoformat().replace(":", "-")
-# Compatibility with Windows file naming restrictions
 
 
 class TraceContextFilter(Filter):
@@ -20,7 +17,6 @@ class TraceContextFilter(Filter):
 
 def setup_logging() -> None:
     settings = get_settings()
-
     logger_handlers = ["console"]
     handlers = {
         "console": {
@@ -50,14 +46,14 @@ def setup_logging() -> None:
         "formatters": {
             "standard": {
                 "format": "level=%(levelname)s timestamp=%(asctime)s "
-                "service=trip-chat-service trace_id=%(otelTraceID)s "
+                "service=trip-order-assistant trace_id=%(otelTraceID)s "
                 "span_id=%(otelSpanID)s logger=%(name)s "
                 "source=%(filename)s:%(lineno)d message=%(message)s"
             }
         },
         "handlers": handlers,
         "loggers": {
-            "chat": {
+            "order_assistant": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
                 "propagate": False,

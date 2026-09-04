@@ -1,12 +1,8 @@
-import logging
 from functools import lru_cache
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-logger = logging.getLogger(__name__)
-
 
 class AppSettings(BaseModel):
     name: str = Field(default="trip-order-assistant")
@@ -68,6 +64,4 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
-    settings = Settings()
-    logger.debug(f"Get settings: {settings}")
-    return settings
+    return Settings()

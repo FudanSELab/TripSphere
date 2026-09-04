@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from ag_ui_langgraph import LangGraphAgent, add_langgraph_fastapi_endpoint
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from openinference.instrumentation.langchain import LangChainInstrumentor
 
@@ -23,7 +23,9 @@ LangChainInstrumentor().instrument()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info("Loaded settings: %s", settings)
+    logger.info("Starting %s", settings.app.name)
+    app.state.ready = False
+    app.state.nacos_naming = None
 
     try:
         app.state.nacos_naming = await NacosNaming.create_naming(
@@ -43,15 +45,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         chat_graph = create_chat_graph(nacos_naming=app.state.nacos_naming)
         chat_agent = LangGraphAgent(name="itinerary_planner", graph=chat_graph)
         add_langgraph_fastapi_endpoint(app, chat_agent, "/")
+        app.state.ready = True
         yield
     except Exception as e:
         logger.error("Error during lifespan startup: %s", e)
         raise
     finally:
-        if isinstance(app.state.nacos_naming, NacosNaming):
+        app.state.ready = False
+        nacos_naming = app.state.nacos_naming
+        if isinstance(nacos_naming, NacosNaming):
             logger.info("Deregistering service instance...")
-            await app.state.nacos_naming.deregister(ephemeral=True)
-            await app.state.nacos_naming.shutdown()
+            await nacos_naming.deregister(ephemeral=True)
+            await nacos_naming.shutdown()
 
 
 def create_fastapi_app() -> FastAPI:
@@ -67,6 +72,15 @@ def create_fastapi_app() -> FastAPI:
     )
 
     app.include_router(planning, prefix="/api/v1")
+
+    @app.get("/ready", include_in_schema=False)
+    async def readiness(  # pyright: ignore[reportUnusedFunction]
+        request: Request,
+    ) -> dict[str, str]:
+        if not getattr(request.app.state, "ready", False):
+            raise HTTPException(status_code=503, detail="service is not ready")
+        return {"status": "ready"}
+
     return app
 
 
