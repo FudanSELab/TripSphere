@@ -351,6 +351,7 @@ services:
       - APP_ENV=dev
       - APP_NAME=trip-review-service
       - PORT=50057
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
       - NACOS_NAMESPACE=public
@@ -366,6 +367,8 @@ services:
       mongodb:
         condition: service_healthy
       rmq-proxy:
+        condition: service_started
+      otel-collector:
         condition: service_started
     healthcheck:
       test: [ "CMD", "nc", "-z", "localhost", "50057" ]
