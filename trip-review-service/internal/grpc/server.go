@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -30,6 +31,7 @@ func NewServer(reviewService pd.ReviewServiceServer, port int) (*Server, error) 
 
 	// Create gRPC server with interceptors
 	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			RecoveryUnaryInterceptor(),
 			LoggingUnaryInterceptor(),

@@ -8,10 +8,14 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+
 	"trip-review-service/config"
 	grpcserver "trip-review-service/internal/grpc"
 	"trip-review-service/internal/repository"
 	"trip-review-service/internal/service"
+	"trip-review-service/internal/telemetry"
 	"trip-review-service/pkg/nacos"
 )
 
@@ -41,6 +45,23 @@ func run() error {
 		"env", cfg.App.Env,
 		"port", cfg.App.Port,
 	)
+
+	tracerProvider, err := telemetry.NewTracerProvider(ctx, cfg.App.Name, cfg.App.Env)
+	if err != nil {
+		return err
+	}
+	otel.SetTracerProvider(tracerProvider)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := tracerProvider.Shutdown(shutdownCtx); err != nil {
+			slog.Error("failed to shut down tracer provider", "error", err)
+		}
+	}()
 
 	// Initialize MongoDB
 	db, mongoClient, err := repository.NewMongoDB(ctx, cfg.MongoDB)
