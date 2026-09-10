@@ -47,17 +47,29 @@ def setup_logging() -> None:
             "itinerary_planner": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "httpx": {
                 "level": "WARNING",
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "httpcore": {
                 "level": "WARNING",
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
+            },
+            "fastapi": {"level": "INFO", "handlers": [], "propagate": True},
+            "uvicorn": {"level": "INFO", "handlers": [], "propagate": True},
+            "uvicorn.error": {
+                "level": "INFO",
+                "handlers": [],
+                "propagate": True,
+            },
+            "uvicorn.access": {
+                "level": "INFO",
+                "handlers": [],
+                "propagate": True,
             },
         },
     }

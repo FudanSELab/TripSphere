@@ -54,9 +54,13 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Set the OpenTelemetry environment variables
 ENV OTEL_SERVICE_NAME="trip-review-summary" \
     OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317" \
+    OTEL_EXPORTER_OTLP_PROTOCOL="grpc" \
+    OTEL_EXPORTER_OTLP_LOGS_PROTOCOL="grpc" \
+    OTEL_LOGS_EXPORTER="otlp" \
+    OTEL_RESOURCE_ATTRIBUTES="service.namespace=tripsphere,deployment.environment.name=local,service.version=local" \
     OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
-    OTEL_PYTHON_LOG_LEVEL="info" \
-    OTEL_PYTHON_LOG_CORRELATION="true"
+    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true" \
+    OTEL_PYTHON_LOG_LEVEL="info"
 
 # Use the non-root user to run our application
 USER nonroot
@@ -81,7 +85,3 @@ CMD []
 #    Otherwise, it may register incorrect port in service registry.
 
 # 2. Worker: ["celery", "-A", "review_summary.celery.app", "worker"]
-
-
-
-

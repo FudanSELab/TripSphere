@@ -29,7 +29,7 @@ LangChainInstrumentor().instrument()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Loaded settings: {settings}")
+    logger.info("Loaded settings: %s", settings)
 
     app.state.ready = False
     app.state.nacos_naming = None
@@ -70,8 +70,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         ):
             yield
 
-    except Exception as e:
-        logger.error(f"Error during lifespan startup: {e}")
+    except Exception:
+        logger.exception("Error during lifespan startup")
         raise  # Re-raise to prevent app from starting with errors
 
     finally:

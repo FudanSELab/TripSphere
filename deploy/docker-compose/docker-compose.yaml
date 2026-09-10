@@ -51,7 +51,7 @@ services:
       - "28080:8080" # HTTP gateway
       - "8443:8443" # HTTPS gateway
     volumes:
-      - ./volumes/higress:/data
+      - ../../volumes/higress:/data
     restart: unless-stopped
 
   # ─── Databases & Storage ─────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./volumes/mongodb:/data/db
+      - ../../volumes/mongodb:/data/db
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
@@ -86,8 +86,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
-      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../../volumes/postgres:/var/lib/postgresql/data
+      - ../../infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}" ]
       interval: 30s
@@ -100,7 +100,7 @@ services:
     container_name: redis
     logging: *logging
     volumes:
-      - ./volumes/redis/data:/data
+      - ../../volumes/redis/data:/data
     ports:
       - "6379:6379"
     healthcheck:
@@ -121,8 +121,97 @@ services:
       - source: qdrant_config
         target: /qdrant/config/production.yaml
     volumes:
-      - ./volumes/qdrant:/qdrant/storage
+      - ../../volumes/qdrant:/qdrant/storage
     restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: minio
+    logging: *logging
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ../../volumes/minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5.26.19
+    container_name: neo4j
+    logging: *logging
+    volumes:
+      - ../../volumes/neo4j/logs:/logs
+      - ../../volumes/neo4j/config:/config
+      - ../../volumes/neo4j/data:/data
+      - ../../volumes/neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+      - NEO4J_PLUGINS=["graph-data-science"]
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: unless-stopped
+
+  rmq-namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-namesrv
+    logging: *logging
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+
+  rmq-broker:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-broker
+    logging: *logging
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - NAMESRV_ADDR=rmq-namesrv:9876
+    depends_on:
+      rmq-namesrv:
+        condition: service_started
+    command: sh mqbroker
+
+  rmq-proxy:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-proxy
+    logging: *logging
+    depends_on:
+      rmq-broker:
+        condition: service_started
+      rmq-namesrv:
+        condition: service_started
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    restart: on-failure
+    environment:
+      - NAMESRV_ADDR=rmq-namesrv:9876
+    command: sh mqproxy
+
+  rmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmq-dashboard
+    logging: *logging
+    ports:
+      - "8082:8082"
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
+    depends_on:
+      rmq-namesrv:
+        condition: service_started
 
   # ─── Observability ────────────────────────────────────────────────────────────
 
@@ -130,12 +219,44 @@ services:
     image: otel/opentelemetry-collector-contrib:0.144.0
     container_name: otel-collector
     logging: *logging
+    user: "0:0"
+    command: ["--config", "/etc/otelcol/config.yaml"]
     volumes:
-      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml
+      - ../../infra/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - otel-collector-file-storage:/var/lib/otelcol/file_storage
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
+      - "13133:13133" # Collector health endpoint
+      - "8888:8888" # Collector self-telemetry metrics
       - "8889:8889" # Prometheus metrics
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+
+  loki:
+    build:
+      context: ../../infra/loki
+      dockerfile: Dockerfile
+    image: tripsphere/loki:3.6.4
+    container_name: loki
+    logging: *logging
+    user: root
+    command: [ "-config.file=/etc/loki/loki.yaml" ]
+    volumes:
+      - ../../infra/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ../../volumes/loki:/loki
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: [ "CMD", "/bin/wget", "-q", "--spider", "http://localhost:3100/ready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
   tempo:
@@ -145,11 +266,27 @@ services:
     user: root
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml
-      - ./volumes/tempo:/var/tempo
+      - ../../infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - ../../volumes/tempo:/var/tempo
     ports:
       - "3200:3200" # Tempo HTTP API
       - "4317" # OTLP gRPC (internal)
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: prometheus
+    logging: *logging
+    volumes:
+      - ../../infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --web.enable-lifecycle
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
     restart: unless-stopped
 
   grafana:
@@ -162,12 +299,17 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
-      - ./volumes/grafana:/var/lib/grafana
+      - ../../volumes/grafana:/var/lib/grafana
+      - ../../infra/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
       - "13000:3000"
     depends_on:
       tempo:
         condition: service_started
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
       interval: 30s
@@ -180,7 +322,7 @@ services:
 
   trip-attraction-service:
     build:
-      context: trip-attraction-service
+      context: ../../trip-attraction-service
       dockerfile: Dockerfile
     image: tripsphere/trip-attraction-service:latest
     container_name: trip-attraction-service
@@ -189,6 +331,14 @@ services:
       - "24213:24213" # HTTP
       - "50053:50053" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-attraction-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=${NACOS_HOST}:${NACOS_PORT}
@@ -201,7 +351,7 @@ services:
 
   trip-chat-service:
     build:
-      context: trip-chat-service
+      context: ../../trip-chat-service
       dockerfile: Dockerfile
     image: tripsphere/trip-chat-service:latest
     container_name: trip-chat-service
@@ -209,6 +359,14 @@ services:
     ports:
       - "24210:24210"
     environment:
+      - OTEL_SERVICE_NAME=trip-chat-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
       - QDRANT_URL=http://${QDRANT_HOST}:${QDRANT_PORT}
       - MONGO_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
@@ -237,7 +395,7 @@ services:
 
   trip-hotel-service:
     build:
-      context: trip-hotel-service
+      context: ../../trip-hotel-service
       dockerfile: Dockerfile
     image: tripsphere/trip-hotel-service:latest
     container_name: trip-hotel-service
@@ -246,6 +404,14 @@ services:
       - "50054:50054" # gRPC
       - "24214:24214" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-hotel-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=${NACOS_HOST}:${NACOS_PORT}
@@ -258,7 +424,7 @@ services:
 
   trip-inventory-service:
     build:
-      context: trip-inventory-service
+      context: ../../trip-inventory-service
       dockerfile: Dockerfile
     image: tripsphere/trip-inventory-service:latest
     container_name: trip-inventory-service
@@ -267,6 +433,14 @@ services:
       - "24221:24221" # HTTP
       - "50061:50061" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-inventory-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/inventory_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
@@ -284,7 +458,7 @@ services:
 
   trip-itinerary-planner:
     build:
-      context: trip-itinerary-planner
+      context: ../../trip-itinerary-planner
       dockerfile: Dockerfile
     image: tripsphere/trip-itinerary-planner:latest
     container_name: trip-itinerary-planner
@@ -292,6 +466,14 @@ services:
     ports:
       - "24215:24215"
     environment:
+      - OTEL_SERVICE_NAME=trip-itinerary-planner
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
       - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -305,7 +487,7 @@ services:
 
   trip-itinerary-service:
     build:
-      context: trip-itinerary-service
+      context: ../../trip-itinerary-service
       dockerfile: Dockerfile
     image: tripsphere/trip-itinerary-service:latest
     container_name: trip-itinerary-service
@@ -314,6 +496,14 @@ services:
       - "24219:24219" # HTTP
       - "50052:50052" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-itinerary-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=${NACOS_HOST}:${NACOS_PORT}
       - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
       - SPRING_DATA_MONGODB_DATABASE=itinerary_db
@@ -326,7 +516,7 @@ services:
 
   trip-order-assistant:
     build:
-      context: trip-order-assistant
+      context: ../../trip-order-assistant
       dockerfile: Dockerfile
     image: tripsphere/trip-order-assistant:latest
     container_name: trip-order-assistant
@@ -334,6 +524,14 @@ services:
     ports:
       - "24211:24211"  # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-order-assistant
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
@@ -344,9 +542,153 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  trip-review-service:
+    build:
+      context: ../../trip-review-service
+      dockerfile: Dockerfile
+    image: tripsphere/trip-review-service:latest
+    container_name: trip-review-service
+    logging: *logging
+    ports:
+      - "50057:50057"
+    environment:
+      - APP_ENV=local
+      - APP_NAME=trip-review-service
+      - PORT=50057
+      - OTEL_SERVICE_NAME=trip-review-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - NACOS_HOST=${NACOS_HOST}
+      - NACOS_PORT=${NACOS_PORT}
+      - NACOS_NAMESPACE=public
+      - NACOS_GROUP=DEFAULT_GROUP
+      - NACOS_USERNAME=${NACOS_USERNAME}
+      - NACOS_PASSWORD=${NACOS_PASSWORD}
+      - MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
+      - MONGODB_DATABASE=review_db
+      - ROCKETMQ_ENDPOINT=${ROCKETMQ_HOST}:${ROCKETMQ_PORT}
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "50057" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  trip-review-summary:
+    build:
+      context: ../../trip-review-summary
+      dockerfile: Dockerfile
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary
+    logging: *logging
+    ports:
+      - "24212:24212"
+    environment:
+      - OTEL_SERVICE_NAME=trip-review-summary
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
+      - QDRANT_URL=http://${QDRANT_HOST}:${QDRANT_PORT}
+      - REVIEW_INDEX_VALIDATION_MODE=${REVIEW_INDEX_VALIDATION_MODE:-pinned}
+      - NEO4J_URI=neo4j://${NEO4J_HOST}:${NEO4J_PORT}
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - CELERY_BROKER_URL=redis://${REDIS_HOST}:${REDIS_PORT}/0
+      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+    command: [ "uvicorn", "review_summary.asgi:app", "--host", "0.0.0.0", "--port", "24212" ]
+    depends_on:
+      nacos:
+        condition: service_healthy
+      trip-review-service:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      neo4j:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      higress:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:24212/ready').read()"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  trip-review-summary-worker:
+    image: tripsphere/trip-review-summary:latest
+    container_name: trip-review-summary-worker
+    logging: *logging
+    environment:
+      - OTEL_SERVICE_NAME=trip-review-summary-worker
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - NACOS_SERVER_ADDRESS=${NACOS_HOST}:${NACOS_PORT}
+      - QDRANT_URL=http://${QDRANT_HOST}:${QDRANT_PORT}
+      - NEO4J_URI=neo4j://${NEO4J_HOST}:${NEO4J_PORT}
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - CELERY_BROKER_URL=redis://${REDIS_HOST}:${REDIS_PORT}/0
+      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/0
+      - MINIO_ENDPOINT=${MINIO_HOST}:${MINIO_PORT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+    command: [ "celery", "-A", "review_summary.celery.app", "worker", "--loglevel=info", "--concurrency=4" ]
+    depends_on:
+      nacos:
+        condition: service_healthy
+      trip-review-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      neo4j:
+        condition: service_started
+      higress:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    restart: unless-stopped
+
   trip-next-frontend:
     build:
-      context: trip-next-frontend
+      context: ../../trip-next-frontend
       dockerfile: Dockerfile
     image: tripsphere/trip-next-frontend:latest
     container_name: trip-next-frontend
@@ -377,7 +719,7 @@ services:
 
   trip-order-service:
     build:
-      context: trip-order-service
+      context: ../../trip-order-service
       dockerfile: Dockerfile
     image: tripsphere/trip-order-service:latest
     container_name: trip-order-service
@@ -386,6 +728,14 @@ services:
       - "24222:24222" # HTTP
       - "50062:50062" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-order-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/order_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
@@ -403,7 +753,7 @@ services:
 
   trip-product-service:
     build:
-      context: trip-product-service
+      context: ../../trip-product-service
       dockerfile: Dockerfile
     image: tripsphere/trip-product-service:latest
     container_name: trip-product-service
@@ -412,6 +762,14 @@ services:
       - "24220:24220" # HTTP
       - "50060:50060" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-product-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=${NACOS_HOST}:${NACOS_PORT}
       - SPRING_DATA_MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
       - SPRING_DATA_MONGODB_DATABASE=product_db
@@ -424,7 +782,7 @@ services:
 
   trip-user-service:
     build:
-      context: trip-user-service
+      context: ../../trip-user-service
       dockerfile: Dockerfile
     image: tripsphere/trip-user-service:latest
     container_name: trip-user-service
@@ -433,6 +791,14 @@ services:
       - "50056:50056" # gRPC
       - "24217:24217" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-user-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/user_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
@@ -443,3 +809,9 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  prometheus-data:
+    name: tripsphere-prometheus-data
+  otel-collector-file-storage:
+    name: tripsphere-otel-collector-file-storage

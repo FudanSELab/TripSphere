@@ -28,6 +28,14 @@ services:
       - "24213:24213" # HTTP
       - "50053:50053" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-attraction-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -48,6 +56,14 @@ services:
     ports:
       - "24210:24210" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-chat-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
@@ -123,6 +139,14 @@ services:
       - "50054:50054" # gRPC
       - "24214:24214" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-hotel-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -144,6 +168,14 @@ services:
       - "24221:24221" # HTTP
       - "50061:50061" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-inventory-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -168,6 +200,14 @@ services:
     ports:
       - "24215:24215"
     environment:
+      - OTEL_SERVICE_NAME=trip-itinerary-planner
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
@@ -188,6 +228,14 @@ services:
       - "24219:24219" # HTTP
       - "50052:50052" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-itinerary-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
@@ -207,6 +255,14 @@ services:
     ports:
       - "24211:24211" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-order-assistant
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
@@ -285,6 +341,14 @@ services:
       - "24222:24222" # HTTP
       - "50062:50062" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-order-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -329,6 +393,14 @@ services:
       - "24220:24220" # HTTP
       - "50060:50060" # gRPC
     environment:
+      - OTEL_SERVICE_NAME=trip-product-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
@@ -348,10 +420,15 @@ services:
     ports:
       - "50057:50057" # gRPC
     environment:
-      - APP_ENV=dev
+      - APP_ENV=local
       - APP_NAME=trip-review-service
       - PORT=50057
+      - OTEL_SERVICE_NAME=trip-review-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
       - NACOS_NAMESPACE=public
@@ -388,6 +465,14 @@ services:
     ports:
       - "24212:24212" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-review-summary
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - REVIEW_INDEX_VALIDATION_MODE=${REVIEW_INDEX_VALIDATION_MODE:-pinned}
@@ -436,6 +521,13 @@ services:
     logging: *default-logging
     environment:
       - OTEL_SERVICE_NAME=trip-review-summary-worker
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
@@ -482,6 +574,14 @@ services:
       - "50056:50056" # gRPC
       - "24217:24217" # HTTP
     environment:
+      - OTEL_SERVICE_NAME=trip-user-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -522,13 +622,45 @@ services:
     image: otel/opentelemetry-collector-contrib:0.144.0
     container_name: otel-collector
     logging: *default-logging
+    user: "0:0"
     command: ["--config", "/etc/otelcol/config.yaml"]
     volumes:
-      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml
+      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - otel-collector-file-storage:/var/lib/otelcol/file_storage
     ports:
       - "4317:4317" # OTLP gRPC receiver
       - "4318:4318" # OTLP HTTP receiver
+      - "13133:13133" # Collector health endpoint
+      - "8888:8888" # Collector self-telemetry metrics
       - "8889:8889" # Prometheus exporter metrics
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+
+  loki:
+    build:
+      context: ./infra/loki
+      dockerfile: Dockerfile
+    image: tripsphere/loki:3.6.4
+    container_name: loki
+    logging: *default-logging
+    user: root
+    command: [ "-config.file=/etc/loki/loki.yaml" ]
+    volumes:
+      - ./infra/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./volumes/loki:/loki
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: [ "CMD", "/bin/wget", "-q", "--spider", "http://localhost:3100/ready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
 
   tempo:
     image: grafana/tempo:2.8.3
@@ -549,14 +681,16 @@ services:
     container_name: prometheus
     logging: *default-logging
     volumes:
-      - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
-      - ./volumes/prometheus:/prometheus
+      - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'
       - '--web.enable-lifecycle'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -569,11 +703,16 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - ./volumes/grafana:/var/lib/grafana
+      - ./infra/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
       - "13000:3000" # Use port 13000 to avoid conflict with frontend
     depends_on:
       tempo:
         condition: service_started
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
       interval: 30s
@@ -753,3 +892,9 @@ services:
     volumes:
       - ./volumes/higress:/data
     restart: unless-stopped
+
+volumes:
+  prometheus-data:
+    name: tripsphere-prometheus-data
+  otel-collector-file-storage:
+    name: tripsphere-otel-collector-file-storage

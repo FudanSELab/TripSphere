@@ -3,6 +3,7 @@
 import logging
 
 from celery import Celery
+from celery.signals import setup_logging as celery_setup_logging
 
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
@@ -10,6 +11,11 @@ from review_summary.config.settings import get_settings
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+
+@celery_setup_logging.connect
+def configure_celery_logging(**_: object) -> None:
+    setup_logging()
 
 INDEX_TASK_MODULES = (
     "review_summary.index.tasks.collect_text_units",
@@ -32,7 +38,11 @@ def create_celery_app() -> Celery:
         include=INDEX_TASK_MODULES,
     )
     celery_app.set_default()
-    celery_app.conf.update(task_track_started=True)
+    celery_app.conf.update(
+        task_track_started=True,
+        worker_hijack_root_logger=False,
+        worker_redirect_stdouts=False,
+    )
     return celery_app
 
 

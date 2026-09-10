@@ -19,7 +19,6 @@ from order_assistant.tools.order import OrderToolset
 from order_assistant.tools.order_draft import OrderDraftToolset
 from order_assistant.tools.product import ProductToolset
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 warnings.filterwarnings("ignore", module=".*")

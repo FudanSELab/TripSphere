@@ -68,6 +68,11 @@ async def _init_adk_app(app: FastAPI) -> None:
     adk_app = create_adk_app(root_agent)
 
     def user_id_extractor(input: RunAgentInput) -> str:
+        logger.info(
+            "AG-UI request payload: messages=%s context=%s",
+            input.messages,
+            input.context,
+        )
         user_id = input.state.get("headers", {}).get("user_id", "anonymous")
         return cast(str, user_id)
 
@@ -91,7 +96,7 @@ async def _init_adk_app(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Loaded settings: {settings}")
+    logger.info("Loaded settings: %s", settings)
 
     try:
         await _init_infra(app, settings)
@@ -99,8 +104,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await app.state.nacos_naming.register(ephemeral=True)
         await _init_adk_app(app)
         yield
-    except Exception as e:
-        logger.error(f"Exception during lifespan startup: {e}")
+    except Exception:
+        logger.exception("Exception during lifespan startup")
         raise
     finally:
         logger.info("Deregistering service instance...")

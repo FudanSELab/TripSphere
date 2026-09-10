@@ -44,8 +44,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         chat_agent = LangGraphAgent(name="itinerary_planner", graph=chat_graph)
         add_langgraph_fastapi_endpoint(app, chat_agent, "/")
         yield
-    except Exception as e:
-        logger.error("Error during lifespan startup: %s", e)
+    except Exception:
+        logger.exception("Error during lifespan startup")
         raise
     finally:
         if isinstance(app.state.nacos_naming, NacosNaming):

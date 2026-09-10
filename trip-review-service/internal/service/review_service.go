@@ -111,10 +111,11 @@ func (s *ReviewService) CreateReview(ctx context.Context, req *pb.CreateReviewRe
 		return nil, status.Errorf(codes.Internal, "failed to create review: %v", err)
 	}
 
-	slog.InfoContext(ctx, "review created",
+	slog.InfoContext(ctx, "review created: "+review.Content,
 		"id", id,
 		"user_id", review.UserId,
 		"entity_id", review.EntityId,
+		"content", review.Content,
 	)
 
 	return &pb.CreateReviewResponse{
@@ -180,7 +181,12 @@ func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRe
 		return nil, status.Errorf(codes.Internal, "failed to update review: %v", err)
 	}
 
-	slog.InfoContext(ctx, "review updated", "id", review.Id)
+	slog.InfoContext(ctx, "review updated: "+review.Content,
+		"id", review.Id,
+		"user_id", existingReview.UserID,
+		"entity_id", existingReview.EntityID,
+		"content", review.Content,
+	)
 
 	return &pb.UpdateReviewResponse{
 		Review: domainToProto(existingReview),
