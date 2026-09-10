@@ -13,12 +13,16 @@ timestamp = datetime.now().isoformat().replace(":", "-")
 def setup_logging() -> None:
     settings = get_settings()
 
-    logger_handlers = ["console"]
+    logger_handlers = ["console", "otel"]
     handlers = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "standard",
             "stream": "ext://sys.stderr",
+        },
+        "otel": {
+            "class": "opentelemetry.sdk._logs.LoggingHandler",
+            "level": "NOTSET",
         }
     }
 
@@ -47,25 +51,37 @@ def setup_logging() -> None:
             "review_summary": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
-                "propagate": True,
+                "propagate": False,
             },
-            "celery": {"level": "INFO", "handlers": [], "propagate": True},
+            "celery": {
+                "level": "INFO",
+                "handlers": logger_handlers,
+                "propagate": False,
+            },
             "celery.task": {
                 "level": "INFO",
-                "handlers": [],
-                "propagate": True,
+                "handlers": logger_handlers,
+                "propagate": False,
             },
-            "fastapi": {"level": "INFO", "handlers": [], "propagate": True},
-            "uvicorn": {"level": "INFO", "handlers": [], "propagate": True},
+            "fastapi": {
+                "level": "INFO",
+                "handlers": logger_handlers,
+                "propagate": False,
+            },
+            "uvicorn": {
+                "level": "INFO",
+                "handlers": logger_handlers,
+                "propagate": False,
+            },
             "uvicorn.error": {
                 "level": "INFO",
-                "handlers": [],
-                "propagate": True,
+                "handlers": logger_handlers,
+                "propagate": False,
             },
             "uvicorn.access": {
                 "level": "INFO",
-                "handlers": [],
-                "propagate": True,
+                "handlers": logger_handlers,
+                "propagate": False,
             },
         },
     }

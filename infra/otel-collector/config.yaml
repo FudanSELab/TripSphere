@@ -75,18 +75,6 @@ processors:
         value: local
         action: insert
 
-  transform/api_keys:
-    error_mode: ignore
-    log_statements:
-      - 'delete_matching_keys(log.attributes, "(?i)(^|[._\\-])(amap(_api)?_key|openai_api_key|higress_upstream_api_key|api[_-]?key)([._\\-]|$)")'
-      - 'delete_matching_keys(resource.attributes, "(?i)(^|[._\\-])(amap(_api)?_key|openai_api_key|higress_upstream_api_key|api[_-]?key)([._\\-]|$)")'
-      - 'replace_all_patterns(log.attributes, "value", "\\bsk-[A-Za-z0-9_-]{16,}\\b", "[REDACTED_API_KEY]")'
-      - 'replace_all_patterns(resource.attributes, "value", "\\bsk-[A-Za-z0-9_-]{16,}\\b", "[REDACTED_API_KEY]")'
-      - 'replace_pattern(log.body, "\\bsk-[A-Za-z0-9_-]{16,}\\b", "[REDACTED_API_KEY]") where IsString(log.body)'
-      - 'replace_pattern(log.body, "(?i)(https?://restapi\\.amap\\.com/[^\\s]*[?&]key=)[^&\\s\\\"'']+", "$$1[REDACTED_API_KEY]") where IsString(log.body)'
-      - 'replace_pattern(log.body, "(?i)([''\\\"]?(amap(_api)?_key|openai_api_key|higress_upstream_api_key|api[_-]?key)[''\\\"]?\\s*[:=]\\s*[''\\\"])[^''\\\"]*([''\\\"])", "$$1[REDACTED_API_KEY]$$4") where IsString(log.body)'
-      - 'replace_pattern(log.body, "(?i)(\\b(amap(_api)?_key|openai_api_key|higress_upstream_api_key|api[_-]?key)\\b\\s*[:=]\\s*)[^,;\\s}\\]]+", "$$1[REDACTED_API_KEY]") where IsString(log.body)'
-
 exporters:
   otlp_grpc/tempo:
     endpoint: tempo:4317
@@ -147,9 +135,9 @@ service:
       exporters: [debug, prometheus]
     logs/app:
       receivers: [otlp]
-      processors: [memory_limiter, resource/app_logs, transform/api_keys, batch/logs]
+      processors: [memory_limiter, resource/app_logs, batch/logs]
       exporters: [otlp_http/loki]
     logs/infra:
       receivers: [receiver_creator/infra_logs]
-      processors: [memory_limiter, transform/api_keys, batch/logs]
+      processors: [memory_limiter, batch/logs]
       exporters: [otlp_http/loki]

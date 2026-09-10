@@ -35,17 +35,15 @@ Collector 是 Loki 的唯一写入方。不部署 Grafana Alloy。cAdvisor 只�
 - MongoDB、PostgreSQL、Redis、Qdrant、Neo4j 等数据库业务响应。
 - 异常消息、异常栈和第三方依赖错误响应。
 
-### 2.2 唯一脱敏范围
+### 2.2 应用日志安全边界
 
-只处理 Amap、OpenAI、Higress upstream 等外部 API key：
+外部 API key 不得进入 LogRecord：
 
-- 删除名称明确为 `amap_key`、`amap_api_key`、`openai_api_key`、
-  `higress_upstream_api_key` 或 `api_key` 的日志/resource attributes。
-- 遮蔽日志正文中上述具名键值。
-- 遮蔽 OpenAI `sk-...` 形式密钥。
-- 遮蔽 Amap API URL 中的 `key` 查询参数。
+- `logger.info`、`logger.warning`、`logger.error` 和 `logger.debug` 不记录完整 settings、API key、密码、token 或带 key 查询参数的 URL。
+- 启动日志只记录服务名、监听地址等非敏感摘要；配置对象中的 `SecretStr` 不作为完整对象输出。
+- Amap、OpenAI、Higress upstream 等凭据只通过运行时配置传入，业务代码不得将其拼入日志正文、日志 attributes 或 resource attributes。
 
-不得泛化删除 Authorization、Cookie、JWT、password、token、连接字符串、用户数据或业务正文；不得截断 Prompt、模型响应、工具响应和数据库响应。
+Collector 不再使用通用正则修改日志正文或 attributes。Collector 只负责传输和保留应用发送的原始 LogRecord，不得泛化删除 Authorization、Cookie、JWT、password、token、连接字符串、用户数据或业务正文，也不得截断 Prompt、模型响应、工具响应和数据库响应。
 
 ## 3. 范围
 
@@ -133,7 +131,7 @@ deployment_environment_name
 
 - [x] 两份 Compose 为 Collector 挂载 `/var/lib/docker/containers:ro`。
 - [x] 两份 Compose 为 Docker observer 挂载 `/var/run/docker.sock:ro`。
-- [x] 两份 Compose 增加独立 named volume 保存 filelog offset。
+- [x] 两份 Compose 使用独立的 `TRIPSPHERE_DATA_ROOT/otel-collector-file-storage` 目录保存 filelog offset。
 - [x] 不增加 Alloy 或 docker-socket-proxy。
 
 Collector 以 root 运行以读取宿主机 Docker 日志目录和 socket。Docker socket 即使以 `:ro` 挂载仍代表高权限 Docker API 访问。本配置仅用于本地数据采集环境，不作为生产安全模板。
@@ -141,10 +139,10 @@ Collector 以 root 运行以读取宿主机 Docker 日志目录和 socket。Dock
 ### Task 3：恢复高保真业务日志
 
 - [x] 恢复 AG-UI context、Prompt/查询、模型/工具/数据库响应等被概括或删除的原有日志字段。
-- [x] 保留 Python logger 向 root OTel handler 传播所需的最小配置。
+- [x] Python logger 使用独立 console 和 OTel handlers 并关闭 propagate，避免重复输出且保证 OTLP logging instrumentation 能采集。
 - [x] 保留 Java Agent 和 Go `otelslog` 所需的最小日志接入。
 - [x] Go logger 自行创建与 Trace 相同身份的 Resource，不修改既有 `tracing.go`。
-- [x] Collector 脱敏规则只覆盖外部 API key。
+- [x] Python 启动日志不输出完整 settings 或外部 API key，Collector 不做 API key 正则脱敏。
 - [x] Loki 容量限制不得把允许保留的数据压缩到 4KB 或 64KB。
 - [x] Loki 不限制业务日志单行大小，并为首次基础设施历史日志回放配置受控的 ingestion rate/burst。
 
@@ -163,8 +161,8 @@ Collector 以 root 运行以读取宿主机 Docker 日志目录和 socket。Dock
 - [x] Loki 能分别查询业务 OTLP 日志和基础设施 Docker JSON 日志。
 - [ ] 同一业务事件只出现一次，前端日志没有进入 Loki。
 - [ ] Prompt、模型响应、工具参数/响应、AG-UI context、用户 ID、地理位置和数据库响应保持完整。
-- [ ] 固定假 Amap/OpenAI API key 在 Loki 中被遮蔽。
-- [ ] 业务日志中的非 API-key Authorization、JWT、password、token 等字段未被通用规则删除。
+- [ ] 代码审查确认应用 LogRecord 不包含 Amap/OpenAI/Higress API key。
+- [ ] 业务日志中的 Authorization、JWT、password、token 等允许保留，Collector 不做通用删除。
 - [ ] Logs 到 Trace、Trace 到 Logs 关联可用；既有 Trace 输出没有变化。
 
 ## 6. 完成标准
@@ -173,6 +171,6 @@ Collector 以 root 运行以读取宿主机 Docker 日志目录和 socket。Dock
 - Compose 内存在的目标基础设施日志经 Docker JSON `filelog` 到达 Loki。
 - 前端、Collector 和可观测后端自身日志未被 `filelog` 采集。
 - 不存在 Alloy 或业务日志双写。
-- 只脱敏外部 API key，允许数据正文完整保留。
+- 应用日志不产生外部 API key，Collector 原样保留允许的数据正文。
 - 没有为了 Phase 6 Logs 引入无关重构或测试目录。
-- 所有修改留在当前 `phase6.2-logs` 工作区，人工端到端验收前不提交。
+- 所有修改留在当前工作区，人工端到端验收前不提交。

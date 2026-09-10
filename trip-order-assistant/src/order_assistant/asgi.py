@@ -29,7 +29,12 @@ GoogleADKInstrumentor().instrument()
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info("Loaded settings: %s", settings)
+    logger.info(
+        "Loaded settings for %s on %s:%s",
+        settings.app.name,
+        settings.uvicorn.host,
+        settings.uvicorn.port,
+    )
 
     agent_card: AgentCard | None = None
     try:

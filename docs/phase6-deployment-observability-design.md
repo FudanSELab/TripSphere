@@ -15,7 +15,7 @@ Phase 6 不实施 F1-F5 故障注入，也不实现最终的数据集导出程�
 - OpenTelemetry Collector 统一接收应用 Logs、Metrics、Traces，并采集 Docker 宿主机指标；cAdvisor 采集容器资源指标，Prometheus 统一存储和查询指标。
 - Grafana 提供日志、指标、Trace 的查询入口和跨信号关联能力。
 - 采集容器与 Docker 宿主机的 CPU、内存、文件系统、磁盘 I/O 和网络指标，为后续资源故障 RCA 提供证据。
-- 可观测数据保留完整业务上下文，只遮蔽 Amap、OpenAI 等外部 API key。
+- 可观测数据保留完整业务上下文；应用代码不得把 Amap、OpenAI 等外部 API key 写入 LogRecord。
 
 本阶段的“客户端”指本地 Grafana 查询端，不新增外部 OTLP endpoint，也不新增 RCA 数据集导出客户端或数据格式。
 
@@ -123,7 +123,7 @@ Collector 是应用遥测、日志和宿主机指标的统一采集与转发中�
 
 ### 5.2 宿主机访问权限
 
-Logs 子阶段为 Collector 只读挂载 `/var/lib/docker/containers` 以读取 JSON 日志，并挂载 `/var/run/docker.sock` 供 Docker observer 发现容器 ID、名称和镜像；独立 named volume 保存 filelog offset。Collector 以 root 运行以读取这些宿主机资源。Docker socket 即使以 `:ro` 挂载也代表高权限 API 访问，因此仅用于可信本地数据采集环境。后续 Metrics 子阶段若启用 `hostmetrics`，再将 `/` 只读挂载到 `/hostfs` 并设置 `hostmetrics.root_path=/hostfs`。
+Logs 子阶段为 Collector 只读挂载 `/var/lib/docker/containers` 以读取 JSON 日志，并挂载 `/var/run/docker.sock` 供 Docker observer 发现容器 ID、名称和镜像；使用 `TRIPSPHERE_DATA_ROOT/otel-collector-file-storage` 目录保存 filelog offset。Collector 以 root 运行以读取这些宿主机资源。Docker socket 即使以 `:ro` 挂载也代表高权限 API 访问，因此仅用于可信本地数据采集环境。后续 Metrics 子阶段若启用 `hostmetrics`，再将 `/` 只读挂载到 `/hostfs` 并设置 `hostmetrics.root_path=/hostfs`。
 
 cAdvisor 固定使用 `ghcr.io/google/cadvisor:v0.60.5`，按其 Docker 部署要求只读挂载 `/`、`/var/run`、`/sys`、`/var/lib/docker`、`/dev/disk`，并访问 `/dev/kmsg`。cAdvisor 通常需要 privileged 权限；这些宿主机能力仅作为本地单机故障实验基线使用，不得直接复用为生产安全方案。Collector 和 cAdvisor 只暴露 Phase 6 所需的 OTLP、健康和指标端口，不开放无关接口。
 
@@ -271,7 +271,7 @@ task_id
 
 为了保证后续开源数据集质量，明确允许记录完整用户 Prompt、模型响应、工具参数/响应、AG-UI context、用户 ID、地理位置和数据库业务响应。不得使用通用规则删除 Authorization、Cookie、JWT、password、token、连接字符串或业务正文，也不得在 Collector 中截断这些内容。
 
-唯一需要遮蔽的是 Amap、OpenAI、Higress upstream 等外部 API key。Collector 在 Loki exporter 之前删除具名 API-key attributes，并遮蔽正文中的具名键值、OpenAI `sk-...` 密钥和 Amap URL `key` 参数。
+外部 API key 不得进入应用 LogRecord。Python 启动日志只记录服务名和监听地址等非敏感摘要，不输出完整 settings；业务日志也不得拼接 API key 或带 key 查询参数的 URL。Collector 不再使用正则修改日志正文或 attributes，而是原样传输应用生成的 LogRecord；Authorization、Cookie、JWT、password、token、连接字符串和业务正文不做通用删除或截断。
 
 ## 8. 各技术栈接入
 
@@ -291,7 +291,7 @@ task_id
 - 保留 `opentelemetry-instrument` 自动插桩。
 - 使用 OTel logging handler 将现有 `logging` LogRecord 导出到 Collector。
 - 由 instrumentation 从当前 OTel Span 关联原生 trace/span ID，请求/任务上下文保留为 attributes。
-- 保留 settings、用户 Prompt、模型输入输出、工具参数/响应、AG-UI context 和下游业务响应；仅由 Collector 遮蔽外部 API key。
+- 保留用户 Prompt、模型输入输出、工具参数/响应、AG-UI context 和下游业务响应；应用代码不得记录外部 API key，Collector 不修改这些正文。
 - FastAPI readiness 必须验证启动时创建的必要依赖，不得固定返回 healthy。
 - Celery worker healthcheck 使用真实 worker ping，并验证 broker 连接。
 - review-summary API 与 worker 使用不同 `OTEL_SERVICE_NAME`，但共享 `service.namespace=tripsphere`。
@@ -512,7 +512,7 @@ HIGRESS_EMBEDDING_MODEL
 - 增加 Loki 单实例 TSDB/filesystem 配置和 7 天保留。
 - 扩展 Collector receivers、processors、connectors、exporters 和 extensions。
 - 配置业务 OTLP logs pipeline、基础设施 Docker JSON `filelog` pipeline 和 Loki 原生 OTLP exporter。
-- 增加 Docker observer、基础设施白名单、filelog offset 持久化和仅针对外部 API key 的遮蔽规则。
+- 增加 Docker observer、基础设施白名单和 filelog offset 持久化；应用代码负责不生成包含外部 API key 的 LogRecord。
 - 增加 Collector、Loki 的真实 healthcheck。
 
 ### Task 3：补齐 Metrics 和 Prometheus
@@ -572,7 +572,7 @@ HIGRESS_EMBEDDING_MODEL
 
 - Collector 能接收业务 OTLP 日志，并能读取一条基础设施 Docker JSON 日志；两类日志均映射正确的 service namespace、environment 和容器/服务身份。
 - Java、Python 和 Go 的原生 LogRecord 均可进入 Loki，活动 Span 日志带可在 Tempo 对应的 trace/span ID。
-- 固定假 Amap/OpenAI API key 被遮蔽；Prompt、响应、JWT/password/token 等非 API-key 业务内容不被通用规则删除。
+- 应用代码审查确认 Amap/OpenAI API key 不进入 LogRecord；Prompt、响应、JWT/password/token 等业务内容不被 Collector 通用规则删除。
 - cAdvisor、Collector exporter 和 Prometheus targets 均为 `up`；每个保留 Compose 服务都有非空 `service` 和 `environment` label。
 - cAdvisor 实际暴露第 9.2 节要求的 CPU、内存、文件系统、块 I/O、网络和 OOM 原始指标。
 - Collector `hostmetrics` 从 `/hostfs` 采集宿主机指标，而不是 Collector 容器自身指标；虚拟文件系统不进入正式 Dashboard。
@@ -653,7 +653,7 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 - Higress 初始化失败时 AI 服务不进入 ready 状态。
 - 数据库、Redis、Qdrant、Neo4j 或 MinIO 不可用时，对应服务不返回固定 healthy。
 - 非法/缺失 request ID 不污染其他请求上下文；服务生成新的合法 ID。
-- 敏感字段即使被错误写入结构化属性，也会在 Collector 出口前删除或遮蔽。
+- 敏感字段不得由应用写入结构化属性；Collector 不对业务 LogRecord 做通用正则删除或遮蔽。
 
 ## 16. 完成标准
 
@@ -661,13 +661,13 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 
 - root Compose 能启动所有保留业务服务和必需基础设施，核心依赖达到 healthy/completed 状态。
 - deploy Compose 可独立解析，并同步包含全部保留职责。
-- Loki、Tempo、Prometheus、Grafana 均使用单实例本地卷和 7 天保留。
+- Loki、Tempo、Prometheus、Grafana 均使用 `TRIPSPHERE_DATA_ROOT` 下的独立持久化目录和 7 天保留。
 - OTel Collector 的 Logs、Metrics、Traces 都有真实接收、处理和后端出口，不以 debug exporter 代替存储。
 - Collector 能通过 OTLP 接收业务 Logs、Metrics、Traces，并通过 `filelog` 接收基础设施 Docker JSON 日志；cAdvisor 只采集容器资源指标。
 - Prometheus 可查询 CPU time/usage/utilization/throttling、memory usage/utilization/limit、OOM、filesystem usage、disk throughput/IOPS/latency、network receive/transmit/drop/error；不适用或平台不支持的指标明确为 unavailable。
 - Dashboard 和 RCA 查询使用稳定的 `tripsphere:*` recording rules，且不存在 `docker_stats` 与 cAdvisor 重复采集。
 - 日志可按 service、environment、severity、request_id、trace_id、user_id、task_id 查询。
-- Amap、OpenAI 等外部 API key 不出现在 Loki 验收结果中；允许的数据正文保持完整。
+- Amap、OpenAI 等外部 API key 不由应用写入 Loki；允许的数据正文保持完整。
 - Grafana 已预置 Prometheus、Tempo、Loki，并能关联 Trace 与日志。
 - 一次真实订单请求可在 Logs、Metrics、Traces 中用 request ID/trace ID 关联定位。
 - Higress chat 和 embedding 路由在全新环境中可幂等初始化并通过 smoke。
@@ -681,7 +681,7 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 1. 业务 OTLP 与基础设施 Docker JSON `filelog` 的白名单是否持续互斥，避免业务日志重复采集。
 2. cAdvisor 的 privileged、`/dev/kmsg` 和宿主机目录挂载风险是否可接受；该部署不得直接作为生产模板。
 3. Higress `2.1.11` 的自动初始化 API、认证方式和幂等更新语义是否已通过实际镜像验证。
-4. 日志正文脱敏规则是否会误删 RCA 所需的错误上下文。
+4. 应用日志代码审查是否覆盖所有可能把凭据写入 LogRecord 的路径。
 5. request ID 在 Next.js、A2A、gRPC 和 Celery 边界的具体落点是否覆盖完整。
 6. 当前 Docker storage driver 与 cgroup 版本是否能输出容器 filesystem 和 I/O time；若不能，Dashboard 是否正确显示 unavailable 并回退到宿主机证据。
 7. Java Actuator 指标与 OTel Java Agent 指标是否存在需要去重的同义指标。

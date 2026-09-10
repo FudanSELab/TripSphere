@@ -51,7 +51,7 @@ services:
       - "28080:8080" # HTTP gateway
       - "8443:8443" # HTTPS gateway
     volumes:
-      - ../../volumes/higress:/data
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/higress:/data
     restart: unless-stopped
 
   # ─── Databases & Storage ─────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ../../volumes/mongodb:/data/db
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/mongodb:/data/db
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
@@ -86,7 +86,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ../../volumes/postgres:/var/lib/postgresql/data
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/postgres:/var/lib/postgresql/data
       - ../../infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}" ]
@@ -100,7 +100,7 @@ services:
     container_name: redis
     logging: *logging
     volumes:
-      - ../../volumes/redis/data:/data
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/redis/data:/data
     ports:
       - "6379:6379"
     healthcheck:
@@ -121,7 +121,7 @@ services:
       - source: qdrant_config
         target: /qdrant/config/production.yaml
     volumes:
-      - ../../volumes/qdrant:/qdrant/storage
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/qdrant:/qdrant/storage
     restart: unless-stopped
 
   minio:
@@ -135,7 +135,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - ../../volumes/minio:/minio_data
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
@@ -149,10 +149,10 @@ services:
     container_name: neo4j
     logging: *logging
     volumes:
-      - ../../volumes/neo4j/logs:/logs
-      - ../../volumes/neo4j/config:/config
-      - ../../volumes/neo4j/data:/data
-      - ../../volumes/neo4j/plugins:/plugins
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/neo4j/logs:/logs
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/neo4j/config:/config
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/neo4j/data:/data
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/neo4j/plugins:/plugins
     environment:
       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
       - NEO4J_PLUGINS=["graph-data-science"]
@@ -225,7 +225,7 @@ services:
       - ../../infra/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - otel-collector-file-storage:/var/lib/otelcol/file_storage
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/otel-collector-file-storage:/var/lib/otelcol/file_storage
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
@@ -248,7 +248,7 @@ services:
     command: [ "-config.file=/etc/loki/loki.yaml" ]
     volumes:
       - ../../infra/loki/loki.yaml:/etc/loki/loki.yaml:ro
-      - ../../volumes/loki:/loki
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/loki:/loki
     ports:
       - "3100:3100"
     healthcheck:
@@ -267,7 +267,7 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ../../infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
-      - ../../volumes/tempo:/var/tempo
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/tempo:/var/tempo
     ports:
       - "3200:3200" # Tempo HTTP API
       - "4317" # OTLP gRPC (internal)
@@ -279,7 +279,7 @@ services:
     logging: *logging
     volumes:
       - ../../infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
-      - prometheus-data:/prometheus
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/prometheus:/prometheus
     ports:
       - "9090:9090"
     command:
@@ -299,7 +299,7 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
-      - ../../volumes/grafana:/var/lib/grafana
+      - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/grafana:/var/lib/grafana
       - ../../infra/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
       - "13000:3000"
@@ -809,9 +809,3 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-
-volumes:
-  prometheus-data:
-    name: tripsphere-prometheus-data
-  otel-collector-file-storage:
-    name: tripsphere-otel-collector-file-storage

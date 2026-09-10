@@ -105,7 +105,12 @@ async def _init_adk_app(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info("Loaded settings: %s", settings)
+    logger.info(
+        "Loaded settings for %s on %s:%s",
+        settings.app.name,
+        settings.uvicorn.host,
+        settings.uvicorn.port,
+    )
 
     try:
         await _init_infra(app, settings)
