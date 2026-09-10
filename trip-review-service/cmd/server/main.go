@@ -23,23 +23,24 @@ func main() {
 	bootstrapLogger := setupLogger()
 
 	if err := run(bootstrapLogger); err != nil {
-		bootstrapLogger.Error("application failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(bootstrapLogger *slog.Logger) error {
+func run(bootstrapLogger *slog.Logger) (runErr error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
+		bootstrapLogger.Error("application failed", "error", err)
 		return err
 	}
 
 	tracerProvider, err := telemetry.NewTracerProvider(ctx, cfg.App.Name, cfg.App.Env)
 	if err != nil {
+		bootstrapLogger.Error("application failed", "error", err)
 		return err
 	}
 	loggerProvider, err := telemetry.NewLoggerProvider(ctx, cfg.App.Name, cfg.App.Env)
@@ -47,6 +48,7 @@ func run(bootstrapLogger *slog.Logger) error {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
 		_ = tracerProvider.Shutdown(shutdownCtx)
+		bootstrapLogger.Error("application failed", "error", err)
 		return err
 	}
 	slog.SetDefault(telemetry.NewSlogLogger(cfg.App.Name, loggerProvider))
@@ -63,6 +65,11 @@ func run(bootstrapLogger *slog.Logger) error {
 		defer shutdownCancel()
 		if err := tracerProvider.Shutdown(shutdownCtx); err != nil {
 			slog.Error("failed to shut down tracer provider", "error", err)
+		}
+	}()
+	defer func() {
+		if runErr != nil {
+			slog.Error("application failed", "error", runErr)
 		}
 	}()
 

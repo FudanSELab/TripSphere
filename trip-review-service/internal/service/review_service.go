@@ -115,7 +115,6 @@ func (s *ReviewService) CreateReview(ctx context.Context, req *pb.CreateReviewRe
 		"id", id,
 		"user_id", review.UserId,
 		"entity_id", review.EntityId,
-		"content", review.Content,
 	)
 
 	return &pb.CreateReviewResponse{
@@ -185,7 +184,6 @@ func (s *ReviewService) UpdateReview(ctx context.Context, req *pb.UpdateReviewRe
 		"id", review.Id,
 		"user_id", existingReview.UserID,
 		"entity_id", existingReview.EntityID,
-		"content", review.Content,
 	)
 
 	return &pb.UpdateReviewResponse{

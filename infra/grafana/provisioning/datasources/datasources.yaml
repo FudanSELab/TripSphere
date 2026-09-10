@@ -26,8 +26,6 @@ datasources:
     jsonData:
       tracesToLogsV2:
         datasourceUid: loki
-        customQuery: true
-        query: '{$${__tags}} | trace_id = "$${__trace.traceId}"'
         spanStartTimeShift: -2s
         spanEndTimeShift: 2s
         filterByTraceID: true
