@@ -13,16 +13,12 @@ timestamp = datetime.now().isoformat().replace(":", "-")
 def setup_logging() -> None:
     settings = get_settings()
 
-    logger_handlers = ["console", "otel"]
+    logger_handlers = ["console"]
     handlers = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "standard",
             "stream": "ext://sys.stderr",
-        },
-        "otel": {
-            "class": "opentelemetry.sdk._logs.LoggingHandler",
-            "level": "NOTSET",
         }
     }
 
@@ -51,37 +47,37 @@ def setup_logging() -> None:
             "itinerary_planner": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "httpx": {
                 "level": "WARNING",
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "httpcore": {
                 "level": "WARNING",
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "fastapi": {
                 "level": "INFO",
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "uvicorn": {
                 "level": "INFO",
                 "handlers": logger_handlers,
-                "propagate": False,
+                "propagate": True,
             },
             "uvicorn.error": {
                 "level": "INFO",
-                "handlers": logger_handlers,
-                "propagate": False,
+                "handlers": [],
+                "propagate": True,
             },
             "uvicorn.access": {
                 "level": "INFO",
-                "handlers": logger_handlers,
-                "propagate": False,
+                "handlers": [],
+                "propagate": True,
             },
         },
     }

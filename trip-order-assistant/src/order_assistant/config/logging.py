@@ -20,37 +20,33 @@ def setup_logging() -> None:
                     "class": "logging.StreamHandler",
                     "formatter": "standard",
                     "stream": "ext://sys.stderr",
-                },
-                "otel": {
-                    "class": "opentelemetry.sdk._logs.LoggingHandler",
-                    "level": "NOTSET",
                 }
             },
             "loggers": {
                 "order_assistant": {
                     "level": settings.log.level,
-                    "handlers": ["console", "otel"],
-                    "propagate": False,
+                    "handlers": ["console"],
+                    "propagate": True,
                 },
                 "starlette": {
                     "level": "INFO",
-                    "handlers": ["console", "otel"],
-                    "propagate": False,
+                    "handlers": ["console"],
+                    "propagate": True,
                 },
                 "uvicorn": {
                     "level": "INFO",
-                    "handlers": ["console", "otel"],
-                    "propagate": False,
+                    "handlers": ["console"],
+                    "propagate": True,
                 },
                 "uvicorn.error": {
                     "level": "INFO",
-                    "handlers": ["console", "otel"],
-                    "propagate": False,
+                    "handlers": [],
+                    "propagate": True,
                 },
                 "uvicorn.access": {
                     "level": "INFO",
-                    "handlers": ["console", "otel"],
-                    "propagate": False,
+                    "handlers": [],
+                    "propagate": True,
                 },
             },
         }

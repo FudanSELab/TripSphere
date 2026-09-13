@@ -139,7 +139,7 @@ Collector 以 root 运行以读取宿主机 Docker 日志目录和 socket。Dock
 ### Task 3：恢复高保真业务日志
 
 - [x] 恢复 AG-UI context、Prompt/查询、模型/工具/数据库响应等被概括或删除的原有日志字段。
-- [x] Python logger 使用独立 console 和 OTel handlers 并关闭 propagate，避免重复输出且保证 OTLP logging instrumentation 能采集。
+- [x] Python logger 保留 console handler 用于本地可见性，并通过 root auto-instrumentation OTel handler 上报；子 logger 仅冒泡到父 logger，避免 console 重复输出。
 - [x] 保留 Java Agent 和 Go `otelslog` 所需的最小日志接入。
 - [x] Go logger 自行创建与 Trace 相同身份的 Resource，不修改既有 `tracing.go`。
 - [x] Python 启动日志不输出完整 settings 或外部 API key，Collector 不做 API key 正则脱敏。
