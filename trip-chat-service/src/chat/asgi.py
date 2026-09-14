@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, cast
 
@@ -66,8 +67,21 @@ async def _init_adk_app(app: FastAPI) -> None:
         review_summary_url=review_summary_url,
     )  # type: ignore
     adk_app = create_adk_app(root_agent)
+    logged_request_ids: OrderedDict[tuple[str, str], None] = OrderedDict()
 
     def user_id_extractor(input: RunAgentInput) -> str:
+        request_id = (input.thread_id, input.run_id)
+        if request_id not in logged_request_ids:
+            logger.info(
+                "AG-UI request payload: thread_id=%s run_id=%s messages=%s context=%s",
+                input.thread_id,
+                input.run_id,
+                input.messages,
+                input.context,
+            )
+            logged_request_ids[request_id] = None
+            if len(logged_request_ids) > 1024:
+                logged_request_ids.popitem(last=False)
         user_id = input.state.get("headers", {}).get("user_id", "anonymous")
         return cast(str, user_id)
 
@@ -91,7 +105,12 @@ async def _init_adk_app(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
-    logger.info(f"Loaded settings: {settings}")
+    logger.info(
+        "Loaded settings for %s on %s:%s",
+        settings.app.name,
+        settings.uvicorn.host,
+        settings.uvicorn.port,
+    )
 
     try:
         await _init_infra(app, settings)
@@ -99,8 +118,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await app.state.nacos_naming.register(ephemeral=True)
         await _init_adk_app(app)
         yield
-    except Exception as e:
-        logger.error(f"Exception during lifespan startup: {e}")
+    except Exception:
+        logger.exception("Exception during lifespan startup")
         raise
     finally:
         logger.info("Deregistering service instance...")

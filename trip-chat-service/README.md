@@ -5,7 +5,8 @@ Run `task install` to set up the development environment.
 Set the OpenTelemetry environment variables:
 
 ```bash
-export OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true"
+export OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION="true"
+export OTEL_PYTHON_LOG_CODE_ATTRIBUTES="true"
 export OTEL_PYTHON_LOG_LEVEL="info"
 export OTEL_PYTHON_LOG_CORRELATION="true"
 ```

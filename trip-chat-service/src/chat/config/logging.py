@@ -47,8 +47,28 @@ def setup_logging() -> None:
             "chat": {
                 "level": settings.log.level,
                 "handlers": logger_handlers,
-                "propagate": False,
-            }
+                "propagate": True,
+            },
+            "fastapi": {
+                "level": "INFO",
+                "handlers": logger_handlers,
+                "propagate": True,
+            },
+            "uvicorn": {
+                "level": "INFO",
+                "handlers": logger_handlers,
+                "propagate": True,
+            },
+            "uvicorn.error": {
+                "level": "INFO",
+                "handlers": [],
+                "propagate": True,
+            },
+            "uvicorn.access": {
+                "level": "INFO",
+                "handlers": [],
+                "propagate": True,
+            },
         },
     }
     config.dictConfig(logging_config)

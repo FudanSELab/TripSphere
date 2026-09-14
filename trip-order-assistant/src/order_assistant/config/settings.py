@@ -69,5 +69,5 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
     settings = Settings()
-    logger.debug(f"Get settings: {settings}")
+    logger.debug("Loaded settings for %s", settings.app.name)
     return settings

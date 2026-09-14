@@ -1,72 +1,89 @@
 # Phase 6 Logs 设计与执行计划
 
-**文档状态：** 待 Review  
-**实施顺序：** 2 / 3  
-**前置条件：** `docs/phase6-traces-plan.md` 的业务 Trace 基线已通过  
-**目标：** Java、Python、Go 业务日志统一通过 OTLP 发送到 OTel Collector，再由 Collector 转发到 Loki。
+**文档状态：** 已实现，待人工端到端验收
+**实施顺序：** 2 / 3
+**前置条件：** `docs/phase6-traces-plan.md` 已完成，Logs 阶段不得修改既有 Trace 采集
+**目标：** 在不采集前端日志、不实施故障注入的前提下，把业务服务和基础设施日志完整写入 Loki，供后续开源可观测数据集使用。
 
-## 1. 调研结论与决策
-
-OpenTelemetry 自动 Trace 插桩、日志上下文关联和日志导出是独立能力。Java/Python 自动插桩不会自动意味着现有 stdout/stderr 已进入 OTel Logs pipeline；必须启用对应 logging bridge 和 OTLP Logs exporter。Go 当前使用标准库 `log/slog`，需要显式配置 OTel LoggerProvider 和 `otelslog` bridge。
-
-本计划采用单一入库路径：
+## 1. 最终架构
 
 ```text
-Java Logback -- Java Agent logging instrumentation --+
-Python logging -- Python OTel logging handler --------+--> OTLP gRPC/HTTP
-Go log/slog -- otelslog bridge -----------------------+        |
-                                                              v
-                                                     OTel Collector
-                                                              |
-                                                        OTLP HTTP
-                                                              v
-                                                             Loki
+Java Logback / Python logging / Go slog
+  -> OTel logging bridge
+  -> OTLP gRPC/HTTP
+  -> OpenTelemetry Collector logs/app pipeline
+  -> Loki OTLP HTTP
+
+MongoDB / PostgreSQL / Redis / Nacos / RocketMQ / Qdrant / Neo4j /
+MinIO / Higress stdout+stderr
+  -> Docker json-file
+  -> Collector docker_observer + receiver_creator + filelog
+  -> OpenTelemetry Collector logs/infra pipeline
+  -> Loki OTLP HTTP
 ```
 
-明确决策：
+Collector 是 Loki 的唯一写入方。不部署 Grafana Alloy。cAdvisor 只属于 Metrics 阶段，不承担日志采集。
 
-- 不部署 Grafana Alloy。
-- 不使用 Collector `filelog` receiver。
-- 不挂载或读取 `/var/lib/docker/containers`。
-- 不把 Docker JSON stdout/stderr 作为日志采集链路。
-- Collector 是应用日志的唯一接收中间件，也是 Loki 的唯一写入方。
-- 应用可保留少量 console 输出用于本地诊断，但该输出不被采集，不能作为 Loki 数据来源。
-- 本阶段强制覆盖 Java、Python 和 Go 业务服务；Next.js 与基础设施日志另行规划。
+## 2. 数据边界
 
-官方依据：
+### 2.1 必须保留
 
-- [OpenTelemetry Logging](https://opentelemetry.io/docs/specs/otel/logs/)
-- [Python Logs Auto-Instrumentation Example](https://opentelemetry.io/docs/zero-code/python/logs-example/)
-- [Python Agent Configuration](https://opentelemetry.io/docs/zero-code/python/configuration/)
-- [Java Agent Supported Libraries](https://opentelemetry.io/docs/zero-code/java/agent/supported-libraries/)
-- [OpenTelemetry Go `otelslog` Bridge](https://pkg.go.dev/go.opentelemetry.io/contrib/bridges/otelslog)
-- [OpenTelemetry Go Log SDK](https://pkg.go.dev/go.opentelemetry.io/otel/sdk/log)
-- [OpenTelemetry Go OTLP Log gRPC Exporter](https://pkg.go.dev/go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc)
-- [Loki OTLP Ingestion](https://grafana.com/docs/loki/latest/send-data/otel/)
+- 完整用户 Prompt 和模型响应。
+- 完整工具参数和工具响应。
+- 完整 AG-UI context。
+- 用户 ID、请求 ID、任务 ID、地理位置。
+- MongoDB、PostgreSQL、Redis、Qdrant、Neo4j 等数据库业务响应。
+- 异常消息、异常栈和第三方依赖错误响应。
 
-## 2. 范围
+### 2.2 应用日志安全边界
 
-### 2.1 包含
+外部 API key 不得进入 LogRecord：
 
-- Java Agent 对 Logback 日志的 OTel bridge 与 OTLP 导出。
-- Python `logging` 的自动日志 handler 与 OTLP 导出。
-- Go `log/slog` 到 OTel Logs 的 bridge、SDK 和 OTLP 导出。
-- Collector OTLP Logs 接收、规范化、脱敏、批处理和 Loki 转发。
-- Loki 单实例存储、Grafana 查询及 Trace 双向关联。
+- `logger.info`、`logger.warning`、`logger.error` 和 `logger.debug` 不记录完整 settings、API key、密码、token 或带 key 查询参数的 URL。
+- 启动日志只记录服务名、监听地址等非敏感摘要；配置对象中的 `SecretStr` 不作为完整对象输出。
+- Amap、OpenAI、Higress upstream 等凭据只通过运行时配置传入，业务代码不得将其拼入日志正文、日志 attributes 或 resource attributes。
 
-### 2.2 不包含
+Collector 不再使用通用正则修改日志正文或 attributes。Collector 只负责传输和保留应用发送的原始 LogRecord，不得泛化删除 Authorization、Cookie、JWT、password、token、连接字符串、用户数据或业务正文，也不得截断 Prompt、模型响应、工具响应和数据库响应。
 
-- Alloy、Docker JSON、filelog、journald 或文件日志采集。
-- Next.js 浏览器日志、Next.js 服务端日志和基础设施容器日志。
-- 业务审计日志、长期归档、告警和 RCA 数据集导出。
-- 完整 Prompt、模型响应、工具参数或数据库响应正文。
-- 在 Logs 阶段升级现有 Trace instrumentation。
+## 3. 范围
 
-## 3. 统一日志契约
+### 3.1 包含
 
-### 3.1 Resource Attributes
+- Java、Python、Go 业务服务通过 OTLP 上报日志。
+- Collector `filelog` 读取基础设施容器 Docker JSON 日志。
+- Docker observer 发现动态容器 ID，receiver creator 按“基础设施服务名 + canonical 容器端口”白名单创建唯一的 `filelog` receiver。
+- `file_storage` 持久化 Docker 日志读取 offset。
+- Loki 单实例存储和 Grafana Logs/Traces 关联。
 
-与 Trace 基线完全一致：
+基础设施白名单以 Compose 实际存在服务为准，包括：
+
+```text
+nacos
+higress
+mongodb
+postgres
+redis
+qdrant
+neo4j
+minio
+rmq-namesrv
+rmq-broker
+rmq-proxy
+rmq-dashboard
+```
+
+### 3.2 不包含
+
+- Phase 6 内的故障注入实现。
+- 最终数据集导出、清洗、发布流程。
+- Next.js 浏览器或服务端日志。
+- 修改现有 Trace instrumentation、Trace pipeline 或 Trace 字段。
+- Alloy。
+- 用 cAdvisor 采集日志。
+
+## 4. 日志身份与存储
+
+业务日志沿用 OTel Resource：
 
 ```text
 service.name
@@ -75,27 +92,20 @@ deployment.environment.name=local
 service.version
 ```
 
-`service.name` 必须使用逻辑服务名；同一镜像启动的 API 与 Worker 使用不同名称。
+基础设施日志由 Docker observer 注入：
 
-### 3.2 LogRecord
+```text
+service.name=<Compose container_name>
+service.namespace=tripsphere
+deployment.environment.name=local
+container.id
+container.name
+container.image.name
+log.iostream
+log.file.path
+```
 
-| OTel 字段 | 规则 |
-| --- | --- |
-| `Timestamp` | 使用事件产生时间 |
-| `ObservedTimestamp` | 由 SDK/Collector 设置 |
-| `SeverityText` / `SeverityNumber` | 保留语言日志级别并映射到 OTel severity |
-| `Body` | 日志消息，不包装第二层 JSON envelope |
-| `TraceId` / `SpanId` | 活跃 Span 中必须由 bridge 关联 |
-| `event.name` | 仅有稳定事件名称时使用 |
-| `error.type` | 错误日志记录稳定异常/错误类型 |
-| `exception.stacktrace` | 有异常时可记录，但必须限制大小 |
-| `request.id` / `task.id` | 上下文真实存在时记录为 attributes |
-
-不制造空 `trace_id`，也不把 Trace ID 重复拼接到日志正文。
-
-### 3.3 Loki 映射
-
-低基数 Loki labels 仅保留：
+Loki 只索引低基数字段：
 
 ```text
 service_name
@@ -103,108 +113,64 @@ service_namespace
 deployment_environment_name
 ```
 
-`trace_id`、`span_id`、`request_id`、`task_id`、severity 和错误属性使用 structured metadata。Loki 会把 OTel attribute 名中的 `.` 规范为 `_`；查询与 Grafana derived field 使用规范化后的名字。
+其他字段作为 structured metadata 或正文保存，避免高基数索引。
 
-## 4. 执行计划
+## 5. 实施任务
 
-### Task 1：建设 Collector → Loki 管线
+### Task 1：Collector 基础设施日志链路
 
-- 保留 Collector `otlp` receiver 的 gRPC `4317` 和 HTTP `4318`。
-- 新增专用 logs pipeline，processor 顺序为内存保护、资源/属性规范化、脱敏、批处理。
-- 使用 `otlphttp/loki` exporter 写入 `http://loki:3100/otlp`。
-- 关闭 logs pipeline 的 detailed debug exporter，避免日志正文出现在 Collector console。
-- 不配置 `filelog` receiver、Docker socket、Docker 日志目录或 file storage offset。
-- Collector 暴露 receiver accepted/refused、processor dropped、exporter sent/failed 等自身指标。
+- [x] 增加 `docker_observer` extension，仅使用宿主机已绑定的 endpoint，避免同一端口的重复发现结果。
+- [x] 增加 `receiver_creator/infra_logs`，仅匹配基础设施白名单且每个容器只创建一个 receiver。
+- [x] 动态读取 `/var/lib/docker/containers/<container-id>/<container-id>-json.log`。
+- [x] 使用 container operator 解析 Docker JSON 的正文、时间和 stdout/stderr。
+- [x] 首次从文件开头读取，后续通过 `file_storage` offset 续采。
+- [x] 基础设施 `filelog` 单行上限高于 Docker 单文件轮转阈值；业务 OTLP 日志不在 Collector 中截断正文或 attributes。
+- [x] 拆分 `logs/app` 与 `logs/infra` pipeline，避免业务日志重复。
 
-### Task 2：建设 Loki
+### Task 2：Compose 宿主机只读访问
 
-- 使用固定版本的单实例 Loki、TSDB v13 schema、filesystem storage 和 7 天 retention。
-- 显式设置 `limits_config.allow_structured_metadata: true`。
-- 配置 OTLP resource attribute 的索引策略，只索引第 3.3 节低基数字段。
-- 限制 structured metadata 单条大小；超大异常栈在 Collector 前置截断。
-- 增加 `/ready` healthcheck 和本地持久卷。
+- [x] 两份 Compose 为 Collector 挂载 `/var/lib/docker/containers:ro`。
+- [x] 两份 Compose 为 Docker observer 挂载 `/var/run/docker.sock:ro`。
+- [x] 两份 Compose 使用独立的 `TRIPSPHERE_DATA_ROOT/otel-collector-file-storage` 目录保存 filelog offset。
+- [x] 不增加 Alloy 或 docker-socket-proxy。
 
-### Task 3：接入 Java Logs
+Collector 以 root 运行以读取宿主机 Docker 日志目录和 socket。Docker socket 即使以 `:ro` 挂载仍代表高权限 Docker API 访问。本配置仅用于本地数据采集环境，不作为生产安全模板。
 
-- 保留现有 Java Agent，不在应用中再创建第二个 LoggerProvider。
-- 为 Java 服务显式设置 `OTEL_LOGS_EXPORTER=otlp`、Logs endpoint/protocol 和统一 resource attributes。
-- 使用 Java Agent 自带的 Logback appender instrumentation；先用运行数据确认 agent 已注入 appender，再决定是否需要调整 instrumentation 开关。
-- MDC 只允许白名单 `request.id`、`task.id`，不得使用 `*` 捕获全部 MDC。
-- 在活动 Span 中生成测试日志，验证 LogRecord 原生 `TraceId`/`SpanId`，不通过 pattern 把它们拼入 body。
+### Task 3：恢复高保真业务日志
 
-### Task 4：接入 Python Logs
+- [x] 恢复 AG-UI context、Prompt/查询、模型/工具/数据库响应等被概括或删除的原有日志字段。
+- [x] Python logger 保留 console handler 用于本地可见性，并通过 root auto-instrumentation OTel handler 上报；子 logger 仅冒泡到父 logger，避免 console 重复输出。
+- [x] 保留 Java Agent 和 Go `otelslog` 所需的最小日志接入。
+- [x] Go logger 自行创建与 Trace 相同身份的 Resource，不修改既有 `tracing.go`。
+- [x] Python 启动日志不输出完整 settings 或外部 API key，Collector 不做 API key 正则脱敏。
+- [x] Loki 容量限制不得把允许保留的数据压缩到 4KB 或 64KB。
+- [x] Loki 不限制业务日志单行大小，并为首次基础设施历史日志回放配置受控的 ingestion rate/burst。
 
-- 保留 `opentelemetry-instrument` 和现有 Python logger 调用。
-- 设置 `OTEL_LOGS_EXPORTER=otlp`、Logs endpoint/protocol 和统一 resource attributes。
-- OTel Python `<1.40` 使用 `OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true`；`>=1.40` 使用 `OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION=true`，以各服务 lockfile 的实际版本选择，不同时设置两个开关。
-- 检查 root、Uvicorn、FastAPI、Celery 和业务 logger 的 handler/propagate，确保每条日志只进入一次 OTel handler。
-- 现有 `FileHandler` 不再作为部署日志路径；若存在，仅在确认没有其他用途后从容器配置中移除。
-- 不在本阶段统一升级 Python OTel 或 OpenInference 版本。
+### Task 4：清理无关测试资产
 
-### Task 5：接入 Go Logs
+- [x] 删除本 Logs 阶段新增的根目录 `tests/observability`。
+- [x] 删除为 logging 配置新增的各 Python 单元测试和 Go 单元测试。
+- [x] 回退仅为这些测试加入的 pytest 依赖和 lockfile 变化。
+- [x] 不删除仓库原本存在的业务测试。
 
-目标服务为 `trip-review-service`，其现有 `log/slog` 调用继续作为应用日志 API。
+### Task 5：验收
 
-- 增加与当前 OTel Go 版本兼容的 `go.opentelemetry.io/otel/sdk/log`、`otlploggrpc` 和 `go.opentelemetry.io/contrib/bridges/otelslog` 直接依赖。
-- 启动时创建与 Trace 共用 Resource 的 LoggerProvider、OTLP gRPC exporter 和 BatchProcessor。
-- 使用 `otelslog.NewHandler` 设置默认 `slog.Logger`；部署模式不组合 stdout JSON handler，避免形成第二事实源。
-- 请求路径使用 `slog.*Context(ctx, ...)`，使 bridge 能从 `context.Context` 关联 TraceId/SpanId；启动和关闭日志允许没有 Trace ID。
-- 初始化失败必须返回启动错误，不能静默退化为 no-op logger 并声称日志已启用。
-- 退出时先停止接收请求，再 `ForceFlush`/`Shutdown` LoggerProvider，并设置有界超时。
-
-### Task 6：脱敏与大小控制
-
-应用层禁止记录 Authorization、Cookie、JWT、密码、secret、API key、连接字符串凭据、完整 Prompt/模型响应和完整配置对象。
-
-Collector 作为第二道防线：
-
-- 删除名称匹配敏感键的 attributes。
-- 遮蔽 body 中的 Bearer token、JWT 形态和常见密钥键值。
-- 截断超限 body 与 `exception.stacktrace` 并记录 `truncated=true`。
-- 在 Loki exporter 之前完成全部脱敏。
-
-### Task 7：Grafana 关联
-
-- 预置 Loki datasource。
-- 配置 Loki derived field，从 structured metadata 的 `trace_id` 跳转 Tempo。
-- 配置 Tempo Trace-to-Logs，以 `service.name -> service_name` 和 Span 前后 2 秒窗口筛选日志。
-- 提供按 service、severity、Trace ID、request ID 和 task ID 的查询示例。
-
-## 5. 测试计划
-
-### 静态配置
-
-- `docker compose config` 成功。
-- Collector 配置加载成功，logs pipeline 只有 OTLP receiver 和真实 Loki exporter。
-- 配置与 Compose 中不存在 Alloy、filelog、Docker socket 和 Docker 日志目录挂载。
-- Loki 配置检查通过且 structured metadata 已启用。
-
-### 分语言验证
-
-- Java：在活动 Span 中写入一个唯一测试事件，Loki 恰好查询到一次。
-- Python：分别验证业务 logger、Uvicorn/FastAPI 和 Celery Worker，不因 handler/propagate 重复。
-- Go：分别验证 `slog.InfoContext` 和 `slog.ErrorContext`，severity、attributes 和 Trace 关联正确。
-- 无活动 Span 的启动日志可以没有 TraceId/SpanId。
-
-### 关联与安全
-
-- 三种语言各选一条日志，`trace_id` 与 Tempo 中的 Trace ID 完全一致。
-- Grafana 日志到 Trace、Trace 到日志均可跳转。
-- 固定假 JWT、password、API key 和 Authorization 原文不出现在 Loki。
-- 超大异常栈被截断，不使同批其他日志被 Loki 拒绝。
-
-### 故障行为
-
-- Loki 暂时不可用时，Collector exporter failure 可观测且应用不被同步导出永久阻塞。
-- Collector 暂时不可用时，Java/Python/Go 批处理器有界失败，不无限占用内存。
-- Collector 恢复后新日志可继续写入；本阶段不承诺应用进程崩溃时的零丢失。
+- [x] `docker compose config` 校验两份 Compose。
+- [x] Collector 固定版本配置加载成功。
+- [x] Loki 配置加载成功。
+- [x] Loki 能分别查询业务 OTLP 日志和基础设施 Docker JSON 日志。
+- [ ] 同一业务事件只出现一次，前端日志没有进入 Loki。
+- [ ] Prompt、模型响应、工具参数/响应、AG-UI context、用户 ID、地理位置和数据库响应保持完整。
+- [ ] 代码审查确认应用 LogRecord 不包含 Amap/OpenAI/Higress API key。
+- [ ] 业务日志中的 Authorization、JWT、password、token 等允许保留，Collector 不做通用删除。
+- [ ] Logs 到 Trace、Trace 到 Logs 关联可用；既有 Trace 输出没有变化。
 
 ## 6. 完成标准
 
-- Java、Python、Go 业务服务的日志均经 OTLP 到达 Collector 和 Loki。
-- Loki 中不存在来自 Alloy、filelog 或 Docker JSON 的同一日志副本。
-- 三种语言的 LogRecord 使用统一服务身份、severity 和错误字段。
-- 活动 Trace 内的日志携带正确的原生 TraceId/SpanId。
-- 敏感信息和超大字段在进入 Loki 前得到处理。
-- Grafana 支持 Logs 与 Tempo 双向关联。
-- Next.js 与基础设施日志未被误报为本阶段已覆盖。
+- Java、Python、Go 业务日志经 OTLP 到达 Loki。
+- Compose 内存在的目标基础设施日志经 Docker JSON `filelog` 到达 Loki。
+- 前端、Collector 和可观测后端自身日志未被 `filelog` 采集。
+- 不存在 Alloy 或业务日志双写。
+- 应用日志不产生外部 API key，Collector 原样保留允许的数据正文。
+- 没有为了 Phase 6 Logs 引入无关重构或测试目录。
+- 所有修改留在当前工作区，人工端到端验收前不提交。

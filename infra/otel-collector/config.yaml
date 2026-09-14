@@ -6,39 +6,138 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+  receiver_creator/infra_logs:
+    watch_observers: [docker_observer]
+    receivers:
+      filelog/docker:
+        rule: >-
+          type == "container" && (
+            (name == "nacos" && port == 8848) ||
+            (name == "higress" && port == 8001) ||
+            (name == "mongodb" && port == 27017) ||
+            (name == "postgres" && port == 5432) ||
+            (name == "redis" && port == 6379) ||
+            (name == "qdrant" && port == 6333) ||
+            (name == "neo4j" && port == 7474) ||
+            (name == "minio" && port == 9000) ||
+            (name == "rmq-namesrv" && port == 9876) ||
+            (name == "rmq-broker" && port == 10911) ||
+            (name == "rmq-proxy" && port == 8080) ||
+            (name == "rmq-dashboard" && port == 8082)
+          )
+        config:
+          include:
+            - /var/lib/docker/containers/`container_id`/`container_id`-json.log
+          include_file_name: false
+          include_file_path: true
+          start_at: beginning
+          storage: file_storage/docker_logs
+          max_log_size: 16MiB
+          retry_on_failure:
+            enabled: true
+            initial_interval: 1s
+            max_interval: 30s
+            max_elapsed_time: 5m
+          operators:
+            - id: docker-json
+              type: container
+              format: docker
+              add_metadata_from_filepath: false
+              max_log_size: 16MiB
+        resource_attributes:
+          service.name: '`name`'
+          service.namespace: tripsphere
+          deployment.environment.name: local
+          container.id: '`container_id`'
+          container.name: '`name`'
+          container.image.name: '`image`'
+
 processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
   batch:
     timeout: 1s
     send_batch_size: 1024
 
+  batch/logs:
+    timeout: 1s
+    send_batch_size: 1024
+
+  resource/app_logs:
+    attributes:
+      - key: service.namespace
+        value: tripsphere
+        action: insert
+      - key: deployment.environment.name
+        value: local
+        action: insert
+
 exporters:
-  # Export traces to Tempo
-  otlp/tempo:
+  otlp_grpc/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
-  
+
   prometheus:
     endpoint: 0.0.0.0:8889
     namespace: otel-collector
 
-  # Keep debug exporter for troubleshooting
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
+    sending_queue:
+      enabled: true
+      queue_size: 2048
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 5m
+
   debug:
     verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
 
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  docker_observer:
+    endpoint: unix:///var/run/docker.sock
+    ignore_non_host_bindings: true
+
+  file_storage/docker_logs:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+
 service:
+  extensions: [health_check, docker_observer, file_storage/docker_logs]
+  telemetry:
+    metrics:
+      level: normal
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/tempo, debug]
+      exporters: [otlp_grpc/tempo, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, prometheus]
-    logs:
+    logs/app:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
+      processors: [memory_limiter, resource/app_logs, batch/logs]
+      exporters: [otlp_http/loki]
+    logs/infra:
+      receivers: [receiver_creator/infra_logs]
+      processors: [memory_limiter, batch/logs]
+      exporters: [otlp_http/loki]

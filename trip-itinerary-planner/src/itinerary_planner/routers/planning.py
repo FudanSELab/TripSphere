@@ -125,7 +125,18 @@ async def plan_itinerary(
     user_id: CurrentUserId,
     svc: ItineraryServiceClientDep,
 ) -> PlanItineraryResponse:
-    logger.info("Planning itinerary for %s (user=%s)", request.destination, user_id)
+    logger.info(
+        "Planning itinerary for %s "
+        "(user=%s, start_date=%s, end_date=%s, interests=%s, "
+        "pace=%s, additional_preferences=%s)",
+        request.destination,
+        user_id,
+        request.start_date,
+        request.end_date,
+        request.interests,
+        request.pace,
+        request.additional_preferences,
+    )
 
     initial_state = get_initial_state(request, nacos_naming, user_id)
 
@@ -207,7 +218,18 @@ async def plan_itinerary_stream(
 ) -> StreamingResponse:
     """Streaming SSE planning endpoint — does not persist; client fetches the
     full result from the non-streaming endpoint or gRPC directly."""
-    logger.info("Streaming itinerary planning for %s", request.destination)
+    logger.info(
+        "Streaming itinerary planning for %s "
+        "(user=%s, start_date=%s, end_date=%s, interests=%s, "
+        "pace=%s, additional_preferences=%s)",
+        request.destination,
+        user_id,
+        request.start_date,
+        request.end_date,
+        request.interests,
+        request.pace,
+        request.additional_preferences,
+    )
 
     initial_state = get_initial_state(request, nacos_naming, user_id)
 

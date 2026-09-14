@@ -20,41 +20,46 @@ import (
 )
 
 func main() {
-	// Setup structured logging
-	setupLogger()
+	bootstrapLogger := setupLogger()
 
-	// Run the application
-	if err := run(); err != nil {
-		slog.Error("application failed", "error", err)
+	if err := run(bootstrapLogger); err != nil {
 		os.Exit(1)
 	}
 }
 
-func run() error {
+func run(bootstrapLogger *slog.Logger) (runErr error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
+		bootstrapLogger.Error("application failed", "error", err)
 		return err
 	}
-
-	slog.Info("configuration loaded",
-		"app_name", cfg.App.Name,
-		"env", cfg.App.Env,
-		"port", cfg.App.Port,
-	)
 
 	tracerProvider, err := telemetry.NewTracerProvider(ctx, cfg.App.Name, cfg.App.Env)
 	if err != nil {
+		bootstrapLogger.Error("application failed", "error", err)
 		return err
 	}
+	loggerProvider, err := telemetry.NewLoggerProvider(ctx, cfg.App.Name, cfg.App.Env)
+	if err != nil {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		_ = tracerProvider.Shutdown(shutdownCtx)
+		bootstrapLogger.Error("application failed", "error", err)
+		return err
+	}
+	slog.SetDefault(telemetry.NewSlogLogger(cfg.App.Name, loggerProvider))
+
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
+
+	defer shutdownLoggerProvider(bootstrapLogger, loggerProvider)
 	defer func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
@@ -62,6 +67,17 @@ func run() error {
 			slog.Error("failed to shut down tracer provider", "error", err)
 		}
 	}()
+	defer func() {
+		if runErr != nil {
+			slog.Error("application failed", "error", runErr)
+		}
+	}()
+
+	slog.Info("configuration loaded",
+		"app_name", cfg.App.Name,
+		"env", cfg.App.Env,
+		"port", cfg.App.Port,
+	)
 
 	// Initialize MongoDB
 	db, mongoClient, err := repository.NewMongoDB(ctx, cfg.MongoDB)
@@ -162,7 +178,37 @@ func run() error {
 	return nil
 }
 
-func setupLogger() {
+type loggerLifecycle interface {
+	ForceFlush(context.Context) error
+	Shutdown(context.Context) error
+}
+
+func shutdownLoggerProvider(
+	bootstrapLogger *slog.Logger,
+	provider loggerLifecycle,
+) {
+	flushCtx, flushCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := provider.ForceFlush(flushCtx); err != nil {
+		bootstrapLogger.Error(
+			"failed to flush logger provider",
+			"error",
+			err,
+		)
+	}
+	flushCancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := provider.Shutdown(shutdownCtx); err != nil {
+		bootstrapLogger.Error(
+			"failed to shut down logger provider",
+			"error",
+			err,
+		)
+	}
+	shutdownCancel()
+}
+
+func setupLogger() *slog.Logger {
 	// Use JSON handler in production, text handler in development
 	var handler slog.Handler
 	env := os.Getenv("APP_ENV")
@@ -175,5 +221,7 @@ func setupLogger() {
 			Level: slog.LevelDebug,
 		})
 	}
-	slog.SetDefault(slog.New(handler))
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+	return logger
 }
