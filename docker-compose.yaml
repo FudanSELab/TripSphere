@@ -34,6 +34,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
@@ -61,6 +62,9 @@ services:
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
+      - OTEL_METRIC_EXPORT_INTERVAL=15000
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION=true
       - OTEL_PYTHON_LOG_CODE_ATTRIBUTES=true
@@ -146,6 +150,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
@@ -175,6 +180,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
@@ -206,6 +212,9 @@ services:
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
+      - OTEL_METRIC_EXPORT_INTERVAL=15000
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -235,6 +244,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -261,6 +271,9 @@ services:
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
+      - OTEL_METRIC_EXPORT_INTERVAL=15000
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -348,6 +361,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
@@ -400,6 +414,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -429,6 +444,9 @@ services:
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
+      - OTEL_METRIC_EXPORT_INTERVAL=15000
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
@@ -471,6 +489,9 @@ services:
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
+      - OTEL_METRIC_EXPORT_INTERVAL=15000
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -526,6 +547,9 @@ services:
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=grpc
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
+      - OTEL_METRIC_EXPORT_INTERVAL=15000
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -584,6 +608,7 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
       - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
@@ -630,6 +655,7 @@ services:
     command: ["--config", "/etc/otelcol/config.yaml"]
     volumes:
       - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - /:/hostfs:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${TRIPSPHERE_DATA_ROOT:-./volumes}/otel-collector-file-storage:/var/lib/otelcol/file_storage
@@ -642,6 +668,59 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    restart: unless-stopped
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    container_name: cadvisor
+    logging: *default-logging
+    privileged: true
+    pid: host
+    command:
+      - --docker_only=true
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.docker.compose.service
+      - --enable_metrics=cpu,disk,diskIO,memory,network,oom_event,process,tcp,udp,advtcp
+      - --housekeeping_interval=15s
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    ports:
+      - "18088:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    container_name: node-exporter
+    logging: *default-logging
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run/credentials|host)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+    ports:
+      - "19100:9100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:9100/metrics >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   loki:
@@ -684,8 +763,10 @@ services:
     image: prom/prometheus:v3.9.1
     container_name: prometheus
     logging: *default-logging
+    user: root
     volumes:
       - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./infra/prometheus/rules:/etc/prometheus/rules:ro
       - ${TRIPSPHERE_DATA_ROOT:-./volumes}/prometheus:/prometheus
     ports:
       - "9090:9090"
@@ -708,6 +789,8 @@ services:
     volumes:
       - ${TRIPSPHERE_DATA_ROOT:-./volumes}/grafana:/var/lib/grafana
       - ./infra/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infra/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "13000:3000" # Use port 13000 to avoid conflict with frontend
     depends_on:
