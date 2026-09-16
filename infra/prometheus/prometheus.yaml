@@ -55,7 +55,7 @@ scrape_configs:
 
   - job_name: node-exporter
     static_configs:
-      - targets: ["node-exporter:9100"]
+      - targets: ["host.docker.internal:19100"]
         labels:
           app: node-exporter
           environment: local

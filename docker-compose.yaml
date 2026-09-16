@@ -704,19 +704,16 @@ services:
     image: prom/node-exporter:v1.9.1
     container_name: node-exporter
     logging: *default-logging
+    network_mode: host
+    pid: host
     command:
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --path.rootfs=/host/root
+      - --path.rootfs=/host
+      - --web.listen-address=:19100
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run/credentials|host)($$|/)
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/host/root:ro,rslave
-    ports:
-      - "19100:9100"
+      - /:/host:ro,rslave
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:9100/metrics >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:19100/metrics >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -764,6 +761,8 @@ services:
     container_name: prometheus
     logging: *default-logging
     user: root
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
       - ./infra/prometheus/rules:/etc/prometheus/rules:ro
