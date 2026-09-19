@@ -1,38 +1,103 @@
-# my global config
 global:
-  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          # - alertmanager:9093
-
-# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-# - "first_rules.yml"
-# - "second_rules.yml"
+  - /etc/prometheus/rules/*.yaml
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: "prometheus"
-
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
-
+  - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]
-        # The label name is added as a label `label_name=<label_value>` to any timeseries scraped from this config.
         labels:
-          app: "prometheus"
+          app: prometheus
+          environment: local
+    metric_relabel_configs:
+      - regex: "trace_id|span_id|request_id|task_id|user_id|url|url_full|http_target|local_address|remote_address|local_port|remote_port|process_command_line"
+        action: labeldrop
 
-  - job_name: 'otel-collector'
+  - job_name: otel-collector-exporter
     static_configs:
-      - targets: ['otel-collector:8889']  # OpenTelemetry Collector
+      - targets: ["otel-collector:8889"]
         labels:
-          app: "otel-collector"
+          app: otel-collector
+          environment: local
+    metric_relabel_configs:
+      - regex: "trace_id|span_id|request_id|task_id|user_id|url|url_full|http_target|local_address|remote_address|local_port|remote_port|process_command_line"
+        action: labeldrop
+
+  - job_name: otel-collector-self
+    static_configs:
+      - targets: ["otel-collector:8888"]
+        labels:
+          app: otel-collector
+          environment: local
+    metric_relabel_configs:
+      - regex: "trace_id|span_id|request_id|task_id|user_id|url|url_full|http_target|local_address|remote_address|local_port|remote_port|process_command_line"
+        action: labeldrop
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels:
+          app: cadvisor
+          environment: local
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+      - source_labels: [name]
+        target_label: container
+      - source_labels: [service]
+        regex: ""
+        action: drop
+      - regex: "container_label_.+|id|image|name"
+        action: labeldrop
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["host.docker.internal:19100"]
+        labels:
+          app: node-exporter
+          environment: local
+
+  - job_name: java-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - trip-attraction-service:24213
+          - trip-hotel-service:24214
+          - trip-inventory-service:24221
+          - trip-itinerary-service:24219
+          - trip-order-service:24222
+          - trip-product-service:24220
+          - trip-user-service:24217
+        labels:
+          environment: local
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: "([^:]+):.*"
+        target_label: service
+        replacement: "$1"
+    metric_relabel_configs:
+      - regex: "trace_id|span_id|request_id|task_id|user_id|url|url_full|http_target|local_address|remote_address|local_port|remote_port|process_command_line"
+        action: labeldrop
+
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+        labels:
+          app: loki
+          environment: local
+    metric_relabel_configs:
+      - regex: "trace_id|span_id|request_id|task_id|user_id|url|url_full|http_target|local_address|remote_address|local_port|remote_port|process_command_line"
+        action: labeldrop
+
+  - job_name: tempo
+    static_configs:
+      - targets: ["tempo:3200"]
+        labels:
+          app: tempo
+          environment: local
+    metric_relabel_configs:
+      - regex: "trace_id|span_id|request_id|task_id|user_id|url|url_full|http_target|local_address|remote_address|local_port|remote_port|process_command_line"
+        action: labeldrop

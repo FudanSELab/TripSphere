@@ -52,6 +52,69 @@ receivers:
           container.name: '`name`'
           container.image.name: '`image`'
 
+  hostmetrics:
+    collection_interval: 15s
+    root_path: /hostfs
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      memory:
+        metrics:
+          system.linux.memory.available:
+            enabled: true
+          system.memory.limit:
+            enabled: true
+          system.memory.utilization:
+            enabled: true
+      filesystem:
+        exclude_fs_types:
+          fs_types:
+            - autofs
+            - binfmt_misc
+            - bpf
+            - cgroup
+            - cgroup2
+            - configfs
+            - debugfs
+            - devpts
+            - devtmpfs
+            - fusectl
+            - hugetlbfs
+            - mqueue
+            - nsfs
+            - overlay
+            - proc
+            - pstore
+            - rpc_pipefs
+            - securityfs
+            - squashfs
+            - sysfs
+            - tmpfs
+            - tracefs
+          match_type: strict
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      disk:
+      network:
+
+connectors:
+  spanmetrics:
+    aggregation_cardinality_limit: 5000
+    aggregation_temporality: AGGREGATION_TEMPORALITY_CUMULATIVE
+    metrics_flush_interval: 15s
+    metrics_expiration: 5m
+    resource_metrics_key_attributes:
+      - service.name
+      - service.namespace
+      - deployment.environment.name
+      - telemetry.sdk.language
+    histogram:
+      explicit:
+        buckets: [2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+
 processors:
   memory_limiter:
     check_interval: 1s
@@ -75,6 +138,11 @@ processors:
         value: local
         action: insert
 
+  resource/span_metrics:
+    attributes:
+      - key: service.instance.id
+        action: delete
+
 exporters:
   otlp_grpc/tempo:
     endpoint: tempo:4317
@@ -83,7 +151,7 @@ exporters:
 
   prometheus:
     endpoint: 0.0.0.0:8889
-    namespace: otel-collector
+    translation_strategy: UnderscoreEscapingWithSuffixes
 
   otlp_http/loki:
     endpoint: http://loki:3100/otlp
@@ -128,10 +196,14 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp_grpc/tempo, debug]
+      exporters: [spanmetrics, otlp_grpc/tempo, debug]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, hostmetrics]
       processors: [batch]
+      exporters: [debug, prometheus]
+    metrics/span_metrics:
+      receivers: [spanmetrics]
+      processors: [resource/span_metrics, batch]
       exporters: [debug, prometheus]
     logs/app:
       receivers: [otlp]
