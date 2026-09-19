@@ -14,6 +14,7 @@ from review_summary.infra.nacos.ai import NacosAI
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.nacos.utils import client_shutdown
 from review_summary.mcp import create_review_summary_mcp_server
+from review_summary.metrics import PythonMetricsMiddleware, configure_runtime_metrics
 from review_summary.routers.indices import indices
 from review_summary.routers.summaries import summaries
 from review_summary.services.summarizer import ReviewSummaryService
@@ -21,6 +22,7 @@ from review_summary.services.summarizer import ReviewSummaryService
 logger = logging.getLogger(__name__)
 
 setup_logging()
+configure_runtime_metrics()
 
 # Enable OpenInference instrumentation
 LangChainInstrumentor().instrument()
@@ -93,6 +95,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_fastapi_app() -> FastAPI:
     app_settings = get_settings().app
     app = FastAPI(debug=app_settings.debug, lifespan=lifespan)
+    app.add_middleware(PythonMetricsMiddleware)
 
     # Configure CORS
     app.add_middleware(

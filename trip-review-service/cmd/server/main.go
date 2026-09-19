@@ -51,15 +51,32 @@ func run(bootstrapLogger *slog.Logger) (runErr error) {
 		bootstrapLogger.Error("application failed", "error", err)
 		return err
 	}
+	meterProvider, err := telemetry.NewMeterProvider(ctx, cfg.App.Name, cfg.App.Env)
+	if err != nil {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		_ = loggerProvider.Shutdown(shutdownCtx)
+		_ = tracerProvider.Shutdown(shutdownCtx)
+		bootstrapLogger.Error("application failed", "error", err)
+		return err
+	}
 	slog.SetDefault(telemetry.NewSlogLogger(cfg.App.Name, loggerProvider))
 
 	otel.SetTracerProvider(tracerProvider)
+	otel.SetMeterProvider(meterProvider)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
 
 	defer shutdownLoggerProvider(bootstrapLogger, loggerProvider)
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := meterProvider.Shutdown(shutdownCtx); err != nil {
+			slog.Error("failed to shut down meter provider", "error", err)
+		}
+	}()
 	defer func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()

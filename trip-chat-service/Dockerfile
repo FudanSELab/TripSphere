@@ -57,6 +57,9 @@ ENV OTEL_SERVICE_NAME="trip-chat-service" \
     OTEL_EXPORTER_OTLP_PROTOCOL="grpc" \
     OTEL_EXPORTER_OTLP_LOGS_PROTOCOL="grpc" \
     OTEL_LOGS_EXPORTER="otlp" \
+    OTEL_METRICS_EXPORTER="otlp" \
+    OTEL_EXPORTER_OTLP_METRICS_PROTOCOL="grpc" \
+    OTEL_METRIC_EXPORT_INTERVAL="15000" \
     OTEL_RESOURCE_ATTRIBUTES="service.namespace=tripsphere,deployment.environment.name=local,service.version=local" \
     OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION="true" \
     OTEL_PYTHON_LOG_CODE_ATTRIBUTES="true" \

@@ -21,6 +21,7 @@ from chat.agent.session import MongoSessionService
 from chat.config.logging import setup_logging
 from chat.config.mem0 import get_mem0_config
 from chat.config.settings import Settings, get_settings
+from chat.metrics import PythonMetricsMiddleware, configure_runtime_metrics
 from chat.nacos.ai import NacosAI
 from chat.nacos.naming import NacosNaming
 from chat.nacos.utils import client_shutdown
@@ -29,6 +30,7 @@ from chat.routers.health import health
 logger = logging.getLogger(__name__)
 
 setup_logging()
+configure_runtime_metrics()
 
 # Enable OpenInference instrumentation
 LiteLLMInstrumentor().instrument()
@@ -132,6 +134,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(debug=settings.app.debug, lifespan=lifespan)
+    app.add_middleware(PythonMetricsMiddleware)
 
     # Configure CORS
     app.add_middleware(

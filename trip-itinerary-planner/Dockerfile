@@ -57,6 +57,9 @@ ENV OTEL_SERVICE_NAME="trip-itinerary-planner" \
     OTEL_EXPORTER_OTLP_PROTOCOL="grpc" \
     OTEL_EXPORTER_OTLP_LOGS_PROTOCOL="grpc" \
     OTEL_LOGS_EXPORTER="otlp" \
+    OTEL_METRICS_EXPORTER="otlp" \
+    OTEL_EXPORTER_OTLP_METRICS_PROTOCOL="grpc" \
+    OTEL_METRIC_EXPORT_INTERVAL="15000" \
     OTEL_RESOURCE_ATTRIBUTES="service.namespace=tripsphere,deployment.environment.name=local,service.version=local" \
     OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true" \
     OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true" \
