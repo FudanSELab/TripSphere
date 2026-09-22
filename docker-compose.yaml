@@ -65,6 +65,7 @@ services:
       - OTEL_METRICS_EXPORTER=otlp
       - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
       - OTEL_METRIC_EXPORT_INTERVAL=15000
+      - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION=true
       - OTEL_PYTHON_LOG_CODE_ATTRIBUTES=true
@@ -215,6 +216,7 @@ services:
       - OTEL_METRICS_EXPORTER=otlp
       - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
       - OTEL_METRIC_EXPORT_INTERVAL=15000
+      - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -274,6 +276,7 @@ services:
       - OTEL_METRICS_EXPORTER=otlp
       - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
       - OTEL_METRIC_EXPORT_INTERVAL=15000
+      - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -492,6 +495,7 @@ services:
       - OTEL_METRICS_EXPORTER=otlp
       - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
       - OTEL_METRIC_EXPORT_INTERVAL=15000
+      - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -550,6 +554,7 @@ services:
       - OTEL_METRICS_EXPORTER=otlp
       - OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=grpc
       - OTEL_METRIC_EXPORT_INTERVAL=15000
+      - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -588,6 +593,22 @@ services:
       higress:
         condition: service_started
       otel-collector:
+        condition: service_started
+    restart: unless-stopped
+
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    container_name: celery-exporter
+    logging: *default-logging
+    ports:
+      - "19808:9808"
+    command:
+      - --broker-url=redis://redis:6379/0
+      - --retry-interval=5
+    depends_on:
+      redis:
+        condition: service_healthy
+      trip-review-summary-worker:
         condition: service_started
     restart: unless-stopped
 

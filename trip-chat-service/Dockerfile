@@ -32,6 +32,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Install OpenTelemetry auto instrumentation
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv run --locked --no-dev opentelemetry-bootstrap -a requirements \
+    | sed '/^opentelemetry-instrumentation-system-metrics/d' \
     | uv pip install --requirements -
 
 
@@ -60,6 +61,7 @@ ENV OTEL_SERVICE_NAME="trip-chat-service" \
     OTEL_METRICS_EXPORTER="otlp" \
     OTEL_EXPORTER_OTLP_METRICS_PROTOCOL="grpc" \
     OTEL_METRIC_EXPORT_INTERVAL="15000" \
+    OTEL_SEMCONV_STABILITY_OPT_IN="http" \
     OTEL_RESOURCE_ATTRIBUTES="service.namespace=tripsphere,deployment.environment.name=local,service.version=local" \
     OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION="true" \
     OTEL_PYTHON_LOG_CODE_ATTRIBUTES="true" \

@@ -18,6 +18,7 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "tripsphere>=0.1.0",
     "uvicorn>=0.38.0",
+    "opentelemetry-instrumentation-starlette>=0.59b0",
 ]
 
 [build-system]
