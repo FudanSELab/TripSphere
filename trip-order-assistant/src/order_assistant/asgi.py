@@ -12,6 +12,7 @@ from starlette.applications import Starlette
 from order_assistant.agent import AGENT_NAME, create_agent, load_agent_card
 from order_assistant.config.logging import setup_logging
 from order_assistant.config.settings import get_settings
+from order_assistant.metrics import PythonMetricsMiddleware, configure_runtime_metrics
 from order_assistant.nacos.ai import NacosAI
 from order_assistant.nacos.utils import client_shutdown
 
@@ -20,6 +21,7 @@ warnings.filterwarnings("ignore", module=".*")
 
 logger = logging.getLogger(__name__)
 setup_logging()
+configure_runtime_metrics()
 
 # Enable OpenInference instrumentation
 LiteLLMInstrumentor().instrument()
@@ -76,6 +78,7 @@ def create_app() -> Starlette:
         ),
     )
     app.debug = settings.app.debug
+    app.add_middleware(PythonMetricsMiddleware)
     return app
 
 

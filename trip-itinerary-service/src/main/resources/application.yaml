@@ -16,6 +16,12 @@ spring:
 server:
   port: 24219
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
 grpc:
   server:
     port: 50052

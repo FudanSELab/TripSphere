@@ -246,8 +246,6 @@ services:
     pid: host
     command:
       - --docker_only=true
-      - --store_container_labels=false
-      - --whitelisted_container_labels=com.docker.compose.service
       - --enable_metrics=cpu,disk,diskIO,memory,network,oom_event,process,tcp,udp,advtcp
       - --housekeeping_interval=15s
     volumes:
@@ -333,7 +331,6 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ../../infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
-      - ../../infra/prometheus/rules:/etc/prometheus/rules:ro
       - ${TRIPSPHERE_DATA_ROOT:-../../volumes}/prometheus:/prometheus
     ports:
       - "9090:9090"

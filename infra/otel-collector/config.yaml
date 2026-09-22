@@ -100,21 +100,6 @@ receivers:
       disk:
       network:
 
-connectors:
-  spanmetrics:
-    aggregation_cardinality_limit: 5000
-    aggregation_temporality: AGGREGATION_TEMPORALITY_CUMULATIVE
-    metrics_flush_interval: 15s
-    metrics_expiration: 5m
-    resource_metrics_key_attributes:
-      - service.name
-      - service.namespace
-      - deployment.environment.name
-      - telemetry.sdk.language
-    histogram:
-      explicit:
-        buckets: [2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
-
 processors:
   memory_limiter:
     check_interval: 1s
@@ -137,11 +122,6 @@ processors:
       - key: deployment.environment.name
         value: local
         action: insert
-
-  resource/span_metrics:
-    attributes:
-      - key: service.instance.id
-        action: delete
 
 exporters:
   otlp_grpc/tempo:
@@ -196,14 +176,10 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [spanmetrics, otlp_grpc/tempo, debug]
+      exporters: [otlp_grpc/tempo, debug]
     metrics:
       receivers: [otlp, hostmetrics]
       processors: [batch]
-      exporters: [debug, prometheus]
-    metrics/span_metrics:
-      receivers: [spanmetrics]
-      processors: [resource/span_metrics, batch]
       exporters: [debug, prometheus]
     logs/app:
       receivers: [otlp]

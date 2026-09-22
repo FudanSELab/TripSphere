@@ -1,0 +1,674 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "cores"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\", name=~\"$container_name\"}[1m]))",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "container_memory_working_set_bytes{job=\"cadvisor\", name=~\"$container_name\"}",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container Memory",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(container_fs_reads_bytes_total{job=\"cadvisor\", name=~\"$container_name\"}[1m])",
+          "legendFormat": "{{name}} read",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(container_fs_writes_bytes_total{job=\"cadvisor\", name=~\"$container_name\"}[1m])",
+          "legendFormat": "{{name}} write",
+          "refId": "B"
+        }
+      ],
+      "title": "Container Disk IO",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "container_sockets{job=\"cadvisor\", name=~\"$container_name\"}",
+          "legendFormat": "{{name}} open sockets",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_sockstat_TCP_inuse{job=\"node-exporter\"}",
+          "legendFormat": "host sockets",
+          "refId": "B"
+        }
+      ],
+      "title": "Socket Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(sum by (instance) (rate(http_server_requests_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\", uri!~\"/actuator.*\"}[1m])), \"app_service\", \"$1\", \"instance\", \"([^:]+):.*\")",
+          "legendFormat": "java-http {{app_service}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(sum by (instance) (rate(grpc_server_processing_duration_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\"}[1m])), \"app_service\", \"$1\", \"instance\", \"([^:]+):.*\")",
+          "legendFormat": "java-grpc {{app_service}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(sum by (exported_job) (rate(http_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\", otel_scope_name=~\"opentelemetry.instrumentation.fastapi|opentelemetry.instrumentation.asgi\"}[1m])), \"app_service\", \"$1\", \"exported_job\", \"tripsphere/(.*)\")",
+          "legendFormat": "python-http {{app_service}}",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(sum by (exported_job) (rate(rpc_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\"}[1m])), \"app_service\", \"$1\", \"exported_job\", \"tripsphere/(.*)\")",
+          "legendFormat": "go-grpc {{app_service}}",
+          "refId": "D"
+        }
+      ],
+      "title": "Service Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace((((sum by (instance) (rate(http_server_requests_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\", uri!~\"/actuator.*\", outcome!=\"SUCCESS\"}[1m])) or on (instance) (0 * sum by (instance) (rate(http_server_requests_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\", uri!~\"/actuator.*\"}[1m])))) / sum by (instance) (rate(http_server_requests_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\", uri!~\"/actuator.*\"}[1m]))) and on (instance) (sum by (instance) (rate(http_server_requests_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\", uri!~\"/actuator.*\"}[1m])) > 0)), \"app_service\", \"$1\", \"instance\", \"([^:]+):.*\")",
+          "legendFormat": "java-http {{app_service}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace((((sum by (instance) (rate(grpc_server_processing_duration_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\", statusCode!=\"OK\"}[1m])) or on (instance) (0 * sum by (instance) (rate(grpc_server_processing_duration_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\"}[1m])))) / sum by (instance) (rate(grpc_server_processing_duration_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\"}[1m]))) and on (instance) (sum by (instance) (rate(grpc_server_processing_duration_seconds_count{job=\"java-services\", instance=~\"$app_service:.*\"}[1m])) > 0)), \"app_service\", \"$1\", \"instance\", \"([^:]+):.*\")",
+          "legendFormat": "java-grpc {{app_service}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace((((sum by (exported_job) (rate(http_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\", http_status_code=~\"5..\", otel_scope_name=~\"opentelemetry.instrumentation.fastapi|opentelemetry.instrumentation.asgi\"}[1m])) or on (exported_job) (0 * sum by (exported_job) (rate(http_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\", otel_scope_name=~\"opentelemetry.instrumentation.fastapi|opentelemetry.instrumentation.asgi\"}[1m])))) / sum by (exported_job) (rate(http_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\", otel_scope_name=~\"opentelemetry.instrumentation.fastapi|opentelemetry.instrumentation.asgi\"}[1m]))) and on (exported_job) (sum by (exported_job) (rate(http_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\", otel_scope_name=~\"opentelemetry.instrumentation.fastapi|opentelemetry.instrumentation.asgi\"}[1m])) > 0)), \"app_service\", \"$1\", \"exported_job\", \"tripsphere/(.*)\")",
+          "legendFormat": "python-http {{app_service}}",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace((((sum by (exported_job) (rate(rpc_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\", rpc_grpc_status_code!=\"0\"}[1m])) or on (exported_job) (0 * sum by (exported_job) (rate(rpc_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\"}[1m])))) / sum by (exported_job) (rate(rpc_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\"}[1m]))) and on (exported_job) (sum by (exported_job) (rate(rpc_server_duration_milliseconds_count{job=\"otel-collector-exporter\", exported_job=~\"tripsphere/$app_service\"}[1m])) > 0)), \"app_service\", \"$1\", \"exported_job\", \"tripsphere/(.*)\")",
+          "legendFormat": "go-grpc {{app_service}}",
+          "refId": "D"
+        }
+      ],
+      "title": "Service Error Ratio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "1 - avg by (instance) (system_cpu_utilization_ratio{state=\"idle\", otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper\"})",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "system_memory_utilization_ratio{state=\"used\", otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host Memory",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(system_disk_io_bytes_total{otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper\"}[1m])",
+          "legendFormat": "{{device}} {{direction}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host Disk IO",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "showPoints": "never"
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(system_network_io_bytes_total{otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper\"}[1m])",
+          "legendFormat": "{{device}} {{direction}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host Network IO",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [
+    "tripsphere",
+    "phase6",
+    "metrics"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+                "definition": "label_values(container_cpu_usage_seconds_total{job=\"cadvisor\"}, name)",
+        "includeAll": true,
+        "label": "Container Name",
+        "multi": true,
+        "name": "container_name",
+        "options": [],
+        "query": {
+          "query": "label_values(container_cpu_usage_seconds_total{job=\"cadvisor\"}, name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+                "definition": "label_values(container_cpu_usage_seconds_total{job=\"cadvisor\", container_label_com_docker_compose_service=~\"trip-.*\"}, name)",
+        "includeAll": true,
+        "label": "App Service",
+        "multi": true,
+        "name": "app_service",
+        "options": [],
+        "query": {
+          "query": "label_values(container_cpu_usage_seconds_total{job=\"cadvisor\", container_label_com_docker_compose_service=~\"trip-.*\"}, name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "TripSphere Metrics",
+  "uid": "tripsphere-metrics",
+  "version": 1,
+  "weekStart": ""
+}
