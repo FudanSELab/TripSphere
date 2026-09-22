@@ -11,14 +11,12 @@ from itinerary_planner.agent.chat_agent import create_chat_graph
 from itinerary_planner.config.logging import setup_logging
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.grpc.clients.itinerary import ItineraryServiceClient
-from itinerary_planner.metrics import PythonMetricsMiddleware, configure_runtime_metrics
 from itinerary_planner.nacos.naming import NacosNaming
 from itinerary_planner.routers.planning import planning
 
 logger = logging.getLogger(__name__)
 
 setup_logging()
-configure_runtime_metrics()
 LangChainInstrumentor().instrument()
 
 
@@ -64,7 +62,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_fastapi_app() -> FastAPI:
     app_settings = get_settings().app
     app = FastAPI(debug=app_settings.debug, lifespan=lifespan)
-    app.add_middleware(PythonMetricsMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
