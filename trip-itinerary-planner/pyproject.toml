@@ -17,6 +17,7 @@ dependencies = [
     "tripsphere>=0.1.0",
     "uvicorn>=0.40.0",
     "fastapi>=0.135.1",
+    "opentelemetry-instrumentation-fastapi>=0.63b1",
 ]
 
 [build-system]

@@ -410,6 +410,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asgiref"
+version = "3.12.1"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/e6/26/3b59f2bdae5f640389becb1f673cded775287f5fc4f816309d9ca9a3f93d/asgiref-3.12.1.tar.gz", hash = "sha256:59dcb51c272ad209d59bed5708a64a333083e86017d7fcdd67498eeab7784340" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/c0/1b/54f4ad77cd8a584fa70746c47df988e002cf1ee1eba43364d46f87803647/asgiref-3.12.1-py3-none-any.whl", hash = "sha256:fe386d1c2bff7259ea95929266d12a8cf9a8b5a1c2598402967d8792e7a7c094" },
+]
+
+[[package]]
 name = "ast-serialize"
 version = "0.6.0"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
@@ -660,6 +669,7 @@ dependencies = [
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-litellm" },
     { name = "opentelemetry-distro", extra = ["otlp"] },
+    { name = "opentelemetry-instrumentation-fastapi" },
     { name = "orjson" },
     { name = "pydantic-settings" },
     { name = "pymongo" },
@@ -689,6 +699,7 @@ requires-dist = [
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },
     { name = "openinference-instrumentation-litellm", specifier = ">=0.1.29" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.59b0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.63b1" },
     { name = "orjson", specifier = ">=3.11.6,<4.0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "pymongo", specifier = ">=4.15.3" },
@@ -2307,6 +2318,38 @@ dependencies = [
 sdist = { url = "https://mirrors.aliyun.com/pypi/packages/da/6d/4de72d97ff54db1ed270c7a59c9b904b917c0ac7af429c086c388b824ddb/opentelemetry_instrumentation-0.63b1.tar.gz", hash = "sha256:32368d6ae52c8de20aa790a6ad86b10a76f09956092337ae37d675773990e541" }
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/35/a1/9314e621c143e4d82a5bf7a43c2ff7a745d31023506336857607c8c543cc/opentelemetry_instrumentation-0.63b1-py3-none-any.whl", hash = "sha256:f1986716d52cc316ea5f60189098726a9071d8ecc0eee96c9ed110be08bade9c" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-asgi"
+version = "0.63b1"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/a0/b5/7ea3a9fd1b80e89786c14250bfaecf32a753c3fd08232690f4da8dc16e29/opentelemetry_instrumentation_asgi-0.63b1.tar.gz", hash = "sha256:267b422416d768f3c7f4054883b41d9c3a7c943d86d20032b738c99a3dbb5862" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/57/7e/83986f27b421de04fab1e1a84e892621dac42e6432a9c66779505f4d1381/opentelemetry_instrumentation_asgi-0.63b1-py3-none-any.whl", hash = "sha256:1a22453dfa965f14799b10a674b8acbcb897a8a75c79136060af54214cc7886e" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-fastapi"
+version = "0.63b1"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-instrumentation-asgi" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/32/d6/0c128fac2e34b7d526a8d3c6edc45b875a97f8a987861b00511151b6337d/opentelemetry_instrumentation_fastapi-0.63b1.tar.gz", hash = "sha256:cc42dff56c96d0a2921510c4abab2a4c2e27fe64b26dc1254727fb550df100ba" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/b1/3d/2eae63f13f36d7a8ab5bf03d06ecaf169c2069b524547f24947be6d92094/opentelemetry_instrumentation_fastapi-0.63b1-py3-none-any.whl", hash = "sha256:52ee2cde9a2ac094bdd45d79f85860e03a972928a2553006071fe61d94cf7281" },
 ]
 
 [[package]]

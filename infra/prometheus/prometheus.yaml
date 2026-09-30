@@ -23,6 +23,10 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:19100"]
 
+  - job_name: celery-exporter
+    static_configs:
+      - targets: ["celery-exporter:9808"]
+
   - job_name: java-services
     metrics_path: /actuator/prometheus
     static_configs:

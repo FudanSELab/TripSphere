@@ -358,6 +358,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asgiref"
+version = "3.12.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/26/3b59f2bdae5f640389becb1f673cded775287f5fc4f816309d9ca9a3f93d/asgiref-3.12.1.tar.gz", hash = "sha256:59dcb51c272ad209d59bed5708a64a333083e86017d7fcdd67498eeab7784340", size = 42378, upload-time = "2026-07-14T09:56:18.087Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/1b/54f4ad77cd8a584fa70746c47df988e002cf1ee1eba43364d46f87803647/asgiref-3.12.1-py3-none-any.whl", hash = "sha256:fe386d1c2bff7259ea95929266d12a8cf9a8b5a1c2598402967d8792e7a7c094", size = 25478, upload-time = "2026-07-14T09:56:16.926Z" },
+]
+
+[[package]]
 name = "attrs"
 version = "25.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2551,6 +2560,22 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-instrumentation-asgi"
+version = "0.59b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b7/a4/cfbb6fc1ec0aa9bf5a93f548e6a11ab3ac1956272f17e0d399aa2c1f85bc/opentelemetry_instrumentation_asgi-0.59b0.tar.gz", hash = "sha256:2509d6fe9fd829399ce3536e3a00426c7e3aa359fc1ed9ceee1628b56da40e7a", size = 25116, upload-time = "2025-10-16T08:39:36.092Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f3/88/fe02d809963b182aafbf5588685d7a05af8861379b0ec203d48e360d4502/opentelemetry_instrumentation_asgi-0.59b0-py3-none-any.whl", hash = "sha256:ba9703e09d2c33c52fa798171f344c8123488fcd45017887981df088452d3c53", size = 16797, upload-time = "2025-10-16T08:38:37.214Z" },
+]
+
+[[package]]
 name = "opentelemetry-instrumentation-google-genai"
 version = "0.7b0"
 source = { registry = "https://pypi.org/simple" }
@@ -2563,6 +2588,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3f/59/595e5ed05715c47cf49ac7e30d0a4cf6ed41e00524401c46c9d92b84623c/opentelemetry_instrumentation_google_genai-0.7b0.tar.gz", hash = "sha256:35158682dfd00201ef3864b47dda95d6062188e8a599ecabd383688e7eba2824", size = 52057, upload-time = "2026-02-20T21:56:23.116Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bb/97/2c26687c6ea0747bb225ce7e5506f8f87e3e7ce4204c2900798177aa7792/opentelemetry_instrumentation_google_genai-0.7b0-py3-none-any.whl", hash = "sha256:b579d7bd3dda1aae1b76bfebbe86adcc88eadb2c08d11e864fbdecf370b19b25", size = 31402, upload-time = "2026-02-20T21:56:22.149Z" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-starlette"
+version = "0.59b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-instrumentation-asgi" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/99/39/95e5868e731bcf08a642483afaa34c455bfa4f61d6cfdd096626e9ee40d6/opentelemetry_instrumentation_starlette-0.59b0.tar.gz", hash = "sha256:3f033fd92d6a8e4122ebcb3d83afc5c64d6be7930e9094876eb02b8afbd08ba5", size = 14657, upload-time = "2025-10-16T08:40:02.12Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/fc/4727e11d7c442ba8bb79ba261303c9e061c235eabcf633ddefc10230c8c4/opentelemetry_instrumentation_starlette-0.59b0-py3-none-any.whl", hash = "sha256:a833b97d297e4b2aaf58041612663dbabb8380e3993c76a4e32b3e351470f321", size = 11778, upload-time = "2025-10-16T08:39:12.346Z" },
 ]
 
 [[package]]
@@ -2634,6 +2675,15 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-util-http"
+version = "0.59b0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/f7/13cd081e7851c42520ab0e96efb17ffbd901111a50b8252ec1e240664020/opentelemetry_util_http-0.59b0.tar.gz", hash = "sha256:ae66ee91be31938d832f3b4bc4eb8a911f6eddd38969c4a871b1230db2a0a560", size = 9412, upload-time = "2025-10-16T08:40:11.335Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/56/62282d1d4482061360449dacc990c89cad0fc810a2ed937b636300f55023/opentelemetry_util_http-0.59b0-py3-none-any.whl", hash = "sha256:6d036a07563bce87bf521839c0671b507a02a0d39d7ea61b88efa14c6e25355d", size = 7648, upload-time = "2025-10-16T08:39:25.706Z" },
+]
+
+[[package]]
 name = "order-assistant"
 version = "0.1.0"
 source = { editable = "." }
@@ -2647,6 +2697,7 @@ dependencies = [
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-litellm" },
     { name = "opentelemetry-distro", extra = ["otlp"] },
+    { name = "opentelemetry-instrumentation-starlette" },
     { name = "opentelemetry-util-genai" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
@@ -2674,6 +2725,7 @@ requires-dist = [
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.8" },
     { name = "openinference-instrumentation-litellm", specifier = ">=0.1.29" },
     { name = "opentelemetry-distro", extras = ["otlp"], specifier = ">=0.59b0" },
+    { name = "opentelemetry-instrumentation-starlette", specifier = ">=0.59b0" },
     { name = "opentelemetry-util-genai", specifier = ">=0.3b0,<0.4b0" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
