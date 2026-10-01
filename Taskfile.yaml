@@ -76,10 +76,9 @@ tasks:
   
   buf:
     desc: Run buf format and buf lint
-    dir: contracts
     cmds:
-      - buf format --write
-      - buf lint
+      - buf format --write contracts/protobuf
+      - buf lint contracts/protobuf
 
   gen-proto:
     desc: Generate protobuf and gRPC codes
