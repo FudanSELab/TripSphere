@@ -9,6 +9,11 @@ tasks:
       - task --list-all
     silent: true
 
+  users:
+    desc: Seed deterministic acceptance users into user_db
+    cmds:
+      - uv run scripts/create_users.py
+
   ruff:
     desc: Run ruff format and ruff check --fix
     cmds:

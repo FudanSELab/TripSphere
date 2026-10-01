@@ -13,6 +13,7 @@ Run the following commands in order to import base data into MongoDB and
 PostgreSQL:
 
 ```bash
+uv run scripts/create_users.py
 uv run -m initializer.pois --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.hotels --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.room_types --uri mongodb://root:fudanse@localhost:27017
@@ -20,6 +21,19 @@ uv run -m initializer.attractions --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.spus --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.inventories --dsn postgresql://postgres:fudanse@localhost:5432/inventory_db
 ```
+
+`scripts/create_users.py` creates the two stable identities used by the
+acceptance flow. It is idempotent and writes the generated IDs and credentials
+to `data/temp/users_manifest.json`:
+
+| User | Email | Password | Stable ID |
+| --- | --- | --- | --- |
+| A | `user-a@tripsphere.local` | `TripSphereA1!` | `00000000-0000-4000-8000-000000000001` |
+| B | `user-b@tripsphere.local` | `TripSphereB1!` | `00000000-0000-4000-8000-000000000002` |
+
+The passwords are local development fixtures only. Verify both identities
+through the real UserService `SignIn` gRPC call before running the business
+smoke tests.
 
 ## Review-summary seed data and indexes
 
