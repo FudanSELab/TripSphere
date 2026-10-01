@@ -12,7 +12,7 @@ TripSphere 是 AI Native 微服务系统。后续工作将在业务服务、Agen
 Phase 6 不实施 F1-F5 故障注入，也不实现最终的数据集导出程序，而是建立故障实验所需的可观测性与部署基线：
 
 - 单份 canonical Compose 能启动保留的业务服务及其基础设施依赖。
-- OpenTelemetry Collector 统一接收应用 Logs、Metrics、Traces，并采集 Docker 宿主机指标；cAdvisor 采集容器资源指标，Prometheus 统一存储和查询指标。
+- OpenTelemetry Collector 统一接收应用 Logs、Metrics、Traces，并采集 Docker 宿主机资源指标；cAdvisor 采集容器资源和容器 socket 指标；node-exporter 采集宿主机 socket/netstat/sockstat 指标；Prometheus 统一存储和查询指标。
 - Grafana 提供日志、指标、Trace 的查询入口和跨信号关联能力。
 - 采集容器与 Docker 宿主机的 CPU、内存、文件系统、磁盘 I/O 和网络指标，为后续资源故障 RCA 提供证据。
 - 可观测数据保留完整业务上下文；应用代码不得把 Amap、OpenAI 等外部 API key 写入 LogRecord。
@@ -48,7 +48,7 @@ Collector 是 Loki 的唯一写入方。不部署 Alloy；`filelog` 只匹配基
 
 - 以 root `docker-compose.yaml` 作为本地验收 canonical Compose。
 - 同步 `deploy/docker-compose/docker-compose.yaml` 中所有保留业务服务和必需基础设施的职责。
-- 补齐 Nacos、Higress、MongoDB、PostgreSQL、Redis、Qdrant、Neo4j、MinIO、OTel Collector、cAdvisor、Tempo、Prometheus、Grafana、Loki 的健康检查、启动依赖、容器内地址和本地持久化。
+- 补齐 Nacos、Higress、MongoDB、PostgreSQL、Redis、Qdrant、Neo4j、MinIO、OTel Collector、cAdvisor、node-exporter、Tempo、Prometheus、Grafana、Loki 的健康检查、启动依赖、容器内地址和本地持久化。
 - 补齐保留业务服务的日志规范、Trace、Metrics、健康检查和关联上下文。
 - 自动初始化并验证 Higress 的 OpenAI-compatible chat 与 embedding 路由。
 - 验证 Python gRPC 客户端通过 Nacos 发现 Java 服务。
@@ -60,7 +60,7 @@ Collector 是 Loki 的唯一写入方。不部署 Alloy；`filelog` 只匹配基
 - RCA benchmark 样本格式、标签、数据切片或外部导出客户端。
 - Loki、Tempo、Prometheus、Grafana 的集群、复制、自动故障转移或高可用。
 - 业务协议迁移、共享 checkpoint、复杂补偿和跨实例一致性。
-- Phase 7 中 POI、File、Note、Note Creator、RocketMQ 的删除。
+- Phase 7 中 POI、File、Note、Note Creator、RocketMQ 的删除已收敛到运行拓扑。
 - MinIO 清理；在 review-summary worker 仍使用 MinIO 时继续保留。
 
 ## 4. 当前仓库基线与主要缺口
@@ -100,32 +100,33 @@ Collector 是 Loki 的唯一写入方。不部署 Alloy；`filelog` 只匹配基
 应用 OTLP Metrics ------------------------------> OTel Collector --+
 Docker 宿主机 CPU/内存/磁盘/文件系统/网络 -------> OTel Collector --+
                                                                   |
-容器 CPU/内存/文件系统/块 I/O/网络/OOM ----------> cAdvisor --------+--> Prometheus
+宿主机 socket/netstat/sockstat ------------------> node-exporter ---+--> Prometheus
+容器 CPU/内存/文件系统/块 I/O/网络/OOM/socket ----> cAdvisor --------+
 Collector 自身 telemetry metrics --------------------------------+
 
 Tempo + Prometheus + Loki ---------------------------> Grafana
 ```
 
-Collector 是应用遥测、日志和宿主机指标的统一采集与转发中间件；cAdvisor 是容器资源指标的唯一事实源：
+Collector 是应用遥测、日志和宿主机资源指标的统一采集与转发中间件；cAdvisor 是容器资源与容器 socket 指标的唯一事实源；node-exporter 是宿主机 socket/netstat/sockstat 指标来源：
 
 - `otlp` receiver 接收 gRPC `4317` 和 HTTP `4318` 上报的 Trace、Metrics 和 Logs。
 - `docker_observer` 与 `receiver_creator` 按“容器名 + canonical 容器端口”白名单为基础设施动态创建唯一的 `filelog` receiver；只使用已绑定到宿主机的 endpoint，避免重复实例。
 - `filelog` 从 Docker `json-file` 读取日志；`file_storage` 保存 offset，Collector 重启后续采。
 - `hostmetrics` receiver 从挂载到 `/hostfs` 的宿主机视图采集 CPU、内存、文件系统、磁盘和网络指标。
-- `spanmetrics` connector 从 Trace 派生请求量、错误量和延迟指标，覆盖没有原生 Prometheus endpoint 的服务。
 - `health_check` extension 提供 Collector 健康检查。
 - Trace 使用 OTLP gRPC 写入 Tempo。
 - Logs 使用 `otlphttp` 写入 Loki 原生 OTLP endpoint。
-- 应用 OTLP metrics、span-derived metrics 和 host metrics 通过 Collector Prometheus exporter 暴露，由 Prometheus 抓取。
-- cAdvisor 通过 Docker/cgroup 接口采集容器指标并暴露原生 `/metrics`，由 Prometheus 直接抓取；不得同时启用 `docker_stats` 生成重复序列。
+- 应用 OTLP metrics 和 host metrics 通过 Collector Prometheus exporter 暴露，由 Prometheus 抓取；不启用 Collector `spanmetrics` 或 Tempo metrics-generator 写入 Trace 派生指标。
+- cAdvisor 通过 Docker/cgroup 接口采集容器指标并暴露原生 `/metrics`，由 Prometheus 直接抓取；必须显式启用 `process`、`tcp`、`udp`、`advtcp` metric group 以覆盖容器 socket；不得同时启用 `docker_stats` 生成重复序列。
+- node-exporter 暴露宿主机 `sockstat` 与 `netstat` 指标，由 Prometheus 直接抓取。
 
 业务日志只通过语言 OTel logging bridge 和 OTLP exporter 入库。`filelog` 白名单不包含业务服务、前端或可观测组件，因此不会产生业务日志副本或自采集循环。
 
 ### 5.2 宿主机访问权限
 
-Logs 子阶段为 Collector 只读挂载 `/var/lib/docker/containers` 以读取 JSON 日志，并挂载 `/var/run/docker.sock` 供 Docker observer 发现容器 ID、名称和镜像；使用 `TRIPSPHERE_DATA_ROOT/otel-collector-file-storage` 目录保存 filelog offset。Collector 以 root 运行以读取这些宿主机资源。Docker socket 即使以 `:ro` 挂载也代表高权限 API 访问，因此仅用于可信本地数据采集环境。后续 Metrics 子阶段若启用 `hostmetrics`，再将 `/` 只读挂载到 `/hostfs` 并设置 `hostmetrics.root_path=/hostfs`。
+Logs 子阶段为 Collector 只读挂载 `/var/lib/docker/containers` 以读取 JSON 日志，并挂载 `/var/run/docker.sock` 供 Docker observer 发现容器 ID、名称和镜像；使用 `TRIPSPHERE_DATA_ROOT/otel-collector-file-storage` 目录保存 filelog offset。Collector 以 root 运行以读取这些宿主机资源。Docker socket 即使以 `:ro` 挂载也代表高权限 API 访问，因此仅用于可信本地数据采集环境。Metrics 子阶段将 `/` 只读挂载到 `/hostfs` 并设置 `hostmetrics.root_path=/hostfs`。
 
-cAdvisor 固定使用 `ghcr.io/google/cadvisor:v0.60.5`，按其 Docker 部署要求只读挂载 `/`、`/var/run`、`/sys`、`/var/lib/docker`、`/dev/disk`，并访问 `/dev/kmsg`。cAdvisor 通常需要 privileged 权限；这些宿主机能力仅作为本地单机故障实验基线使用，不得直接复用为生产安全方案。Collector 和 cAdvisor 只暴露 Phase 6 所需的 OTLP、健康和指标端口，不开放无关接口。
+cAdvisor 固定使用 `ghcr.io/google/cadvisor:v0.60.5`，按其 Docker 部署要求只读挂载 `/`、`/var/run`、`/sys`、`/var/lib/docker`、`/dev/disk`，并访问 `/dev/kmsg`。容器 socket 指标依赖 cAdvisor `process` 组读取宿主机 `/proc/<pid>/fd`，因此本地验收 Compose 必须为 cAdvisor 配置 host PID namespace 和 privileged 权限。node-exporter 固定使用 `prom/node-exporter:v1.9.1`，按官方容器模式使用 host network、host PID 和 `/host` rootfs 只读挂载，并监听宿主机 `19100` 端口以暴露 `sockstat`、`netstat` 指标；Prometheus 通过 `host.docker.internal:19100` 抓取。上述宿主机能力仅作为本地单机故障实验基线使用，不得直接复用为生产安全方案。Collector、cAdvisor 和 node-exporter 只暴露 Phase 6 所需的 OTLP、健康和指标端口，不开放无关接口。
 
 ## 6. Compose 部署契约
 
@@ -174,6 +175,7 @@ neo4j
 minio
 otel-collector
 cadvisor
+node-exporter
 tempo
 prometheus
 loki
@@ -282,7 +284,7 @@ task_id
 - 使用 Java Agent 的 Logback appender instrumentation 将 LogRecord 直接导出到 Collector；活动 Span 的 trace/span ID 使用 OTel 原生字段。
 - 增加 Actuator 与 Prometheus registry，暴露 `/actuator/health` 和 `/actuator/prometheus`。
 - Compose healthcheck 使用 `/actuator/health/readiness` 或明确的健康端点，不使用单纯进程存在检查。
-- Prometheus 抓取 Java 服务真实暴露的 metrics endpoint；OTel span metrics 仍用于跨语言统一 RED 视图。
+- Prometheus 抓取 Java 服务真实暴露的 metrics endpoint；跨语言服务请求视图只在查询时基于各语言原生 HTTP/gRPC metrics 计算，不写入派生 RED 指标。
 
 涉及服务：attraction、hotel、product、inventory、order、itinerary、user。
 
@@ -320,20 +322,22 @@ Prometheus 必须覆盖：
 
 - Prometheus 自身 `/metrics`。
 - OTel Collector 自身 telemetry metrics。
-- Collector Prometheus exporter 中的应用 OTLP metrics、span-derived metrics 和 `hostmetrics`。
-- cAdvisor 原生 `/metrics`，作为容器资源指标的唯一事实源。
-- 所有实际暴露 `/actuator/prometheus` 的 Java 服务。
+- Collector Prometheus exporter 中的应用 OTLP metrics 和 `hostmetrics`。
+- cAdvisor 原生 `/metrics`，作为容器资源与容器 socket 指标的唯一事实源。
+- node-exporter 原生 `/metrics`，作为宿主机 socket/netstat/sockstat 指标来源。
+- 所有保留 Java 服务暴露 `/actuator/prometheus`；已删除的独立 POI 和 Note 服务不纳入应用指标覆盖范围。
 - Loki、Tempo、Higress 等已暴露且稳定的组件 metrics endpoint。
 
 指标按以下边界解释：
 
-- cAdvisor 负责容器归因：容器 CPU、内存、writable layer、块 I/O、网络和 OOM。
+- cAdvisor 负责容器归因：容器 CPU、内存、writable layer、块 I/O、网络、OOM、socket、TCP/UDP 状态和高级 TCP 统计。
 - Collector `hostmetrics` 负责 Docker 宿主机及数据卷所在文件系统和物理磁盘。磁盘容量和 I/O latency 以宿主机指标为权威口径。
+- node-exporter 负责宿主机 socket、netstat 和 sockstat 指标。
 - `container_fs_*` 只代表容器可见的 writable layer，不得等同于 Docker named volume 或宿主机物理磁盘。
-- 在 overlay2、cgroup v2 或底层驱动不提供容器 I/O time 时，容器级 latency 显示 unavailable，不得用 0 冒充无延迟。
-- 对于没有原生 Prometheus endpoint 的 Python、Go、Next.js 服务，OTLP runtime/request metrics 和 span metrics 是最低观测保证；不得因为没有 `/metrics` 就从 dashboard 和验收清单中遗漏。
+- Docker data-root 先通过 `docker info --format '{{.DockerRootDir}}'` 获取实际路径；Docker data-root、`TRIPSPHERE_DATA_ROOT` 和数据卷目录再通过 `findmnt -T` 映射到宿主机 mountpoint/device，并用 hostmetrics 的 filesystem/disk 指标观测；不得用 `container_fs_*` 代替卷或物理磁盘指标。
+- Python、Go 服务通过 OTLP Metrics 上报 runtime/request metrics；Next.js 本阶段不纳入业务 metrics。
 
-Prometheus 抓取 cAdvisor 时，把 `container_label_com_docker_compose_service` 规范化为 `service`，并附加 `environment="local"`。Dashboard 和 recording rules 只查询具有非空 `service` 的 Compose 容器，避免把 root cgroup、匿名容器和镜像构建残留混入服务面板。
+Prometheus 抓取 cAdvisor 时保留 cAdvisor 原始 metric names 和原始 labels，不进行 TripSphere 专用低基数规范化，不生成 `service`/`container` 衍生 label，也不丢弃 `id`、`image`、`name` 或 `container_label_*`。后续 RCA 数据集导出阶段负责按实验元数据筛选、关联和解释这些原始 labels。
 
 ### 9.2 容器资源指标契约
 
@@ -345,34 +349,86 @@ Prometheus 抓取 cAdvisor 时，把 `container_label_com_docker_compose_service
 | CPU usage | `container_cpu_usage_seconds_total` | `rate(...[1m])`，单位为 CPU cores |
 | CPU limit | `container_spec_cpu_quota`、`container_spec_cpu_period` | quota 大于 0 时，limit cores 为 `quota / period` |
 | CPU utilization | CPU usage 与 CPU limit | 仅对显式 quota 计算 `usage_cores / limit_cores`；无限额容器展示 cores，不生成虚假百分比 |
-| CPU throttling | `container_cpu_cfs_periods_total`、`container_cpu_cfs_throttled_periods_total`、`container_cpu_cfs_throttled_seconds_total` | 同时展示 throttled-period ratio 与每秒 throttled time；分母为 0 时显示 unavailable |
+| CPU throttling | `container_cpu_cfs_periods_total`、`container_cpu_cfs_throttled_periods_total`、`container_cpu_cfs_throttled_seconds_total` | 同时展示 throttled-period ratio 与每秒 throttled time；分母为 0 时不生成 ratio 序列 |
 | Memory usage | `container_memory_usage_bytes`、`container_memory_working_set_bytes` | working set 为主面板；total usage 作为包含 cache 的辅助证据 |
 | Memory limit | `container_spec_memory_limit_bytes` | 展示原始限制；等于或接近宿主机容量的“无限制”值不得解释为显式容器 limit |
-| Memory utilization | working set 与有效 memory limit | 仅对显式且有限的 limit 计算 `working_set / limit`，否则显示 unavailable |
+| Memory utilization | working set 与有效 memory limit | 仅对显式且有限的 limit 计算 `working_set / limit`，否则只展示 working set 和 limit 原始值 |
 | OOM | `container_oom_events_total` | 使用 `increase(...[5m])`，并与 `container_start_time_seconds`、容器健康和重启现象关联 |
 | Filesystem usage | `container_fs_usage_bytes`、`container_fs_limit_bytes` | 计算 writable layer utilization；命名卷容量由宿主机 filesystem 指标判断 |
 | Disk throughput | `container_fs_reads_bytes_total`、`container_fs_writes_bytes_total` | 使用 `rate(...[1m])` 得到 read/write bytes/s |
 | Disk IOPS | `container_fs_reads_total`、`container_fs_writes_total` | 使用 `rate(...[1m])` 得到 read/write operations/s |
-| Container disk latency | `container_fs_read_seconds_total`、`container_fs_write_seconds_total` 与对应 operations | 用 `rate(time) / rate(operations)` 计算平均值；只作为 best-effort 容器归因 |
+| Disk busy/in-flight | `container_fs_io_current`、`container_fs_io_time_seconds_total`、`container_fs_io_time_weighted_seconds_total` | 当前 in-flight I/O、设备忙碌时间和加权忙碌时间 |
+| Container average read/write I/O time | `container_fs_read_seconds_total`、`container_fs_write_seconds_total` 与对应 operations | 用 `rate(time) / rate(operations)` 计算平均值；作为 cgroup I/O 平均耗时，不命名为应用请求延迟 |
 | Network receive/transmit | `container_network_receive_bytes_total`、`container_network_transmit_bytes_total` | 使用 `rate(...[1m])` 得到 bytes/s |
+| Network packets | `container_network_receive_packets_total`、`container_network_transmit_packets_total` | 使用 `rate(...[1m])` 得到 packets/s |
 | Packet drop | `container_network_receive_packets_dropped_total`、`container_network_transmit_packets_dropped_total` | 使用 `rate(...[1m])` 或故障窗口 `increase()` |
 | Network error | `container_network_receive_errors_total`、`container_network_transmit_errors_total` | 使用 `rate(...[1m])` 或故障窗口 `increase()` |
 
-cAdvisor 必须显式启用 `oom_event` 指标组。所有表中列出的原始指标必须通过实际 `/metrics` 输出验证，不能只以 cAdvisor 文档存在该指标作为验收通过。指标定义以 [cAdvisor Prometheus metrics](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md) 为依据。
+cAdvisor 必须显式启用 `cpu,disk,diskIO,memory,network,oom_event,process,tcp,udp,advtcp` 指标组。所有表中列出的原始指标必须通过实际 `/metrics` 输出验证，不能只以 cAdvisor 文档存在该指标作为验收通过。指标定义以 [cAdvisor Prometheus metrics](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md) 为依据。
+
+容器 socket 指标由 cAdvisor 提供，必须能查询：
+
+```text
+container_sockets
+container_network_tcp_usage_total
+container_network_tcp6_usage_total
+container_network_udp_usage_total
+container_network_udp6_usage_total
+container_network_advance_tcp_stats_total
+```
+
+这些 TCP/UDP 指标在 cAdvisor v0.60.5 中按 Gauge 暴露，即使名称带 `_total` 也不能默认用 `rate()` 或 `increase()`。Prometheus 保留 cAdvisor 原始 labels，Dashboard 和数据导出脚本按实验目的选择 `name`、`id`、`image`、`container_label_*`、`tcp_state` 或 `udp_state` 等维度。
 
 ### 9.3 Docker 宿主机指标契约
 
 Collector `hostmetrics` 至少启用 `cpu`、`memory`、`filesystem`、`disk`、`network` scraper，并采集：
 
 - `system.cpu.time`、`system.cpu.utilization`。
-- `system.memory.usage`、`system.memory.limit`、`system.memory.utilization`。
-- `system.filesystem.usage`、`system.filesystem.limit`、`system.filesystem.utilization`。
-- `system.disk.io`、`system.disk.operations`、`system.disk.io_time`、`system.disk.operation_time`。
-- `system.network.io`、`system.network.packet.dropped`、`system.network.errors`。
+- `system.memory.usage`、`system.memory.limit`、`system.memory.utilization`、`system.linux.memory.available`。
+- `system.filesystem.usage`、`system.filesystem.utilization`。
+- `system.disk.io`、`system.disk.operations`、`system.disk.io_time`、`system.disk.operation_time`、`system.disk.pending_operations`、`system.disk.weighted_io_time`。
+- `system.network.io`、`system.network.packets`、`system.network.dropped`、`system.network.errors`、`system.network.connections`。
+
+Collector Prometheus exporter 使用 `translation_strategy: UnderscoreEscapingWithSuffixes`。上述 hostmetrics 至少应产生以下 Prometheus series family，实施时以实际 exporter 输出作为查询契约：
+
+```text
+system_cpu_time_seconds_total
+system_cpu_utilization
+system_memory_usage_bytes
+system_memory_limit_bytes
+system_memory_utilization
+system_linux_memory_available_bytes
+system_filesystem_usage_bytes
+system_filesystem_utilization
+system_disk_io_bytes_total
+system_disk_operations_total
+system_disk_operation_time_seconds_total
+system_disk_io_time_seconds_total
+system_disk_pending_operations
+system_disk_weighted_io_time_seconds_total
+system_network_io_bytes_total
+system_network_packets_total
+system_network_dropped_total
+system_network_errors_total
+system_network_connections
+```
 
 Collector 使用 system resource detector 为这些指标补充稳定的 `host.name`、`host.id`、`os.type` 和 `deployment.environment.name=local`；Prometheus exporter 只把这些查询必需的资源属性复制为 metric labels，不启用无选择的全量 resource-to-label 转换。
 
-宿主机 filesystem 过滤 `proc`、`sysfs`、`devtmpfs`、`devpts`、`tmpfs`、`overlay`、`squashfs`、`cgroup`、`cgroup2` 等虚拟文件系统，只保留承载 Docker data-root 和 TripSphere 数据卷的真实 mountpoint。磁盘平均 latency 使用同一 `system.device` 和读写方向上的 `rate(system.disk.operation_time) / rate(system.disk.operations)`；operations 为 0 时显示 unavailable。
+宿主机 filesystem 过滤 `proc`、`sysfs`、`devtmpfs`、`devpts`、`tmpfs`、`overlay`、`squashfs`、`cgroup`、`cgroup2` 等虚拟文件系统，只保留承载 Docker data-root 和 TripSphere 数据卷的真实 mountpoint。磁盘平均 operation time 使用同一 `system.device` 和读写方向上的 `rate(system.disk.operation_time) / rate(system.disk.operations)`；operations 为 0 时不生成平均值序列。
+
+宿主机 socket/netstat/sockstat 指标由 node-exporter `prom/node-exporter:v1.9.1` 提供，必须能查询：
+
+```text
+node_sockstat_TCP_inuse
+node_sockstat_TCP_tw
+node_sockstat_TCP_alloc
+node_sockstat_UDP_inuse
+node_netstat_Tcp_CurrEstab
+node_netstat_Tcp_RetransSegs
+node_netstat_TcpExt_ListenDrops
+node_netstat_TcpExt_ListenOverflows
+```
 
 ### 9.4 OpenTelemetry semantic conventions
 
@@ -386,34 +442,22 @@ OpenTelemetry 已定义 system 与 container metric semantic conventions，但�
 
 语义约定以 [OTel container metrics](https://opentelemetry.io/docs/specs/semconv/system/container-metrics/) 和 [OTel system metrics](https://opentelemetry.io/docs/specs/semconv/system/system-metrics/) 为依据。Collector Prometheus exporter 显式固定 `translation_strategy: UnderscoreEscapingWithSuffixes`，并以当前锁定的 Collector `0.144.0` 做输出名称契约测试，防止升级后单位或 `_total` 后缀变化导致查询静默失效。
 
-### 9.5 Recording rules 与 Dashboard 查询契约
+### 9.5 原始指标与 Dashboard 查询契约
 
-新增 Prometheus recording rules，将原始实现差异收敛为 Dashboard 和 RCA 查询使用的稳定序列：
+Prometheus 只保存各 exporter 暴露的原始指标，不配置 `rule_files`，不新增 `infra/prometheus/rules/*.yaml`，不写入 `tripsphere:*` recording rules。Dashboard 和人工验收可以使用 PromQL 在查询时计算 rate、ratio、latency 或分位数，但这些结果不能回写为新的时间序列。
 
 ```text
-tripsphere:container_cpu_usage_cores:rate1m
-tripsphere:container_cpu_limit_cores
-tripsphere:container_cpu_utilization:ratio
-tripsphere:container_cpu_throttled_periods:ratio1m
-tripsphere:container_cpu_throttled_seconds:rate1m
-tripsphere:container_memory_utilization:ratio
-tripsphere:container_oom_events:increase5m
-tripsphere:container_filesystem_utilization:ratio
-tripsphere:container_disk_read_bytes:rate1m
-tripsphere:container_disk_write_bytes:rate1m
-tripsphere:container_disk_read_latency_seconds:rate1m
-tripsphere:container_disk_write_latency_seconds:rate1m
-tripsphere:container_network_receive_bytes:rate1m
-tripsphere:container_network_transmit_bytes:rate1m
-tripsphere:container_network_receive_drops:rate1m
-tripsphere:container_network_transmit_drops:rate1m
-tripsphere:container_network_receive_errors:rate1m
-tripsphere:container_network_transmit_errors:rate1m
-tripsphere:host_filesystem_utilization:ratio
-tripsphere:host_disk_io_latency_seconds:rate1m
+container_*
+system_*
+node_sockstat_*
+node_netstat_*
+http_server_requests_seconds_*
+grpc_server_processing_duration_seconds_*
+http_server_duration_milliseconds_*
+rpc_server_duration_milliseconds_*
 ```
 
-基础 dashboard 至少展示服务 RED、容器 CPU、容器内存/OOM、容器网络、容器 I/O、宿主机文件系统/磁盘，以及 `up`/健康状态和 Collector pipeline 自身状态。Phase 6 不引入 Alertmanager、通知链路或告警阈值；recording rules 只用于稳定查询、Dashboard 和 RCA 数据采集。
+只有原始指标已在目标环境实测存在时才允许对应 dashboard 面板通过验收。容器 CPU、内存、OOM、网络、socket 和 I/O 直接查询 cAdvisor 原始序列；宿主机资源直接查询 Collector `system_*`；宿主机 socket 直接查询 node-exporter；服务请求视图直接查询各语言原生 HTTP/gRPC 指标。无有效 CPU/memory limit 或 operations 为 0 时查询结果为空，不用占位值代替真实指标缺口。基础 dashboard 至少展示服务原生请求指标、容器 CPU、容器内存/OOM、容器网络、容器 socket、容器 I/O、宿主机文件系统/磁盘、宿主机 socket，以及 `up`/健康状态和 Collector pipeline 自身状态。Phase 6 不引入 Alertmanager、通知链路或告警阈值。
 
 ## 10. 存储与保留策略
 
@@ -448,18 +492,19 @@ Loki 数据源配置 derived field：
 - 从 `trace_id` 提取 Trace ID。
 - 使用内部链接跳转到 UID 为 `tempo` 的数据源。
 
-基础 dashboard 提供八个区域：
+基础 dashboard 提供九个区域：
 
 1. 服务、容器和观测管线健康状态。
-2. RED 指标：请求率、错误率和延迟。
+2. 服务原生请求指标：请求率、错误率和延迟。
 3. 容器 CPU usage、limit、utilization 和 throttling。
 4. 容器 memory usage、limit、utilization 和 OOM events。
-5. 容器网络收发、packet drop 和 network error。
-6. 容器 filesystem usage、disk throughput、IOPS 和可用时的 best-effort latency。
-7. Docker 宿主机 filesystem utilization 和物理磁盘 I/O latency。
-8. 日志与 Trace 查询及双向跳转。
+5. 容器网络收发、包数、packet drop 和 network error。
+6. 容器 socket、TCP/UDP state 和 TCP retransmit。
+7. 容器 filesystem usage、disk throughput、IOPS 和 cgroup I/O 平均耗时。
+8. Docker 宿主机 filesystem utilization、物理磁盘 I/O、网络和 socket/netstat/sockstat。
+9. 日志与 Trace 查询及双向跳转。
 
-资源面板只使用第 9.5 节定义的 `tripsphere:*` recording rules。无限资源限制、零 I/O operations 和平台不支持的指标统一显示 N/A，不通过填 0 制造正常状态。
+资源面板和服务面板均直接查询第 9.5 节定义的原始指标。无限资源限制和零 I/O operations 不生成对应派生序列；清单要求的原始指标不存在时判定 Metrics 阶段未完成，不通过填 0 制造正常状态。
 
 dashboard 只服务单实例验收与故障实验观察，不增加告警升级、容量规划和 HA 面板。
 
@@ -517,12 +562,13 @@ HIGRESS_EMBEDDING_MODEL
 
 ### Task 3：补齐 Metrics 和 Prometheus
 
-- 在两份 Compose 中加入固定版本 cAdvisor，配置必要宿主机挂载、权限、healthcheck 和 `oom_event` 指标组。
-- 接入 Collector `hostmetrics` 与 `spanmetrics`；不得启用 `docker_stats`。
-- 增加 cAdvisor、Collector 自身、应用 exporter、Java Actuator 和可用基础设施 metrics targets。
-- 规范化 Compose `service`/`environment` labels，并加入第 9.5 节定义的 recording rules。
+- 在两份 Compose 中加入固定版本 cAdvisor，配置必要宿主机挂载、host PID、privileged、healthcheck 和 `cpu,disk,diskIO,memory,network,oom_event,process,tcp,udp,advtcp` 指标组。
+- 在两份 Compose 中加入固定版本 node-exporter，按官方容器模式配置 host network、host PID 和 `/host` rootfs 只读挂载，Prometheus 通过 `host.docker.internal:19100` scrape 默认 `sockstat` 和 `netstat` 指标。
+- 接入 Collector `hostmetrics`；不得启用 `docker_stats`、Collector `spanmetrics` 或 Tempo metrics-generator。
+- 增加 cAdvisor、node-exporter、Collector 自身、Java Actuator、Python/Go OTLP metrics 和基础设施 metrics targets。
+- cAdvisor、hostmetrics、node-exporter 和应用指标均保留原始指标；不新增 recording rules。
 - 配置 Prometheus 7 天保留和持久卷。
-- 验证容器、宿主机和 RED 指标包含稳定标识；验证 Collector `0.144.0` 的 OTel→Prometheus 指标名转换契约。
+- 验证容器、宿主机和服务原生请求指标包含可关联标识；验证 Collector `0.144.0` 的 OTel→Prometheus 指标名转换契约。
 
 ### Task 4：统一应用遥测和关联字段
 
@@ -536,7 +582,7 @@ HIGRESS_EMBEDDING_MODEL
 
 - 增加三个数据源 provisioning 文件。
 - 配置 Tempo↔Loki 双向关联。
-- 增加服务健康/资源、RED、日志关联、Trace 查询 dashboard。
+- 增加服务健康/资源、原生请求指标、日志关联、Trace 查询 dashboard。
 - Grafana 依赖 Prometheus、Tempo、Loki 健康后启动。
 
 ### Task 6：自动初始化 Higress 并验证 Nacos
@@ -564,7 +610,7 @@ HIGRESS_EMBEDDING_MODEL
 - 每个核心基础设施和保留应用都有 healthcheck。
 - 应用对必要依赖使用 `service_healthy` 或 `service_completed_successfully`。
 - OTel Collector 配置检查通过，且 logs/metrics/traces pipeline 都有非 debug 的实际出口。
-- Prometheus 配置和 recording rules 通过 `promtool check config`、`promtool check rules`；Grafana provisioning JSON/YAML 可解析。
+- Prometheus 配置通过 `promtool check config`，且不包含 `rule_files`；Grafana provisioning JSON/YAML 可解析。
 - Collector 配置中不存在 `docker_stats`，Prometheus 只有一个 cAdvisor 容器资源 scrape job。
 - 仓库追踪文件中不存在真实凭据。
 
@@ -573,12 +619,13 @@ HIGRESS_EMBEDDING_MODEL
 - Collector 能接收业务 OTLP 日志，并能读取一条基础设施 Docker JSON 日志；两类日志均映射正确的 service namespace、environment 和容器/服务身份。
 - Java、Python 和 Go 的原生 LogRecord 均可进入 Loki，活动 Span 日志带可在 Tempo 对应的 trace/span ID。
 - 应用代码审查确认 Amap/OpenAI API key 不进入 LogRecord；Prompt、响应、JWT/password/token 等业务内容不被 Collector 通用规则删除。
-- cAdvisor、Collector exporter 和 Prometheus targets 均为 `up`；每个保留 Compose 服务都有非空 `service` 和 `environment` label。
-- cAdvisor 实际暴露第 9.2 节要求的 CPU、内存、文件系统、块 I/O、网络和 OOM 原始指标。
+- cAdvisor、node-exporter、Collector exporter 和 Prometheus targets 均为 `up`；cAdvisor 容器指标保留原始 `name`、`id`、`image` 和 `container_label_*` 等 labels。
+- cAdvisor 实际暴露第 9.2 节要求的 CPU、内存、文件系统、块 I/O、网络、OOM、socket、TCP/UDP state 和高级 TCP 统计原始指标。
+- node-exporter 实际暴露第 9.3 节要求的 sockstat/netstat 原始指标。
 - Collector `hostmetrics` 从 `/hostfs` 采集宿主机指标，而不是 Collector 容器自身指标；虚拟文件系统不进入正式 Dashboard。
-- 第 9.5 节所有 recording rules 均能查询；不适用或不受平台支持的 utilization/latency 序列为空而不是伪造为 0。
+- 第 9.5 节所有原始指标均能查询；无有效 limit 或零 operations 的查询结果为空而不是伪造为 0。
 - 同一容器不存在来自 cAdvisor 与 Collector `docker_stats` 的重复资源时间序列。
-- span metrics 能从成功和失败 Span 生成请求数、错误数和延迟。
+- 服务请求数、错误数和延迟来自各语言原生 HTTP/gRPC metrics，不来自 Trace 派生 span metrics。
 - Loki、Tempo、Prometheus 重启后数据卷仍可查询，且保留参数为 7 天。
 - Grafana 启动后 API 返回三个预置数据源和基础 dashboard。
 
@@ -607,6 +654,7 @@ OTel Collector health
 Tempo ready
 Prometheus ready
 cAdvisor ready
+node-exporter ready
 Loki ready
 Grafana health
 ```
@@ -630,7 +678,7 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 4. 从返回 header 或 Trace 查询获得 `trace_id`。
 5. Loki 按 `request_id` 和 `trace_id` 查询 frontend、order、product、inventory 的关联日志。
 6. Tempo 按 `trace_id` 查询跨服务 Span，确认父子关系和错误状态正确。
-7. Prometheus 查询对应服务 RED 指标，并查询订单链涉及容器的资源指标。
+7. Prometheus 基于原生 HTTP/gRPC metrics 查询对应服务请求率、错误率和延迟，并查询订单链涉及容器的资源指标。
 8. Prometheus 查询 Docker 宿主机文件系统利用率和物理磁盘 I/O latency，确认数据卷所在设备在同一时间窗可观察。
 9. Grafana dashboard 展示同一时间窗，并能在 Trace 和日志之间跳转。
 
@@ -643,7 +691,7 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 - Memory limit：在受控小内存限制下触发测试进程 OOM，确认 `container_oom_events_total` 和五分钟增量规则增长，并能关联容器重新启动时间。
 - Disk I/O：在专用临时卷执行读写，确认容器 throughput/IOPS 与宿主机磁盘 operations/operation time 同时变化。
 - Network traffic：在两个测试容器间产生流量，确认 receive/transmit bytes 增长；drop/error 指标必须存在，即使正常路径下值为 0。
-- cgroup v1/v2：记录运行环境能力。容器 latency 在底层不支持时允许 unavailable，但宿主机磁盘 latency 必须可查询。
+- cgroup v1/v2：记录运行环境能力。清单要求的容器 I/O time 指标必须能从 cAdvisor 查询；宿主机磁盘 operation time 必须能从 hostmetrics 查询。
 
 ### 15.7 失败场景
 
@@ -663,9 +711,9 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 - deploy Compose 可独立解析，并同步包含全部保留职责。
 - Loki、Tempo、Prometheus、Grafana 均使用 `TRIPSPHERE_DATA_ROOT` 下的独立持久化目录和 7 天保留。
 - OTel Collector 的 Logs、Metrics、Traces 都有真实接收、处理和后端出口，不以 debug exporter 代替存储。
-- Collector 能通过 OTLP 接收业务 Logs、Metrics、Traces，并通过 `filelog` 接收基础设施 Docker JSON 日志；cAdvisor 只采集容器资源指标。
-- Prometheus 可查询 CPU time/usage/utilization/throttling、memory usage/utilization/limit、OOM、filesystem usage、disk throughput/IOPS/latency、network receive/transmit/drop/error；不适用或平台不支持的指标明确为 unavailable。
-- Dashboard 和 RCA 查询使用稳定的 `tripsphere:*` recording rules，且不存在 `docker_stats` 与 cAdvisor 重复采集。
+- Collector 能通过 OTLP 接收业务 Logs、Metrics、Traces，并通过 `filelog` 接收基础设施 Docker JSON 日志；cAdvisor 只采集容器资源和容器 socket 指标；node-exporter 只采集宿主机 socket/netstat/sockstat 指标。
+- Prometheus 可查询 CPU time/usage/utilization/throttling、memory usage/utilization/limit、OOM、filesystem usage、disk throughput/IOPS/average I/O time、network receive/transmit/packet/drop/error、容器 socket、宿主机 socket 和数据卷所在设备 I/O。
+- Dashboard 和 RCA 查询只使用原始 Metrics：容器资源使用 cAdvisor `container_*`，宿主机资源使用 `system_*`，宿主机 socket 使用 node-exporter，服务请求视图使用应用原生 HTTP/gRPC 指标；不存在 recording rules、spanmetrics、Tempo metrics-generator 或 `docker_stats` 重复采集。
 - 日志可按 service、environment、severity、request_id、trace_id、user_id、task_id 查询。
 - Amap、OpenAI 等外部 API key 不由应用写入 Loki；允许的数据正文保持完整。
 - Grafana 已预置 Prometheus、Tempo、Loki，并能关联 Trace 与日志。
@@ -683,6 +731,6 @@ Nacos smoke 必须由 Python 客户端发现至少一个 Java gRPC 服务并完�
 3. Higress `2.1.11` 的自动初始化 API、认证方式和幂等更新语义是否已通过实际镜像验证。
 4. 应用日志代码审查是否覆盖所有可能把凭据写入 LogRecord 的路径。
 5. request ID 在 Next.js、A2A、gRPC 和 Celery 边界的具体落点是否覆盖完整。
-6. 当前 Docker storage driver 与 cgroup 版本是否能输出容器 filesystem 和 I/O time；若不能，Dashboard 是否正确显示 unavailable 并回退到宿主机证据。
+6. 当前 Docker storage driver 与 cgroup 版本是否能输出清单要求的容器 filesystem 和 I/O time；若不能，是否将 Metrics 阶段判定为未完成并先修正运行环境。
 7. Java Actuator 指标与 OTel Java Agent 指标是否存在需要去重的同义指标。
 8. 订单闭环是否继续作为唯一自动三信号关联样本，或增加 AI 行程作为人工补充验收。
