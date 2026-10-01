@@ -65,7 +65,6 @@ flowchart TB
     subgraph Existing["现有信息服务 (只读数据源)"]
         Hotel["trip-hotel-service<br/>(酒店基础信息)"]
         Attraction["trip-attraction-service<br/>(景点基础信息)"]
-        POI["trip-poi-service<br/>(地点信息)"]
     end
 
     subgraph Product["trip-product-service"]
@@ -448,7 +447,7 @@ order:dedup:{userId}:{items_fingerprint_hash} → "1"
 
 ## 6. 项目结构
 
-三个服务统一采用如下分层结构，与现有 trip-poi-service / trip-itinerary-service 保持一致：
+三个服务统一采用如下分层结构，与现有 Java 业务服务保持一致：
 
 ```
 trip-{service}-service/
