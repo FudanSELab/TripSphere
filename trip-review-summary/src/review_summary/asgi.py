@@ -10,6 +10,7 @@ from qdrant_client import AsyncQdrantClient
 
 from review_summary.config.logging import setup_logging
 from review_summary.config.settings import get_settings
+from review_summary.correlation import RequestCorrelationMiddleware
 from review_summary.infra.nacos.ai import NacosAI
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.infra.nacos.utils import client_shutdown
@@ -102,6 +103,7 @@ def create_fastapi_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(RequestCorrelationMiddleware)
 
     @app.get("/ready", include_in_schema=False)
     async def readiness(  # pyright: ignore[reportUnusedFunction]

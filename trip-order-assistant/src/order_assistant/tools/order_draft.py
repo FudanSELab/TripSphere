@@ -477,7 +477,9 @@ class OrderDraftToolset(BaseToolset):
                         contact=contact_info_to_proto(draft["contact"]),
                         source=order_source_to_proto(draft["source"]),
                     ),
-                    metadata=build_grpc_metadata(tool_context),
+                    metadata=build_grpc_metadata(
+                        tool_context, request_id=draft["request_id"]
+                    ),
                 )
             except grpc.RpcError as e:
                 logger.error(f"Failed to create order: {e}")

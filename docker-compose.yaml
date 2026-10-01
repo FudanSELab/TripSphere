@@ -36,7 +36,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -120,7 +120,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -150,7 +150,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -215,7 +215,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
@@ -316,7 +316,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -350,7 +350,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
@@ -559,7 +559,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse

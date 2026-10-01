@@ -10,6 +10,7 @@ from celery import Task, shared_task
 from qdrant_client import AsyncQdrantClient
 
 from review_summary.config.settings import get_settings
+from review_summary.correlation import set_current_request_id
 from review_summary.utils.storage import get_storage_options
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(bind=True)
 def run_workflow(self: Task[Any, Any], context: dict[str, Any]) -> dict[str, Any]:
+    set_current_request_id(context.get("request_id"))
     async_to_sync(_create_final_text_units)(self, context)
     return context
 

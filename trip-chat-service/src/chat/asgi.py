@@ -21,6 +21,7 @@ from chat.agent.session import MongoSessionService
 from chat.config.logging import setup_logging
 from chat.config.mem0 import get_mem0_config
 from chat.config.settings import Settings, get_settings
+from chat.correlation import RequestCorrelationMiddleware
 from chat.nacos.ai import NacosAI
 from chat.nacos.naming import NacosNaming
 from chat.nacos.utils import client_shutdown
@@ -97,7 +98,7 @@ async def _init_adk_app(app: FastAPI) -> None:
         app=app,
         agent=root_agent,
         extract_state_from_request=make_extract_headers(
-            ["x-user-id", "x-user-roles", "authorization"]
+            ["x-user-id", "x-user-roles", "authorization", "x-request-id"]
         ),
     )
 
@@ -141,6 +142,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(RequestCorrelationMiddleware)
 
     # Include routers
     app.include_router(health, prefix="/api/v1")

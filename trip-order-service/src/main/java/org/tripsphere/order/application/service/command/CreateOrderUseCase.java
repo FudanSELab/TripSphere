@@ -23,6 +23,7 @@ import org.tripsphere.order.application.service.OrderItemAssembler.AssembledOrde
 import org.tripsphere.order.application.service.OrderValidationService;
 import org.tripsphere.order.application.service.OrderValidationService.ValidatedOrderContext;
 import org.tripsphere.order.domain.model.Order;
+import org.tripsphere.order.infrastructure.observability.CorrelationContext;
 
 @Slf4j
 @Service
@@ -39,7 +40,8 @@ public class CreateOrderUseCase {
     @Transactional
     public Order execute(CreateOrderCommand command) {
         log.info(
-                "Creating order for user: {}, items: {}",
+                "Creating order: request_id={}, user_id={}, items={}",
+                CorrelationContext.currentRequestId(),
                 command.userId(),
                 command.items() == null ? 0 : command.items().size());
 
@@ -47,8 +49,10 @@ public class CreateOrderUseCase {
             Optional<Order> existing = checkIdempotency(command.userId(), command.requestId());
             if (existing.isPresent()) {
                 log.info(
-                        "Idempotent request detected, returning existing order for request_id: {}",
-                        command.requestId());
+                        "Idempotent request detected: request_id={}, order_id={}, order_no={}",
+                        command.requestId(),
+                        existing.get().getId(),
+                        existing.get().getOrderNo());
                 return existing.get();
             }
         } else {
@@ -71,7 +75,12 @@ public class CreateOrderUseCase {
             }
             return order;
         } catch (Exception e) {
-            log.error("Failed to persist order, releasing inventory lock: {}", lockId, e);
+            log.error(
+                    "Failed to persist order: request_id={}, order_id={}, lock_id={}",
+                    CorrelationContext.currentRequestId(),
+                    orderId,
+                    lockId,
+                    e);
             releaseInventoryQuietly(lockId, "Order creation failed: " + e.getMessage());
             throw e;
         }
@@ -89,7 +98,10 @@ public class CreateOrderUseCase {
                     if (order.isEmpty()
                             || !userId.equals(order.get().getUserId())
                             || !requestId.equals(order.get().getRequestId())) {
-                        log.warn("Ignoring stale or mismatched idempotency cache entry for orderId={}", orderId);
+                        log.warn(
+                                "Ignoring stale or mismatched idempotency cache entry: request_id={}, order_id={}",
+                                requestId,
+                                orderId);
                         return Optional.empty();
                     }
                     return order;
@@ -104,7 +116,11 @@ public class CreateOrderUseCase {
         try {
             return inventoryPort.lockInventory(lockItems, orderId, configPort.expireSeconds());
         } catch (Exception e) {
-            log.error("Failed to lock inventory for order: {}", orderId, e);
+            log.error(
+                    "Failed to lock inventory: request_id={}, order_id={}",
+                    CorrelationContext.currentRequestId(),
+                    orderId,
+                    e);
             throw e;
         }
     }
@@ -136,7 +152,8 @@ public class CreateOrderUseCase {
         }
 
         log.info(
-                "Order created: id={}, orderNo={}, type={}, resourceId={}",
+                "Order created: request_id={}, id={}, orderNo={}, type={}, resourceId={}",
+                CorrelationContext.currentRequestId(),
                 orderId,
                 orderNo,
                 ctx.orderType(),

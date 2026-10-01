@@ -7,6 +7,7 @@ import org.tripsphere.order.application.exception.NotFoundException;
 import org.tripsphere.order.application.port.OrderRepository;
 import org.tripsphere.order.application.service.OrderAuthorizationService;
 import org.tripsphere.order.domain.model.Order;
+import org.tripsphere.order.infrastructure.observability.CorrelationContext;
 
 @Slf4j
 @Service
@@ -17,7 +18,7 @@ public class GetOrderUseCase {
     private final OrderAuthorizationService authorizationService;
 
     public Order execute(String currentUserId, String orderId) {
-        log.debug("Getting order: {}", orderId);
+        log.debug("Getting order: request_id={}, order_id={}", CorrelationContext.currentRequestId(), orderId);
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order", orderId));
         authorizationService.requireOrderOwner(currentUserId, order);
         return order;

@@ -9,6 +9,7 @@ from review_summary.config.index.create_text_embeddings_config import (
 )
 from review_summary.config.index.extract_graph_config import ExtractGraphConfig
 from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
+from review_summary.correlation import ensure_request_id
 from review_summary.index.tasks.collect_text_units import (
     run_workflow as collect_text_units,
 )
@@ -46,10 +47,12 @@ indices = APIRouter(prefix="/indices", tags=["Indices"])
 
 @indices.post("")
 async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
+    request_id = ensure_request_id()
     pipeline_context: dict[str, Any] = {
         "target_id": request.target_id,
         "target_type": request.target_type,
         "vector_dim": 3072,  # Vector dimension of embeddings
+        "request_id": request_id,
     }
     extract_graph_config = ExtractGraphConfig(
         # For extract_graph operation
@@ -61,16 +64,23 @@ async def build_graph_index(request: BuildIndexRequest) -> TaskSubmitResponse:
     create_text_embeddings_config = CreateTextEmbeddingsConfig(
         embedding_llm_config={"model": "text-embedding-3-large"}
     )
+    task_headers = {"request_id": request_id}
     pipeline = chain(
-        collect_text_units.s(pipeline_context),
-        extract_graph.s(extract_graph_config.model_dump()),
-        finalize_graph.s(finalize_graph_config.model_dump()),
-        create_communities.s(),
-        create_final_text_units.s(),
-        create_community_reports.s(),
-        create_text_embeddings.s(create_text_embeddings_config.model_dump()),
+        collect_text_units.s(pipeline_context).set(headers=task_headers),
+        extract_graph.s(extract_graph_config.model_dump()).set(
+            headers=task_headers
+        ),
+        finalize_graph.s(finalize_graph_config.model_dump()).set(
+            headers=task_headers
+        ),
+        create_communities.s().set(headers=task_headers),
+        create_final_text_units.s().set(headers=task_headers),
+        create_community_reports.s().set(headers=task_headers),
+        create_text_embeddings.s(
+            create_text_embeddings_config.model_dump()
+        ).set(headers=task_headers),
     )
-    result = pipeline.apply_async()
+    result = pipeline.apply_async(headers={"request_id": request_id})
     return TaskSubmitResponse(task_id=result.id)
 
 

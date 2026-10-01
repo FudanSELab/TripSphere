@@ -6,6 +6,7 @@ from enum import StrEnum
 import grpc
 from tripsphere.review.v1 import review_pb2, review_pb2_grpc
 
+from review_summary.correlation import get_current_request_id
 from review_summary.infra.nacos.naming import NacosNaming
 
 
@@ -76,6 +77,8 @@ class ReviewServiceClient:
         page_token = ""
         requested_tokens: set[str] = set()
         entity_type = _to_proto_target_type(target_type)
+        request_id = get_current_request_id()
+        metadata = (("x-request-id", request_id),) if request_id else None
 
         while True:
             if page_token in requested_tokens:
@@ -90,6 +93,7 @@ class ReviewServiceClient:
                     page_token=page_token,
                 ),
                 timeout=self._REQUEST_TIMEOUT_SECONDS,
+                metadata=metadata,
             )
             records.extend(
                 _to_review_record(review, target_id, target_type)
