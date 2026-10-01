@@ -101,39 +101,6 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  trip-file-service:
-    build:
-      context: trip-file-service
-      dockerfile: Dockerfile
-    image: tripsphere/trip-file-service:latest
-    container_name: trip-file-service
-    logging: *default-logging
-    ports:
-      - "50051:50051" # gRPC
-    environment:
-      - APP_ENV=dev
-      - APP_NAME=trip-file-service
-      - PORT=50051
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-      - NACOS_NAMESPACE=public
-      - NACOS_GROUP=DEFAULT_GROUP
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - MINIO_ENDPOINT=minio:9000
-    depends_on:
-      nacos:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "50051" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-
   trip-hotel-service:
     build:
       context: trip-hotel-service
@@ -330,23 +297,6 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  trip-note-service:
-    build:
-      context: trip-note-service
-      dockerfile: Dockerfile
-    image: tripsphere/trip-note-service:latest
-    container_name: trip-note-service
-    logging: *default-logging
-    ports:
-      - "24216:24216" # HTTP
-      - "50055:50055" # gRPC
-    environment:
-      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-    restart: unless-stopped
-
   trip-order-service:
     build:
       context: trip-order-service
@@ -378,25 +328,6 @@ services:
       nacos:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  trip-poi-service:
-    build:
-      context: trip-poi-service
-      dockerfile: Dockerfile
-    image: tripsphere/trip-poi-service:latest
-    container_name: trip-poi-service
-    logging: *default-logging
-    ports:
-      - "24218:24218" # HTTP
-      - "50058:50058" # gRPC
-    environment:
-      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
     restart: unless-stopped
 
@@ -459,14 +390,11 @@ services:
       - NACOS_PASSWORD=nacos
       - MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - MONGODB_DATABASE=review_db
-      - ROCKETMQ_ENDPOINT=rmq-proxy:8081
     depends_on:
       nacos:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-      rmq-proxy:
-        condition: service_started
       otel-collector:
         condition: service_started
     healthcheck:
@@ -824,58 +752,6 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-
-  rmq-namesrv:
-    image: apache/rocketmq:5.3.2
-    container_name: rmq-namesrv
-    logging: *default-logging
-    ports:
-      - "9876:9876"
-    command: sh mqnamesrv
-
-  rmq-broker:
-    image: apache/rocketmq:5.3.2
-    container_name: rmq-broker
-    logging: *default-logging
-    ports:
-      - "10909:10909"
-      - "10911:10911"
-      - "10912:10912"
-    environment:
-      - NAMESRV_ADDR=rmq-namesrv:9876
-    depends_on:
-      rmq-namesrv:
-        condition: service_started
-    command: sh mqbroker
-
-  rmq-proxy:
-    image: apache/rocketmq:5.3.2
-    container_name: rmq-proxy
-    logging: *default-logging
-    depends_on:
-      rmq-broker:
-        condition: service_started
-      rmq-namesrv:
-        condition: service_started
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    restart: on-failure
-    environment:
-      - NAMESRV_ADDR=rmq-namesrv:9876
-    command: sh mqproxy
-
-  rmq-dashboard:
-    image: apacherocketmq/rocketmq-dashboard:latest
-    container_name: rmq-dashboard
-    logging: *default-logging
-    ports:
-      - "8082:8082"
-    environment:
-      - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
-    depends_on:
-      rmq-namesrv:
-        condition: service_started
 
   mongodb:
     image: mongodb/mongodb-community-server:8.0-ubi8
