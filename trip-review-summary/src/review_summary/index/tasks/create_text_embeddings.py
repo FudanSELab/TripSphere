@@ -11,6 +11,7 @@ from review_summary.config.index.create_text_embeddings_config import (
     CreateTextEmbeddingsConfig,
 )
 from review_summary.config.settings import get_settings
+from review_summary.correlation import set_current_request_id
 from review_summary.index.operations.embed_text import embed_text
 from review_summary.models import Entity
 from review_summary.utils.storage import get_storage_options
@@ -21,6 +22,7 @@ from review_summary.vector_stores.entity import EntityVectorStore
 def run_workflow(
     self: Task[Any, Any], context: dict[str, Any], config: dict[str, Any]
 ) -> dict[str, Any]:
+    set_current_request_id(context.get("request_id"))
     async_to_sync(_create_text_embeddings)(
         self, context, CreateTextEmbeddingsConfig.model_validate(config)
     )

@@ -17,6 +17,7 @@ import org.tripsphere.order.domain.model.OrderStatus;
 import org.tripsphere.order.domain.model.OrderType;
 import org.tripsphere.order.infrastructure.adapter.inbound.grpc.mapper.DateProtoMapper;
 import org.tripsphere.order.infrastructure.adapter.inbound.grpc.mapper.OrderProtoMapper;
+import org.tripsphere.order.infrastructure.observability.CorrelationContext;
 import org.tripsphere.order.infrastructure.security.GrpcAuthContext;
 import org.tripsphere.order.v1.*;
 
@@ -36,6 +37,16 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
 
     @Override
     public void createOrder(CreateOrderRequest request, StreamObserver<CreateOrderResponse> responseObserver) {
+        String correlationRequestId = request.getRequestId().isBlank()
+                ? CorrelationContext.currentRequestId()
+                : request.getRequestId();
+        try (CorrelationContext.Scope ignored = CorrelationContext.openMdc(correlationRequestId)) {
+            createOrderWithCorrelation(request, responseObserver);
+        }
+    }
+
+    private void createOrderWithCorrelation(
+            CreateOrderRequest request, StreamObserver<CreateOrderResponse> responseObserver) {
         if (request.getUserId().isEmpty()) {
             throw invalidArgument("user_id is required");
         }

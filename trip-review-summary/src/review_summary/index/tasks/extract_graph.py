@@ -8,6 +8,7 @@ from asgiref.sync import async_to_sync
 from celery import Task, shared_task
 
 from review_summary.config.index.extract_graph_config import ExtractGraphConfig
+from review_summary.correlation import set_current_request_id
 from review_summary.index.operations.extract_graph import extract_graph
 from review_summary.index.operations.summarize_descriptions import (
     summarize_descriptions,
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 def run_workflow(
     self: Task[Any, Any], context: dict[str, Any], config: dict[str, Any]
 ) -> dict[str, Any]:
+    set_current_request_id(context.get("request_id"))
     async_to_sync(_extract_graph)(
         self, context, ExtractGraphConfig.model_validate(config)
     )

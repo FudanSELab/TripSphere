@@ -34,6 +34,19 @@ def test_review_summary_headers_use_the_single_mounted_review_target() -> None:
     }
 
 
+def test_review_summary_headers_forward_request_id() -> None:
+    context = cast(
+        ReadonlyContext,
+        SimpleNamespace(
+            state={
+                "headers": {"request_id": "request-42"},
+            }
+        ),
+    )
+
+    assert review_summary_headers(context) == {"X-Request-ID": "request-42"}
+
+
 def test_review_summary_headers_omit_untrusted_or_missing_target_context() -> None:
     context = cast(
         ReadonlyContext,

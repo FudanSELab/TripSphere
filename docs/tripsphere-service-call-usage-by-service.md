@@ -375,80 +375,24 @@ gRPC `ItineraryService`：
 - 认证上下文来自 gRPC metadata 中的 `x-user-id`，服务端会基于该用户做读取和所有权判断。
 - 没有发现调用其他业务服务。
 
-## 10. `trip-poi-service`
+## 10. 已删除服务：POI 和 File
 
-### 对外入口
+Phase 7 已删除独立 `trip-poi-service` 和 `trip-file-service` 的服务目录、Compose 入口、Taskfile 入口、独立 RPC proto 和生成入口。
 
-gRPC `PoiService`：
+保留边界：
 
-- `GetPoiById`
-- `BatchGetPois`
-- `GetPoisNearby`
-- `GetPoisInBounds`
-- `CreatePoi`
-- `BatchCreatePois`
+- `contracts/protobuf/tripsphere/poi/v1/types.proto` 继续作为共享 POI 类型。
+- `Itinerary` proto 继续使用 `tripsphere.poi.v1.Poi` 作为目的地结构，这不是运行时服务调用。
+- 景点、酒店和行程规划继续通过 `trip-attraction-service`、`trip-hotel-service` 及共享 POI 初始化数据工作。
+- MinIO 仍由 `trip-review-summary` 的索引中间产物链路使用，不随 FileService 删除。
 
-另有 `MetadataService.GetVersion`。
+不得恢复的入口：
 
-实现入口：`trip-poi-service/src/main/java/org/tripsphere/poi/infrastructure/adapter/inbound/grpc/PoiGrpcService.java`。
+- 前端 `POI_SERVICE_ADDR`、`getPoiService()` 和 `PoiServiceClient`。
+- 独立 `PoiService`、`FileService` RPC。
+- FileService 手工测试客户端和脚本。
 
-### 当前被调用方式
-
-当前没有发现业务调用方。
-
-### 相关但不是调用
-
-- `trip-next-frontend` 不再保留 POI 客户端入口。
-- `Itinerary` proto 使用了 `tripsphere.poi.v1.Poi` 类型作为目的地结构，但这不是对 POI 服务的运行时调用。
-- 行程规划器当前用目的地名称和地理坐标工作，没有发现调用 POI 服务。
-
-### 它调用或依赖
-
-- MongoDB POI 数据。
-- 没有发现调用其他业务服务。
-
-### 接入缺口
-
-- 推荐部署 Compose 未纳入该服务。
-- Attraction 和 POI 的职责边界还没有通过调用链体现出来。
-
-## 11. `trip-file-service`
-
-### 对外入口
-
-gRPC `FileService`：
-
-- `GetUploadSignedUrl`
-- `GetTempUploadSignedUrl`
-- `GetDownloadSignedUrls`
-- `CopyFiles`
-- `DeleteFiles`
-- `CopyToPermanent`
-
-实现入口：`trip-file-service/services/file.go`。
-
-### 当前被调用方式
-
-当前没有发现前端或其他业务服务调用。
-
-已有调用只出现在手工测试工具中：
-
-- `trip-file-service/cmd/test_client/main.go`
-- `trip-file-service/scripts/test-grpc.sh`
-- `trip-file-service/scripts/test-grpc.ps1`
-
-### 它调用或依赖
-
-- MinIO：生成上传/下载签名 URL，复制、删除对象。
-- Nacos：服务启动后注册实例。
-- gRPC server 固定监听 `:50051`。
-
-### 接入缺口
-
-- 没有用户头像、酒店图片、评论图片、笔记图片等业务链路接入。
-- 推荐部署 Compose 没有纳入 FileService 和完整 MinIO 依赖。
-
-## 12. `trip-review-service`
+## 11. `trip-review-service`
 
 ### 对外入口
 
@@ -487,33 +431,11 @@ gRPC `ReviewService`：
 - 没有前端评论创建、编辑、删除、列表展示。
 - 创建/更新/删除的用户所有权校验需要补强。
 
-## 13. `trip-note-service`
+## 12. 已删除服务：Note
 
-### 对外入口
+Phase 7 已删除 `trip-note-service` 的服务目录、Compose 入口、Taskfile 入口和 metadata proto。前端 `/notes` 占位页面没有调用 NoteService，不构成运行依赖。
 
-当前只有 gRPC `MetadataService.GetVersion`。
-
-实现入口：`trip-note-service/src/main/java/org/tripsphere/note/infrastructure/adapter/inbound/grpc/MetadataGrpcService.java`。
-
-### 当前被调用方式
-
-没有发现业务调用方。
-
-### 相关但不是调用
-
-- 前端侧边栏和首页有 `/notes` 入口。
-- `/notes` 页面是占位页面，没有调用 NoteService。
-
-### 它调用或依赖
-
-- 没有发现 Note 领域数据库访问或其他业务服务调用。
-
-### 接入缺口
-
-- 没有 NoteService proto。
-- 没有笔记创建、查询、更新、删除等领域实现。
-
-## 14. `trip-chat-service`
+## 13. `trip-chat-service`
 
 ### 对外入口
 
@@ -548,7 +470,7 @@ gRPC `ReviewService`：
 - 健康检查逻辑目前是固定成功值。
 - 缺少有效业务测试。
 
-## 15. `trip-itinerary-planner`
+## 14. `trip-itinerary-planner`
 
 ### 对外入口
 
@@ -589,7 +511,7 @@ gRPC `ReviewService`：
 - 搜索景点、酒店时直接读取 Nacos metadata 的 `gRPC_port`。
 - 景点候选有固定抽样逻辑，候选数量不足时可能失败。
 
-## 16. `trip-order-assistant`
+## 15. `trip-order-assistant`
 
 ### 对外入口
 
@@ -633,7 +555,7 @@ gRPC `ReviewService`：
 - 联系人信息仍是 TODO。
 - 提交订单时通过请求体传 `user_id`，没有向 OrderService 转发完整 auth metadata。
 
-## 17. `trip-review-summary`
+## 16. `trip-review-summary`
 
 ### 对外入口
 
@@ -673,25 +595,11 @@ gRPC `ReviewService`：
 - 删除索引接口未实现。
 - 图嵌入相关流程存在未实现分支。
 
-## 18. `trip-note-creator`
+## 17. 已删除服务：Note Creator
 
-### 对外入口
+Phase 7 已删除 `trip-note-creator` 脚手架目录。该目录没有对外 HTTP、gRPC、A2A 或 CLI 入口，也没有业务调用方。
 
-没有发现对外 HTTP、gRPC、A2A 或 CLI 入口。
-
-### 当前被调用方式
-
-没有发现业务调用方。
-
-### 它调用或依赖
-
-没有发现业务逻辑和外部依赖调用。
-
-### 当前状态
-
-只有空初始化模块和项目配置，属于脚手架。
-
-## 19. 服务调用速查表
+## 18. 服务调用速查表
 
 | 被调用服务 | 当前真实调用方 |
 | --- | --- |
@@ -702,12 +610,8 @@ gRPC `ReviewService`：
 | `trip-inventory-service` | `trip-order-service` |
 | `trip-order-service` | `trip-next-frontend`、`trip-order-assistant`、内部过期调度 |
 | `trip-itinerary-service` | `trip-next-frontend`、`trip-itinerary-planner` |
-| `trip-poi-service` | 未发现业务调用方 |
-| `trip-file-service` | 未发现业务调用方，只有手工测试客户端 |
 | `trip-review-service` | 未发现业务调用方，主要是测试 |
-| `trip-note-service` | 未发现业务调用方 |
 | `trip-chat-service` | `trip-next-frontend` |
 | `trip-itinerary-planner` | `trip-next-frontend` |
 | `trip-order-assistant` | `trip-chat-service`，前端有配置但没有自然业务入口 |
 | `trip-review-summary` | `trip-chat-service`（MCP），以及人工/运维 HTTP 索引入口 |
-| `trip-note-creator` | 未发现业务调用方 |

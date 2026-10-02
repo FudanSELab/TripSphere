@@ -15,6 +15,8 @@ from google.adk.tools.long_running_tool import LongRunningFunctionTool
 from google.adk.tools.tool_context import ToolContext
 
 from order_assistant.config.settings import get_settings
+from order_assistant.nacos.prompts import annotate_prompt, get_prompt_snapshot
+from order_assistant.tools.context import set_current_request_id
 from order_assistant.tools.order import OrderToolset
 from order_assistant.tools.order_draft import OrderDraftToolset
 from order_assistant.tools.product import ProductToolset
@@ -55,7 +57,10 @@ Current Datetime (with Timezone): {current_datetime}
 def root_instruction(_: ReadonlyContext) -> str:
     # Get current datetime with timezone
     current_datetime = datetime.now().astimezone().isoformat()
-    return INSTRUCTION.format(current_datetime=current_datetime)
+    prompt = get_prompt_snapshot("order-system")
+    annotate_prompt(prompt)
+    instruction = prompt.content if prompt is not None else INSTRUCTION
+    return instruction.format(current_datetime=current_datetime)
 
 
 def ask_for_confirmation(
@@ -66,18 +71,17 @@ def ask_for_confirmation(
 
 
 def before_agent_callback(callback_context: CallbackContext) -> None:
-    if (
-        not callback_context.run_config
-        or not callback_context.run_config.custom_metadata
-    ):
-        return
-    a2a_metadata: dict[str, Any] = (
-        callback_context.run_config.custom_metadata.get("a2a_metadata") or {}
-    )
+    a2a_metadata: dict[str, Any] = {}
+    if callback_context.run_config and callback_context.run_config.custom_metadata:
+        a2a_metadata = (
+            callback_context.run_config.custom_metadata.get("a2a_metadata") or {}
+        )
+    request_id = set_current_request_id(a2a_metadata.get("x-request-id"))
     callback_context.state["headers"] = {
         "user_id": a2a_metadata.get("x-user-id"),
         "user_roles": a2a_metadata.get("x-user-roles"),
         "authorization": a2a_metadata.get("authorization"),
+        "request_id": request_id,
     }
 
 

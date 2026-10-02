@@ -13,6 +13,7 @@ Run the following commands in order to import base data into MongoDB and
 PostgreSQL:
 
 ```bash
+uv run scripts/create_users.py
 uv run -m initializer.pois --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.hotels --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.room_types --uri mongodb://root:fudanse@localhost:27017
@@ -21,13 +22,27 @@ uv run -m initializer.spus --uri mongodb://root:fudanse@localhost:27017
 uv run -m initializer.inventories --dsn postgresql://postgres:fudanse@localhost:5432/inventory_db
 ```
 
+`scripts/create_users.py` creates the two stable identities used by the
+acceptance flow. It is idempotent and writes the generated IDs and credentials
+to `data/temp/users_manifest.json`:
+
+| User | Email | Password | Stable ID |
+| --- | --- | --- | --- |
+| A | `user-a@tripsphere.local` | `TripSphereA1!` | `00000000-0000-4000-8000-000000000001` |
+| B | `user-b@tripsphere.local` | `TripSphereB1!` | `00000000-0000-4000-8000-000000000002` |
+
+The passwords are local development fixtures only. Verify both identities
+through the real UserService `SignIn` gRPC call before running the business
+smoke tests.
+
 ## Review-summary seed data and indexes
 
 [`scripts/seed_review_summary.py`](scripts/seed_review_summary.py) generates a
 deterministic set of 5-10 synthetic Chinese reviews for every hotel in
-`hotel_db.hotels`. It writes the reviews to `review_db.reviews`, builds the
-minimal pinned indexes in Qdrant and Neo4j, and verifies each hotel across all
-three stores before recording it as `index_verified`.
+`hotel_db.hotels` and every attraction in `attraction_db.attractions` by
+default. It writes the reviews to `review_db.reviews`, builds the minimal
+pinned indexes in Qdrant and Neo4j, and verifies each target across all three
+stores before recording it as `index_verified`.
 
 The script is intended for development, testing, and dataset construction. It
 does not scrape or copy reviews from external sources.
@@ -60,6 +75,8 @@ export NO_PROXY=localhost,127.0.0.1
 | `NEO4J_HTTP_URL` | `http://localhost:7474` | Neo4j HTTP endpoint |
 | `NEO4J_USERNAME` | `neo4j` | Neo4j username |
 | `NEO4J_PASSWORD` | `fudanse@fudan.edu.cn` | Neo4j password |
+
+`--target-type` accepts `all`, `hotel`, or `attraction`; the default is `all`.
 
 Override credentials and endpoints for any environment that does not use the
 local development defaults.
@@ -114,7 +131,7 @@ and `--retries`.
 
 ### Data replacement scope
 
-For each selected hotel, the script performs these idempotent operations:
+For each selected target, the script performs these idempotent operations:
 
 - Upserts deterministic reviews tagged with
   `seed_source=review-summary-dataset-v2-direct` and removes obsolete reviews

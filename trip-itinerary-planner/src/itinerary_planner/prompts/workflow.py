@@ -35,3 +35,16 @@ MARKDOWN_GENERATION_PROMPT = """你是一个旅行行程文案撰写专家。请
 7. 语言自然流畅，像旅行博主的推荐文章
 8. 不要输出任何代码块标记，直接输出 Markdown 内容
 """.strip()  # noqa: E501
+
+
+REGENERATE_DAY_PROMPT = """Regenerate day {day} of a trip to {destination}.
+Date: {date}
+User preference / style: {preference}
+
+Available attractions:
+{attractions}
+
+Generate 3–4 varied activities.
+Every activity must use an exact attraction_id from the list above.
+Keep all activities within {destination}.
+""".strip()  # noqa: E501

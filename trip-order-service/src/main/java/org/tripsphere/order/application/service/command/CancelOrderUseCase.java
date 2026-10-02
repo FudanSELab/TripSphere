@@ -11,6 +11,7 @@ import org.tripsphere.order.application.port.OrderCachePort;
 import org.tripsphere.order.application.port.OrderRepository;
 import org.tripsphere.order.application.service.OrderAuthorizationService;
 import org.tripsphere.order.domain.model.Order;
+import org.tripsphere.order.infrastructure.observability.CorrelationContext;
 
 @Slf4j
 @Service
@@ -33,9 +34,14 @@ public class CancelOrderUseCase {
     }
 
     private Order execute(String orderId, String reason, String currentUserId) {
-        log.info("Cancelling order: {}, reason: {}", orderId, reason);
-
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order", orderId));
+        log.info(
+                "Cancelling order: request_id={}, order_id={}, order_no={}, request_id_business={}, reason={}",
+                CorrelationContext.currentRequestId(),
+                order.getId(),
+                order.getOrderNo(),
+                order.getRequestId(),
+                reason);
         if (currentUserId != null) {
             authorizationService.requireOrderOwner(currentUserId, order);
         }
@@ -47,7 +53,12 @@ public class CancelOrderUseCase {
         order = orderRepository.save(order);
         cachePort.removeOrderExpiry(orderId);
 
-        log.info("Order cancelled: {}", orderId);
+        log.info(
+                "Order cancelled: request_id={}, order_id={}, order_no={}, request_id_business={}",
+                CorrelationContext.currentRequestId(),
+                order.getId(),
+                order.getOrderNo(),
+                order.getRequestId());
         return order;
     }
 

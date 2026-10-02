@@ -3,6 +3,7 @@ from logging import config
 from pathlib import Path
 
 from review_summary.config.settings import get_settings
+from review_summary.correlation import RequestIdLogFilter
 
 # Module-level timestamp to ensure unique log filename
 # even if configure_logging is called multiple times
@@ -18,6 +19,7 @@ def setup_logging() -> None:
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "standard",
+            "filters": ["request_id"],
             "stream": "ext://sys.stderr",
         }
     }
@@ -29,6 +31,7 @@ def setup_logging() -> None:
             "filename": f"logs/{timestamp}.log",
             "level": "DEBUG",
             "formatter": "standard",
+            "filters": ["request_id"],
             "encoding": "utf-8",
         }
         logger_handlers.append("file")
@@ -39,7 +42,13 @@ def setup_logging() -> None:
         "formatters": {
             "standard": {
                 "format": "%(levelname)s - %(asctime)s - %(name)s "
-                "- %(filename)s:%(lineno)d - %(message)s"
+                "- %(filename)s:%(lineno)d - request_id=%(request_id)s "
+                "- %(message)s"
+            }
+        },
+        "filters": {
+            "request_id": {
+                "()": RequestIdLogFilter,
             }
         },
         "handlers": handlers,

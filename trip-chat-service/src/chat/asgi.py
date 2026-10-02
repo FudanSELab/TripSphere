@@ -21,14 +21,30 @@ from chat.agent.session import MongoSessionService
 from chat.config.logging import setup_logging
 from chat.config.mem0 import get_mem0_config
 from chat.config.settings import Settings, get_settings
+from chat.correlation import RequestCorrelationMiddleware
 from chat.nacos.ai import NacosAI
 from chat.nacos.naming import NacosNaming
+from chat.nacos.prompts import (
+    PromptSpec,
+    PromptStore,
+    clear_active_prompts,
+    set_active_prompts,
+)
 from chat.nacos.utils import client_shutdown
+from chat.prompts.agent import DELEGATOR_INSTRUCTION
 from chat.routers.health import health
 
 logger = logging.getLogger(__name__)
 
 setup_logging()
+
+PROMPT_SPECS = (
+    PromptSpec(
+        key="chat-system",
+        data_id="tripsphere.chat.system-prompt",
+        default=DELEGATOR_INSTRUCTION,
+    ),
+)
 
 # Enable OpenInference instrumentation
 LiteLLMInstrumentor().instrument()
@@ -97,7 +113,7 @@ async def _init_adk_app(app: FastAPI) -> None:
         app=app,
         agent=root_agent,
         extract_state_from_request=make_extract_headers(
-            ["x-user-id", "x-user-roles", "authorization"]
+            ["x-user-id", "x-user-roles", "authorization", "x-request-id"]
         ),
     )
 
@@ -105,6 +121,10 @@ async def _init_adk_app(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
+    prompt_store: PromptStore | None = None
+    app.state.mongo_client = None
+    app.state.nacos_naming = None
+    app.state.nacos_ai = None
     logger.info(
         "Loaded settings for %s on %s:%s",
         settings.app.name,
@@ -113,6 +133,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     try:
+        prompt_store = await PromptStore.create(
+            server_address=settings.nacos.server_address,
+            namespace_id=settings.nacos.namespace_id,
+            username=settings.nacos.username,
+            password=settings.nacos.password.get_secret_value(),
+            group=settings.prompt.config_group,
+            enabled=settings.prompt.config_enabled,
+            required=settings.prompt.config_required,
+            timeout_ms=settings.prompt.config_timeout_ms,
+        )
+        set_active_prompts(await prompt_store.load_all(PROMPT_SPECS))
         await _init_infra(app, settings)
         logger.info("Registering service instance...")
         await app.state.nacos_naming.register(ephemeral=True)
@@ -122,11 +153,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.exception("Exception during lifespan startup")
         raise
     finally:
+        clear_active_prompts()
+        if prompt_store is not None:
+            await prompt_store.close()
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):
             await app.state.nacos_naming.deregister(ephemeral=True)
         await client_shutdown(app.state.nacos_ai, app.state.nacos_naming)
-        await app.state.mongo_client.close()
+        if app.state.mongo_client is not None:
+            await app.state.mongo_client.close()
 
 
 def create_app() -> FastAPI:
@@ -141,6 +176,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(RequestCorrelationMiddleware)
 
     # Include routers
     app.include_router(health, prefix="/api/v1")

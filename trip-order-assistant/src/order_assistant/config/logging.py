@@ -12,7 +12,12 @@ def setup_logging() -> None:
             "formatters": {
                 "standard": {
                     "format": "%(levelname)s - %(asctime)s - %(name)s "
-                    "- %(filename)s:%(lineno)d - %(message)s"
+                    "- %(filename)s:%(lineno)d - request_id=%(request_id)s - %(message)s"
+                }
+            },
+            "filters": {
+                "correlation": {
+                    "()": "order_assistant.tools.context.CorrelationLogFilter"
                 }
             },
             "handlers": {
@@ -20,6 +25,7 @@ def setup_logging() -> None:
                     "class": "logging.StreamHandler",
                     "formatter": "standard",
                     "stream": "ext://sys.stderr",
+                    "filters": ["correlation"],
                 }
             },
             "loggers": {
