@@ -32,6 +32,12 @@ from itinerary_planner.agent.validation import (
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.models.itinerary import Itinerary
 from itinerary_planner.nacos.naming import NacosNaming
+from itinerary_planner.nacos.prompts import (
+    annotate_prompt,
+    get_prompt,
+    get_prompt_snapshot,
+)
+from itinerary_planner.prompts.workflow import REGENERATE_DAY_PROMPT
 from itinerary_planner.tools.attractions import search_attractions_nearby
 from itinerary_planner.tools.geocoding import GeocodeResult, geocoding_tool
 
@@ -615,14 +621,17 @@ def make_regenerate_day_tool(nacos_naming: NacosNaming) -> Any:
             base_url=settings.openai.base_url,
         )
 
-        prompt = (
-            f"Regenerate day {day} of a trip to {destination}.\n"
-            f"Date: {target.get('date', '')}\n"
-            f"User preference / style: {preference}\n\n"
-            f"Available attractions:\n{attractions_text}\n\n"
-            f"Generate 3–4 varied activities. "
-            f"Every activity must use an exact attraction_id from the list above. "
-            f"Keep all activities within {destination}."
+        annotate_prompt(get_prompt_snapshot("itinerary-regenerate-day"))
+        regenerate_prompt = get_prompt(
+            "itinerary-regenerate-day",
+            REGENERATE_DAY_PROMPT,
+        )
+        prompt = regenerate_prompt.format(
+            day=day,
+            destination=destination,
+            date=target.get("date", ""),
+            preference=preference,
+            attractions=attractions_text,
         )
 
         try:

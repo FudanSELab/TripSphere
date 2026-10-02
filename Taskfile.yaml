@@ -73,7 +73,13 @@ tasks:
     cmds:
       - task --list-all
     silent: true
-  
+
+  nacos-prompts:
+    desc: Publish online Prompts to Nacos Config
+    dir: infra/initializer
+    cmds:
+      - uv run scripts/seed_nacos_prompts.py
+
   buf:
     desc: Run buf format and buf lint
     cmds:

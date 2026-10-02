@@ -14,6 +14,11 @@ tasks:
     cmds:
       - uv run scripts/create_users.py
 
+  nacos-prompts:
+    desc: Publish online Prompts to Nacos Config
+    cmds:
+      - uv run scripts/seed_nacos_prompts.py
+
   ruff:
     desc: Run ruff format and ruff check --fix
     cmds:

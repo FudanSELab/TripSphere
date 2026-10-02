@@ -9,10 +9,21 @@ from openinference.instrumentation.google_adk import GoogleADKInstrumentor
 from openinference.instrumentation.litellm import LiteLLMInstrumentor
 from starlette.applications import Starlette
 
-from order_assistant.agent import AGENT_NAME, create_agent, load_agent_card
+from order_assistant.agent import (
+    AGENT_NAME,
+    INSTRUCTION,
+    create_agent,
+    load_agent_card,
+)
 from order_assistant.config.logging import setup_logging
 from order_assistant.config.settings import get_settings
 from order_assistant.nacos.ai import NacosAI
+from order_assistant.nacos.prompts import (
+    PromptSpec,
+    PromptStore,
+    clear_active_prompts,
+    set_active_prompts,
+)
 from order_assistant.nacos.utils import client_shutdown
 
 # Suppress ADK Experimental Warnings
@@ -20,6 +31,15 @@ warnings.filterwarnings("ignore", module=".*")
 
 logger = logging.getLogger(__name__)
 setup_logging()
+
+PROMPT_SPECS = (
+    PromptSpec(
+        key="order-system",
+        data_id="tripsphere.order-assistant.system-prompt",
+        default=INSTRUCTION,
+        required_fields=("current_datetime",),
+    ),
+)
 
 # Enable OpenInference instrumentation
 LiteLLMInstrumentor().instrument()
@@ -29,6 +49,8 @@ GoogleADKInstrumentor().instrument()
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     settings = get_settings()
+    prompt_store: PromptStore | None = None
+    app.state.nacos_ai = None
     logger.info(
         "Loaded settings for %s on %s:%s",
         settings.app.name,
@@ -38,6 +60,17 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
 
     agent_card: AgentCard | None = None
     try:
+        prompt_store = await PromptStore.create(
+            server_address=settings.nacos.server_address,
+            namespace_id=settings.nacos.namespace_id,
+            username=settings.nacos.username,
+            password=settings.nacos.password.get_secret_value(),
+            group=settings.prompt.config_group,
+            enabled=settings.prompt.config_enabled,
+            required=settings.prompt.config_required,
+            timeout_ms=settings.prompt.config_timeout_ms,
+        )
+        set_active_prompts(await prompt_store.load_all(PROMPT_SPECS))
         app.state.nacos_ai = await NacosAI.create_nacos_ai(
             agent_name=AGENT_NAME,
             port=settings.uvicorn.port,
@@ -53,6 +86,9 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
         logger.exception("Exception during lifespan startup")
         raise
     finally:
+        clear_active_prompts()
+        if prompt_store is not None:
+            await prompt_store.close()
         logger.info("Deregistering agent endpoint...")
         if isinstance(app.state.nacos_ai, NacosAI) and agent_card:
             await app.state.nacos_ai.deregister(agent_card.version)

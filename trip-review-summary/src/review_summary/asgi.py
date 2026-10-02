@@ -13,8 +13,17 @@ from review_summary.config.settings import get_settings
 from review_summary.correlation import RequestCorrelationMiddleware
 from review_summary.infra.nacos.ai import NacosAI
 from review_summary.infra.nacos.naming import NacosNaming
+from review_summary.infra.nacos.prompts import (
+    PromptSpec,
+    PromptStore,
+    clear_active_prompts,
+    set_active_prompts,
+)
 from review_summary.infra.nacos.utils import client_shutdown
 from review_summary.mcp import create_review_summary_mcp_server
+from review_summary.prompts.query.local_search_system_prompt import (
+    LOCAL_SEARCH_SYSTEM_PROMPT,
+)
 from review_summary.routers.indices import indices
 from review_summary.routers.summaries import summaries
 from review_summary.services.summarizer import ReviewSummaryService
@@ -26,10 +35,20 @@ setup_logging()
 # Enable OpenInference instrumentation
 LangChainInstrumentor().instrument()
 
+PROMPT_SPECS = (
+    PromptSpec(
+        key="review-summary-query",
+        data_id="tripsphere.review-summary.query-prompt",
+        default=LOCAL_SEARCH_SYSTEM_PROMPT,
+        required_fields=("response_type", "context_data"),
+    ),
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
+    prompt_store: PromptStore | None = None
     logger.info(
         "Loaded settings for %s on %s:%s",
         settings.app.name,
@@ -49,6 +68,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     app.state.qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
     try:
+        prompt_store = await PromptStore.create(
+            server_address=settings.nacos.server_address,
+            namespace_id=settings.nacos.namespace_id,
+            username=settings.nacos.username,
+            password=settings.nacos.password.get_secret_value(),
+            group=settings.prompt.config_group,
+            enabled=settings.prompt.config_enabled,
+            required=settings.prompt.config_required,
+            timeout_ms=settings.prompt.config_timeout_ms,
+        )
+        set_active_prompts(await prompt_store.load_all(PROMPT_SPECS))
         app.state.nacos_naming = await NacosNaming.create_naming(
             service_name=settings.app.name,
             port=settings.uvicorn.port,
@@ -81,6 +111,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         raise  # Re-raise to prevent app from starting with errors
 
     finally:
+        clear_active_prompts()
+        if prompt_store is not None:
+            await prompt_store.close()
         app.state.ready = False
         logger.info("Deregistering service instance...")
         if isinstance(app.state.nacos_naming, NacosNaming):

@@ -27,6 +27,15 @@ class NacosSettings(BaseModel):
     server_address: str = Field(default="localhost:8848")
     namespace_id: str = Field(default="public")
     group_name: str = Field(default="DEFAULT_GROUP")
+    username: str = Field(default="nacos")
+    password: SecretStr = Field(default=SecretStr("nacos"))
+
+
+class PromptSettings(BaseModel):
+    config_enabled: bool = Field(default=True)
+    config_group: str = Field(default="TRIPSPHERE_PROMPTS")
+    config_required: bool = Field(default=False)
+    config_timeout_ms: int = Field(default=3000, ge=100, le=30000)
 
 
 class QdrantSettings(BaseModel):
@@ -73,6 +82,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
     nacos: NacosSettings = Field(default_factory=NacosSettings)
+    prompt: PromptSettings = Field(default_factory=PromptSettings)
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
     mongo: MongoSettings = Field(default_factory=MongoSettings)
     review_summary: ReviewSummarySettings = Field(

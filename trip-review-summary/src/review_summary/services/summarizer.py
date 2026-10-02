@@ -9,6 +9,11 @@ from tiktoken import encoding_name_for_model
 from review_summary.clients.reviews import ReviewServiceClient, TargetType
 from review_summary.config.settings import get_settings
 from review_summary.infra.nacos.naming import NacosNaming
+from review_summary.infra.nacos.prompts import (
+    annotate_prompt,
+    get_prompt,
+    get_prompt_snapshot,
+)
 from review_summary.query.base import SearchResult
 from review_summary.query.review_state import (
     ReviewDependencyError,
@@ -21,6 +26,9 @@ from review_summary.query.structured_search.local_search.mixed_content import (
     LocalSearchMixedContext,
 )
 from review_summary.query.structured_search.local_search.search import LocalSearch
+from review_summary.prompts.query.local_search_system_prompt import (
+    LOCAL_SEARCH_SYSTEM_PROMPT,
+)
 from review_summary.tokenizer.tiktoken import TiktokenTokenizer
 from review_summary.vector_stores.entity import EntityVectorStore
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
@@ -220,6 +228,10 @@ class ReviewSummaryService:
                     neo4j_driver=self.neo4j_driver,
                 ),
                 tokenizer=tokenizer,
+                system_prompt=get_prompt(
+                    "review-summary-query",
+                    LOCAL_SEARCH_SYSTEM_PROMPT,
+                ),
             )
         return self._search_engine
 
@@ -231,6 +243,7 @@ class ReviewSummaryService:
         review_snapshot: str,
     ) -> SearchResult:
         search = await self._init_search_engine()
+        annotate_prompt(get_prompt_snapshot("review-summary-query"))
         logger.info(
             "Executing review search for target_id=%s target_type=%s",
             target_id,

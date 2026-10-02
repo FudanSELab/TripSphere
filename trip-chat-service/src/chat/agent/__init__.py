@@ -6,6 +6,7 @@ from ag_ui_adk import AGUIToolset  # type: ignore
 from google.adk.agents import LlmAgent
 from google.adk.agents.base_agent import BaseAgent
 from google.adk.agents.llm_agent import ToolUnion  # pyright: ignore
+from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.apps import App, ResumabilityConfig
 from google.adk.models.lite_llm import LiteLlm
@@ -17,6 +18,7 @@ from mcp import StdioServerParameters
 from chat.agent.agui import HotelViewingToolset
 from chat.agent.review_summary_mcp import create_review_summary_toolset
 from chat.config.settings import get_settings
+from chat.nacos.prompts import annotate_prompt, get_prompt_snapshot
 from chat.prompts.agent import DELEGATOR_INSTRUCTION
 
 # Suppress ADK Experimental Warnings
@@ -58,10 +60,16 @@ def create_agent(
     ]
     if agui_toolset is True:
         tools.extend([AGUIToolset(), HotelViewingToolset()])  # pyright: ignore
+
+    def root_instruction(_: ReadonlyContext) -> str:
+        prompt = get_prompt_snapshot("chat-system")
+        annotate_prompt(prompt)
+        return prompt.content if prompt is not None else DELEGATOR_INSTRUCTION
+
     return LlmAgent(
         name="chat",
         model=LiteLlm(model="openai/gpt-4o"),
-        instruction=DELEGATOR_INSTRUCTION,
+        instruction=root_instruction,
         sub_agents=sub_agents,
         tools=tools,
     )

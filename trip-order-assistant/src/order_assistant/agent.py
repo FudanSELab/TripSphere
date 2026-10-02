@@ -15,6 +15,7 @@ from google.adk.tools.long_running_tool import LongRunningFunctionTool
 from google.adk.tools.tool_context import ToolContext
 
 from order_assistant.config.settings import get_settings
+from order_assistant.nacos.prompts import annotate_prompt, get_prompt_snapshot
 from order_assistant.tools.context import set_current_request_id
 from order_assistant.tools.order import OrderToolset
 from order_assistant.tools.order_draft import OrderDraftToolset
@@ -56,7 +57,10 @@ Current Datetime (with Timezone): {current_datetime}
 def root_instruction(_: ReadonlyContext) -> str:
     # Get current datetime with timezone
     current_datetime = datetime.now().astimezone().isoformat()
-    return INSTRUCTION.format(current_datetime=current_datetime)
+    prompt = get_prompt_snapshot("order-system")
+    annotate_prompt(prompt)
+    instruction = prompt.content if prompt is not None else INSTRUCTION
+    return instruction.format(current_datetime=current_datetime)
 
 
 def ask_for_confirmation(
