@@ -219,7 +219,7 @@ func TestCreateReview(t *testing.T) {
 			service, mockRepo := setupTest(t)
 			tt.setupMock(mockRepo)
 
-			resp, err := service.CreateReview(context.Background(), tt.request)
+			resp, err := service.CreateReview(contextWithUserID("user-123"), tt.request)
 
 			if tt.expectedError {
 				assertGRPCErrorCode(t, err, tt.expectedCode)
@@ -359,7 +359,7 @@ func TestUpdateReview(t *testing.T) {
 			service, mockRepo := setupTest(t)
 			tt.setupMock(mockRepo)
 
-			resp, err := service.UpdateReview(context.Background(), tt.request)
+			resp, err := service.UpdateReview(contextWithUserID("user-123"), tt.request)
 
 			if tt.expectedError {
 				assertGRPCErrorCode(t, err, tt.expectedCode)
@@ -379,6 +379,17 @@ func TestUpdateReview(t *testing.T) {
 // ============================================================
 
 func TestDeleteReview(t *testing.T) {
+	existingReview := &domain.Review{
+		ID:         "review-123",
+		UserID:     "user-123",
+		EntityType: domain.EntityTypeHotel,
+		EntityID:   "hotel-456",
+		Rating:     4,
+		Content:    "Great hotel!",
+		CreatedAt:  time.Now().Add(-time.Hour),
+		UpdatedAt:  time.Now().Add(-time.Hour),
+	}
+
 	tests := []struct {
 		name          string
 		request       *pb.DeleteReviewRequest
@@ -392,6 +403,7 @@ func TestDeleteReview(t *testing.T) {
 				Id: "review-123",
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
+				m.On("GetByID", mock.Anything, "review-123").Return(existingReview, nil)
 				m.On("Delete", mock.Anything, "review-123").Return(nil)
 			},
 			expectedError: false,
@@ -411,7 +423,7 @@ func TestDeleteReview(t *testing.T) {
 				Id: "non-existent",
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
-				m.On("Delete", mock.Anything, "non-existent").Return(domain.ErrReviewNotFound)
+				m.On("GetByID", mock.Anything, "non-existent").Return(nil, nil)
 			},
 			expectedCode:  codes.NotFound,
 			expectedError: true,
@@ -422,6 +434,7 @@ func TestDeleteReview(t *testing.T) {
 				Id: "review-123",
 			},
 			setupMock: func(m *domainmock.MockReviewRepository) {
+				m.On("GetByID", mock.Anything, "review-123").Return(existingReview, nil)
 				m.On("Delete", mock.Anything, "review-123").Return(errors.New("database error"))
 			},
 			expectedCode:  codes.Internal,
@@ -434,7 +447,7 @@ func TestDeleteReview(t *testing.T) {
 			service, mockRepo := setupTest(t)
 			tt.setupMock(mockRepo)
 
-			resp, err := service.DeleteReview(context.Background(), tt.request)
+			resp, err := service.DeleteReview(contextWithUserID("user-123"), tt.request)
 
 			if tt.expectedError {
 				assertGRPCErrorCode(t, err, tt.expectedCode)

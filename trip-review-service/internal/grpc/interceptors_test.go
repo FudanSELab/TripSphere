@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+
+	"trip-review-service/internal/correlation"
 )
 
 type capturedRecord struct {
@@ -27,7 +29,11 @@ func (h *captureHandler) Enabled(context.Context, slog.Level) bool {
 	return true
 }
 
-func (h *captureHandler) Handle(_ context.Context, record slog.Record) error {
+func (h *captureHandler) Handle(ctx context.Context, record slog.Record) error {
+	if requestID := correlation.RequestID(ctx); requestID != "" {
+		record.AddAttrs(slog.String("request_id", requestID))
+	}
+
 	attrs := map[string]any{}
 	record.Attrs(func(attr slog.Attr) bool {
 		attrs[attr.Key] = attr.Value.Any()
@@ -77,15 +83,18 @@ func TestLoggingUnaryInterceptorAddsCorrelationFields(t *testing.T) {
 	})
 	ctx := metadata.NewIncomingContext(
 		trace.ContextWithSpanContext(context.Background(), spanContext),
-		metadata.Pairs(metadataKeyRequestID, "request-42", metadataKeyUserID, "user-7"),
+		metadata.Pairs(correlation.MetadataKey, "request-42", metadataKeyUserID, "user-7"),
 	)
+	info := &grpc.UnaryServerInfo{FullMethod: "/tripsphere.review.v1.ReviewService/ListReviewsByEntity"}
 
-	resp, err := LoggingUnaryInterceptor()(
+	resp, err := CorrelationUnaryInterceptor()(
 		ctx,
 		nil,
-		&grpc.UnaryServerInfo{FullMethod: "/tripsphere.review.v1.ReviewService/ListReviewsByEntity"},
-		func(context.Context, interface{}) (interface{}, error) {
-			return "ok", nil
+		info,
+		func(ctx context.Context, req interface{}) (interface{}, error) {
+			return LoggingUnaryInterceptor()(ctx, req, info, func(context.Context, interface{}) (interface{}, error) {
+				return "ok", nil
+			})
 		},
 	)
 
