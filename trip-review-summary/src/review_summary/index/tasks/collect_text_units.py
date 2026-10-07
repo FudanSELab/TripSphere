@@ -14,6 +14,7 @@ from tiktoken import encoding_name_for_model
 
 from review_summary.clients.reviews import ReviewServiceClient, TargetType
 from review_summary.config.settings import get_settings
+from review_summary.correlation import set_current_request_id
 from review_summary.index.operations.create_graph import delete_graph_by_target
 from review_summary.index.operations.embed_text import embed_text
 from review_summary.index.review_snapshot import (
@@ -38,6 +39,7 @@ class EmptyReviewsError(RuntimeError):
 
 @shared_task(bind=True)
 def run_workflow(self: Task[Any, Any], context: dict[str, Any]) -> dict[str, Any]:
+    set_current_request_id(context.get("request_id"))
     async_to_sync(_collect_text_units)(self, context)
     return context
 

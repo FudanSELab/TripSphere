@@ -29,6 +29,11 @@ from itinerary_planner.models.planning import (
     PlanningProgressEvent,
     PlanningStep,
 )
+from itinerary_planner.nacos.prompts import (
+    annotate_prompt,
+    get_prompt,
+    get_prompt_snapshot,
+)
 from itinerary_planner.prompts.workflow import (
     MARKDOWN_GENERATION_PROMPT,
     RESEARCH_AND_PLAN_PROMPT,
@@ -137,7 +142,9 @@ async def _generate_itinerary_plan(
     activities_per_day = pace_activities.get(pace, 3)
     structured_llm = chat_model.with_structured_output(GeneratedItineraryPlan)  # pyright: ignore
 
-    prompt = RESEARCH_AND_PLAN_PROMPT.format(
+    annotate_prompt(get_prompt_snapshot("itinerary-research"))
+    research_prompt = get_prompt("itinerary-research", RESEARCH_AND_PLAN_PROMPT)
+    prompt = research_prompt.format(
         num_days=num_days,
         destination=state["destination"],
         interests=interests_str,
@@ -485,7 +492,12 @@ async def generate_markdown(state: PlanningState) -> dict[str, Any]:
 
     itinerary_json = itinerary.model_dump_json(indent=2)
 
-    prompt = MARKDOWN_GENERATION_PROMPT.format(itinerary_json=itinerary_json)
+    annotate_prompt(get_prompt_snapshot("itinerary-markdown"))
+    markdown_prompt = get_prompt(
+        "itinerary-markdown",
+        MARKDOWN_GENERATION_PROMPT,
+    )
+    prompt = markdown_prompt.format(itinerary_json=itinerary_json)
 
     try:
         result = await chat_model.ainvoke(prompt)

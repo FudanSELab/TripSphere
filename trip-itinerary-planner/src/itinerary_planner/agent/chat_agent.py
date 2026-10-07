@@ -37,6 +37,11 @@ from langgraph.prebuilt import ToolNode
 
 from itinerary_planner.config.settings import get_settings
 from itinerary_planner.nacos.naming import NacosNaming
+from itinerary_planner.nacos.prompts import (
+    annotate_prompt,
+    get_prompt,
+    get_prompt_snapshot,
+)
 from itinerary_planner.prompts.chat_agent import CHAT_AGENT_INSTRUCTION
 from itinerary_planner.tools import (
     INLINE_TOOLS,
@@ -83,7 +88,13 @@ ChatState = TypedDict(
 
 def _build_system_message(itinerary: dict[str, Any] | None) -> SystemMessage:
     """Return a SystemMessage embedding the current itinerary JSON."""
-    content = CHAT_AGENT_INSTRUCTION
+    prompt_snapshot = get_prompt_snapshot("itinerary-chat")
+    annotate_prompt(prompt_snapshot)
+    content = (
+        prompt_snapshot.content
+        if prompt_snapshot is not None
+        else get_prompt("itinerary-chat", CHAT_AGENT_INSTRUCTION)
+    )
 
     if itinerary:
         dest = itinerary.get("destination", "（未知）")

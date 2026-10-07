@@ -23,12 +23,22 @@ class ServiceDiscovery(Protocol):
 
 def review_summary_headers(context: ReadonlyContext) -> dict[str, str]:
     review_target = extract_review_target(context.state)
-    if review_target is None:
-        return {}
-    return {
-        "X-Review-Target-Id": review_target.target_id,
-        "X-Review-Target-Type": review_target.target_type,
-    }
+    headers = context.state.get("headers", {})
+    request_id = headers.get("request_id") if isinstance(headers, dict) else None
+    if not isinstance(request_id, str) or not request_id:
+        request_id = None
+
+    result: dict[str, str] = {}
+    if request_id is not None:
+        result["X-Request-ID"] = request_id
+    if review_target is not None:
+        result.update(
+            {
+                "X-Review-Target-Id": review_target.target_id,
+                "X-Review-Target-Type": review_target.target_type,
+            }
+        )
+    return result
 
 
 async def resolve_review_summary_url(

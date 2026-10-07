@@ -10,6 +10,7 @@ from neo4j import Driver, GraphDatabase
 
 from review_summary.config.index.finalize_graph_config import FinalizeGraphConfig
 from review_summary.config.settings import get_settings
+from review_summary.correlation import set_current_request_id
 from review_summary.index.operations.create_graph import create_graph
 from review_summary.utils.storage import get_storage_options
 from review_summary.utils.uuid import uuid7
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 def run_workflow(
     self: Task[Any, Any], context: dict[str, Any], config: dict[str, Any]
 ) -> dict[str, Any]:
+    set_current_request_id(context.get("request_id"))
     _finalize_graph(self, context, FinalizeGraphConfig.model_validate(config))
     return context
 

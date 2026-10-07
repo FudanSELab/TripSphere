@@ -101,7 +101,7 @@ export async function createOrder(
   }
 
   try {
-    const metadata = await getAuthMetadata();
+    const metadata = await getAuthMetadata(parsed.data.requestId);
     metadata.set("x-user-id", session.userId);
     const client = getOrderService();
     const response = await new Promise<CreateOrderResponse>(

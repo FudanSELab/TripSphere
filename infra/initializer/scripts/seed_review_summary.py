@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from uuid import NAMESPACE_URL, uuid5
 
 import requests
@@ -22,8 +22,10 @@ from pymongo import MongoClient, UpdateOne
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SEED_VERSION = "review-summary-dataset-v2-direct"
+TargetType = Literal["hotel", "attraction"]
+CLI_TARGET_TYPES = ("all", "hotel", "attraction")
 HOTEL_ENTITY_TYPE = 1
-TARGET_TYPE = "hotel"
+ATTRACTION_ENTITY_TYPE = 2
 VECTOR_SIZE = 3072
 TEXT_COLLECTION = "review_summary_text_units"
 ENTITY_COLLECTION = "review_summary_entities"
@@ -57,12 +59,93 @@ MINOR_DRAWBACKS = (
     "周边出行较方便，但高峰时段叫车可能需要等待。",
     "对设施新旧程度要求很高的住客可以先确认具体房型。",
 )
+ATTRACTION_POSITIVE_EXPERIENCES = (
+    "游览动线清晰，主要区域的导览信息比较容易理解",
+    "景区维护状态较好，适合安排半天到一天的行程",
+    "现场秩序和服务响应整体稳定，游玩体验比较顺畅",
+    "核心项目或景观点辨识度高，比较符合旅行期待",
+    "配套服务和交通衔接较便利，适合首次到访的游客",
+)
+ATTRACTION_BALANCED_EXPERIENCES = (
+    "整体游览体验符合预期，不过热门时段人流会比较集中",
+    "主要看点值得停留，部分区域的等待时间略长",
+    "基础配套能够满足需求，体验更依赖天气和到访时段",
+    "游览过程比较顺利，但动线安排需要提前规划",
+    "作为行程中的一站比较合适，深度体验需要预留更多时间",
+)
+ATTRACTION_CRITICAL_EXPERIENCES = (
+    "主要看点仍有吸引力，但排队和人流管理有提升空间",
+    "基础设施可用，不过部分细节维护不够稳定",
+    "适合打卡游览，但如果期待深度体验需要谨慎安排时间",
+    "游玩体验中规中矩，高峰时段舒适度会下降",
+    "交通和配套是主要优势，现场体验的稳定性仍需提升",
+)
+ATTRACTION_MINOR_DRAWBACKS = (
+    "如果计划拍照或体验热门项目，建议避开客流高峰。",
+    "天气会明显影响游览体验，出行前最好确认开放信息。",
+    "热门区域可能需要排队，建议提前规划游览顺序。",
+    "亲子或长者同行时，最好预留更多休息时间。",
+    "如果只安排短暂停留，需要优先选择核心看点。",
+)
 TAG_EXPERIENCES = {
     "免费停车": "酒店资料标注提供免费停车，对自驾出行比较友好",
     "泳池": "酒店资料显示配有泳池，休闲需求有更多选择",
     "桑拿": "酒店资料显示提供桑拿设施，行程后可以安排放松",
     "管家服务": "酒店资料标注提供管家服务，适合重视服务响应的住客",
 }
+
+
+@dataclass(frozen=True, slots=True)
+class TargetConfig:
+    target_type: TargetType
+    entity_type: int
+    database: str
+    collection: str
+    graph_type: str
+    display_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewTarget:
+    config: TargetConfig
+    document: dict[str, Any]
+
+    @property
+    def id(self) -> str:
+        return str(self.document["_id"])
+
+    @property
+    def name(self) -> str:
+        return str(self.document.get("name") or self.id)
+
+
+TARGET_CONFIGS: dict[TargetType, TargetConfig] = {
+    "hotel": TargetConfig(
+        target_type="hotel",
+        entity_type=HOTEL_ENTITY_TYPE,
+        database="hotel_db",
+        collection="hotels",
+        graph_type="HOTEL",
+        display_name="hotel",
+    ),
+    "attraction": TargetConfig(
+        target_type="attraction",
+        entity_type=ATTRACTION_ENTITY_TYPE,
+        database="attraction_db",
+        collection="attractions",
+        graph_type="ATTRACTION",
+        display_name="attraction",
+    ),
+}
+
+
+def tag_experience(target_type: TargetType, tag: str) -> str:
+    if target_type == "hotel":
+        return TAG_EXPERIENCES.get(
+            tag,
+            f"酒店资料中标注了{tag}，可按需要提前确认使用安排",
+        )
+    return f"景点资料中标注了{tag}，可以结合开放时间提前安排"
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,8 +171,8 @@ class Manifest:
         self.lock = threading.Lock()
         self.verified = self._load_verified()
 
-    def is_verified(self, hotel_id: str) -> bool:
-        return hotel_id in self.verified
+    def is_verified(self, target: ReviewTarget) -> bool:
+        return manifest_key(target.config.target_type, target.id) in self.verified
 
     def append(self, record: dict[str, Any]) -> None:
         payload = {
@@ -102,7 +185,10 @@ class Manifest:
             with self.path.open("a", encoding="utf-8") as output:
                 output.write(json.dumps(payload, ensure_ascii=False) + "\n")
             if payload.get("status") == "index_verified":
-                self.verified.add(str(payload["hotel_id"]))
+                target_id = payload.get("target_id") or payload.get("hotel_id")
+                target_type = payload.get("target_type") or "hotel"
+                if isinstance(target_id, str) and isinstance(target_type, str):
+                    self.verified.add(manifest_key(target_type, target_id))
 
     def _load_verified(self) -> set[str]:
         if not self.path.exists():
@@ -116,28 +202,43 @@ class Manifest:
                     continue
                 if record.get("seed_version") != SEED_VERSION:
                     continue
-                hotel_id = record.get("hotel_id")
+                target_id = record.get("target_id") or record.get("hotel_id")
+                target_type = record.get("target_type") or "hotel"
                 status = record.get("status")
-                if isinstance(hotel_id, str) and isinstance(status, str):
-                    latest[hotel_id] = status
+                if (
+                    isinstance(target_id, str)
+                    and isinstance(target_type, str)
+                    and isinstance(status, str)
+                ):
+                    latest[manifest_key(target_type, target_id)] = status
         return {
-            hotel_id
-            for hotel_id, status in latest.items()
+            target_key
+            for target_key, status in latest.items()
             if status == "index_verified"
         }
+
+
+def manifest_key(target_type: str, target_id: str) -> str:
+    return f"{target_type}:{target_id}"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate deterministic hotel reviews and directly build the minimal "
-            "pinned review-summary indexes."
+            "Generate deterministic reviews and directly build the minimal "
+            "pinned review-summary indexes for hotels and attractions."
         )
     )
     parser.add_argument(
         "--apply",
         action="store_true",
         help="Write reviews and indexes; without this flag only a preview is shown.",
+    )
+    parser.add_argument(
+        "--target-type",
+        choices=CLI_TARGET_TYPES,
+        default="all",
+        help="Target type to seed. Defaults to all hotels and attractions.",
     )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--offset", type=int, default=0)
@@ -153,7 +254,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--no-resume",
         action="store_true",
-        help="Rebuild hotels already marked index_verified in the manifest.",
+        help="Rebuild targets already marked index_verified in the manifest.",
     )
     return parser.parse_args()
 
@@ -190,80 +291,134 @@ def build_config(args: argparse.Namespace) -> Config:
     )
 
 
-def load_hotels(config: Config, offset: int, limit: int | None) -> list[dict[str, Any]]:
+def selected_target_configs(selection: str) -> tuple[TargetConfig, ...]:
+    if selection == "all":
+        return (TARGET_CONFIGS["hotel"], TARGET_CONFIGS["attraction"])
+    if selection in TARGET_CONFIGS:
+        return (TARGET_CONFIGS[selection],)  # type: ignore[index]
+    raise ValueError(f"unsupported target type: {selection}")
+
+
+def load_targets(
+    config: Config,
+    target_configs: tuple[TargetConfig, ...],
+    offset: int,
+    limit: int | None,
+) -> list[ReviewTarget]:
+    targets: list[ReviewTarget] = []
     with MongoClient(config.mongo_uri, tz_aware=True) as client:
-        cursor = (
-            client.hotel_db.hotels.find(
-                {},
-                {
-                    "_id": 1,
-                    "name": 1,
-                    "address": 1,
-                    "tags": 1,
-                    "amenities": 1,
-                },
+        for target_config in target_configs:
+            cursor = (
+                client[target_config.database][target_config.collection].find(
+                    {},
+                    {
+                        "_id": 1,
+                        "name": 1,
+                        "address": 1,
+                        "tags": 1,
+                        "amenities": 1,
+                    },
+                )
+                .sort("_id", 1)
+                .skip(offset)
             )
-            .sort("_id", 1)
-            .skip(offset)
-        )
-        if limit is not None:
-            cursor = cursor.limit(limit)
-        return list(cursor)
+            if limit is not None:
+                cursor = cursor.limit(limit)
+            targets.extend(
+                ReviewTarget(config=target_config, document=document)
+                for document in cursor
+            )
+    return targets
 
 
-def stable_review_count(hotel_id: str, minimum: int, maximum: int) -> int:
-    digest = hashlib.sha256(hotel_id.encode()).digest()
+def stable_review_count(target_id: str, minimum: int, maximum: int) -> int:
+    digest = hashlib.sha256(target_id.encode()).digest()
     return minimum + int.from_bytes(digest[:4], "big") % (maximum - minimum + 1)
 
 
-def build_review_content(hotel: dict[str, Any], rating: int, index: int) -> str:
-    hotel_id = str(hotel["_id"])
-    rng = random.Random(f"{SEED_VERSION}:{hotel_id}:{index}")
-    name = str(hotel.get("name") or "这家酒店").strip()
-    address = hotel.get("address") or {}
+def build_review_content(target: ReviewTarget, rating: int, index: int) -> str:
+    rng = random.Random(
+        f"{SEED_VERSION}:{target.config.target_type}:{target.id}:{index}"
+    )
+    name = target.name.strip()
+    address = target.document.get("address") or {}
     district = str(address.get("district") or "").strip()
     detailed = str(address.get("detailed") or "").strip()
     tags = [
         str(tag).strip()
-        for tag in [*(hotel.get("tags") or []), *(hotel.get("amenities") or [])]
+        for tag in [
+            *(target.document.get("tags") or []),
+            *(target.document.get("amenities") or []),
+        ]
         if str(tag).strip()
     ]
 
     location = f"位于{district}" if district else "所在位置容易找到"
     if detailed and index % 3 == 0:
         location = f"地址在{detailed}"
-    opening = rng.choice(
-        (
-            f"这次入住{name}，{location}，按酒店地址前往比较顺利。",
-            f"选择{name}主要考虑{location}，实际到店过程比较顺畅。",
-            f"在{name}住了一晚，{location}，整体出行安排比较方便。",
+    if target.config.target_type == "hotel":
+        opening = rng.choice(
+            (
+                f"这次入住{name}，{location}，按酒店地址前往比较顺利。",
+                f"选择{name}主要考虑{location}，实际到店过程比较顺畅。",
+                f"在{name}住了一晚，{location}，整体出行安排比较方便。",
+            )
         )
-    )
-    if rating >= 5:
-        experience = rng.choice(POSITIVE_EXPERIENCES)
-    elif rating >= 3:
-        experience = rng.choice(BALANCED_EXPERIENCES)
+        if rating >= 5:
+            experience = rng.choice(POSITIVE_EXPERIENCES)
+        elif rating >= 3:
+            experience = rng.choice(BALANCED_EXPERIENCES)
+        else:
+            experience = rng.choice(CRITICAL_EXPERIENCES)
+        drawback = MINOR_DRAWBACKS[index % len(MINOR_DRAWBACKS)]
     else:
-        experience = rng.choice(CRITICAL_EXPERIENCES)
+        opening = rng.choice(
+            (
+                f"这次游览{name}，{location}，按景点地址前往比较顺利。",
+                f"选择{name}主要考虑{location}，实际到达过程比较顺畅。",
+                f"在{name}安排了一段游览时间，{location}，整体行程衔接比较方便。",
+            )
+        )
+        if rating >= 5:
+            experience = rng.choice(ATTRACTION_POSITIVE_EXPERIENCES)
+        elif rating >= 3:
+            experience = rng.choice(ATTRACTION_BALANCED_EXPERIENCES)
+        else:
+            experience = rng.choice(ATTRACTION_CRITICAL_EXPERIENCES)
+        drawback = ATTRACTION_MINOR_DRAWBACKS[
+            index % len(ATTRACTION_MINOR_DRAWBACKS)
+        ]
 
     parts = [opening, f"{experience}。"]
     if tags:
         tag = tags[index % len(tags)]
-        tag_experience = TAG_EXPERIENCES.get(
-            tag,
-            f"酒店资料中标注了{tag}，可按需要提前确认使用安排",
+        parts.append(
+            f"{tag_experience(target.config.target_type, tag)}。"
         )
-        parts.append(f"{tag_experience}。")
-    parts.append(MINOR_DRAWBACKS[index % len(MINOR_DRAWBACKS)])
+    parts.append(drawback)
     return "".join(parts)
 
 
+def review_id_seed(target: ReviewTarget, index: int) -> str:
+    if target.config.target_type == "hotel":
+        return f"tripsphere:{SEED_VERSION}:{target.id}:{index}"
+    return f"tripsphere:{SEED_VERSION}:{target.config.target_type}:{target.id}:{index}"
+
+
+def seed_user_id(target: ReviewTarget, index: int) -> str:
+    suffix = target.id[-8:]
+    if target.config.target_type == "hotel":
+        return f"review-summary-dataset-{suffix}-{index:02d}"
+    return f"review-summary-dataset-{target.config.target_type}-{suffix}-{index:02d}"
+
+
 def build_seed_reviews(
-    hotel: dict[str, Any], minimum: int, maximum: int
+    target: ReviewTarget, minimum: int, maximum: int
 ) -> list[dict[str, Any]]:
-    hotel_id = str(hotel["_id"])
-    count = stable_review_count(hotel_id, minimum, maximum)
-    digest = hashlib.sha256(hotel_id.encode()).digest()
+    count = stable_review_count(target.id, minimum, maximum)
+    digest = hashlib.sha256(
+        f"{target.config.target_type}:{target.id}".encode()
+    ).digest()
     base_time = datetime(2026, 1, 1, 10, 0, tzinfo=UTC) + timedelta(
         days=int.from_bytes(digest[4:8], "big") % 180
     )
@@ -272,7 +427,7 @@ def build_seed_reviews(
         review_id = str(
             uuid5(
                 NAMESPACE_URL,
-                f"tripsphere:{SEED_VERSION}:{hotel_id}:{index + 1}",
+                review_id_seed(target, index + 1),
             )
         )
         timestamp = base_time + timedelta(days=index, minutes=index * 7)
@@ -280,11 +435,11 @@ def build_seed_reviews(
         reviews.append(
             {
                 "_id": review_id,
-                "user_id": f"review-summary-dataset-{hotel_id[-8:]}-{index + 1:02d}",
-                "entity_type": HOTEL_ENTITY_TYPE,
-                "entity_id": hotel_id,
+                "user_id": seed_user_id(target, index + 1),
+                "entity_type": target.config.entity_type,
+                "entity_id": target.id,
                 "rating": rating,
-                "content": build_review_content(hotel, rating, index),
+                "content": build_review_content(target, rating, index),
                 "images": [],
                 "dimensions": {},
                 "created_at": timestamp,
@@ -296,9 +451,9 @@ def build_seed_reviews(
 
 
 def seed_and_load_reviews(
-    config: Config, hotel: dict[str, Any]
+    config: Config, target: ReviewTarget
 ) -> tuple[list[dict[str, Any]], frozenset[str]]:
-    seed_reviews = build_seed_reviews(hotel, config.min_reviews, config.max_reviews)
+    seed_reviews = build_seed_reviews(target, config.min_reviews, config.max_reviews)
     seed_ids = frozenset(str(review["_id"]) for review in seed_reviews)
     operations = []
     for review in seed_reviews:
@@ -312,10 +467,9 @@ def seed_and_load_reviews(
             )
         )
 
-    hotel_id = str(hotel["_id"])
     seed_scope = {
-        "entity_type": HOTEL_ENTITY_TYPE,
-        "entity_id": hotel_id,
+        "entity_type": target.config.entity_type,
+        "entity_id": target.id,
         "seed_source": SEED_VERSION,
     }
     with MongoClient(config.mongo_uri, tz_aware=True) as client:
@@ -394,16 +548,16 @@ def embed_texts(config: Config, texts: list[str]) -> list[list[float]]:
     raise RuntimeError(f"embedding request failed: {last_error}")
 
 
-def target_filter(hotel_id: str) -> dict[str, Any]:
+def target_filter(target_id: str, target_type: TargetType) -> dict[str, Any]:
     return {
         "must": [
             {
                 "key": "attributes.target_id",
-                "match": {"value": hotel_id},
+                "match": {"value": target_id},
             },
             {
                 "key": "attributes.target_type",
-                "match": {"value": TARGET_TYPE},
+                "match": {"value": target_type},
             },
         ]
     }
@@ -435,13 +589,14 @@ def ensure_qdrant_collections(config: Config) -> None:
 def replace_qdrant_target(
     config: Config,
     collection: str,
-    hotel_id: str,
+    target_id: str,
+    target_type: TargetType,
     points: list[dict[str, Any]],
 ) -> None:
     delete_response = requests.post(
         f"{config.qdrant_url}/collections/{collection}/points/delete",
         params={"wait": "true"},
-        json={"filter": target_filter(hotel_id)},
+        json={"filter": target_filter(target_id, target_type)},
         timeout=60,
     )
     delete_response.raise_for_status()
@@ -456,15 +611,17 @@ def replace_qdrant_target(
 
 def replace_neo4j_entity(
     config: Config,
-    hotel_id: str,
+    target_id: str,
+    target_type: TargetType,
     entity_id: str,
-    hotel_name: str,
+    entity_type: str,
+    title: str,
     description: str,
     snapshot: str,
     review_count: int,
 ) -> None:
     delete_statement = """
-    MATCH (old:Entity {target_id: $target_id, target_type: 'hotel'})
+    MATCH (old:Entity {target_id: $target_id, target_type: $target_type})
     DETACH DELETE old
     """
     create_statement = """
@@ -472,11 +629,11 @@ def replace_neo4j_entity(
       id: $entity_id,
       readable_id: $target_id,
       title: $title,
-      type: 'HOTEL',
+      type: $entity_type,
       description: $description,
       frequency: $review_count,
       target_id: $target_id,
-      target_type: 'hotel',
+      target_type: $target_type,
       review_snapshot: $snapshot
     })
     """
@@ -487,14 +644,19 @@ def replace_neo4j_entity(
             "statements": [
                 {
                     "statement": delete_statement,
-                    "parameters": {"target_id": hotel_id},
+                    "parameters": {
+                        "target_id": target_id,
+                        "target_type": target_type,
+                    },
                 },
                 {
                     "statement": create_statement,
                     "parameters": {
-                        "target_id": hotel_id,
+                        "target_id": target_id,
+                        "target_type": target_type,
                         "entity_id": entity_id,
-                        "title": hotel_name,
+                        "entity_type": entity_type,
+                        "title": title,
                         "description": description,
                         "review_count": review_count,
                         "snapshot": snapshot,
@@ -512,32 +674,40 @@ def replace_neo4j_entity(
 
 def build_direct_index(
     config: Config,
-    hotel: dict[str, Any],
+    target: ReviewTarget,
     reviews: list[dict[str, Any]],
 ) -> dict[str, Any]:
     if not reviews:
-        raise RuntimeError("hotel has no reviews after seeding")
-    hotel_id = str(hotel["_id"])
-    hotel_name = str(hotel.get("name") or hotel_id)
+        raise RuntimeError("target has no reviews after seeding")
     snapshot = compute_snapshot(reviews)
-    entity_id = str(uuid5(NAMESPACE_URL, f"tripsphere:review-summary:hotel:{hotel_id}"))
+    entity_id = str(
+        uuid5(
+            NAMESPACE_URL,
+            f"tripsphere:review-summary:{target.config.target_type}:{target.id}",
+        )
+    )
     review_texts = [source_text(review) for review in reviews]
-    address = hotel.get("address") or {}
+    address = target.document.get("address") or {}
     address_text = "".join(
         str(address.get(field) or "") for field in ("city", "district", "detailed")
     )
     tags = [
         str(tag).strip()
-        for tag in [*(hotel.get("tags") or []), *(hotel.get("amenities") or [])]
+        for tag in [
+            *(target.document.get("tags") or []),
+            *(target.document.get("amenities") or []),
+        ]
         if str(tag).strip()
     ]
-    description_parts = [f"{hotel_name}位于{address_text or '酒店登记地址'}。"]
+    description_parts = [
+        f"{target.name}位于{address_text or target.config.display_name + '登记地址'}。"
+    ]
     if tags:
-        description_parts.append(f"酒店资料标签包括{'、'.join(tags)}。")
+        description_parts.append(f"{target.config.display_name}资料标签包括{'、'.join(tags)}。")
     description_parts.append(f"当前评论索引包含{len(reviews)}条评论。")
     description = "".join(description_parts)
 
-    embeddings = embed_texts(config, [*review_texts, hotel_name, description])
+    embeddings = embed_texts(config, [*review_texts, target.name, description])
     review_embeddings = embeddings[: len(review_texts)]
     title_embedding = embeddings[-2]
     description_embedding = embeddings[-1]
@@ -550,7 +720,7 @@ def build_direct_index(
         text_unit_id = str(
             uuid5(
                 NAMESPACE_URL,
-                f"tripsphere:review:{TARGET_TYPE}:{hotel_id}:{review_id}",
+                f"tripsphere:review:{target.config.target_type}:{target.id}:{review_id}",
             )
         )
         text_unit_ids.append(text_unit_id)
@@ -566,8 +736,8 @@ def build_direct_index(
                     "n_tokens": max(1, len(text) // 2),
                     "document_id": review_id,
                     "attributes": {
-                        "target_id": hotel_id,
-                        "target_type": TARGET_TYPE,
+                        "target_id": target.id,
+                        "target_type": target.config.target_type,
                         "review_snapshot": snapshot,
                         "review_id": review_id,
                         "user_id": str(review.get("user_id") or ""),
@@ -585,28 +755,42 @@ def build_direct_index(
             "title": title_embedding,
         },
         "payload": {
-            "readable_id": hotel_id,
-            "title": hotel_name,
-            "type": "HOTEL",
+            "readable_id": target.id,
+            "title": target.name,
+            "type": target.config.graph_type,
             "description": description,
             "community_ids": [],
             "text_unit_ids": text_unit_ids,
             "rank": len(reviews),
             "attributes": {
-                "target_id": hotel_id,
-                "target_type": TARGET_TYPE,
+                "target_id": target.id,
+                "target_type": target.config.target_type,
                 "review_snapshot": snapshot,
             },
         },
     }
 
-    replace_qdrant_target(config, TEXT_COLLECTION, hotel_id, text_points)
-    replace_qdrant_target(config, ENTITY_COLLECTION, hotel_id, [entity_point])
+    replace_qdrant_target(
+        config,
+        TEXT_COLLECTION,
+        target.id,
+        target.config.target_type,
+        text_points,
+    )
+    replace_qdrant_target(
+        config,
+        ENTITY_COLLECTION,
+        target.id,
+        target.config.target_type,
+        [entity_point],
+    )
     replace_neo4j_entity(
         config,
-        hotel_id,
+        target.id,
+        target.config.target_type,
         entity_id,
-        hotel_name,
+        target.config.graph_type,
+        target.name,
         description,
         snapshot,
         len(reviews),
@@ -620,13 +804,16 @@ def build_direct_index(
 
 
 def qdrant_points(
-    config: Config, collection: str, hotel_id: str
+    config: Config,
+    collection: str,
+    target_id: str,
+    target_type: TargetType,
 ) -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = []
     offset: Any = None
     while True:
         body: dict[str, Any] = {
-            "filter": target_filter(hotel_id),
+            "filter": target_filter(target_id, target_type),
             "limit": 256,
             "with_payload": True,
             "with_vector": False,
@@ -649,7 +836,9 @@ def qdrant_points(
         offset = next_offset
 
 
-def neo4j_entities(config: Config, hotel_id: str) -> list[dict[str, Any]]:
+def neo4j_entities(
+    config: Config, target_id: str, target_type: TargetType
+) -> list[dict[str, Any]]:
     response = requests.post(
         f"{config.neo4j_url}/db/neo4j/tx/commit",
         auth=(config.neo4j_username, config.neo4j_password),
@@ -658,11 +847,14 @@ def neo4j_entities(config: Config, hotel_id: str) -> list[dict[str, Any]]:
                 {
                     "statement": (
                         "MATCH (entity:Entity {target_id: $target_id, "
-                        "target_type: 'hotel'}) "
+                        "target_type: $target_type}) "
                         "RETURN collect({id: entity.id, "
                         "snapshot: entity.review_snapshot})"
                     ),
-                    "parameters": {"target_id": hotel_id},
+                    "parameters": {
+                        "target_id": target_id,
+                        "target_type": target_type,
+                    },
                 }
             ]
         },
@@ -680,12 +872,22 @@ def neo4j_entities(config: Config, hotel_id: str) -> list[dict[str, Any]]:
 
 def verify_index(
     config: Config,
-    hotel_id: str,
+    target: ReviewTarget,
     seed_ids: frozenset[str],
     expected: dict[str, Any],
 ) -> None:
-    text_points = qdrant_points(config, TEXT_COLLECTION, hotel_id)
-    entity_points = qdrant_points(config, ENTITY_COLLECTION, hotel_id)
+    text_points = qdrant_points(
+        config,
+        TEXT_COLLECTION,
+        target.id,
+        target.config.target_type,
+    )
+    entity_points = qdrant_points(
+        config,
+        ENTITY_COLLECTION,
+        target.id,
+        target.config.target_type,
+    )
     if len(text_points) != expected["text_units"]:
         raise RuntimeError("Qdrant text-unit count differs from the direct build")
     if len(entity_points) != 1:
@@ -725,29 +927,37 @@ def verify_index(
     )
     if entity_snapshot != expected["snapshot"]:
         raise RuntimeError("Qdrant entity snapshot differs from text units")
-    graph_entities = neo4j_entities(config, hotel_id)
+    graph_entities = neo4j_entities(config, target.id, target.config.target_type)
     if {str(entity["id"]) for entity in graph_entities} != entity_ids:
         raise RuntimeError("Neo4j and Qdrant entity IDs differ")
     if any(entity.get("snapshot") != expected["snapshot"] for entity in graph_entities):
         raise RuntimeError("Neo4j entity snapshot differs from Qdrant")
 
 
-def process_hotel(
+def manifest_fields(target: ReviewTarget) -> dict[str, str]:
+    fields = {
+        "target_type": target.config.target_type,
+        "target_id": target.id,
+        "target_name": target.name,
+    }
+    if target.config.target_type == "hotel":
+        fields.update({"hotel_id": target.id, "hotel_name": target.name})
+    return fields
+
+
+def process_target(
     config: Config,
     manifest: Manifest,
-    hotel: dict[str, Any],
+    target: ReviewTarget,
 ) -> dict[str, Any]:
-    hotel_id = str(hotel["_id"])
-    hotel_name = str(hotel.get("name") or hotel_id)
     last_error: Exception | None = None
     for attempt in range(1, config.retries + 2):
         try:
-            reviews, seed_ids = seed_and_load_reviews(config, hotel)
-            expected = build_direct_index(config, hotel, reviews)
-            verify_index(config, hotel_id, seed_ids, expected)
+            reviews, seed_ids = seed_and_load_reviews(config, target)
+            expected = build_direct_index(config, target, reviews)
+            verify_index(config, target, seed_ids, expected)
             record = {
-                "hotel_id": hotel_id,
-                "hotel_name": hotel_name,
+                **manifest_fields(target),
                 "seed_count": len(seed_ids),
                 "status": "index_verified",
                 "attempt": attempt,
@@ -759,8 +969,7 @@ def process_hotel(
             last_error = error
             manifest.append(
                 {
-                    "hotel_id": hotel_id,
-                    "hotel_name": hotel_name,
+                    **manifest_fields(target),
                     "status": "attempt_failed",
                     "attempt": attempt,
                     "error": str(error),
@@ -769,8 +978,7 @@ def process_hotel(
             if attempt <= config.retries:
                 time.sleep(2 ** (attempt - 1))
     record = {
-        "hotel_id": hotel_id,
-        "hotel_name": hotel_name,
+        **manifest_fields(target),
         "status": "failed",
         "error": str(last_error or "unknown failure"),
     }
@@ -778,33 +986,40 @@ def process_hotel(
     return record
 
 
-def print_dry_run(hotels: list[dict[str, Any]], config: Config) -> None:
+def print_dry_run(targets: list[ReviewTarget], config: Config) -> None:
     counts = [
-        stable_review_count(str(hotel["_id"]), config.min_reviews, config.max_reviews)
-        for hotel in hotels
+        stable_review_count(target.id, config.min_reviews, config.max_reviews)
+        for target in targets
     ]
+    target_counts: dict[str, int] = {}
+    for target in targets:
+        target_counts[target.config.target_type] = (
+            target_counts.get(target.config.target_type, 0) + 1
+        )
     print(
         json.dumps(
             {
                 "mode": "dry-run",
                 "strategy": "direct-minimal-pinned-index",
-                "hotels": len(hotels),
+                "targets": len(targets),
+                "target_counts": target_counts,
                 "seed_reviews": sum(counts),
-                "minimum_per_hotel": min(counts, default=0),
-                "maximum_per_hotel": max(counts, default=0),
+                "minimum_per_target": min(counts, default=0),
+                "maximum_per_target": max(counts, default=0),
                 "manifest": str(config.manifest_path),
             },
             ensure_ascii=False,
             indent=2,
         )
     )
-    for hotel in hotels[:5]:
-        reviews = build_seed_reviews(hotel, config.min_reviews, config.max_reviews)
+    for target in targets[:5]:
+        reviews = build_seed_reviews(target, config.min_reviews, config.max_reviews)
         print(
             json.dumps(
                 {
-                    "hotel_id": str(hotel["_id"]),
-                    "hotel_name": hotel.get("name"),
+                    "target_type": target.config.target_type,
+                    "target_id": target.id,
+                    "target_name": target.name,
                     "seed_count": len(reviews),
                     "sample": reviews[0]["content"],
                 },
@@ -816,24 +1031,25 @@ def print_dry_run(hotels: list[dict[str, Any]], config: Config) -> None:
 def main() -> int:
     args = parse_args()
     config = build_config(args)
-    hotels = load_hotels(config, args.offset, args.limit)
-    if not hotels:
-        print("No hotels selected.")
+    target_configs = selected_target_configs(args.target_type)
+    targets = load_targets(config, target_configs, args.offset, args.limit)
+    if not targets:
+        print("No targets selected.")
         return 0
     if not args.apply:
-        print_dry_run(hotels, config)
+        print_dry_run(targets, config)
         return 0
 
     ensure_qdrant_collections(config)
     manifest = Manifest(config.manifest_path)
     pending = [
-        hotel
-        for hotel in hotels
-        if args.no_resume or not manifest.is_verified(str(hotel["_id"]))
+        target
+        for target in targets
+        if args.no_resume or not manifest.is_verified(target)
     ]
-    skipped = len(hotels) - len(pending)
+    skipped = len(targets) - len(pending)
     print(
-        f"Selected {len(hotels)} hotels; pending={len(pending)} "
+        f"Selected {len(targets)} targets; pending={len(pending)} "
         f"skipped={skipped}; concurrency={config.concurrency}.",
         flush=True,
     )
@@ -841,17 +1057,16 @@ def main() -> int:
     results: list[dict[str, Any]] = []
     with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
         futures = {
-            executor.submit(process_hotel, config, manifest, hotel): hotel
-            for hotel in pending
+            executor.submit(process_target, config, manifest, target): target
+            for target in pending
         }
         for completed, future in enumerate(as_completed(futures), start=1):
-            hotel = futures[future]
+            target = futures[future]
             try:
                 result = future.result()
             except Exception as error:
                 result = {
-                    "hotel_id": str(hotel["_id"]),
-                    "hotel_name": hotel.get("name"),
+                    **manifest_fields(target),
                     "status": "failed",
                     "error": str(error),
                 }
@@ -868,7 +1083,7 @@ def main() -> int:
     print(
         json.dumps(
             {
-                "selected": len(hotels),
+                "selected": len(targets),
                 "skipped": skipped,
                 "verified": verified,
                 "failed": failed,

@@ -33,6 +33,7 @@ func NewServer(reviewService pd.ReviewServiceServer, port int) (*Server, error) 
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
+			CorrelationUnaryInterceptor(),
 			RecoveryUnaryInterceptor(),
 			LoggingUnaryInterceptor(),
 		),

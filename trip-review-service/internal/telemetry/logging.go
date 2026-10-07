@@ -10,6 +10,8 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+
+	"trip-review-service/internal/correlation"
 )
 
 func NewLoggerProvider(
@@ -47,10 +49,30 @@ func NewSlogLogger(
 	instrumentationScope string,
 	loggerProvider *sdklog.LoggerProvider,
 ) *slog.Logger {
-	return slog.New(
-		otelslog.NewHandler(
-			instrumentationScope,
-			otelslog.WithLoggerProvider(loggerProvider),
-		),
+	handler := otelslog.NewHandler(
+		instrumentationScope,
+		otelslog.WithLoggerProvider(loggerProvider),
 	)
+	return slog.New(
+		correlationHandler{Handler: handler},
+	)
+}
+
+type correlationHandler struct {
+	slog.Handler
+}
+
+func (h correlationHandler) Handle(ctx context.Context, record slog.Record) error {
+	if requestID := correlation.RequestID(ctx); requestID != "" {
+		record.AddAttrs(slog.String("request_id", requestID))
+	}
+	return h.Handler.Handle(ctx, record)
+}
+
+func (h correlationHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return correlationHandler{Handler: h.Handler.WithAttrs(attrs)}
+}
+
+func (h correlationHandler) WithGroup(name string) slog.Handler {
+	return correlationHandler{Handler: h.Handler.WithGroup(name)}
 }

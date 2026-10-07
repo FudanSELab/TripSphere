@@ -13,11 +13,6 @@ includes:
     dir: trip-chat-service
     internal: true
 
-  file:
-    taskfile: trip-file-service/Taskfile.yaml
-    dir: trip-file-service
-    internal: true
-
   hotel:
     taskfile: trip-hotel-service/Taskfile.yaml
     dir: trip-hotel-service
@@ -43,11 +38,6 @@ includes:
     dir: trip-next-frontend
     internal: true
 
-  note:
-    taskfile: trip-note-service/Taskfile.yaml
-    dir: trip-note-service
-    internal: true
-
   order-assistant:
     taskfile: trip-order-assistant/Taskfile.yaml
     dir: trip-order-assistant
@@ -57,12 +47,6 @@ includes:
     taskfile: trip-order-service/Taskfile.yaml
     dir: trip-order-service
     internal: true
-  
-  poi:
-    taskfile: trip-poi-service/Taskfile.yaml
-    dir: trip-poi-service
-    internal: true
-
   product:
     taskfile: trip-product-service/Taskfile.yaml
     dir: trip-product-service
@@ -89,29 +73,31 @@ tasks:
     cmds:
       - task --list-all
     silent: true
-  
+
+  nacos-prompts:
+    desc: Publish online Prompts to Nacos Config
+    dir: infra/initializer
+    cmds:
+      - uv run scripts/seed_nacos_prompts.py
+
   buf:
     desc: Run buf format and buf lint
-    dir: contracts
     cmds:
-      - buf format --write
-      - buf lint
+      - buf format --write contracts/protobuf
+      - buf lint contracts/protobuf
 
   gen-proto:
     desc: Generate protobuf and gRPC codes
     cmds:
       - task: attraction:gen-proto
       - task: chat:gen-proto
-      - task: file:gen-proto
       - task: hotel:gen-proto
       - task: inventory:gen-proto
       - task: itinerary-planner:gen-proto
       - task: itinerary:gen-proto
       - task: next-frontend:gen-proto
-      - task: note:gen-proto
       - task: order-assistant:gen-proto
       - task: order:gen-proto
-      - task: poi:gen-proto
       - task: product:gen-proto
       - task: review:gen-proto
       - task: review-summary:gen-proto
@@ -122,16 +108,13 @@ tasks:
     cmds:
       - task: attraction:build
       - task: chat:build
-      - task: file:build
       - task: hotel:build
       - task: inventory:build
       - task: itinerary-planner:build
       - task: itinerary:build
       - task: next-frontend:build
-      - task: note:build
       - task: order-assistant:build
       - task: order:build
-      - task: poi:build
       - task: product:build
       - task: review:build
       - task: review-summary:build
@@ -142,16 +125,13 @@ tasks:
     cmds:
       - task: attraction:build-aliyun
       - task: chat:build-aliyun
-      - task: file:build-aliyun
       - task: hotel:build-aliyun
       - task: inventory:build-aliyun
       - task: itinerary-planner:build-aliyun
       - task: itinerary:build-aliyun
       - task: next-frontend:build-aliyun
-      - task: note:build-aliyun
       - task: order-assistant:build-aliyun
       - task: order:build-aliyun
-      - task: poi:build-aliyun
       - task: product:build-aliyun
       - task: review:build-aliyun
       - task: review-summary:build-aliyun

@@ -1,9 +1,9 @@
 """
 POI Data Importer Module
 
-This module provides functionality to import POI (Point of Interest) data
-into MongoDB for the trip-poi-service. It supports multiple import modes
-and ensures data integrity with proper error handling.
+This module provides functionality to import shared POI (Point of Interest)
+data into MongoDB for the attraction and hotel seed workflows. It supports
+multiple import modes and ensures data integrity with proper error handling.
 
 Usage:
     from initializer.pois import PoiImporter

@@ -12,6 +12,7 @@ import org.tripsphere.order.application.port.OrderCachePort;
 import org.tripsphere.order.application.port.OrderRepository;
 import org.tripsphere.order.application.service.OrderAuthorizationService;
 import org.tripsphere.order.domain.model.Order;
+import org.tripsphere.order.infrastructure.observability.CorrelationContext;
 
 @Slf4j
 @Service
@@ -28,9 +29,14 @@ public class ConfirmPaymentUseCase {
         if (!"mock".equals(paymentMethod)) {
             throw new InvalidArgumentException("Only mock payment is supported");
         }
-        log.info("Confirming payment for order: {}, method: {}", orderId, paymentMethod);
-
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order", orderId));
+        log.info(
+                "Confirming payment: request_id={}, order_id={}, order_no={}, request_id_business={}, method={}",
+                CorrelationContext.currentRequestId(),
+                order.getId(),
+                order.getOrderNo(),
+                order.getRequestId(),
+                paymentMethod);
         authorizationService.requireOrderOwner(currentUserId, order);
         order.validateCanConfirmPayment();
 
@@ -40,7 +46,12 @@ public class ConfirmPaymentUseCase {
         order = orderRepository.save(order);
         cachePort.removeOrderExpiry(orderId);
 
-        log.info("Payment confirmed for order: {}", orderId);
+        log.info(
+                "Payment confirmed: request_id={}, order_id={}, order_no={}, request_id_business={}",
+                CorrelationContext.currentRequestId(),
+                order.getId(),
+                order.getOrderNo(),
+                order.getRequestId());
         return order;
     }
 

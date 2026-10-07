@@ -14,7 +14,7 @@ Java Logback / Python logging / Go slog
   -> OpenTelemetry Collector logs/app pipeline
   -> Loki OTLP HTTP
 
-MongoDB / PostgreSQL / Redis / Nacos / RocketMQ / Qdrant / Neo4j /
+MongoDB / PostgreSQL / Redis / Nacos / Qdrant / Neo4j /
 MinIO / Higress stdout+stderr
   -> Docker json-file
   -> Collector docker_observer + receiver_creator + filelog
@@ -66,10 +66,6 @@ redis
 qdrant
 neo4j
 minio
-rmq-namesrv
-rmq-broker
-rmq-proxy
-rmq-dashboard
 ```
 
 ### 3.2 不包含

@@ -36,7 +36,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=attraction_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -69,8 +69,28 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOG_AUTO_INSTRUMENTATION=true
       - OTEL_PYTHON_LOG_CODE_ATTRIBUTES=true
-      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_AND_EVENT
+      - OPENINFERENCE_HIDE_INPUTS=false
+      - OPENINFERENCE_HIDE_OUTPUTS=false
+      - OPENINFERENCE_HIDE_INPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_OUTPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_INPUT_TEXT=false
+      - OPENINFERENCE_HIDE_OUTPUT_TEXT=false
+      - OPENINFERENCE_HIDE_INPUT_IMAGES=false
+      - OPENINFERENCE_HIDE_EMBEDDINGS_TEXT=false
+      - OPENINFERENCE_HIDE_PROMPTS=false
+      - OPENINFERENCE_HIDE_CHOICES=false
+      - OPENINFERENCE_HIDE_LLM_INVOCATION_PARAMETERS=false
+      - OPENINFERENCE_HIDE_LLM_TOOLS=false
+      - OPENINFERENCE_ENABLE_GENAI_SEMCONV=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - NACOS_NAMESPACE_ID=${NACOS_NAMESPACE_ID:-public}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - PROMPT_CONFIG_ENABLED=${PROMPT_CONFIG_ENABLED:-true}
+      - PROMPT_CONFIG_GROUP=${PROMPT_CONFIG_GROUP:-TRIPSPHERE_PROMPTS}
+      - PROMPT_CONFIG_REQUIRED=${PROMPT_CONFIG_REQUIRED:-false}
+      - PROMPT_CONFIG_TIMEOUT_MS=${PROMPT_CONFIG_TIMEOUT_MS:-3000}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
       - MONGO_URI=${MONGO_URI:-mongodb://root:fudanse@mongodb:27017}
       - REVIEW_SUMMARY_URL=${REVIEW_SUMMARY_URL:-http://trip-review-summary:24212}
@@ -101,39 +121,6 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  trip-file-service:
-    build:
-      context: trip-file-service
-      dockerfile: Dockerfile
-    image: tripsphere/trip-file-service:latest
-    container_name: trip-file-service
-    logging: *default-logging
-    ports:
-      - "50051:50051" # gRPC
-    environment:
-      - APP_ENV=dev
-      - APP_NAME=trip-file-service
-      - PORT=50051
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-      - NACOS_NAMESPACE=public
-      - NACOS_GROUP=DEFAULT_GROUP
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - MINIO_ENDPOINT=minio:9000
-    depends_on:
-      nacos:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "50051" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-
   trip-hotel-service:
     build:
       context: trip-hotel-service
@@ -153,7 +140,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - SPRING_DATA_MONGODB_DATABASE=hotel_db
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
@@ -183,7 +170,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventory_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -219,8 +206,28 @@ services:
       - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
-      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_AND_EVENT
+      - OPENINFERENCE_HIDE_INPUTS=false
+      - OPENINFERENCE_HIDE_OUTPUTS=false
+      - OPENINFERENCE_HIDE_INPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_OUTPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_INPUT_TEXT=false
+      - OPENINFERENCE_HIDE_OUTPUT_TEXT=false
+      - OPENINFERENCE_HIDE_INPUT_IMAGES=false
+      - OPENINFERENCE_HIDE_EMBEDDINGS_TEXT=false
+      - OPENINFERENCE_HIDE_PROMPTS=false
+      - OPENINFERENCE_HIDE_CHOICES=false
+      - OPENINFERENCE_HIDE_LLM_INVOCATION_PARAMETERS=false
+      - OPENINFERENCE_HIDE_LLM_TOOLS=false
+      - OPENINFERENCE_ENABLE_GENAI_SEMCONV=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - NACOS_NAMESPACE_ID=${NACOS_NAMESPACE_ID:-public}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - PROMPT_CONFIG_ENABLED=${PROMPT_CONFIG_ENABLED:-true}
+      - PROMPT_CONFIG_GROUP=${PROMPT_CONFIG_GROUP:-TRIPSPHERE_PROMPTS}
+      - PROMPT_CONFIG_REQUIRED=${PROMPT_CONFIG_REQUIRED:-false}
+      - PROMPT_CONFIG_TIMEOUT_MS=${PROMPT_CONFIG_TIMEOUT_MS:-3000}
       - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
@@ -248,7 +255,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
@@ -279,8 +286,28 @@ services:
       - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
-      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_AND_EVENT
+      - OPENINFERENCE_HIDE_INPUTS=false
+      - OPENINFERENCE_HIDE_OUTPUTS=false
+      - OPENINFERENCE_HIDE_INPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_OUTPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_INPUT_TEXT=false
+      - OPENINFERENCE_HIDE_OUTPUT_TEXT=false
+      - OPENINFERENCE_HIDE_INPUT_IMAGES=false
+      - OPENINFERENCE_HIDE_EMBEDDINGS_TEXT=false
+      - OPENINFERENCE_HIDE_PROMPTS=false
+      - OPENINFERENCE_HIDE_CHOICES=false
+      - OPENINFERENCE_HIDE_LLM_INVOCATION_PARAMETERS=false
+      - OPENINFERENCE_HIDE_LLM_TOOLS=false
+      - OPENINFERENCE_ENABLE_GENAI_SEMCONV=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - NACOS_NAMESPACE_ID=${NACOS_NAMESPACE_ID:-public}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - PROMPT_CONFIG_ENABLED=${PROMPT_CONFIG_ENABLED:-true}
+      - PROMPT_CONFIG_GROUP=${PROMPT_CONFIG_GROUP:-TRIPSPHERE_PROMPTS}
+      - PROMPT_CONFIG_REQUIRED=${PROMPT_CONFIG_REQUIRED:-false}
+      - PROMPT_CONFIG_TIMEOUT_MS=${PROMPT_CONFIG_TIMEOUT_MS:-3000}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
     depends_on:
@@ -330,23 +357,6 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  trip-note-service:
-    build:
-      context: trip-note-service
-      dockerfile: Dockerfile
-    image: tripsphere/trip-note-service:latest
-    container_name: trip-note-service
-    logging: *default-logging
-    ports:
-      - "24216:24216" # HTTP
-      - "50055:50055" # gRPC
-    environment:
-      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-    restart: unless-stopped
-
   trip-order-service:
     build:
       context: trip-order-service
@@ -366,7 +376,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -378,25 +388,6 @@ services:
       nacos:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  trip-poi-service:
-    build:
-      context: trip-poi-service
-      dockerfile: Dockerfile
-    image: tripsphere/trip-poi-service:latest
-    container_name: trip-poi-service
-    logging: *default-logging
-    ports:
-      - "24218:24218" # HTTP
-      - "50058:50058" # gRPC
-    environment:
-      - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
     restart: unless-stopped
 
@@ -419,7 +410,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - SPRING_CLOUD_NACOS_SERVER_ADDR=nacos:8848
       - SPRING_DATA_MONGODB_URI=mongodb://root:fudanse@mongodb:27017
     depends_on:
@@ -459,14 +450,11 @@ services:
       - NACOS_PASSWORD=nacos
       - MONGODB_URI=mongodb://root:fudanse@mongodb:27017
       - MONGODB_DATABASE=review_db
-      - ROCKETMQ_ENDPOINT=rmq-proxy:8081
     depends_on:
       nacos:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-      rmq-proxy:
-        condition: service_started
       otel-collector:
         condition: service_started
     healthcheck:
@@ -498,8 +486,28 @@ services:
       - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
-      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_AND_EVENT
+      - OPENINFERENCE_HIDE_INPUTS=false
+      - OPENINFERENCE_HIDE_OUTPUTS=false
+      - OPENINFERENCE_HIDE_INPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_OUTPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_INPUT_TEXT=false
+      - OPENINFERENCE_HIDE_OUTPUT_TEXT=false
+      - OPENINFERENCE_HIDE_INPUT_IMAGES=false
+      - OPENINFERENCE_HIDE_EMBEDDINGS_TEXT=false
+      - OPENINFERENCE_HIDE_PROMPTS=false
+      - OPENINFERENCE_HIDE_CHOICES=false
+      - OPENINFERENCE_HIDE_LLM_INVOCATION_PARAMETERS=false
+      - OPENINFERENCE_HIDE_LLM_TOOLS=false
+      - OPENINFERENCE_ENABLE_GENAI_SEMCONV=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
+      - NACOS_NAMESPACE_ID=${NACOS_NAMESPACE_ID:-public}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - PROMPT_CONFIG_ENABLED=${PROMPT_CONFIG_ENABLED:-true}
+      - PROMPT_CONFIG_GROUP=${PROMPT_CONFIG_GROUP:-TRIPSPHERE_PROMPTS}
+      - PROMPT_CONFIG_REQUIRED=${PROMPT_CONFIG_REQUIRED:-false}
+      - PROMPT_CONFIG_TIMEOUT_MS=${PROMPT_CONFIG_TIMEOUT_MS:-3000}
       - QDRANT_URL=http://qdrant:6333
       - REVIEW_INDEX_VALIDATION_MODE=${REVIEW_INDEX_VALIDATION_MODE:-pinned}
       - NEO4J_URI=neo4j://neo4j:7687
@@ -557,7 +565,20 @@ services:
       - OTEL_SEMCONV_STABILITY_OPT_IN=http
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
-      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+      - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_AND_EVENT
+      - OPENINFERENCE_HIDE_INPUTS=false
+      - OPENINFERENCE_HIDE_OUTPUTS=false
+      - OPENINFERENCE_HIDE_INPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_OUTPUT_MESSAGES=false
+      - OPENINFERENCE_HIDE_INPUT_TEXT=false
+      - OPENINFERENCE_HIDE_OUTPUT_TEXT=false
+      - OPENINFERENCE_HIDE_INPUT_IMAGES=false
+      - OPENINFERENCE_HIDE_EMBEDDINGS_TEXT=false
+      - OPENINFERENCE_HIDE_PROMPTS=false
+      - OPENINFERENCE_HIDE_CHOICES=false
+      - OPENINFERENCE_HIDE_LLM_INVOCATION_PARAMETERS=false
+      - OPENINFERENCE_HIDE_LLM_TOOLS=false
+      - OPENINFERENCE_ENABLE_GENAI_SEMCONV=true
       - NACOS_SERVER_ADDRESS=${NACOS_SERVER_ADDRESS:-nacos:8848}
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=neo4j://neo4j:7687
@@ -631,7 +652,7 @@ services:
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=tripsphere,deployment.environment.name=local,service.version=${TRIPSPHERE_VERSION:-local}
-      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,task.id
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_MDC_ATTRIBUTES_INCLUDED=request.id,request_id,order.id,order.no,task.id
       - "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db"
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=fudanse
@@ -824,58 +845,6 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-
-  rmq-namesrv:
-    image: apache/rocketmq:5.3.2
-    container_name: rmq-namesrv
-    logging: *default-logging
-    ports:
-      - "9876:9876"
-    command: sh mqnamesrv
-
-  rmq-broker:
-    image: apache/rocketmq:5.3.2
-    container_name: rmq-broker
-    logging: *default-logging
-    ports:
-      - "10909:10909"
-      - "10911:10911"
-      - "10912:10912"
-    environment:
-      - NAMESRV_ADDR=rmq-namesrv:9876
-    depends_on:
-      rmq-namesrv:
-        condition: service_started
-    command: sh mqbroker
-
-  rmq-proxy:
-    image: apache/rocketmq:5.3.2
-    container_name: rmq-proxy
-    logging: *default-logging
-    depends_on:
-      rmq-broker:
-        condition: service_started
-      rmq-namesrv:
-        condition: service_started
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    restart: on-failure
-    environment:
-      - NAMESRV_ADDR=rmq-namesrv:9876
-    command: sh mqproxy
-
-  rmq-dashboard:
-    image: apacherocketmq/rocketmq-dashboard:latest
-    container_name: rmq-dashboard
-    logging: *default-logging
-    ports:
-      - "8082:8082"
-    environment:
-      - JAVA_OPTS=-Drocketmq.namesrv.addr=rmq-namesrv:9876
-    depends_on:
-      rmq-namesrv:
-        condition: service_started
 
   mongodb:
     image: mongodb/mongodb-community-server:8.0-ubi8

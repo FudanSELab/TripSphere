@@ -1,6 +1,7 @@
 import "server-only";
 
 import { credentials, Metadata, type ChannelCredentials } from "@grpc/grpc-js";
+import { randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { config } from "@/lib/env";
 import { UserServiceClient } from "./generated/tripsphere/user/v1/user";
@@ -58,12 +59,20 @@ export function getReviewService() {
   return getGrpcClient(ReviewServiceClient, config.grpc.reviewService);
 }
 
-export async function getAuthMetadata(): Promise<Metadata> {
+export async function getAuthMetadata(requestId?: string): Promise<Metadata> {
   const metadata = new Metadata();
   const reqHeaders = await headers();
   const authorization = reqHeaders.get("authorization");
   const userId = reqHeaders.get("x-user-id");
   const userRoles = reqHeaders.get("x-user-roles");
+  const incomingRequestId = reqHeaders.get("x-request-id");
+  const candidateRequestId = requestId?.trim() || incomingRequestId?.trim() || "";
+  const correlationRequestId =
+    /^[\x21-\x7e]{1,128}$/.test(candidateRequestId)
+      ? candidateRequestId
+      : randomUUID();
+
+  metadata.set("x-request-id", correlationRequestId);
   if (authorization) metadata.set("authorization", authorization);
   if (userId) metadata.set("x-user-id", userId);
   if (userRoles) metadata.set("x-user-roles", userRoles);
