@@ -760,6 +760,22 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  chaosblade-tool:
+    build:
+      context: ./infra/chaosblade-tool
+      dockerfile: Dockerfile
+      args:
+        CHAOSBLADE_VERSION: ${CHAOSBLADE_VERSION:-1.8.1}
+        CHAOSBLADE_TARBALL_URL: ${CHAOSBLADE_TARBALL_URL:-https://github.com/chaosblade-io/chaosblade/releases/download/v${CHAOSBLADE_VERSION:-1.8.1}/chaosblade-${CHAOSBLADE_VERSION:-1.8.1}-linux_amd64.tar.gz}
+    image: tripsphere/chaosblade-tool:${CHAOSBLADE_VERSION:-1.8.1}
+    container_name: chaosblade-tool
+    logging: *default-logging
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
   loki:
     build:
       context: ./infra/loki
@@ -805,6 +821,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./infra/prometheus/rules:/etc/prometheus/rules:ro
       - ${TRIPSPHERE_DATA_ROOT:-./volumes}/prometheus:/prometheus
     ports:
       - "9090:9090"

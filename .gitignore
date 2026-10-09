@@ -23,3 +23,6 @@ volumes/
 
 # Environment configuration
 .env
+
+# Dataset
+dataset/

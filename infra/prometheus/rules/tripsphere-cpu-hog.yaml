@@ -1,0 +1,84 @@
+groups:
+  - name: tripsphere-resource-faults
+    rules:
+      - alert: ContainerCpuUsageHigh
+        expr: |
+          sum by (
+            name,
+            container_label_com_docker_compose_service
+          ) (
+            rate(container_cpu_usage_seconds_total{
+              job="cadvisor",
+              cpu="total",
+              name=~"trip-chat-service|trip-order-service|trip-itinerary-planner"
+            }[1m])
+          ) > 0.8
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container CPU usage is high"
+          description: "{{ $labels.name }} CPU usage is above 0.8 cores for 1 minute"
+
+      - alert: ContainerMemoryWorkingSetHigh
+        expr: |
+          (
+            container_memory_working_set_bytes{
+              job="cadvisor",
+              name="trip-chat-service"
+            } > 838860800
+          ) or (
+            container_memory_working_set_bytes{
+              job="cadvisor",
+              name="trip-order-service"
+            } > 1363148800
+          ) or (
+            container_memory_working_set_bytes{
+              job="cadvisor",
+              name="trip-itinerary-planner"
+            } > 419430400
+          ) or (
+            container_memory_working_set_bytes{
+              job="cadvisor",
+              name="trip-review-summary"
+            } > 629145600
+          )
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container memory working set is high"
+          description: "{{ $labels.name }} memory working set is above its service threshold for 1 minute"
+
+      - alert: HostDiskIoTimeHigh
+        expr: |
+          max by (device) (
+            rate(node_disk_io_time_seconds_total{
+              job="node-exporter",
+              device!~"^(loop|ram|zram).*"
+            }[1m])
+          ) > 0.8
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host disk I/O time is high"
+          description: "{{ $labels.device }} disk I/O busy time is above 0.8 seconds per second for 1 minute"
+
+      - alert: ContainerTcpUsageHigh
+        expr: |
+          sum by (
+            name,
+            container_label_com_docker_compose_service
+          ) (
+            container_network_tcp_usage_total{
+              job="cadvisor",
+              name=~"trip-chat-service|trip-order-service|trip-itinerary-planner"
+            }
+          ) > 25
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container TCP usage is high"
+          description: "{{ $labels.name }} TCP usage total is above 25 for 1 minute"
