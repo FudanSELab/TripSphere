@@ -10,7 +10,7 @@ dependencies = [
     "litellm>=1.80.5",
     "mcp-weather-server>=0.6.1",
     "mem0ai>=1.0.0",
-    "nacos-sdk-python>=3.0.3",
+    "nacos-sdk-python==3.0.4",
     "openinference-instrumentation-google-adk>=0.1.8",
     "openinference-instrumentation-litellm>=0.1.29",
     "opentelemetry-distro[otlp]>=0.59b0",

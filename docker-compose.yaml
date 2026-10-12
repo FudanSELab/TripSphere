@@ -688,6 +688,7 @@ services:
       timeout: 3s
       retries: 20
       start_period: 90s
+    restart: unless-stopped
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.144.0

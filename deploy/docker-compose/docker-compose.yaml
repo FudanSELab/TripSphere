@@ -826,7 +826,7 @@ services:
     restart: unless-stopped
 
   celery-exporter:
-    image: danihodovic/celery-exporter:latest
+    image: minervaproject/celery-exporter:26.5.1
     container_name: celery-exporter
     logging: *logging
     ports:
