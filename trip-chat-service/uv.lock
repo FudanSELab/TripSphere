@@ -790,6 +790,7 @@ name = "chat"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "a2a-sdk" },
     { name = "ag-ui-adk" },
     { name = "fastapi", extra = ["standard"] },
     { name = "google-adk", extra = ["a2a", "mcp", "otel-gcp"] },
@@ -820,6 +821,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "a2a-sdk", specifier = "==0.3.26" },
     { name = "ag-ui-adk", specifier = ">=0.6.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.123.10" },
     { name = "google-adk", extras = ["a2a", "otel-gcp", "mcp"], specifier = ">=1.29.0" },
