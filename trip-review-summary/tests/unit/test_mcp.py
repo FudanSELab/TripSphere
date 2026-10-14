@@ -9,7 +9,10 @@ from v2.nacos.transport.grpc_util import GrpcUtils  # type: ignore
 
 from review_summary.clients.reviews import TargetType
 from review_summary.infra.nacos.ai import NacosAI
-from review_summary.mcp import create_review_summary_mcp_server, target_from_headers
+from review_summary.mcp import (
+    create_review_summary_mcp_server,
+    target_from_headers,
+)
 from review_summary.query.review_state import ReviewState
 from review_summary.services.summarizer import ReviewSummaryService
 
@@ -43,6 +46,21 @@ async def test_mcp_tool_accepts_only_the_user_query() -> None:
     transport_security = mcp_server.settings.transport_security
     assert transport_security is not None
     assert "trip-review-summary:*" in transport_security.allowed_hosts
+
+
+@pytest.mark.asyncio
+async def test_mcp_allows_the_ip_advertised_to_nacos(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("review_summary.mcp.get_local_ip", lambda: "172.18.0.28")
+
+    mcp_server = create_review_summary_mcp_server(
+        cast(Any, lambda: cast(ReviewSummaryService, object()))
+    )
+
+    transport_security = mcp_server.settings.transport_security
+    assert transport_security is not None
+    assert "172.18.0.28:*" in transport_security.allowed_hosts
 
 
 @pytest.mark.asyncio

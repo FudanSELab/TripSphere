@@ -5,22 +5,23 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from review_summary.clients.reviews import TargetType
+from review_summary.infra.nacos.utils import get_local_ip
 from review_summary.services.summarizer import ReviewSummaryService
 
 _TARGET_ID_HEADER = "x-review-target-id"
 _TARGET_TYPE_HEADER = "x-review-target-type"
-_MCP_ALLOWED_HOSTS = [
+_MCP_ALLOWED_HOSTS = (
     "127.0.0.1:*",
     "localhost:*",
     "[::1]:*",
     "trip-review-summary:*",
-]
-_MCP_ALLOWED_ORIGINS = [
+)
+_MCP_ALLOWED_ORIGINS = (
     "http://127.0.0.1:*",
     "http://localhost:*",
     "http://[::1]:*",
     "http://trip-review-summary:*",
-]
+)
 
 
 def target_from_headers(headers: Mapping[str, str]) -> tuple[str, TargetType]:
@@ -38,6 +39,7 @@ def target_from_headers(headers: Mapping[str, str]) -> tuple[str, TargetType]:
 def create_review_summary_mcp_server(
     service_provider: Callable[[], ReviewSummaryService],
 ) -> FastMCP:
+    allowed_hosts = [*_MCP_ALLOWED_HOSTS, f"{get_local_ip()}:*"]
     server = FastMCP(
         name="review-summary",
         instructions=(
@@ -47,8 +49,8 @@ def create_review_summary_mcp_server(
         streamable_http_path="/mcp",
         transport_security=TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
-            allowed_hosts=_MCP_ALLOWED_HOSTS,
-            allowed_origins=_MCP_ALLOWED_ORIGINS,
+            allowed_hosts=allowed_hosts,
+            allowed_origins=list(_MCP_ALLOWED_ORIGINS),
         ),
     )
 
