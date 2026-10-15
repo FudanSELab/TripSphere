@@ -17,8 +17,8 @@ buf generate
 uv run tripsphere-rca run --spec configs/cases/cpu/order.toml
 ```
 
-Run all cases in a directory:
+Refresh Inventory:
 
 ```bash
-uv run tripsphere-rca run-batch --dir configs/cases/cpu
+uv run --project experiments/rca_dataset   tripsphere-rca run   --refresh-inventory   --inventory-mode replace   --spec experiments/rca_dataset/configs/cases/cpu/planner.toml
 ```
