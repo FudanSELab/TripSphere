@@ -1,0 +1,26 @@
+case_id = "TS-RCA-DISK-IO-MONGODB"
+fault_category = "Resource Fault"
+fault_type = "Disk I/O Stress"
+
+[fault]
+kind = "disk"
+target = "mongodb"
+tool = "fio"
+
+[fault.parameters]
+volume = "mongodb"
+volume_path = "volumes/mongodb"
+file_size_mb = 64
+rate_iops = 200
+
+[workload]
+profile = "tripsphere_mixed_realistic_50rps"
+baseline_seconds = 180
+fault_seconds = 300
+recovery_seconds = 180
+spawn_rate = 20
+
+[collection]
+prometheus_url = "http://localhost:9090"
+step_seconds = 15
+chunk_seconds = 60

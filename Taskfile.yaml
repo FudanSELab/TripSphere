@@ -146,3 +146,4 @@ tasks:
     desc: Stop all services by Docker Compose
     cmds:
       - docker compose down --remove-orphans --volumes
+      - docker rm -f chaosblade-tool >/dev/null 2>&1 || true

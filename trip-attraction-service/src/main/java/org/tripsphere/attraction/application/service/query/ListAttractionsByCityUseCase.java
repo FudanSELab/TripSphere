@@ -2,10 +2,12 @@ package org.tripsphere.attraction.application.service.query;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.tripsphere.attraction.application.port.AttractionRepository;
 import org.tripsphere.attraction.domain.model.Attraction;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ListAttractionsByCityUseCase {
@@ -24,6 +26,13 @@ public class ListAttractionsByCityUseCase {
                 skip = 0;
             }
         }
-        return attractionRepository.listByCity(city, tags.isEmpty() ? null : tags, effectivePageSize, skip);
+        List<Attraction> attractions = attractionRepository.listByCity(
+                city, tags.isEmpty() ? null : tags, effectivePageSize, skip);
+        log.info(
+                "Listed attractions by city: city={}, resultCount={}, pageSize={}",
+                city,
+                attractions.size(),
+                effectivePageSize);
+        return attractions;
     }
 }

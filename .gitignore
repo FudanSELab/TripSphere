@@ -23,3 +23,15 @@ volumes/
 
 # Environment configuration
 .env
+
+# Dataset
+dataset/
+rcaeval-dataset-example/
+
+# RCA experiment
+experiments/rca_dataset/.venv/
+experiments/rca_dataset/.pytest_cache/
+experiments/rca_dataset/**/__pycache__/
+experiments/rca_dataset/src/*.egg-info/
+experiments/rca_dataset/workload/proto/**/*_pb2.py
+experiments/rca_dataset/workload/proto/**/*_pb2_grpc.py

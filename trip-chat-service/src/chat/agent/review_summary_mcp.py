@@ -59,9 +59,8 @@ async def resolve_review_summary_url(
             address = getattr(endpoint, "address", None)
             port = getattr(endpoint, "port", None)
             path = getattr(endpoint, "path", None) or "/mcp"
-            if not protocol or not address or not port:
-                raise RuntimeError("Nacos MCP endpoint is incomplete")
-            return _mcp_url(f"{protocol}://{address}:{port}{path}")
+            if protocol and address and port:
+                return _mcp_url(f"{protocol}://{address}:{port}{path}")
 
         if nacos_naming is None:
             raise RuntimeError("Nacos MCP server has no discoverable endpoint")

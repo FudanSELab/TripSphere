@@ -13,6 +13,10 @@ spring:
       uri: mongodb://root:fudanse@localhost:27017
       database: hotel_db
 
+logging:
+  level:
+    org.tripsphere.hotel: DEBUG
+
 server:
   port: 24214
 

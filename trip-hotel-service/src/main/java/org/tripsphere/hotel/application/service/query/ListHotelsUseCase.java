@@ -45,6 +45,12 @@ public class ListHotelsUseCase {
             nextPageToken = encodeCursorToken(last.getCreatedAt(), last.getId());
         }
 
+        log.info(
+                "Listed hotels: province={}, city={}, resultCount={}, pageSize={}",
+                province,
+                city,
+                hotels.size(),
+                normalizedPageSize);
         return new HotelPage(hotels, nextPageToken);
     }
 

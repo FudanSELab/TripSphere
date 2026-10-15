@@ -1,0 +1,30 @@
+[project]
+name = "tripsphere-rca-dataset"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "grpcio>=1.84",
+  "locust>=2.32",
+  "pandas>=2.2",
+  "pyarrow>=18",
+  "protobuf>=7.36",
+  "requests>=2.32",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+]
+
+[project.scripts]
+tripsphere-rca = "tripsphere_rca.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

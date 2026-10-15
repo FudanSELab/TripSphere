@@ -48,7 +48,7 @@ tasks:
       PREFIX: '{{.PREFIX | default "tripsphere"}}'
       TAG: '{{.TAG | default "latest"}}'
     cmd: |
-        docker build . -t {{.PREFIX}}/trip-product-service:{{.TAG}} \
+        docker build . -f Dockerfile-aliyun -t {{.PREFIX}}/trip-product-service:{{.TAG}} \
         --build-arg MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
 
   format:

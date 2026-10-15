@@ -165,3 +165,42 @@ async def test_review_summary_url_resolves_nacos_service_reference() -> None:
     )
 
     assert url == "http://review-summary:24212/mcp"
+
+
+@pytest.mark.asyncio
+async def test_review_summary_url_ignores_incomplete_endpoint_for_service_reference() -> None:
+    class FakeNacosAI:
+        async def get_mcp_server(self, name: str, version: str | None = None):
+            return SimpleNamespace(
+                backendEndpoints=[
+                    SimpleNamespace(
+                        protocol=None,
+                        address="172.18.0.28",
+                        port=24212,
+                        path="/mcp",
+                    )
+                ],
+                remoteServerConfig=SimpleNamespace(
+                    serviceRef=SimpleNamespace(
+                        serviceName="trip-review-summary",
+                        groupName="DEFAULT_GROUP",
+                    ),
+                    exportPath="/mcp",
+                ),
+            )
+
+    class FakeNaming:
+        async def get_service_instance(
+            self, service_name: str, group_name: str = "DEFAULT_GROUP"
+        ):
+            assert service_name == "trip-review-summary"
+            assert group_name == "DEFAULT_GROUP"
+            return SimpleNamespace(ip="review-summary", port=24212)
+
+    url = await resolve_review_summary_url(
+        FakeNacosAI(),
+        "http://fallback:24212",
+        nacos_naming=FakeNaming(),
+    )
+
+    assert url == "http://review-summary:24212/mcp"

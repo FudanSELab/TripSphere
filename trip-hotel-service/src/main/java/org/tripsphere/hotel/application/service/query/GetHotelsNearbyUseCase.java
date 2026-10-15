@@ -2,11 +2,13 @@ package org.tripsphere.hotel.application.service.query;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.tripsphere.hotel.application.port.HotelRepository;
 import org.tripsphere.hotel.domain.model.GeoLocation;
 import org.tripsphere.hotel.domain.model.Hotel;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GetHotelsNearbyUseCase {
@@ -16,6 +18,12 @@ public class GetHotelsNearbyUseCase {
     private final HotelRepository hotelRepository;
 
     public List<Hotel> execute(GeoLocation wgs84Location, double radiusMeters) {
-        return hotelRepository.findAllByLocationNear(wgs84Location, radiusMeters, DEFAULT_NEARBY_LIMIT);
+        List<Hotel> hotels = hotelRepository.findAllByLocationNear(
+                wgs84Location, radiusMeters, DEFAULT_NEARBY_LIMIT);
+        log.info(
+                "Listed nearby hotels: radiusMeters={}, resultCount={}",
+                radiusMeters,
+                hotels.size());
+        return hotels;
     }
 }
