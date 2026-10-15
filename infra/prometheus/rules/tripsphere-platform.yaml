@@ -1,0 +1,361 @@
+groups:
+  - name: tripsphere-platform
+    rules:
+      - alert: JavaServiceDown
+        expr: up{job="java-services"} == 0
+        for: 2m
+        labels:
+          severity: critical
+
+      - alert: PrometheusTargetDown
+        expr: up{job!="java-services"} == 0
+        for: 2m
+        labels:
+          severity: critical
+
+      - alert: JavaHttp5xxRateHigh
+        expr: |
+          (
+            sum by (instance) (
+              rate(http_server_requests_seconds_count{
+                job="java-services",
+                uri!~"^/actuator.*|^/(health|ready|metrics)$",
+                status=~"5.."
+              }[5m])
+            )
+            /
+            sum by (instance) (
+              rate(http_server_requests_seconds_count{
+                job="java-services",
+                uri!~"^/actuator.*|^/(health|ready|metrics)$"
+              }[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: JavaHttpLatencyP99High
+        expr: |
+          max by (instance) (
+            http_server_requests_seconds_max{
+              job="java-services",
+              uri!~"^/actuator.*|^/(health|ready|metrics)$"
+            }
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: JavaGrpcServerErrorRateHigh
+        expr: |
+          (
+            sum by (instance, service, method) (
+              rate(grpc_server_processing_duration_seconds_count{
+                job="java-services",
+                service!="grpc.health.v1.Health",
+                statusCode!="OK"
+              }[5m])
+            )
+            /
+            sum by (instance, service, method) (
+              rate(grpc_server_processing_duration_seconds_count{
+                job="java-services",
+                service!="grpc.health.v1.Health"
+              }[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: JavaGrpcServerLatencyP99High
+        expr: |
+          max by (instance, service, method) (
+            grpc_server_processing_duration_seconds_max{
+              job="java-services",
+              service!="grpc.health.v1.Health"
+            }
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: JavaGrpcClientErrorRateHigh
+        expr: |
+          (
+            sum by (instance, service, method) (
+              rate(grpc_client_processing_duration_seconds_count{
+                job="java-services",
+                statusCode!="OK"
+              }[5m])
+            )
+            /
+            sum by (instance, service, method) (
+              rate(grpc_client_processing_duration_seconds_count{
+                job="java-services"
+              }[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: JavaGrpcClientLatencyP99High
+        expr: |
+          max by (instance, service, method) (
+            grpc_client_processing_duration_seconds_max{
+              job="java-services"
+            }
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: PythonHttp5xxRateHigh
+        expr: |
+          (
+            sum by (exported_job) (
+              rate(http_server_request_duration_seconds_count{
+                job="otel-collector-exporter",
+                http_route!~"^/actuator.*|(^|/)(health|ready|metrics)$",
+                http_response_status_code=~"5.."
+              }[5m])
+            )
+            /
+            sum by (exported_job) (
+              rate(http_server_request_duration_seconds_count{
+                job="otel-collector-exporter",
+                http_route!~"^/actuator.*|(^|/)(health|ready|metrics)$"
+              }[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: PythonHttpLatencyP99High
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (exported_job, le) (
+              rate(http_server_request_duration_seconds_bucket{
+                job="otel-collector-exporter",
+                http_route!~"^/actuator.*|(^|/)(health|ready|metrics)$"
+              }[5m])
+            )
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: PythonHttpClientErrorRateHigh
+        expr: |
+          (
+            sum by (exported_job, server_address) (
+              rate(http_client_request_duration_seconds_count{
+                job="otel-collector-exporter",
+                error_type=~".+"
+              }[5m])
+            )
+            /
+            sum by (exported_job, server_address) (
+              rate(http_client_request_duration_seconds_count{
+                job="otel-collector-exporter"
+              }[5m])
+            )
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: PythonHttpClientLatencyP99High
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (exported_job, server_address, le) (
+              rate(http_client_request_duration_seconds_bucket{
+                job="otel-collector-exporter"
+              }[5m])
+            )
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: GenAIClientErrorRateHigh
+        expr: |
+          (
+            sum by (exported_job, gen_ai_operation_name) (
+              rate(gen_ai_client_operation_duration_seconds_count{
+                job="otel-collector-exporter",
+                error_type=~".+"
+              }[5m])
+            )
+            /
+            sum by (exported_job, gen_ai_operation_name) (
+              rate(gen_ai_client_operation_duration_seconds_count{
+                job="otel-collector-exporter"
+              }[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: GenAIClientLatencyP99High
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (exported_job, gen_ai_operation_name, le) (
+              rate(gen_ai_client_operation_duration_seconds_bucket{
+                job="otel-collector-exporter"
+              }[5m])
+            )
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: HikariPoolPending
+        expr: |
+          max by (instance, pool) (
+            hikaricp_connections_pending{job="java-services"}
+          ) > 0
+        for: 2m
+        labels:
+          severity: warning
+
+      - alert: HikariPoolExhausted
+        expr: |
+          (
+            max by (instance, pool) (
+              hikaricp_connections_active{job="java-services"}
+            )
+            /
+            max by (instance, pool) (
+              hikaricp_connections_max{job="java-services"}
+            )
+          ) >= 1
+        for: 5m
+        labels:
+          severity: critical
+
+      - alert: HikariPoolTimeouts
+        expr: |
+          sum by (instance, pool) (
+            increase(hikaricp_connections_timeout_total{
+              job="java-services"
+            }[5m])
+          ) > 0
+        for: 1m
+        labels:
+          severity: warning
+
+      - alert: CeleryQueueBacklogHigh
+        expr: |
+          max by (queue_name) (
+            celery_queue_length{job="celery-exporter"}
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: CeleryWorkerUnavailable
+        expr: |
+          min by (hostname) (
+            celery_worker_up{job="celery-exporter"}
+          ) == 0
+        for: 2m
+        labels:
+          severity: critical
+
+      - alert: ContainerCpuUsageHigh
+        expr: |
+          sum by (name) (
+            rate(container_cpu_usage_seconds_total{
+              job="cadvisor",
+              cpu="total",
+              name!="",
+              name!~"POD|root"
+            }[5m])
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: ContainerMemoryWorkingSetHigh
+        expr: |
+          (
+            sum by (name) (
+              container_memory_working_set_bytes{
+                job="cadvisor",
+                name!="",
+                name!~"POD|root"
+              }
+            )
+            /
+            sum by (name) (
+              container_spec_memory_limit_bytes{
+                job="cadvisor",
+                name!="",
+                name!~"POD|root"
+              }
+            )
+          ) > 0.90
+          and on (name)
+          sum by (name) (
+            container_spec_memory_limit_bytes{
+              job="cadvisor",
+              name!="",
+              name!~"POD|root"
+            }
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: ContainerOOMKilled
+        expr: |
+          sum by (name) (
+            increase(container_oom_events_total{
+              job="cadvisor",
+              name!="",
+              name!~"POD|root"
+            }[5m])
+          ) > 0
+        for: 1m
+        labels:
+          severity: critical
+
+      - alert: ContainerNetworkReceiveErrors
+        expr: |
+          sum by (name) (
+            rate(container_network_receive_errors_total{
+              job="cadvisor",
+              name!="",
+              name!~"POD|root"
+            }[5m])
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+
+      - alert: HostDiskSpaceLow
+        expr: |
+          min by (job, instance) (
+            node_filesystem_avail_bytes{
+              job="node-exporter",
+              fstype!~"tmpfs|overlay|squashfs|proc|sysfs|cgroup.*|devpts",
+              mountpoint!~"^/(proc|sys|dev|run)(/|$)"
+            }
+            /
+            node_filesystem_size_bytes{
+              job="node-exporter",
+              fstype!~"tmpfs|overlay|squashfs|proc|sysfs|cgroup.*|devpts",
+              mountpoint!~"^/(proc|sys|dev|run)(/|$)"
+            }
+          ) < 0.10
+        for: 10m
+        labels:
+          severity: critical

@@ -9,6 +9,7 @@ dependencies = [
     "fastapi[standard]>=0.123.10",
     "google-adk[a2a,otel-gcp,mcp]>=1.29.0",
     "litellm>=1.80.5",
+    "mcp[cli]>=1.24,<2",
     "mcp-weather-server>=0.6.1",
     "mem0ai>=1.0.0",
     "nacos-sdk-python==3.0.4",

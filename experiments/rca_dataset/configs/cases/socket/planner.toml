@@ -1,0 +1,23 @@
+case_id = "TS-RCA-SOCKET-STRESS-PLANNER-SSE"
+fault_category = "Resource Fault"
+fault_type = "Socket Stress"
+
+[fault]
+kind = "socket"
+target = "trip-itinerary-planner"
+tool = "stress-ng"
+
+[fault.parameters]
+workers = 8
+
+[workload]
+profile = "tripsphere_mixed_realistic_50rps"
+baseline_seconds = 180
+fault_seconds = 300
+recovery_seconds = 180
+spawn_rate = 20
+
+[collection]
+prometheus_url = "http://localhost:9090"
+step_seconds = 15
+chunk_seconds = 60

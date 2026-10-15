@@ -1,0 +1,11 @@
+version: v2
+managed:
+  enabled: true
+clean: true
+plugins:
+  - remote: buf.build/grpc/python:v1.76.0
+    out: workload/proto
+  - remote: buf.build/protocolbuffers/python:v33.2
+    out: workload/proto
+inputs:
+  - directory: ../../contracts/protobuf

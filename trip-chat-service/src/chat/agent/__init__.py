@@ -43,11 +43,11 @@ def create_agent(
     review_summary_url: str | None = None,
 ) -> LlmAgent:
     sub_agents = sub_agents or []
-    # weather_toolset is not stable due to network issues.
     weather_toolset = McpToolset(
         connection_params=StdioConnectionParams(
             server_params=StdioServerParameters(
-                command="python3", args=["-m", "mcp_weather_server"]
+                command="python3",
+                args=["-m", "mcp_weather_server"],
             ),
             timeout=10,
         )
