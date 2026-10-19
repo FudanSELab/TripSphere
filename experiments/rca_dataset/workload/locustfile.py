@@ -206,6 +206,16 @@ class ReviewSummaryUser(RateLimitedHttpUser):
         ) as response:
             if not response.ok:
                 response.failure(f"HTTP {response.status_code}")
+                return
+            try:
+                payload = response.json()
+            except ValueError:
+                response.failure("invalid JSON response")
+                return
+            if payload.get("status") != "success":
+                response.failure(
+                    f"review summary status={payload.get('status', 'missing')}"
+                )
 
 
 class OrderUser(RateLimitedGrpcUser):
