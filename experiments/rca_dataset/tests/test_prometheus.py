@@ -1,8 +1,7 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
-
 from tripsphere_rca.collectors.prometheus import PrometheusCollector
 from tripsphere_rca.models import CaseSpec, FaultSpec, TimeWindows
 
@@ -50,7 +49,7 @@ class FakePrometheusCollector(PrometheusCollector):
 
 
 def test_full_series_are_deduplicated_and_keep_labels():
-    tz = timezone.utc
+    tz = UTC
     start = datetime.fromtimestamp(1000, tz)
     windows = TimeWindows(
         started=start,
@@ -77,6 +76,28 @@ def test_full_series_are_deduplicated_and_keep_labels():
     assert metadata["sample_count"] == 2
     assert metadata["status"] == "invalid"
     assert any("__name__" in error for error in metadata["errors"])
+
+
+def test_baseline_samples_are_all_marked_baseline():
+    start = datetime.fromtimestamp(1000, tz=UTC)
+    windows = TimeWindows(
+        started=start,
+        fault_started=start + timedelta(seconds=15),
+        fault_stopped=start + timedelta(seconds=15),
+        ended=start + timedelta(seconds=45),
+        run_mode="baseline",
+    )
+    case = CaseSpec(
+        case_id="BASELINE",
+        fault_category="No Fault",
+        fault_type="No Fault",
+        fault=FaultSpec(kind="none", target="api"),
+        run_mode="baseline",
+    )
+
+    frame, _ = FakePrometheusCollector().collect(case, windows)
+
+    assert set(frame["phase"]) == {"baseline"}
 
 
 class FakeAlertPrometheusCollector(PrometheusCollector):
@@ -121,7 +142,7 @@ class FakeAlertPrometheusCollector(PrometheusCollector):
 
 
 def test_collect_alerts_returns_deduplicated_runtime_fields_without_annotations():
-    tz = timezone.utc
+    tz = UTC
     start = datetime.fromtimestamp(1000, tz)
     windows = TimeWindows(
         started=start,
@@ -137,7 +158,7 @@ def test_collect_alerts_returns_deduplicated_runtime_fields_without_annotations(
     assert alerts[0]["labels"]["alertname"] == "HttpServerErrorRateHigh"
     assert alerts[0]["labels"]["service"] == "trip-itinerary-planner"
     assert alerts[0]["state"] == "resolved"
-    assert alerts[0]["ends_at"] == "1970-01-01T00:17:25+00:00"
+    assert alerts[0]["ends_at"] == "1970-01-01T08:17:25.000000+08:00"
     assert "annotations" not in alerts[0]
     assert set(alerts[0]) == {"labels", "state", "starts_at", "ends_at", "value"}
     assert alerts[1]["state"] == "firing"
@@ -147,7 +168,7 @@ def test_collect_alerts_returns_deduplicated_runtime_fields_without_annotations(
 def test_write_ticket_contains_only_monitor_based_fields(tmp_path):
     from tripsphere_rca.runner.case_runner import CaseRunner
 
-    start = datetime(2026, 10, 14, 18, 40, 51, tzinfo=timezone.utc)
+    start = datetime(2026, 10, 14, 18, 40, 51, tzinfo=UTC)
     windows = TimeWindows(
         started=start,
         fault_started=start + timedelta(seconds=15),
@@ -177,6 +198,8 @@ def test_write_ticket_contains_only_monitor_based_fields(tmp_path):
     payload = json.loads((case.case_dir / "ticket.json").read_text())
 
     assert payload["ticket_type"] == "monitor_based"
+    assert payload["case_id"] == case.public_case_id
+    assert payload["time_window"]["from"] == "2026-10-15T02:40:51.000000+08:00"
     assert payload["alerts"] == alerts
     assert "title" not in payload
     assert "annotations" not in payload

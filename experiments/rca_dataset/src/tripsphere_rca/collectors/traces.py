@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -218,5 +218,5 @@ def _iso_timestamp(timestamp_ns: int) -> str:
     if not timestamp_ns:
         return ""
     return datetime.fromtimestamp(
-        timestamp_ns / 1_000_000_000, tz=timezone.utc
-    ).isoformat()
+        timestamp_ns / 1_000_000_000, tz=UTC
+    ).isoformat(timespec="microseconds")

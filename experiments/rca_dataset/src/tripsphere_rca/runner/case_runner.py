@@ -20,6 +20,7 @@ from tripsphere_rca.collectors.workload import workload_summary
 from tripsphere_rca.config import BUSINESS_SERVICES, SHANGHAI, iso
 from tripsphere_rca.faults import create_injector
 from tripsphere_rca.models import CaseSpec, InjectionResult, TimeWindows
+from tripsphere_rca.runner.alert_rules import activate_alert_rules
 from tripsphere_rca.runner.lifecycle import wait_seconds
 from tripsphere_rca.runner.workload import start_workload, stop_workload
 
@@ -28,8 +29,11 @@ class CaseRunner:
     def run(self, case: CaseSpec) -> dict[str, Any]:
         self._validate_case(case)
         case.case_dir.mkdir(parents=True, exist_ok=True)
-        injector = create_injector(case.fault.kind)
-        injector.validate(case)
+        activate_alert_rules(case.collection.alert_rules, case.collection.prometheus_url)
+        injector = None
+        if case.run_mode == "fault":
+            injector = create_injector(case.fault.kind)
+            injector.validate(case)
         self._wait_ready(case)
         started = datetime.now(SHANGHAI)
         workload = None
@@ -41,13 +45,17 @@ class CaseRunner:
         try:
             workload = start_workload(case)
             wait_seconds(case.workload.baseline_seconds)
-            active = injector.start(case)
-            fault_started = datetime.now(SHANGHAI)
-            wait_seconds(case.workload.fault_seconds)
+            if case.run_mode == "fault":
+                active = injector.start(case)
+                fault_started = datetime.now(SHANGHAI)
+                wait_seconds(case.workload.fault_seconds)
+            else:
+                fault_started = datetime.now(SHANGHAI)
+                fault_stopped = fault_started
         except Exception as exc:
             errors.append(f"execution failed: {exc}")
         finally:
-            if active is not None:
+            if injector is not None and active is not None:
                 try:
                     stopped = self._stop_injector(injector, case, active)
                     fault_stopped = datetime.now(SHANGHAI)
@@ -58,13 +66,16 @@ class CaseRunner:
                 except Exception as exc:
                     errors.append(f"fault stop failed: {exc}")
             try:
-                injector.cleanup(case)
+                if injector is not None:
+                    injector.cleanup(case)
             except Exception as exc:
                 errors.append(f"fault cleanup failed: {exc}")
             wait_seconds(case.workload.recovery_seconds)
             stop_workload(workload)
         ended = datetime.now(SHANGHAI)
-        windows = TimeWindows(started, fault_started, fault_stopped, ended)
+        windows = TimeWindows(
+            started, fault_started, fault_stopped, ended, case.run_mode
+        )
         counts = self._collect(case, windows, errors)
         workload_data = workload_summary(case.case_dir, case.fault.target)
         if not workload_data.get("request_count"):
@@ -119,7 +130,7 @@ class CaseRunner:
             )
         try:
             counts["logs"] = collect_logs(
-                case.collection.loki_url, case.case_id, BUSINESS_SERVICES,
+                case.collection.loki_url, case.public_case_id, BUSINESS_SERVICES,
                 windows.started, windows.ended, case.case_dir / "logs.parquet",
             )
         except Exception as exc:
@@ -130,7 +141,7 @@ class CaseRunner:
             ])
         try:
             counts["traces"] = collect_traces(
-                case.collection.tempo_url, case.case_id,
+                case.collection.tempo_url, case.public_case_id,
                 windows.started, windows.ended, case.case_dir / "traces.parquet",
             )
         except Exception as exc:
@@ -138,7 +149,7 @@ class CaseRunner:
             self._empty_parquet(case.case_dir / "traces.parquet", TRACE_COLUMNS)
         try:
             counts["events"] = collect_events(
-                case.case_id, windows.started, windows.ended,
+                case.public_case_id, windows.started, windows.ended,
                 case.case_dir / "events.parquet",
             )
         except Exception as exc:
@@ -173,7 +184,7 @@ class CaseRunner:
         errors: list[str],
     ) -> None:
         payload = {
-            "case_id": case.case_id,
+            "case_id": case.public_case_id,
             "ticket_type": "monitor_based",
             "created_at": iso(windows.fault_started),
             "time_window": {"from": iso(windows.started), "to": iso(windows.ended)},
@@ -194,11 +205,18 @@ class CaseRunner:
     def _validate_case(case: CaseSpec) -> None:
         if not case.case_id or not case.fault_type:
             raise ValueError("case_id and fault_type are required")
-        if min(
-            case.workload.baseline_seconds,
-            case.workload.fault_seconds,
-            case.workload.recovery_seconds,
-        ) <= 0:
+        if case.run_mode not in {"fault", "baseline"}:
+            raise ValueError(f"unsupported run mode: {case.run_mode}")
+        durations = (
+            (case.workload.baseline_seconds,)
+            if case.run_mode == "baseline"
+            else (
+                case.workload.baseline_seconds,
+                case.workload.fault_seconds,
+                case.workload.recovery_seconds,
+            )
+        )
+        if min(durations) <= 0:
             raise ValueError("workload phase durations must be positive")
 
     @staticmethod

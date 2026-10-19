@@ -28,7 +28,7 @@ def start_workload(case: CaseSpec) -> subprocess.Popen[str]:
         "locust", "-f", str(WORKLOAD_ROOT / "locustfile.py"),
         "--headless", "-u", str(_total_users()),
         "-r", str(case.workload.spawn_rate),
-        "--run-time", f"{case.workload.baseline_seconds + case.workload.fault_seconds + case.workload.recovery_seconds}s",
+        "--run-time", f"{_run_seconds(case)}s",
         "--csv", str(output / "locust"),
         "--html", str(output / "locust-report.html"),
     ]
@@ -59,3 +59,13 @@ def _total_users() -> int:
     from workload_config import RATES
 
     return sum(rate.users for rate in RATES.values())
+
+
+def _run_seconds(case: CaseSpec) -> int:
+    if case.run_mode == "baseline":
+        return case.workload.baseline_seconds
+    return (
+        case.workload.baseline_seconds
+        + case.workload.fault_seconds
+        + case.workload.recovery_seconds
+    )

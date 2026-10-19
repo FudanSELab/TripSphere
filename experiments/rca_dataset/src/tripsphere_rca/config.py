@@ -40,4 +40,4 @@ def env_first(*names: str, default: str = "") -> str:
 
 
 def iso(value) -> str:
-    return value.astimezone(SHANGHAI).isoformat(timespec="seconds")
+    return value.astimezone(SHANGHAI).isoformat(timespec="microseconds")

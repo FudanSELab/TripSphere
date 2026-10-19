@@ -71,12 +71,12 @@ class PrometheusCollector:
                         timestamp_ns = int(float(timestamp) * 1_000_000_000)
                         key = (series_id, timestamp_ns)
                         rows[key] = {
-                            "case_id": case.case_id,
+                            "case_id": case.public_case_id,
                             "query_name": self.query_name,
                             "metric_name": metric_name,
-                            "timestamp": datetime.fromtimestamp(
+                            "timestamp": iso(datetime.fromtimestamp(
                                 float(timestamp), windows.started.tzinfo
-                            ).isoformat(),
+                            )),
                             "timestamp_unix_nano": timestamp_ns,
                             "phase": self._phase(
                                 datetime.fromtimestamp(
@@ -216,20 +216,20 @@ class PrometheusCollector:
                 if timestamp > last_firing_timestamp and float(value) <= 0
             ]
             if end_samples:
-                ends_at = datetime.fromtimestamp(
+                ends_at = iso(datetime.fromtimestamp(
                     end_samples[0], windows.started.tzinfo
-                ).isoformat()
+                ))
             else:
-                ends_at = datetime.fromtimestamp(
+                ends_at = iso(datetime.fromtimestamp(
                     last_firing_timestamp, windows.started.tzinfo
-                ).isoformat()
+                ))
 
         return {
             "labels": alert["labels"],
             "state": state,
-            "starts_at": datetime.fromtimestamp(
+            "starts_at": iso(datetime.fromtimestamp(
                 first_timestamp, windows.started.tzinfo
-            ).isoformat(),
+            )),
             "ends_at": ends_at,
             "value": firing_samples[-1][1],
         }
@@ -241,6 +241,8 @@ class PrometheusCollector:
 
     @staticmethod
     def _phase(timestamp: datetime, windows: TimeWindows) -> str:
+        if windows.run_mode == "baseline":
+            return "baseline"
         if timestamp < windows.fault_started:
             return "baseline"
         if timestamp < windows.fault_stopped:

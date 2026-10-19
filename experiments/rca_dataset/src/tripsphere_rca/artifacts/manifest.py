@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from datetime import datetime
 
 from tripsphere_rca.artifacts.topology import write_topology
@@ -25,7 +24,8 @@ def write_artifacts(
     )
     write_topology(case)
     manifest = {
-        "case_id": case.case_id,
+        "case_id": case.public_case_id,
+        "dataset_type": case.run_mode,
         "runner_version": "0.1.0",
         "target_service": case.fault.target,
         "fault_category": case.fault_category,

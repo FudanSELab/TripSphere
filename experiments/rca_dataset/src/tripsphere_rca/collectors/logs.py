@@ -57,7 +57,7 @@ def collect_logs(
         ).sort_values(["timestamp_ns", "service_name"])
         frame["timestamp"] = pd.to_datetime(
             frame["timestamp_ns"], unit="ns", utc=True
-        ).map(lambda value: value.isoformat())
+        ).map(lambda value: value.isoformat(timespec="microseconds"))
     else:
         frame["timestamp"] = pd.Series(dtype="string")
     frame.to_parquet(path, index=False)

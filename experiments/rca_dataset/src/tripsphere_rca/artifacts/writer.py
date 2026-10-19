@@ -11,6 +11,8 @@ def write_private_records(
     windows: TimeWindows,
     injection: InjectionResult | None,
 ) -> None:
+    if case.run_mode == "baseline":
+        return
     ground_truth_dir = case.private_dir / "ground_truth"
     injection_dir = case.private_dir / "injection_records"
     ground_truth_dir.mkdir(parents=True, exist_ok=True)

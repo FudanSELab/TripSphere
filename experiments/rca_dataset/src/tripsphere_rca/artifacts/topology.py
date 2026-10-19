@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from tripsphere_rca.config import BUSINESS_SERVICES
 from tripsphere_rca.models import CaseSpec
@@ -17,7 +16,7 @@ def write_topology(case: CaseSpec) -> None:
         ],
     ]
     payload = {
-        "case_id": case.case_id,
+        "case_id": case.public_case_id,
         "nodes": nodes,
         "edges": [],
         "fault_target": target,

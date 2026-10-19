@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +23,7 @@ class CollectionSpec:
     prometheus_url: str = "http://localhost:9090"
     loki_url: str = "http://localhost:3100"
     tempo_url: str = "http://localhost:3200"
+    alert_rules: str = "infra/prometheus/rules/tripsphere-platform.yaml"
     step_seconds: int = 15
     chunk_seconds: int = 60
 
@@ -40,6 +42,7 @@ class CaseSpec:
     fault_category: str
     fault_type: str
     fault: FaultSpec
+    run_mode: str = "fault"
     workload: WorkloadSpec = field(default_factory=WorkloadSpec)
     collection: CollectionSpec = field(default_factory=CollectionSpec)
     root: Path = Path(".")
@@ -47,6 +50,11 @@ class CaseSpec:
     @property
     def case_dir(self) -> Path:
         return self.root / "dataset" / "public" / "cases" / self.case_id
+
+    @property
+    def public_case_id(self) -> str:
+        digest = hashlib.sha256(self.case_id.encode("utf-8")).hexdigest()[:12]
+        return f"TS-RCA-CASE-{digest.upper()}"
 
     @property
     def private_dir(self) -> Path:
@@ -76,3 +84,4 @@ class TimeWindows:
     fault_started: datetime
     fault_stopped: datetime
     ended: datetime
+    run_mode: str = "fault"

@@ -1,0 +1,13 @@
+case_id = "TS-RCA-BASELINE-MIXED-REALISTIC"
+run_mode = "baseline"
+target_service = "trip-order-service"
+
+[workload]
+profile = "tripsphere_mixed_realistic_50rps"
+baseline_seconds = 180
+spawn_rate = 20
+
+[collection]
+prometheus_url = "http://localhost:9090"
+step_seconds = 15
+chunk_seconds = 60
