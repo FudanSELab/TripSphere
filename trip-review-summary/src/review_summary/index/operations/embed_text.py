@@ -6,17 +6,22 @@ from typing import Any
 
 import numpy as np
 from langchain_openai.embeddings import OpenAIEmbeddings
-from tiktoken import encoding_name_for_model
 
 from review_summary.config.settings import get_settings
 from review_summary.index.text_splitting import TokenTextSplitter
-from review_summary.tokenizer.tiktoken import TiktokenTokenizer
+from review_summary.tokenizer.tiktoken import (
+    TiktokenTokenizer,
+    encoding_name_for_chat_model,
+)
+
+# text-embedding-v4 accepts at most 10 strings per request.
+EMBEDDING_BATCH_LIMIT = 10
 
 
 async def embed_text(
     texts: list[str],
     embedding_model_config: dict[str, Any],
-    batch_size: int = 16,
+    batch_size: int = EMBEDDING_BATCH_LIMIT,
     batch_max_tokens: int = 8191,
     num_concurrency: int = 4,
 ) -> list[list[float] | None]:
@@ -25,10 +30,12 @@ async def embed_text(
         embedding_model_config["api_key"] = openai_settings.api_key
     if "base_url" not in embedding_model_config:
         embedding_model_config["base_url"] = openai_settings.base_url
+    embedding_model_config.setdefault("check_embedding_ctx_length", False)
     model = OpenAIEmbeddings(**embedding_model_config)
+    batch_size = min(batch_size, EMBEDDING_BATCH_LIMIT)
 
     splitter = TokenTextSplitter(
-        TiktokenTokenizer(encoding_name_for_model(model.model)),
+        TiktokenTokenizer(encoding_name_for_chat_model(model.model)),
         chunk_size=batch_max_tokens,
     )
 

@@ -11,7 +11,7 @@ tool = "stress-ng"
 workers = 8
 
 [workload]
-profile = "tripsphere_mixed_realistic_50rps"
+profile = "tripsphere_mixed_realistic_200rps"
 baseline_seconds = 180
 fault_seconds = 300
 recovery_seconds = 180

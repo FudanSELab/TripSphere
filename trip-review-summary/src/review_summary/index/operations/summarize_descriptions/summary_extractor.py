@@ -2,10 +2,12 @@ import json
 from dataclasses import dataclass
 
 from langchain_openai import ChatOpenAI
-from tiktoken import encoding_name_for_model
 
 from review_summary.prompts.index.summarize_descriptions import SUMMARIZE_PROMPT
-from review_summary.tokenizer.tiktoken import TiktokenTokenizer
+from review_summary.tokenizer.tiktoken import (
+    TiktokenTokenizer,
+    encoding_name_for_chat_model,
+)
 
 # These tokens are used in the prompt
 ENTITY_NAME_KEY = "entity_name"
@@ -29,7 +31,7 @@ class SummaryExtractor:
     ):
         """Init method definition."""
         self._model = chat_model
-        encoding_name = encoding_name_for_model(chat_model.model_name)
+        encoding_name = encoding_name_for_chat_model(chat_model.model_name)
         self._tokenizer = TiktokenTokenizer(encoding_name)
         self._summarization_prompt = summarization_prompt or SUMMARIZE_PROMPT
         self._max_summary_length = max_summary_length

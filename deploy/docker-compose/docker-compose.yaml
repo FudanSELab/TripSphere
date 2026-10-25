@@ -417,6 +417,9 @@ services:
       - MONGO_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-v4}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-2048}
     depends_on:
       nacos:
         condition: service_healthy
@@ -549,6 +552,7 @@ services:
       - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
     depends_on:
       nacos:
         condition: service_healthy
@@ -631,6 +635,7 @@ services:
       - PROMPT_CONFIG_TIMEOUT_MS=${PROMPT_CONFIG_TIMEOUT_MS:-3000}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
     depends_on:
       nacos:
         condition: service_healthy
@@ -735,6 +740,9 @@ services:
       - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/0
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-v4}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-2048}
     command: [ "uvicorn", "review_summary.asgi:app", "--host", "0.0.0.0", "--port", "24212" ]
     depends_on:
       nacos:
@@ -805,6 +813,9 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=http://${HIGRESS_HOST}:${HIGRESS_HTTP_PORT}/v1
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-v4}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-2048}
     command: [ "celery", "-A", "review_summary.celery.app", "worker", "--loglevel=info", "--concurrency=4" ]
     depends_on:
       nacos:

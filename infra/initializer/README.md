@@ -52,7 +52,7 @@ does not scrape or copy reviews from external sources.
 The following endpoints must be reachable from the host running the script:
 
 - MongoDB containing `hotel_db.hotels`
-- An OpenAI-compatible embedding endpoint returning 3072-dimensional vectors
+- An OpenAI-compatible embedding endpoint supporting `text-embedding-v4`
 - Qdrant
 - Neo4j HTTP API
 
@@ -70,7 +70,8 @@ export NO_PROXY=localhost,127.0.0.1
 | `MONGODB_URI` | `mongodb://root:fudanse@localhost:27017/?authSource=admin` | MongoDB connection URI |
 | `OPENAI_BASE_URL` | `http://localhost:28080/v1` | OpenAI-compatible API base URL |
 | `OPENAI_API_KEY` | `api-key` | Embedding API key |
-| `EMBEDDING_MODEL` | `text-embedding-3-large` | Embedding model; output must contain 3072 dimensions |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-v4` | Embedding model |
+| `OPENAI_EMBEDDING_DIMENSIONS` | `2048` | Embedding and Qdrant vector dimensions (64–2048) |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant HTTP endpoint |
 | `NEO4J_HTTP_URL` | `http://localhost:7474` | Neo4j HTTP endpoint |
 | `NEO4J_USERNAME` | `neo4j` | Neo4j username |

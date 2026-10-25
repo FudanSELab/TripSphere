@@ -132,7 +132,7 @@ def create_chat_graph(nacos_naming: NacosNaming | None = None) -> CompiledStateG
     """
     settings = get_settings()
     model = ChatOpenAI(
-        model="gpt-4o-mini",
+        model=settings.openai.chat_model,
         temperature=0.0,
         api_key=settings.openai.api_key,
         base_url=settings.openai.base_url,

@@ -96,6 +96,9 @@ services:
       - REVIEW_SUMMARY_URL=${REVIEW_SUMMARY_URL:-http://trip-review-summary:24212}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-v4}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-2048}
     depends_on:
       nacos:
         condition: service_healthy
@@ -231,6 +234,7 @@ services:
       - AMAP_KEY=${AMAP_KEY:?AMAP_KEY is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
     depends_on:
       nacos:
         condition: service_healthy
@@ -310,6 +314,7 @@ services:
       - PROMPT_CONFIG_TIMEOUT_MS=${PROMPT_CONFIG_TIMEOUT_MS:-3000}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
     depends_on:
       nacos:
         condition: service_healthy
@@ -517,6 +522,9 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-v4}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-2048}
     command:
       - uvicorn
       - review_summary.asgi:app
@@ -591,6 +599,9 @@ services:
       - MINIO_SECRET_KEY=minioadmin
       - OPENAI_API_KEY=${OPENAI_API_KEY:-api-key}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://higress:8080/v1}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-qwen-plus}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-v4}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-2048}
     command:
       - celery
       - -A
@@ -949,7 +960,7 @@ services:
       - ${TRIPSPHERE_DATA_ROOT:-./volumes}/neo4j/plugins:/plugins
     environment:
       - NEO4J_AUTH=neo4j/fudanse@fudan.edu.cn
-      - NEO4J_PLUGINS=["graph-data-science"]
+      # - NEO4J_PLUGINS=["graph-data-science"]
     ports:
       - "7474:7474"
       - "7687:7687"

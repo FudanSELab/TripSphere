@@ -70,7 +70,8 @@ class CaseRunner:
                     injector.cleanup(case)
             except Exception as exc:
                 errors.append(f"fault cleanup failed: {exc}")
-            wait_seconds(case.workload.recovery_seconds)
+            if case.run_mode == "fault":
+                wait_seconds(case.workload.recovery_seconds)
             stop_workload(workload)
         ended = datetime.now(SHANGHAI)
         windows = TimeWindows(
@@ -121,7 +122,7 @@ class CaseRunner:
             metadata = {"status": "invalid", "errors": [str(exc)]}
             self._empty_parquet(case.case_dir / "metrics.parquet", [
                 "case_id", "query_name", "metric_name", "timestamp",
-                "timestamp_unix_nano", "phase", "value", "labels_json",
+                "timestamp_unix_nano", "phase", "value", "service_name",
                 "series_id", "source",
             ])
             (case.case_dir / "metric_metadata.json").write_text(

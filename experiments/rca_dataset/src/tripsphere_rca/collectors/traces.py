@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -49,9 +50,10 @@ def collect_traces(
     current = start
     while current < end:
         chunk_end = min(current + timedelta(seconds=chunk_seconds), end)
+        start_seconds, end_seconds = _search_bounds(current, chunk_end)
         params = {
-            "start": int(current.timestamp()),
-            "end": int(chunk_end.timestamp()),
+            "start": start_seconds,
+            "end": end_seconds,
             "limit": limit,
         }
         if query_service:
@@ -212,6 +214,10 @@ def _integer(value: Any) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _search_bounds(start: datetime, end: datetime) -> tuple[int, int]:
+    return int(start.timestamp()), math.ceil(end.timestamp())
 
 
 def _iso_timestamp(timestamp_ns: int) -> str:

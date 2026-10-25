@@ -15,7 +15,23 @@ from tripsphere_rca.models import CaseSpec, TimeWindows
 
 class PrometheusCollector:
     query_name = "prometheus_all_series"
+    series_query = (
+        '{__name__=~".+",job!~"^(loki|node-exporter|otel-collector-self|prometheus|tempo)$",'
+        'container_label_com_docker_compose_service!~'
+        '"^(cadvisor|grafana|loki|otel-collector|prometheus|tempo)$"}'
+    )
     alerts_query = 'ALERTS{alertstate="firing"}'
+    excluded_scrape_jobs = {
+        "loki", "node-exporter", "otel-collector-self", "prometheus", "tempo"
+    }
+    excluded_container_services = {
+        "cadvisor",
+        "grafana",
+        "loki",
+        "otel-collector",
+        "prometheus",
+        "tempo",
+    }
 
     def __init__(self, url: str, step_seconds: int = 15, chunk_seconds: int = 60):
         self.url = url.rstrip("/")
@@ -53,7 +69,7 @@ class PrometheusCollector:
         while current < windows.ended:
             chunk_end = min(current + chunk, windows.ended)
             params = {
-                "query": '{__name__=~".+"}',
+                "query": self.series_query,
                 "start": current.timestamp(),
                 "end": chunk_end.timestamp(),
                 "step": self.step_seconds,
@@ -66,6 +82,9 @@ class PrometheusCollector:
                     if not metric_name:
                         self.errors.append("Prometheus returned a series without __name__")
                         continue
+                    if self._is_excluded_series(labels):
+                        continue
+                    service_name = self._service_name(labels)
                     series_id = self._series_id(labels)
                     for timestamp, value in series.get("values", []):
                         timestamp_ns = int(float(timestamp) * 1_000_000_000)
@@ -74,6 +93,7 @@ class PrometheusCollector:
                             "case_id": case.public_case_id,
                             "query_name": self.query_name,
                             "metric_name": metric_name,
+                            "service_name": service_name,
                             "timestamp": iso(datetime.fromtimestamp(
                                 float(timestamp), windows.started.tzinfo
                             )),
@@ -85,9 +105,6 @@ class PrometheusCollector:
                                 windows,
                             ),
                             "value": float(value),
-                            "labels_json": json.dumps(
-                                labels, ensure_ascii=False, sort_keys=True
-                            ),
                             "series_id": series_id,
                             "source": "prometheus",
                         }
@@ -103,7 +120,7 @@ class PrometheusCollector:
             list(rows.values()),
             columns=[
                 "case_id", "query_name", "metric_name", "timestamp",
-                "timestamp_unix_nano", "phase", "value", "labels_json",
+                "timestamp_unix_nano", "phase", "value", "service_name",
                 "series_id", "source",
             ],
         )
@@ -111,7 +128,7 @@ class PrometheusCollector:
             frame = frame.sort_values(["timestamp_unix_nano", "series_id"])
         metadata = self._metadata(frame)
         metadata.update({
-            "query": '{__name__=~".+"}',
+            "query": self.series_query,
             "step_seconds": self.step_seconds,
             "chunk_seconds": self.chunk_seconds,
             "series_count": int(frame["series_id"].nunique()) if not frame.empty else 0,
@@ -121,6 +138,36 @@ class PrometheusCollector:
             "status": "invalid" if self.errors else "complete",
         })
         return frame, metadata
+
+    @classmethod
+    def _is_excluded_series(cls, labels: dict[str, str]) -> bool:
+        if labels.get("job") in cls.excluded_scrape_jobs:
+            return True
+        container_service = labels.get("container_label_com_docker_compose_service")
+        return (
+            labels.get("job") == "cadvisor"
+            and container_service in cls.excluded_container_services
+        )
+
+    @staticmethod
+    def _service_name(labels: dict[str, str]) -> str | None:
+        service_name = labels.get("service_name")
+        if service_name:
+            return service_name
+        if labels.get("job") == "cadvisor":
+            return labels.get("container_label_com_docker_compose_service") or None
+        exported_job = labels.get("exported_job", "")
+        prefix = "tripsphere/"
+        if exported_job.startswith(prefix):
+            return exported_job.removeprefix(prefix)
+        if labels.get("job") == "java-services":
+            instance = labels.get("instance", "")
+            service = instance.rsplit(":", 1)[0]
+            if service.startswith("trip-"):
+                return service
+        if labels.get("job") == "celery-exporter":
+            return "trip-review-summary-worker"
+        return None
 
     def collect_alerts(self, windows: TimeWindows) -> tuple[list[dict[str, Any]], list[str]]:
         alerts: dict[str, dict[str, Any]] = {}

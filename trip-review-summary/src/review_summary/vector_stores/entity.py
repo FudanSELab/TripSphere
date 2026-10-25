@@ -16,7 +16,7 @@ class EntityVectorStore:
 
     @classmethod
     async def create_vector_store(
-        cls, client: AsyncQdrantClient, vector_dim: int = 3072
+        cls, client: AsyncQdrantClient, vector_dim: int = 2048
     ) -> Self:
         if (await client.collection_exists(cls.COLLECTION_NAME)) is False:
             await client.create_collection(

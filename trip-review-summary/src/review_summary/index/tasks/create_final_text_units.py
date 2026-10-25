@@ -40,11 +40,14 @@ async def _create_final_text_units(
     | document_id      | string       | ID of the source Document of the TextUnit        |
     | attributes       | struct       | Attributes including target information          |
     """  # noqa: E501
-    qdrant_settings = get_settings().qdrant
-    qdrant_client = AsyncQdrantClient(url=qdrant_settings.url)
+    settings = get_settings()
+    qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
     try:
         text_unit_vector_store = await TextUnitVectorStore.create_vector_store(
-            client=qdrant_client, vector_dim=context.get("vector_dim", 3072)
+            client=qdrant_client,
+            vector_dim=context.get(
+                "vector_dim", settings.openai.embedding_dimensions
+            ),
         )
         await _internal(task, context, text_unit_vector_store)
 

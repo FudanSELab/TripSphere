@@ -15,6 +15,10 @@ class RateConfig:
     users: int
     requests_per_second: float
 
+    @property
+    def pacing_seconds(self) -> float:
+        return self.users / self.requests_per_second
+
 
 def configured_rate(name: str, users: int, requests_per_second: float) -> RateConfig:
     prefix = f"WORKLOAD_{name.upper()}"
@@ -26,8 +30,13 @@ def configured_rate(name: str, users: int, requests_per_second: float) -> RateCo
     )
 
 
-WORKLOAD_PROFILE = "tripsphere_mixed_realistic_50rps"
-AGENT_WORKLOADS = frozenset({"planner", "chat", "review_summary"})
+WORKLOAD_PROFILE = "tripsphere_mixed_realistic_200rps"
+AGENT_WORKLOADS = frozenset({
+    "planner",
+    "chat",
+    "order_assistant",
+    "review_summary",
+})
 
 # Application services deployed with TripSphere. Log collection uses this list
 # so RCA cases retain the complete application context, while fault topology
@@ -52,18 +61,21 @@ BUSINESS_SERVICES = (
 )
 
 # These are entry-point rates, not internal span or downstream RPC rates.
-# Traditional service entry points add up to 50 RPS. Long-running Agent
-# requests stay low-rate and are capacity-capped by their fixed user counts.
+# Traditional service entry points add up to 198 RPS. Agent requests model
+# larger user populations that invoke expensive operations less frequently.
 RATES = {
-    "planner": configured_rate("planner", users=20, requests_per_second=0.05),
-    "chat": configured_rate("chat", users=10, requests_per_second=0.05),
-    "order": configured_rate("order", users=20, requests_per_second=1.0),
-    "attraction": configured_rate("attraction", users=40, requests_per_second=25.0),
-    "hotel": configured_rate("hotel", users=35, requests_per_second=25.0),
-    "product": configured_rate("product", users=25, requests_per_second=20.0),
-    "itinerary": configured_rate("itinerary", users=30, requests_per_second=10.0),
+    "planner": configured_rate("planner", users=30, requests_per_second=0.1),
+    "chat": configured_rate("chat", users=20, requests_per_second=0.1),
+    "order_assistant": configured_rate(
+        "order_assistant", users=20, requests_per_second=0.1
+    ),
+    "order": configured_rate("order", users=30, requests_per_second=3.0),
+    "attraction": configured_rate("attraction", users=60, requests_per_second=60.0),
+    "hotel": configured_rate("hotel", users=60, requests_per_second=60.0),
+    "product": configured_rate("product", users=50, requests_per_second=50.0),
+    "itinerary": configured_rate("itinerary", users=30, requests_per_second=25.0),
     "review_summary": configured_rate(
-        "review_summary", users=15, requests_per_second=5.0
+        "review_summary", users=30, requests_per_second=1.0
     ),
 }
 

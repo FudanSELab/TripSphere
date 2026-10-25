@@ -4,7 +4,6 @@ import logging
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncDriver
 from qdrant_client import AsyncQdrantClient
-from tiktoken import encoding_name_for_model
 
 from review_summary.clients.reviews import ReviewServiceClient, TargetType
 from review_summary.config.settings import get_settings
@@ -29,7 +28,10 @@ from review_summary.query.structured_search.local_search.search import LocalSear
 from review_summary.prompts.query.local_search_system_prompt import (
     LOCAL_SEARCH_SYSTEM_PROMPT,
 )
-from review_summary.tokenizer.tiktoken import TiktokenTokenizer
+from review_summary.tokenizer.tiktoken import (
+    TiktokenTokenizer,
+    encoding_name_for_chat_model,
+)
 from review_summary.vector_stores.entity import EntityVectorStore
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
@@ -37,9 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReviewSummaryService:
-    CHAT_MODEL = "gpt-4o-mini"
     CHAT_TEMPERATURE = 0.0
-    EMBEDDING_MODEL = "text-embedding-3-large"
 
     def __init__(
         self,
@@ -190,7 +190,7 @@ class ReviewSummaryService:
     def _get_chat_model(self) -> ChatOpenAI:
         if self._chat_model is None:
             self._chat_model = ChatOpenAI(
-                model=self.CHAT_MODEL,
+                model=self.openai_settings.chat_model,
                 temperature=self.CHAT_TEMPERATURE,
                 api_key=self.openai_settings.api_key,
                 base_url=self.openai_settings.base_url,
@@ -200,7 +200,9 @@ class ReviewSummaryService:
     def _get_embedding_model(self) -> OpenAIEmbeddings:
         if self._embedding_model is None:
             self._embedding_model = OpenAIEmbeddings(
-                model=self.EMBEDDING_MODEL,
+                model=self.openai_settings.embedding_model,
+                dimensions=self.openai_settings.embedding_dimensions,
+                check_embedding_ctx_length=False,
                 api_key=self.openai_settings.api_key,
                 base_url=self.openai_settings.base_url,
             )
@@ -208,7 +210,9 @@ class ReviewSummaryService:
 
     def _get_tokenizer(self) -> TiktokenTokenizer:
         if self._tokenizer is None:
-            encoding_name = encoding_name_for_model(self._get_chat_model().model_name)
+            encoding_name = encoding_name_for_chat_model(
+                self._get_chat_model().model_name
+            )
             self._tokenizer = TiktokenTokenizer(encoding_name)
         return self._tokenizer
 

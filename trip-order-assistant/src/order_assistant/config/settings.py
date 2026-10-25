@@ -41,6 +41,7 @@ class PromptSettings(BaseModel):
 class OpenAISettings(BaseModel):
     api_key: SecretStr = Field(default=SecretStr("api-key"))
     base_url: str = Field(default="https://api.openai.com/v1")
+    chat_model: str = Field(default="qwen-plus")
 
 
 class LogSettings(BaseModel):

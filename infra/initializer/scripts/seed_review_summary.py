@@ -26,7 +26,7 @@ TargetType = Literal["hotel", "attraction"]
 CLI_TARGET_TYPES = ("all", "hotel", "attraction")
 HOTEL_ENTITY_TYPE = 1
 ATTRACTION_ENTITY_TYPE = 2
-VECTOR_SIZE = 3072
+EMBEDDING_BATCH_SIZE = 10
 TEXT_COLLECTION = "review_summary_text_units"
 ENTITY_COLLECTION = "review_summary_entities"
 RATINGS = (5, 4, 4, 3, 5, 4, 3, 2, 5, 4)
@@ -154,6 +154,7 @@ class Config:
     embedding_base_url: str
     embedding_api_key: str
     embedding_model: str
+    embedding_dimensions: int
     qdrant_url: str
     neo4j_url: str
     neo4j_username: str
@@ -244,7 +245,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--min-reviews", type=int, default=5)
     parser.add_argument("--max-reviews", type=int, default=10)
-    parser.add_argument("--concurrency", type=int, default=2)
+    parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--retries", type=int, default=2)
     parser.add_argument(
         "--manifest",
@@ -269,6 +270,10 @@ def build_config(args: argparse.Namespace) -> Config:
     if args.offset < 0 or (args.limit is not None and args.limit < 1):
         raise ValueError("offset must be non-negative and limit must be positive")
 
+    embedding_dimensions = int(os.getenv("OPENAI_EMBEDDING_DIMENSIONS", "2048"))
+    if not 64 <= embedding_dimensions <= 2048:
+        raise ValueError("OPENAI_EMBEDDING_DIMENSIONS must be between 64 and 2048")
+
     return Config(
         mongo_uri=os.getenv(
             "MONGODB_URI",
@@ -278,7 +283,8 @@ def build_config(args: argparse.Namespace) -> Config:
             "OPENAI_BASE_URL", "http://localhost:28080/v1"
         ).rstrip("/"),
         embedding_api_key=os.getenv("OPENAI_API_KEY", "api-key"),
-        embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-large"),
+        embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-v4"),
+        embedding_dimensions=embedding_dimensions,
         qdrant_url=os.getenv("QDRANT_URL", "http://localhost:6333").rstrip("/"),
         neo4j_url=os.getenv("NEO4J_HTTP_URL", "http://localhost:7474").rstrip("/"),
         neo4j_username=os.getenv("NEO4J_USERNAME", "neo4j"),
@@ -519,6 +525,19 @@ def source_text(review: dict[str, Any]) -> str:
 
 
 def embed_texts(config: Config, texts: list[str]) -> list[list[float]]:
+    embeddings: list[list[float]] = []
+    for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+        batch = texts[start : start + EMBEDDING_BATCH_SIZE]
+        embeddings.extend(_embed_text_batch(config, batch))
+    return embeddings
+
+
+def _embed_text_batch(config: Config, texts: list[str]) -> list[list[float]]:
+    if not 1 <= len(texts) <= EMBEDDING_BATCH_SIZE:
+        raise ValueError(
+            f"embedding batch must contain 1–{EMBEDDING_BATCH_SIZE} texts"
+        )
+
     last_error: Exception | None = None
     for attempt in range(config.retries + 2):
         try:
@@ -529,6 +548,7 @@ def embed_texts(config: Config, texts: list[str]) -> list[list[float]]:
                     "model": config.embedding_model,
                     "input": texts,
                     "encoding_format": "float",
+                    "dimensions": config.embedding_dimensions,
                 },
                 timeout=120,
             )
@@ -537,7 +557,10 @@ def embed_texts(config: Config, texts: list[str]) -> list[list[float]]:
             embeddings = [item["embedding"] for item in data]
             if len(embeddings) != len(texts):
                 raise RuntimeError("embedding response count differs from input count")
-            if any(len(embedding) != VECTOR_SIZE for embedding in embeddings):
+            if any(
+                len(embedding) != config.embedding_dimensions
+                for embedding in embeddings
+            ):
                 raise RuntimeError("embedding response has an unexpected vector size")
             return embeddings
         except Exception as error:
@@ -565,11 +588,22 @@ def target_filter(target_id: str, target_type: TargetType) -> dict[str, Any]:
 
 def ensure_qdrant_collections(config: Config) -> None:
     collections = {
-        TEXT_COLLECTION: {"vectors": {"size": VECTOR_SIZE, "distance": "Cosine"}},
+        TEXT_COLLECTION: {
+            "vectors": {
+                "size": config.embedding_dimensions,
+                "distance": "Cosine",
+            }
+        },
         ENTITY_COLLECTION: {
             "vectors": {
-                "description": {"size": VECTOR_SIZE, "distance": "Cosine"},
-                "title": {"size": VECTOR_SIZE, "distance": "Cosine"},
+                "description": {
+                    "size": config.embedding_dimensions,
+                    "distance": "Cosine",
+                },
+                "title": {
+                    "size": config.embedding_dimensions,
+                    "distance": "Cosine",
+                },
             }
         },
     }
@@ -584,6 +618,19 @@ def ensure_qdrant_collections(config: Config) -> None:
             create_response.raise_for_status()
         else:
             response.raise_for_status()
+            actual_vectors = response.json()["result"]["config"]["params"]["vectors"]
+            expected_vectors = body["vectors"]
+            if _vector_sizes(actual_vectors) != _vector_sizes(expected_vectors):
+                raise RuntimeError(
+                    f"Qdrant collection {name} has incompatible vector dimensions; "
+                    "delete and rebuild it"
+                )
+
+
+def _vector_sizes(vectors: dict[str, Any]) -> int | dict[str, int]:
+    if "size" in vectors:
+        return int(vectors["size"])
+    return {name: int(params["size"]) for name, params in vectors.items()}
 
 
 def replace_qdrant_target(

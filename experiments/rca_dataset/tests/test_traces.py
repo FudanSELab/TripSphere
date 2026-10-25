@@ -1,4 +1,6 @@
-from tripsphere_rca.collectors.traces import _flatten_trace
+from datetime import UTC, datetime
+
+from tripsphere_rca.collectors.traces import _flatten_trace, _search_bounds
 
 
 def test_flatten_trace_preserves_span_relationships_and_ids():
@@ -56,3 +58,10 @@ def test_flatten_trace_preserves_span_relationships_and_ids():
     assert rows[0]["method_name"] == "POST"
     assert rows[0]["duration_ns"] == 250000000
     assert rows[1]["duration_ms"] == 100.0
+
+
+def test_search_bounds_round_end_up_to_avoid_zero_length_range():
+    start = datetime.fromtimestamp(1000.90, tz=UTC)
+    end = datetime.fromtimestamp(1000.95, tz=UTC)
+
+    assert _search_bounds(start, end) == (1000, 1001)

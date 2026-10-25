@@ -105,7 +105,7 @@ class LocalSearchMixedContext:
             )
             query = f"{query}\n{pre_user_questions}"
 
-        query_embedding = await self.embedding_model.aembed_query(query)
+        query_embedding = (await self.embedding_model.aembed_documents([query]))[0]
         selected_entities = await self.entity_vector_store.search_by_vector(
             embedding_vector=query_embedding,
             target_id=target_id,

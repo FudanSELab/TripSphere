@@ -9,7 +9,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class WorkloadSpec:
-    profile: str = "tripsphere_mixed_realistic_50rps"
+    profile: str = "tripsphere_mixed_realistic_200rps"
     baseline_seconds: int = 180
     fault_seconds: int = 300
     recovery_seconds: int = 180

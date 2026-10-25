@@ -10,7 +10,6 @@ from asgiref.sync import async_to_sync
 from celery import Task, shared_task
 from neo4j import Driver, GraphDatabase
 from qdrant_client import AsyncQdrantClient
-from tiktoken import encoding_name_for_model
 
 from review_summary.clients.reviews import ReviewServiceClient, TargetType
 from review_summary.config.settings import get_settings
@@ -23,14 +22,16 @@ from review_summary.index.review_snapshot import (
 )
 from review_summary.infra.nacos.naming import NacosNaming
 from review_summary.models import TextUnit
-from review_summary.tokenizer.tiktoken import TiktokenTokenizer
+from review_summary.tokenizer.tiktoken import (
+    TiktokenTokenizer,
+    encoding_name_for_chat_model,
+)
 from review_summary.utils.storage import get_storage_options
 from review_summary.utils.uuid import uuid7
 from review_summary.vector_stores.entity import EntityVectorStore
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
 logger = logging.getLogger(__name__)
-_EMBEDDING_MODEL = "text-embedding-3-large"
 
 
 class EmptyReviewsError(RuntimeError):
@@ -71,10 +72,16 @@ async def _collect_text_units(task: Task[Any, Any], context: dict[str, Any]) -> 
         )
         review_client = ReviewServiceClient(naming)
         text_unit_vector_store = await TextUnitVectorStore.create_vector_store(
-            client=qdrant_client, vector_dim=context.get("vector_dim", 3072)
+            client=qdrant_client,
+            vector_dim=context.get(
+                "vector_dim", settings.openai.embedding_dimensions
+            ),
         )
         entity_vector_store = await EntityVectorStore.create_vector_store(
-            client=qdrant_client, vector_dim=context.get("vector_dim", 3072)
+            client=qdrant_client,
+            vector_dim=context.get(
+                "vector_dim", settings.openai.embedding_dimensions
+            ),
         )
         neo4j_driver = GraphDatabase.driver(  # pyright: ignore
             uri=settings.neo4j.uri,
@@ -169,16 +176,22 @@ async def _internal(
 
 
 async def _prepare_embeddings(text_units: list[TextUnit]) -> None:
+    openai_settings = get_settings().openai
     embeddings = await embed_text(
         [text_unit.text for text_unit in text_units],
-        {"model": _EMBEDDING_MODEL},
+        {
+            "model": openai_settings.embedding_model,
+            "dimensions": openai_settings.embedding_dimensions,
+        },
     )
     if len(embeddings) != len(text_units) or any(
         embedding is None for embedding in embeddings
     ):
         raise RuntimeError("Failed to create an embedding for every review")
 
-    tokenizer = TiktokenTokenizer(encoding_name_for_model(_EMBEDDING_MODEL))
+    tokenizer = TiktokenTokenizer(
+        encoding_name_for_chat_model(openai_settings.embedding_model)
+    )
     for text_unit, embedding in zip(text_units, embeddings, strict=True):
         if embedding is None:
             raise RuntimeError("Review embedding unexpectedly missing")

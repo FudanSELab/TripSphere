@@ -9,7 +9,7 @@ class CreateTextEmbeddingsConfig(BaseModel):
     embedding_llm_config: dict[str, Any] = Field(
         ..., description="The OpenAIEmbeddings configuration for text embeddings."
     )
-    batch_size: int = Field(default=16, description="The batch size to use.")
+    batch_size: int = Field(default=10, ge=1, le=10, description="The batch size to use.")
     batch_max_tokens: int = Field(
         default=8191, description="The batch max tokens to use."
     )

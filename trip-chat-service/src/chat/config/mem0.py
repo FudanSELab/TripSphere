@@ -1,6 +1,12 @@
 from typing import Any
 
+from mem0.utils.factory import EmbedderFactory
+
 from chat.config.settings import get_settings
+
+EmbedderFactory.provider_to_class["openai"] = (
+    "chat.config.embeddings.BailianOpenAIEmbedding"
+)
 
 
 def get_mem0_config() -> dict[str, Any]:
@@ -11,13 +17,13 @@ def get_mem0_config() -> dict[str, Any]:
             "config": {
                 "collection_name": "chat_memories",
                 "url": settings.qdrant.url,
-                "embedding_model_dims": 3072,
+                "embedding_model_dims": settings.openai.embedding_dimensions,
             },
         },
         "llm": {
             "provider": "openai",
             "config": {
-                "model": "gpt-4o-mini",
+                "model": settings.openai.chat_model,
                 "temperature": 0.1,
                 "api_key": settings.openai.api_key.get_secret_value(),
                 "openai_base_url": settings.openai.base_url,
@@ -26,8 +32,8 @@ def get_mem0_config() -> dict[str, Any]:
         "embedder": {
             "provider": "openai",
             "config": {
-                "model": "text-embedding-3-large",
-                "embedding_dims": 3072,
+                "model": settings.openai.embedding_model,
+                "embedding_dims": settings.openai.embedding_dimensions,
                 "api_key": settings.openai.api_key.get_secret_value(),
                 "openai_base_url": settings.openai.base_url,
             },

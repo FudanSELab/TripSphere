@@ -14,7 +14,7 @@ def test_case_specs_load_with_shared_workload():
 
     assert len(cases) >= 4
     assert {case.workload.profile for case in cases} == {
-        "tripsphere_mixed_realistic_50rps"
+        "tripsphere_mixed_realistic_200rps"
     }
     assert {case.fault.kind for case in cases} == {
         "cpu", "memory", "socket", "disk"
@@ -62,3 +62,5 @@ def test_baseline_case_has_no_fault_injection():
     assert case.fault.kind == "none"
     assert case.fault.target == "trip-order-service"
     assert case.fault_type == "No Fault"
+    assert case.workload.fault_seconds == 0
+    assert case.workload.recovery_seconds == 0

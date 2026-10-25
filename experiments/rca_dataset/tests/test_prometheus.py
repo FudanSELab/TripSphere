@@ -33,11 +33,28 @@ class FakePrometheusCollector(PrometheusCollector):
                             "__name__": "http_requests_total",
                             "job": "api",
                             "instance": "api:8080",
+                            "exported_job": "tripsphere/trip-review-service",
                         },
                         "values": [
                             ["1000", "1"],
                             ["1015", "2"],
                         ],
+                    },
+                    {
+                        "metric": {
+                            "__name__": "prometheus_http_requests_total",
+                            "job": "prometheus",
+                            "instance": "prometheus:9090",
+                        },
+                        "values": [["1000", "10"]],
+                    },
+                    {
+                        "metric": {
+                            "__name__": "container_cpu_usage_seconds_total",
+                            "job": "cadvisor",
+                            "container_label_com_docker_compose_service": "grafana",
+                        },
+                        "values": [["1000", "2"]],
                     },
                     {
                         "metric": {},
@@ -48,7 +65,7 @@ class FakePrometheusCollector(PrometheusCollector):
         }
 
 
-def test_full_series_are_deduplicated_and_keep_labels():
+def test_full_series_are_deduplicated_without_labels_json():
     tz = UTC
     start = datetime.fromtimestamp(1000, tz)
     windows = TimeWindows(
@@ -64,18 +81,71 @@ def test_full_series_are_deduplicated_and_keep_labels():
         fault=FaultSpec(kind="cpu", target="api"),
     )
 
-    frame, metadata = FakePrometheusCollector().collect(case, windows)
+    collector = FakePrometheusCollector()
+    frame, metadata = collector.collect(case, windows)
 
     assert isinstance(frame, pd.DataFrame)
+    assert collector.calls[0][1]["query"] == PrometheusCollector.series_query
     assert len(frame) == 2
     assert frame["metric_name"].notna().all()
     assert frame["metric_name"].ne("").all()
     assert set(frame["phase"]) == {"baseline", "fault"}
-    assert '"job": "api"' in frame.iloc[0]["labels_json"]
+    assert frame["service_name"].tolist() == ["trip-review-service"] * 2
+    assert "labels_json" not in frame.columns
+    assert set(frame["metric_name"]) == {"http_requests_total"}
     assert metadata["series_count"] == 1
     assert metadata["sample_count"] == 2
     assert metadata["status"] == "invalid"
     assert any("__name__" in error for error in metadata["errors"])
+
+
+def test_service_name_uses_service_label_before_exported_job():
+    assert PrometheusCollector._service_name({
+        "service_name": "trip-order-service",
+        "exported_job": "tripsphere/trip-review-service",
+    }) == "trip-order-service"
+    assert PrometheusCollector._service_name({
+        "exported_job": "tripsphere/trip-review-service",
+    }) == "trip-review-service"
+    assert PrometheusCollector._service_name({
+        "job": "cadvisor",
+        "container_label_com_docker_compose_service": "trip-review-service",
+    }) == "trip-review-service"
+    assert PrometheusCollector._service_name({
+        "job": "java-services",
+        "instance": "trip-itinerary-planner:8080",
+    }) == "trip-itinerary-planner"
+    assert PrometheusCollector._service_name({
+        "job": "celery-exporter",
+    }) == "trip-review-summary-worker"
+
+
+def test_otel_application_metrics_get_service_name_and_hostmetrics_stay_unassigned():
+    assert PrometheusCollector._service_name({
+        "job": "otel-collector-exporter",
+        "exported_job": "tripsphere/trip-chat-service",
+    }) == "trip-chat-service"
+    assert PrometheusCollector._service_name({
+        "job": "otel-collector-exporter",
+        "otel_scope_name": "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper",
+    }) is None
+
+
+def test_excludes_observability_and_its_cadvisor_metrics():
+    assert PrometheusCollector._is_excluded_series({"job": "prometheus"})
+    assert PrometheusCollector._is_excluded_series({"job": "node-exporter"})
+    assert PrometheusCollector._is_excluded_series({
+        "job": "cadvisor",
+        "container_label_com_docker_compose_service": "loki",
+    })
+    assert not PrometheusCollector._is_excluded_series({
+        "job": "cadvisor",
+        "container_label_com_docker_compose_service": "trip-order-service",
+    })
+    assert not PrometheusCollector._is_excluded_series({
+        "job": "otel-collector-exporter",
+        "exported_job": "tripsphere/trip-order-service",
+    })
 
 
 def test_baseline_samples_are_all_marked_baseline():

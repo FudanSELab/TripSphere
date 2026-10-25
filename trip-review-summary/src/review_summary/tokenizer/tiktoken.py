@@ -8,6 +8,13 @@ import tiktoken
 from review_summary.tokenizer.tokenizer import Tokenizer
 
 
+def encoding_name_for_chat_model(model_name: str) -> str:
+    try:
+        return tiktoken.encoding_name_for_model(model_name)
+    except KeyError:
+        return "cl100k_base"
+
+
 class TiktokenTokenizer(Tokenizer):
     """Tiktoken Tokenizer."""
 

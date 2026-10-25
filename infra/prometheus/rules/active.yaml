@@ -3,13 +3,13 @@ groups:
     rules:
       - alert: JavaServiceDown
         expr: up{job="java-services"} == 0
-        for: 15s
+        for: 2m
         labels:
           severity: critical
 
       - alert: PrometheusTargetDown
         expr: up{job!="java-services"} == 0
-        for: 15s
+        for: 2m
         labels:
           severity: critical
 
@@ -31,7 +31,7 @@ groups:
               }[5m])
             )
           ) > 0.05
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -43,7 +43,7 @@ groups:
               uri!~"^/actuator.*|^/(health|ready|metrics)$"
             }
           ) > 1
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -65,7 +65,7 @@ groups:
               }[5m])
             )
           ) > 0.05
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -77,7 +77,7 @@ groups:
               service!="grpc.health.v1.Health"
             }
           ) > 1
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -97,7 +97,7 @@ groups:
               }[5m])
             )
           ) > 0.05
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -108,7 +108,7 @@ groups:
               job="java-services"
             }
           ) > 1
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -130,7 +130,7 @@ groups:
               }[5m])
             )
           ) > 0.05
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -145,7 +145,7 @@ groups:
               }[5m])
             )
           ) > 2
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -165,7 +165,7 @@ groups:
               }[5m])
             )
           ) > 0.10
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -179,7 +179,7 @@ groups:
               }[5m])
             )
           ) > 3
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -199,7 +199,7 @@ groups:
               }[5m])
             )
           ) > 0.05
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -213,7 +213,7 @@ groups:
               }[5m])
             )
           ) > 10
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -222,7 +222,7 @@ groups:
           max by (instance, pool) (
             hikaricp_connections_pending{job="java-services"}
           ) > 0
-        for: 15s
+        for: 2m
         labels:
           severity: warning
 
@@ -237,7 +237,7 @@ groups:
               hikaricp_connections_max{job="java-services"}
             )
           ) >= 1
-        for: 15s
+        for: 5m
         labels:
           severity: critical
 
@@ -248,7 +248,7 @@ groups:
               job="java-services"
             }[5m])
           ) > 0
-        for: 15s
+        for: 1m
         labels:
           severity: warning
 
@@ -257,7 +257,7 @@ groups:
           max by (queue_name) (
             celery_queue_length{job="celery-exporter"}
           ) > 10
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -266,7 +266,7 @@ groups:
           min by (hostname) (
             celery_worker_up{job="celery-exporter"}
           ) == 0
-        for: 15s
+        for: 2m
         labels:
           severity: critical
 
@@ -280,7 +280,7 @@ groups:
               name!~"POD|root"
             }[5m])
           ) > 0.8
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -311,7 +311,7 @@ groups:
               name!~"POD|root"
             }
           ) > 0
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -324,7 +324,7 @@ groups:
               name!~"POD|root"
             }[5m])
           ) > 0
-        for: 15s
+        for: 1m
         labels:
           severity: critical
 
@@ -337,7 +337,7 @@ groups:
               name!~"POD|root"
             }[5m])
           ) > 0
-        for: 15s
+        for: 5m
         labels:
           severity: warning
 
@@ -356,6 +356,6 @@ groups:
               mountpoint!~"^/(proc|sys|dev|run)(/|$)"
             }
           ) < 0.10
-        for: 15s
+        for: 10m
         labels:
           severity: critical

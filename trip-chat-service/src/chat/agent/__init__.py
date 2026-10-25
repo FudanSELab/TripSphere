@@ -42,6 +42,7 @@ def create_agent(
     sub_agents: list[BaseAgent] | None = None,
     review_summary_url: str | None = None,
 ) -> LlmAgent:
+    settings = get_settings()
     sub_agents = sub_agents or []
     weather_toolset = McpToolset(
         connection_params=StdioConnectionParams(
@@ -68,7 +69,7 @@ def create_agent(
 
     return LlmAgent(
         name="chat",
-        model=LiteLlm(model="openai/gpt-4o"),
+        model=LiteLlm(model=f"openai/{settings.openai.chat_model}"),
         instruction=root_instruction,
         sub_agents=sub_agents,
         tools=tools,

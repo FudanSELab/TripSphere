@@ -32,11 +32,14 @@ def run_workflow(
 async def _create_text_embeddings(
     task: Task[Any, Any], context: dict[str, Any], config: CreateTextEmbeddingsConfig
 ) -> None:
-    qdrant_settings = get_settings().qdrant
-    qdrant_client = AsyncQdrantClient(url=qdrant_settings.url)
+    settings = get_settings()
+    qdrant_client = AsyncQdrantClient(url=settings.qdrant.url)
     try:
         entity_vector_store = await EntityVectorStore.create_vector_store(
-            client=qdrant_client, vector_dim=context.get("vector_dim", 3072)
+            client=qdrant_client,
+            vector_dim=context.get(
+                "vector_dim", settings.openai.embedding_dimensions
+            ),
         )
         await _internal(task, context, config, entity_vector_store)
 

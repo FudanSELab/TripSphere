@@ -23,6 +23,9 @@ def load_case(path: Path, alert_rules_override: Path | None = None) -> CaseSpec:
             "parameters": {},
         }
     workload_raw = raw.get("workload", {})
+    if run_mode == "baseline":
+        workload_raw["fault_seconds"] = 0
+        workload_raw["recovery_seconds"] = 0
     collection_raw = raw.get("collection", {})
     alert_rules = alert_rules_override or Path(
         collection_raw.get(

@@ -85,7 +85,7 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
     }
 
 
-def create_agent(model: str = "openai/gpt-4o") -> LlmAgent:
+def create_agent(model: str | None = None) -> LlmAgent:
     settings = get_settings()
     if not os.environ.get("OPENAI_API_KEY", None):
         os.environ["OPENAI_API_KEY"] = settings.openai.api_key.get_secret_value()
@@ -95,7 +95,9 @@ def create_agent(model: str = "openai/gpt-4o") -> LlmAgent:
     return LlmAgent(
         name=AGENT_NAME,
         description=AGENT_DESCRIPTION,
-        model=LiteLlm(model=model),
+        model=LiteLlm(
+            model=model or f"openai/{settings.openai.chat_model}"
+        ),
         instruction=root_instruction,
         before_agent_callback=before_agent_callback,
         tools=[

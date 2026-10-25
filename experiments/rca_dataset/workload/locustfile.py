@@ -10,6 +10,7 @@ import uuid
 from datetime import date, timedelta
 from typing import Any, Callable
 
+import gevent
 import grpc
 from locust import HttpUser, User, constant_pacing, task
 
@@ -88,12 +89,20 @@ def grpc_call(
     return response
 
 
+def stagger_initial_request(user: User) -> None:
+    rate = getattr(user, "rate", None)
+    if rate is None or rate.requests_per_second <= 0:
+        return
+    gevent.sleep(random.uniform(0, rate.pacing_seconds))
+
+
 class RateLimitedHttpUser(HttpUser):
     abstract = True
     wait_time = constant_pacing(1)
 
     def on_start(self) -> None:
         self.user_id = random.choice(TRAFFIC_USER_IDS)
+        stagger_initial_request(self)
 
 
 class RateLimitedGrpcUser(User):
@@ -102,6 +111,7 @@ class RateLimitedGrpcUser(User):
 
     def on_start(self) -> None:
         self.user_id = random.choice(TRAFFIC_USER_IDS)
+        stagger_initial_request(self)
 
 
 class PlannerUser(RateLimitedHttpUser):
@@ -176,6 +186,72 @@ class ChatUser(RateLimitedHttpUser):
         ) as response:
             if not response.ok:
                 response.failure(f"HTTP {response.status_code}")
+
+
+class OrderAssistantUser(RateLimitedHttpUser):
+    rate = RATES["order_assistant"]
+    host = env_value(
+        "TRIPSPHERE_RCA_ORDER_ASSISTANT_HOST",
+        "CPU_HOG_ORDER_ASSISTANT_HOST",
+        "http://localhost:24211",
+    )
+    fixed_count = rate.users
+    wait_time = constant_pacing(rate.pacing_seconds)
+
+    @task
+    def inspect_product(self) -> None:
+        request_id = uuid.uuid4().hex
+        sku_id = random.choice(ORDER_SKU_IDS)
+        payload = {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "method": "message/send",
+            "params": {
+                "message": {
+                    "role": "user",
+                    "parts": [{
+                        "kind": "text",
+                        "text": (
+                            f"查询 SKU {sku_id} 的商品详情，"
+                            "只查询并说明结果，不要创建或修改订单。"
+                        ),
+                    }],
+                    "messageId": f"message-{request_id}",
+                },
+                "metadata": {
+                    "x-user-id": self.user_id,
+                    "x-request-id": request_id,
+                },
+            },
+        }
+        with self.client.post(
+            "/",
+            json=payload,
+            headers={
+                "x-user-id": self.user_id,
+                "x-request-id": request_id,
+            },
+            name="order assistant product lookup",
+            catch_response=True,
+        ) as response:
+            if not response.ok:
+                response.failure(f"HTTP {response.status_code}")
+                return
+            try:
+                result = response.json()
+            except ValueError:
+                response.failure("invalid JSON response")
+                return
+            if result.get("error"):
+                response.failure(f"A2A error: {result['error']}")
+                return
+            state = (
+                result.get("result", {})
+                .get("status", {})
+                .get("state")
+            )
+            if state != "completed":
+                response.failure(f"A2A task state={state or 'missing'}")
 
 
 class ReviewSummaryUser(RateLimitedHttpUser):

@@ -56,6 +56,9 @@ class ReviewSummarySettings(BaseModel):
 class OpenAISettings(BaseModel):
     api_key: SecretStr = Field(default=SecretStr("api-key"))
     base_url: str = Field(default="https://api.openai.com/v1")
+    chat_model: str = Field(default="qwen-plus")
+    embedding_model: str = Field(default="text-embedding-v4")
+    embedding_dimensions: int = Field(default=2048, ge=64, le=2048)
 
 
 class LogSettings(BaseModel):

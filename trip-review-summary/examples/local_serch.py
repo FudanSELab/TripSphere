@@ -4,7 +4,6 @@ import pandas as pd
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from neo4j import AsyncGraphDatabase
 from qdrant_client import AsyncQdrantClient
-from tiktoken import encoding_name_for_model
 
 from review_summary.config.settings import get_settings
 from review_summary.models import Entity, TextUnit
@@ -12,7 +11,10 @@ from review_summary.query.structured_search.local_search.mixed_content import (
     LocalSearchMixedContext,
 )
 from review_summary.query.structured_search.local_search.search import LocalSearch
-from review_summary.tokenizer.tiktoken import TiktokenTokenizer
+from review_summary.tokenizer.tiktoken import (
+    TiktokenTokenizer,
+    encoding_name_for_chat_model,
+)
 from review_summary.vector_stores.entity import EntityVectorStore
 from review_summary.vector_stores.text_unit import TextUnitVectorStore
 
@@ -38,17 +40,21 @@ async def main() -> None:
 
     openai_settings = settings.openai
     chat_model = ChatOpenAI(
-        model="gpt-4o",
+        model=openai_settings.chat_model,
         temperature=0.0,
         api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
     )
     embedding_model = OpenAIEmbeddings(
-        model="text-embedding-3-large",
+        model=openai_settings.embedding_model,
+        dimensions=openai_settings.embedding_dimensions,
+        check_embedding_ctx_length=False,
         api_key=openai_settings.api_key,
         base_url=openai_settings.base_url,
     )
-    tokenizer = TiktokenTokenizer(encoding_name_for_model(chat_model.model_name))
+    tokenizer = TiktokenTokenizer(
+        encoding_name_for_chat_model(chat_model.model_name)
+    )
 
     neo4j_driver = AsyncGraphDatabase.driver(  # pyright: ignore
         settings.neo4j.uri,

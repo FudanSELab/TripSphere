@@ -3,8 +3,8 @@ run_mode = "baseline"
 target_service = "trip-order-service"
 
 [workload]
-profile = "tripsphere_mixed_realistic_50rps"
-baseline_seconds = 180
+profile = "tripsphere_mixed_realistic_200rps"
+baseline_seconds = 660
 spawn_rate = 20
 
 [collection]
