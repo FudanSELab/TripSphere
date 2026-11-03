@@ -1,6 +1,6 @@
 case_id = "TS-RCA-MEMORY-LEAK-CHAT-SERVICE"
 fault_category = "Resource Fault"
-fault_type = "Memory Stress"
+fault_type = "Memory Leak"
 
 [fault]
 kind = "memory"
@@ -17,7 +17,7 @@ profile = "tripsphere_mixed_realistic_200rps"
 baseline_seconds = 180
 fault_seconds = 300
 recovery_seconds = 180
-spawn_rate = 20
+spawn_rate = 10
 
 [collection]
 prometheus_url = "http://localhost:9090"

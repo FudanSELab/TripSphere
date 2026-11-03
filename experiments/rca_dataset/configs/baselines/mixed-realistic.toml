@@ -5,7 +5,7 @@ target_service = "trip-order-service"
 [workload]
 profile = "tripsphere_mixed_realistic_200rps"
 baseline_seconds = 660
-spawn_rate = 20
+spawn_rate = 10
 
 [collection]
 prometheus_url = "http://localhost:9090"
