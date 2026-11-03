@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from datetime import datetime
 
-from tripsphere_rca.artifacts.topology import write_topology
 from tripsphere_rca.config import iso
 from tripsphere_rca.models import CaseSpec, InjectionResult, TimeWindows
 
@@ -22,7 +21,6 @@ def write_artifacts(
         json.dumps(metrics_metadata, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    write_topology(case)
     manifest = {
         "case_id": case.public_case_id,
         "dataset_type": case.run_mode,
@@ -70,8 +68,7 @@ def write_artifacts(
         "injection": _json_safe(injection),
         "artifacts": [
             "metrics.parquet", "metric_metadata.json", "logs.parquet",
-            "traces.parquet", "events.parquet", "ticket.json",
-            "topology.json", "manifest.json", "locust.log",
+            "traces.parquet", "ticket.json", "manifest.json", "locust.log",
             "locust_stats.csv", "locust_stats_history.csv",
             "locust_failures.csv", "locust_exceptions.csv",
         ],

@@ -1,4 +1,3 @@
-import json
 from datetime import UTC, datetime, timedelta
 
 import pandas as pd
@@ -57,12 +56,165 @@ class FakePrometheusCollector(PrometheusCollector):
                         "values": [["1000", "2"]],
                     },
                     {
+                        "metric": {
+                            "__name__": "system_cpu_utilization_ratio",
+                            "job": "otel-collector-exporter",
+                        },
+                        "values": [["1000", "0.5"]],
+                    },
+                    {
+                        "metric": {
+                            "__name__": "ALERTS",
+                            "alertname": "ContainerCpuUsageHigh",
+                            "alertstate": "firing",
+                            "name": "trip-chat-service",
+                        },
+                        "values": [["1000", "1"]],
+                    },
+                    {
                         "metric": {},
                         "values": [["1000", "3"]],
                     },
                 ],
             },
         }
+
+
+def test_metadata_queries_each_unique_metric_and_preserves_missing_entries():
+    collector = FakePrometheusCollector()
+    frame = pd.DataFrame({
+        "metric_name": ["http_requests_total", "missing_metric", "http_requests_total"],
+    })
+
+    metadata = collector._metadata(frame)
+
+    entries = {item["metric_name"]: item for item in metadata["metrics"]}
+    assert entries["http_requests_total"] == {
+        "metric_name": "http_requests_total",
+        "type": "counter",
+        "help": "Requests",
+        "unit": "",
+        "metadata_missing": False,
+    }
+    assert entries["missing_metric"] == {
+        "metric_name": "missing_metric",
+        "type": None,
+        "help": None,
+        "unit": None,
+        "metadata_missing": True,
+    }
+    metadata_calls = [
+        params
+        for path, params in collector.calls
+        if path == "/api/v1/metadata"
+    ]
+    assert metadata_calls == [
+        {"metric": "http_requests_total"},
+        {"metric": "missing_metric"},
+    ]
+    assert "limit" not in metadata_calls[0]
+
+
+def test_metadata_request_failure_only_marks_one_metric_missing():
+    class FailingMetadataCollector(FakePrometheusCollector):
+        def _get(self, path, params):
+            if path == "/api/v1/metadata" and params["metric"] == "http_requests_total":
+                raise RuntimeError("metadata endpoint unavailable")
+            if path == "/api/v1/metadata" and params["metric"] == "second_metric":
+                return {
+                    "status": "success",
+                    "data": {
+                        "second_metric": [{
+                            "type": "gauge",
+                            "help": "Second metric",
+                            "unit": "seconds",
+                        }],
+                    },
+                }
+            return super()._get(path, params)
+
+    collector = FailingMetadataCollector()
+    frame = pd.DataFrame({
+        "metric_name": ["http_requests_total", "second_metric"],
+    })
+
+    metadata = collector._metadata(frame)
+
+    entries = {item["metric_name"]: item for item in metadata["metrics"]}
+    assert entries["http_requests_total"] == {
+        "metric_name": "http_requests_total",
+        "type": None,
+        "help": None,
+        "unit": None,
+        "metadata_missing": True,
+    }
+    assert entries["second_metric"]["type"] == "gauge"
+    assert any(
+        "metadata unavailable for http_requests_total" in warning
+        for warning in collector.warnings
+    )
+
+
+def test_metadata_maps_histogram_suffixes_to_one_base_metric_query():
+    collector = FakePrometheusCollector()
+    frame = pd.DataFrame({
+        "metric_name": [
+            "http_requests_total_bucket",
+            "http_requests_total_count",
+            "http_requests_total_sum",
+        ],
+    })
+
+    metadata = collector._metadata(frame)
+
+    assert [item["metric_name"] for item in metadata["metrics"]] == [
+        "http_requests_total_bucket",
+        "http_requests_total_count",
+        "http_requests_total_sum",
+    ]
+    assert all(item["type"] == "counter" for item in metadata["metrics"])
+    metadata_calls = [
+        params
+        for path, params in collector.calls
+        if path == "/api/v1/metadata"
+    ]
+    assert metadata_calls == [{"metric": "http_requests_total"}]
+
+
+def test_metadata_query_name_only_maps_supported_suffixes():
+    assert PrometheusCollector._metadata_query_name("latency_bucket") == "latency"
+    assert PrometheusCollector._metadata_query_name("latency_count") == "latency"
+    assert PrometheusCollector._metadata_query_name("latency_sum") == "latency"
+    assert PrometheusCollector._metadata_query_name("requests_total") == "requests_total"
+
+
+def test_metadata_uses_first_entry_without_repeating_metadata_list():
+    class MultipleMetadataCollector(FakePrometheusCollector):
+        def _get(self, path, params):
+            if path == "/api/v1/metadata":
+                return {
+                    "status": "success",
+                    "data": {
+                        params["metric"]: [
+                            {"type": "counter", "help": "First", "unit": ""},
+                            {"type": "counter", "help": "Second", "unit": ""},
+                        ],
+                    },
+                }
+            return super()._get(path, params)
+
+    collector = MultipleMetadataCollector()
+    metadata = collector._metadata(pd.DataFrame({
+        "metric_name": ["http_requests_total"],
+    }))
+
+    assert metadata["metrics"] == [{
+        "metric_name": "http_requests_total",
+        "type": "counter",
+        "help": "First",
+        "unit": "",
+        "metadata_missing": False,
+    }]
 
 
 def test_full_series_are_deduplicated_without_labels_json():
@@ -90,7 +242,7 @@ def test_full_series_are_deduplicated_without_labels_json():
     assert frame["metric_name"].notna().all()
     assert frame["metric_name"].ne("").all()
     assert set(frame["phase"]) == {"baseline", "fault"}
-    assert frame["service_name"].tolist() == ["trip-review-service"] * 2
+    assert set(frame["service_name"]) == {"trip-review-service"}
     assert "labels_json" not in frame.columns
     assert set(frame["metric_name"]) == {"http_requests_total"}
     assert metadata["series_count"] == 1
@@ -138,6 +290,10 @@ def test_excludes_observability_and_its_cadvisor_metrics():
         "job": "cadvisor",
         "container_label_com_docker_compose_service": "loki",
     })
+    assert PrometheusCollector._is_excluded_series({
+        "job": "cadvisor",
+        "container_label_com_docker_compose_service": "chaosblade-tool",
+    })
     assert not PrometheusCollector._is_excluded_series({
         "job": "cadvisor",
         "container_label_com_docker_compose_service": "trip-order-service",
@@ -168,111 +324,3 @@ def test_baseline_samples_are_all_marked_baseline():
     frame, _ = FakePrometheusCollector().collect(case, windows)
 
     assert set(frame["phase"]) == {"baseline"}
-
-
-class FakeAlertPrometheusCollector(PrometheusCollector):
-    def __init__(self):
-        super().__init__("http://prometheus", step_seconds=15, chunk_seconds=60)
-
-    def _get(self, path, params):
-        assert path == "/api/v1/query_range"
-        assert params["query"] == 'ALERTS{alertstate="firing"}'
-        return {
-            "status": "success",
-            "data": {
-                "result": [
-                    {
-                        "metric": {
-                            "__name__": "ALERTS",
-                            "alertname": "HttpServerErrorRateHigh",
-                            "alertstate": "firing",
-                            "severity": "critical",
-                            "service": "trip-itinerary-planner",
-                        },
-                        "values": [
-                            ["1000", "0"],
-                            ["1015", "1"],
-                            ["1030", "1"],
-                            ["1045", "0"],
-                        ],
-                    },
-                    {
-                        "metric": {
-                            "__name__": "ALERTS",
-                            "alertname": "HttpServerLatencyHigh",
-                            "alertstate": "firing",
-                            "severity": "warning",
-                            "service": "trip-itinerary-planner",
-                        },
-                        "values": [["1015", "1"], ["1030", "1"]],
-                    },
-                ],
-            },
-        }
-
-
-def test_collect_alerts_returns_deduplicated_runtime_fields_without_annotations():
-    tz = UTC
-    start = datetime.fromtimestamp(1000, tz)
-    windows = TimeWindows(
-        started=start,
-        fault_started=start + timedelta(seconds=15),
-        fault_stopped=start + timedelta(seconds=30),
-        ended=start + timedelta(seconds=45),
-    )
-
-    alerts, errors = FakeAlertPrometheusCollector().collect_alerts(windows)
-
-    assert errors == []
-    assert len(alerts) == 2
-    assert alerts[0]["labels"]["alertname"] == "HttpServerErrorRateHigh"
-    assert alerts[0]["labels"]["service"] == "trip-itinerary-planner"
-    assert alerts[0]["state"] == "resolved"
-    assert alerts[0]["ends_at"] == "1970-01-01T08:17:25.000000+08:00"
-    assert "annotations" not in alerts[0]
-    assert set(alerts[0]) == {"labels", "state", "starts_at", "ends_at", "value"}
-    assert alerts[1]["state"] == "firing"
-    assert alerts[1]["ends_at"] is None
-
-
-def test_write_ticket_contains_only_monitor_based_fields(tmp_path):
-    from tripsphere_rca.runner.case_runner import CaseRunner
-
-    start = datetime(2026, 10, 14, 18, 40, 51, tzinfo=UTC)
-    windows = TimeWindows(
-        started=start,
-        fault_started=start + timedelta(seconds=15),
-        fault_stopped=start + timedelta(seconds=30),
-        ended=start + timedelta(seconds=45),
-    )
-    case = CaseSpec(
-        case_id="TS-RCA-20261014-0001",
-        fault_category="Resource Fault",
-        fault_type="CPU Hog",
-        fault=FaultSpec(kind="cpu", target="trip-itinerary-planner"),
-        root=tmp_path,
-    )
-    alerts = [{
-        "labels": {
-            "alertname": "HttpServerErrorRateHigh",
-            "severity": "critical",
-            "service": "trip-itinerary-planner",
-        },
-        "state": "firing",
-        "starts_at": "2026-10-14T18:41:00+00:00",
-        "ends_at": None,
-        "value": "0.18",
-    }]
-
-    CaseRunner._write_ticket(case, windows, alerts, [])
-    payload = json.loads((case.case_dir / "ticket.json").read_text())
-
-    assert payload["ticket_type"] == "monitor_based"
-    assert payload["case_id"] == case.public_case_id
-    assert payload["time_window"]["from"] == "2026-10-15T02:40:51.000000+08:00"
-    assert payload["alerts"] == alerts
-    assert "title" not in payload
-    assert "annotations" not in payload
-    assert "affected_entities" not in payload
-    assert "fault_category" not in payload
-    assert "fault_type" not in payload

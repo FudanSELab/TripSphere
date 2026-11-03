@@ -23,9 +23,9 @@ class CollectionSpec:
     prometheus_url: str = "http://localhost:9090"
     loki_url: str = "http://localhost:3100"
     tempo_url: str = "http://localhost:3200"
-    alert_rules: str = "infra/prometheus/rules/tripsphere-platform.yaml"
     step_seconds: int = 15
     chunk_seconds: int = 60
+    trace_workers: int = 8
 
 
 @dataclass(frozen=True)

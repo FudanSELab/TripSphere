@@ -25,17 +25,6 @@ def test_case_specs_load_with_shared_workload():
                for case in disk_cases)
 
 
-def test_alert_rules_override_is_resolved_from_repository_root():
-    spec = Path(__file__).parents[1] / "configs" / "cases" / "cpu" / "order.toml"
-    selected_rules = Path("infra/prometheus/rules/tripsphere-platform-fast.yaml")
-
-    case = load_case(spec, selected_rules)
-
-    assert case.collection.alert_rules.endswith(
-        "infra/prometheus/rules/tripsphere-platform-fast.yaml"
-    )
-
-
 def test_public_case_id_is_stable_and_does_not_expose_case_semantics():
     spec = Path(__file__).parents[1] / "configs" / "cases" / "cpu" / "planner.toml"
 

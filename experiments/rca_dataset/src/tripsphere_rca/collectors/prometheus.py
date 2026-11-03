@@ -18,14 +18,14 @@ class PrometheusCollector:
     series_query = (
         '{__name__=~".+",job!~"^(loki|node-exporter|otel-collector-self|prometheus|tempo)$",'
         'container_label_com_docker_compose_service!~'
-        '"^(cadvisor|grafana|loki|otel-collector|prometheus|tempo)$"}'
+        '"^(cadvisor|chaosblade-tool|grafana|loki|otel-collector|prometheus|tempo)$"}'
     )
-    alerts_query = 'ALERTS{alertstate="firing"}'
     excluded_scrape_jobs = {
         "loki", "node-exporter", "otel-collector-self", "prometheus", "tempo"
     }
     excluded_container_services = {
         "cadvisor",
+        "chaosblade-tool",
         "grafana",
         "loki",
         "otel-collector",
@@ -82,9 +82,13 @@ class PrometheusCollector:
                     if not metric_name:
                         self.errors.append("Prometheus returned a series without __name__")
                         continue
+                    if metric_name in {"ALERTS", "ALERTS_FOR_STATE"}:
+                        continue
                     if self._is_excluded_series(labels):
                         continue
                     service_name = self._service_name(labels)
+                    if not service_name:
+                        continue
                     series_id = self._series_id(labels)
                     for timestamp, value in series.get("values", []):
                         timestamp_ns = int(float(timestamp) * 1_000_000_000)
@@ -169,118 +173,6 @@ class PrometheusCollector:
             return "trip-review-summary-worker"
         return None
 
-    def collect_alerts(self, windows: TimeWindows) -> tuple[list[dict[str, Any]], list[str]]:
-        alerts: dict[str, dict[str, Any]] = {}
-        errors: list[str] = []
-        current = windows.started
-        chunk = timedelta(seconds=self.chunk_seconds)
-
-        while current < windows.ended:
-            chunk_end = min(current + chunk, windows.ended)
-            params = {
-                "query": self.alerts_query,
-                "start": current.timestamp(),
-                "end": chunk_end.timestamp(),
-                "step": self.step_seconds,
-            }
-            try:
-                payload = self._get("/api/v1/query_range", params)
-                for series in payload.get("data", {}).get("result", []):
-                    self._merge_alert_series(alerts, series)
-            except Exception as exc:
-                errors.append(
-                    f"alert chunk {current.isoformat()}..{chunk_end.isoformat()}: {exc}"
-                )
-            if chunk_end >= windows.ended:
-                break
-            current = chunk_end - timedelta(seconds=self.step_seconds)
-
-        return [
-            finalized
-            for alert in alerts.values()
-            if (finalized := self._finalize_alert(alert, windows)) is not None
-        ], errors
-
-    def _merge_alert_series(
-        self,
-        alerts: dict[str, dict[str, Any]],
-        series: dict[str, Any],
-    ) -> None:
-        labels = {
-            key: value
-            for key, value in series.get("metric", {}).items()
-            if key not in {"__name__", "alertstate"}
-        }
-        alertname = series.get("metric", {}).get("alertname")
-        if not alertname:
-            return
-
-        samples = [
-            (float(timestamp), str(value))
-            for timestamp, value in series.get("values", [])
-        ]
-        if not samples:
-            return
-
-        identity = json.dumps(labels, ensure_ascii=False, sort_keys=True)
-        key = hashlib.sha256(identity.encode("utf-8")).hexdigest()
-        alert = alerts.setdefault(
-            key,
-            {
-                "labels": {"alertname": alertname, **labels},
-                "samples": {},
-            },
-        )
-        alert["samples"].update(dict(samples))
-
-    def _finalize_alert(
-        self,
-        alert: dict[str, Any],
-        windows: TimeWindows,
-    ) -> dict[str, Any] | None:
-        samples = sorted(alert["samples"].items())
-        firing_samples = [
-            (timestamp, value)
-            for timestamp, value in samples
-            if float(value) > 0
-        ]
-        if not firing_samples:
-            return None
-
-        first_timestamp = firing_samples[0][0]
-        last_timestamp, last_value = samples[-1]
-        last_sample_is_current = (
-            float(last_value) > 0
-            and last_timestamp >= windows.ended.timestamp() - self.step_seconds
-        )
-        ends_at = None
-        state = "firing" if last_sample_is_current else "resolved"
-        if not last_sample_is_current:
-            last_firing_timestamp = firing_samples[-1][0]
-            end_samples = [
-                timestamp
-                for timestamp, value in samples
-                if timestamp > last_firing_timestamp and float(value) <= 0
-            ]
-            if end_samples:
-                ends_at = iso(datetime.fromtimestamp(
-                    end_samples[0], windows.started.tzinfo
-                ))
-            else:
-                ends_at = iso(datetime.fromtimestamp(
-                    last_firing_timestamp, windows.started.tzinfo
-                ))
-
-        return {
-            "labels": alert["labels"],
-            "state": state,
-            "starts_at": iso(datetime.fromtimestamp(
-                first_timestamp, windows.started.tzinfo
-            )),
-            "ends_at": ends_at,
-            "value": firing_samples[-1][1],
-        }
-
     @staticmethod
     def _series_id(labels: dict[str, str]) -> str:
         serialized = json.dumps(labels, ensure_ascii=False, sort_keys=True)
@@ -298,32 +190,40 @@ class PrometheusCollector:
 
     def _metadata(self, frame: pd.DataFrame) -> dict[str, Any]:
         names = [] if frame.empty else sorted(frame["metric_name"].unique().tolist())
+        query_names = sorted({self._metadata_query_name(name) for name in names})
+        entries_by_name: dict[str, list[dict[str, Any]]] = {}
+        for query_name in query_names:
+            try:
+                payload = self._get("/api/v1/metadata", {"metric": query_name})
+                raw = payload.get("data", {})
+                if not isinstance(raw, dict):
+                    raise TypeError("metadata response data is not an object")
+                entries = raw.get(query_name, [])
+                if not isinstance(entries, list):
+                    raise TypeError(f"metadata entries for {query_name} are not a list")
+                entries_by_name[query_name] = entries
+            except (requests.RequestException, RuntimeError, TypeError, ValueError) as exc:
+                self.warnings.append(f"metadata unavailable for {query_name}: {exc}")
+                entries_by_name[query_name] = []
+
         metadata: dict[str, Any] = {"metrics": []}
-        try:
-            payload = self._get("/api/v1/metadata", {"limit": 0})
-            raw = payload.get("data", {})
-            for name in names:
-                entries = raw.get(name, [])
-                first = entries[0] if entries else {}
-                metadata["metrics"].append({
+        for name in names:
+            entries = entries_by_name[self._metadata_query_name(name)]
+            first = entries[0] if entries else {}
+            metadata["metrics"].append(
+                {
                     "metric_name": name,
                     "type": first.get("type"),
                     "help": first.get("help"),
                     "unit": first.get("unit"),
-                    "metadata": entries,
                     "metadata_missing": not bool(entries),
-                })
-        except Exception as exc:
-            self.warnings.append(f"metadata unavailable: {exc}")
-            metadata["metrics"] = [
-                {
-                    "metric_name": name,
-                    "type": None,
-                    "help": None,
-                    "unit": None,
-                    "metadata": [],
-                    "metadata_missing": True,
                 }
-                for name in names
-            ]
+            )
         return metadata
+
+    @staticmethod
+    def _metadata_query_name(metric_name: str) -> str:
+        for suffix in ("_bucket", "_count", "_sum"):
+            if metric_name.endswith(suffix):
+                return metric_name[: -len(suffix)]
+        return metric_name

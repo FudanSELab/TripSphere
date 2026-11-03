@@ -12,7 +12,6 @@ import requests
 
 from tripsphere_rca.artifacts.manifest import write_artifacts
 from tripsphere_rca.artifacts.writer import write_private_records
-from tripsphere_rca.collectors.events import collect_events
 from tripsphere_rca.collectors.logs import collect_logs
 from tripsphere_rca.collectors.prometheus import PrometheusCollector
 from tripsphere_rca.collectors.traces import TRACE_COLUMNS, collect_traces
@@ -20,7 +19,6 @@ from tripsphere_rca.collectors.workload import workload_summary
 from tripsphere_rca.config import BUSINESS_SERVICES, SHANGHAI, iso
 from tripsphere_rca.faults import create_injector
 from tripsphere_rca.models import CaseSpec, InjectionResult, TimeWindows
-from tripsphere_rca.runner.alert_rules import activate_alert_rules
 from tripsphere_rca.runner.lifecycle import wait_seconds
 from tripsphere_rca.runner.workload import start_workload, stop_workload
 
@@ -29,7 +27,6 @@ class CaseRunner:
     def run(self, case: CaseSpec) -> dict[str, Any]:
         self._validate_case(case)
         case.case_dir.mkdir(parents=True, exist_ok=True)
-        activate_alert_rules(case.collection.alert_rules, case.collection.prometheus_url)
         injector = None
         if case.run_mode == "fault":
             injector = create_injector(case.fault.kind)
@@ -97,7 +94,7 @@ class CaseRunner:
         }
 
     def _collect(self, case: CaseSpec, windows: TimeWindows, errors: list[str]) -> dict[str, int]:
-        counts = {"metrics": 0, "logs": 0, "traces": 0, "events": 0}
+        counts = {"metrics": 0, "logs": 0, "traces": 0}
         ticket_errors: list[str] = []
         collector = PrometheusCollector(
             case.collection.prometheus_url,
@@ -144,25 +141,12 @@ class CaseRunner:
             counts["traces"] = collect_traces(
                 case.collection.tempo_url, case.public_case_id,
                 windows.started, windows.ended, case.case_dir / "traces.parquet",
+                max_workers=case.collection.trace_workers,
             )
         except Exception as exc:
             errors.append(f"traces collection failed: {exc}")
             self._empty_parquet(case.case_dir / "traces.parquet", TRACE_COLUMNS)
-        try:
-            counts["events"] = collect_events(
-                case.public_case_id, windows.started, windows.ended,
-                case.case_dir / "events.parquet",
-            )
-        except Exception as exc:
-            errors.append(f"events collection failed: {exc}")
-            self._empty_parquet(case.case_dir / "events.parquet", [
-                "case_id", "timestamp", "event_type", "source", "entity_id",
-                "entity_type", "action", "status", "actor_id",
-                "actor_attributes_json", "summary",
-            ])
-        alerts, alert_errors = collector.collect_alerts(windows)
-        ticket_errors.extend(alert_errors)
-        self._write_ticket(case, windows, alerts, ticket_errors)
+        self._write_ticket(case, windows, ticket_errors)
         return counts
 
     @staticmethod
@@ -178,18 +162,12 @@ class CaseRunner:
         return json.loads(path.read_text(encoding="utf-8"))
 
     @staticmethod
-    def _write_ticket(
-        case: CaseSpec,
-        windows: TimeWindows,
-        alerts: list[dict[str, Any]],
-        errors: list[str],
-    ) -> None:
+    def _write_ticket(case: CaseSpec, windows: TimeWindows, errors: list[str]) -> None:
         payload = {
             "case_id": case.public_case_id,
             "ticket_type": "monitor_based",
             "created_at": iso(windows.fault_started),
             "time_window": {"from": iso(windows.started), "to": iso(windows.ended)},
-            "alerts": alerts,
             "errors": errors,
         }
         case.case_dir.mkdir(parents=True, exist_ok=True)
