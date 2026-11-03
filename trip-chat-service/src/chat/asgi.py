@@ -3,7 +3,7 @@ from collections import OrderedDict
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, cast
 
-from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint  # type: ignore
+from ag_ui_adk import add_adk_fastapi_endpoint  # type: ignore
 from ag_ui_adk.adk_agent import RunAgentInput  # type: ignore
 from ag_ui_adk.endpoint import make_extract_headers  # type: ignore
 from fastapi import FastAPI
@@ -18,6 +18,7 @@ from chat.agent.memory import Mem0MemoryService
 from chat.agent.remote_agent import RemoteAgentsFactory
 from chat.agent.review_summary_mcp import resolve_review_summary_url
 from chat.agent.session import MongoSessionService
+from chat.agent.tracing import RootedBackgroundADKAgent
 from chat.config.logging import setup_logging
 from chat.config.mem0 import get_mem0_config
 from chat.config.settings import Settings, get_settings
@@ -103,7 +104,7 @@ async def _init_adk_app(app: FastAPI) -> None:
 
     memory_service = Mem0MemoryService(app.state.memory_engine)
     session_service = MongoSessionService(app.state.mongo_client)
-    root_agent = ADKAgent.from_app(
+    root_agent = RootedBackgroundADKAgent.from_app(
         app=adk_app,
         user_id_extractor=user_id_extractor,
         memory_service=memory_service,

@@ -1,12 +1,18 @@
+import asyncio
 import logging
 import warnings
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator, cast
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, AsyncGenerator, Iterator, cast
 
-from a2a.types import AgentCard
-from google.adk.a2a.utils.agent_to_a2a import to_a2a
+from a2a.server.context import ServerCallContext
+from a2a.server.events.event_queue import EventQueue
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.tasks import ResultAggregator, TaskManager
+from a2a.types import AgentCard, MessageSendParams
+from google.adk.a2a.utils import agent_to_a2a
 from openinference.instrumentation.google_adk import GoogleADKInstrumentor
 from openinference.instrumentation.litellm import LiteLLMInstrumentor
+from opentelemetry import context as otel_context
 from starlette.applications import Starlette
 
 from order_assistant.agent import (
@@ -44,6 +50,34 @@ PROMPT_SPECS = (
 # Enable OpenInference instrumentation
 LiteLLMInstrumentor().instrument()
 GoogleADKInstrumentor().instrument()
+
+
+class RootedRequestHandler(DefaultRequestHandler):
+    async def _setup_message_execution(
+        self,
+        params: MessageSendParams,
+        context: ServerCallContext | None = None,
+    ) -> tuple[TaskManager, str, EventQueue, ResultAggregator, asyncio.Task[Any]]:
+        trace_token = otel_context.attach(otel_context.Context())
+        try:
+            return await super()._setup_message_execution(params, context)
+        finally:
+            otel_context.detach(trace_token)
+
+
+@contextmanager
+def _rooted_a2a_handler() -> Iterator[None]:
+    original_handler = agent_to_a2a.DefaultRequestHandler
+    agent_to_a2a.DefaultRequestHandler = RootedRequestHandler
+    try:
+        yield
+    finally:
+        agent_to_a2a.DefaultRequestHandler = original_handler
+
+
+def _build_a2a_app(*args: Any, **kwargs: Any) -> Starlette:
+    with _rooted_a2a_handler():
+        return agent_to_a2a.to_a2a(*args, **kwargs)
 
 
 @asynccontextmanager
@@ -103,7 +137,7 @@ def create_app() -> Starlette:
     agent_card = load_agent_card()
     app = cast(
         Starlette,
-        to_a2a(
+        _build_a2a_app(
             root_agent,
             host=settings.uvicorn.host,
             port=settings.uvicorn.port,

@@ -1,6 +1,8 @@
+import asyncio
 import random
 from typing import Self
 
+from opentelemetry import context as otel_context
 from v2.nacos import (  # type: ignore
     ClientConfigBuilder,
     DeregisterInstanceParam,
@@ -36,9 +38,13 @@ class NacosNaming:
         cls, service_name: str, port: int, server_address: str, namespace_id: str
     ) -> Self:
         instance = cls(service_name, port, server_address, namespace_id)
-        instance.naming_service = await NacosNamingService.create_naming_service(
-            client_config=instance.client_config
-        )
+        trace_token = otel_context.attach(otel_context.Context())
+        try:
+            instance.naming_service = await NacosNamingService.create_naming_service(
+                client_config=instance.client_config
+            )
+        finally:
+            otel_context.detach(trace_token)
         return instance
 
     async def register(self, ephemeral: bool = True) -> None:
@@ -83,16 +89,18 @@ class NacosNaming:
 
 
 _nacos_naming: NacosNaming | None = None
+_nacos_naming_lock = asyncio.Lock()
 
 
 async def get_nacos_naming() -> NacosNaming:
     global _nacos_naming
-    if _nacos_naming is None:
-        settings = get_settings()
-        _nacos_naming = await NacosNaming.create_naming(
-            service_name=settings.app.name,
-            port=settings.uvicorn.port,
-            server_address=settings.nacos.server_address,
-            namespace_id=settings.nacos.namespace_id,
-        )
+    async with _nacos_naming_lock:
+        if _nacos_naming is None:
+            settings = get_settings()
+            _nacos_naming = await NacosNaming.create_naming(
+                service_name=settings.app.name,
+                port=settings.uvicorn.port,
+                server_address=settings.nacos.server_address,
+                namespace_id=settings.nacos.namespace_id,
+            )
     return _nacos_naming
