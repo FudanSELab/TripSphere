@@ -9,13 +9,14 @@ tool = "stress-ng"
 
 [fault.parameters]
 workers = 8
+tool_container = "tripsphere-fault-tools-socket-planner"
 
 [workload]
 profile = "tripsphere_mixed_realistic_200rps"
 baseline_seconds = 180
 fault_seconds = 300
 recovery_seconds = 180
-spawn_rate = 20
+spawn_rate = 10
 
 [collection]
 prometheus_url = "http://localhost:9090"

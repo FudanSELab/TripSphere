@@ -21,19 +21,30 @@ class SocketInjector:
             "timeout_seconds", case.workload.fault_seconds
         ))
         target = case.fault.target
+        default_containers = {
+            "trip-chat-service": "tripsphere-fault-tools-socket-chat",
+            "trip-order-service": "tripsphere-fault-tools-socket-order",
+            "trip-itinerary-planner": "tripsphere-fault-tools-socket-planner",
+        }
+        default_container = default_containers.get(
+            target, f"tripsphere-fault-tools-socket-{target}"
+        )
+        tool_container = str(case.fault.parameters.get(
+            "tool_container", default_container
+        ))
         command = [
-            "docker", "run", "--rm", "--network", f"container:{target}",
-            "alpine:3.20", "sh", "-c",
-            f"set -eu; apk add --no-cache stress-ng >/dev/null; "
-            f"stress-ng --sock {workers} --timeout {timeout}s --metrics-brief",
+            "docker", "exec", tool_container,
+            "stress-ng", "--sock", str(workers), "--timeout",
+            f"{timeout}s", "--metrics-brief",
         ]
         process = subprocess.Popen(command, text=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         self._active = InjectionResult(
             fault_type=case.fault_type, target=target, tool="stress-ng",
-            mode="temporary_container", command=command,
+            mode="predeployed_tool_container", command=command,
             started_at=iso(datetime.now().astimezone()),
-            parameters={"workers": workers, "timeout_seconds": timeout},
+            parameters={"workers": workers, "timeout_seconds": timeout,
+                        "tool_container": tool_container},
             raw={"process": process},
         )
         return self._active

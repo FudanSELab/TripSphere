@@ -788,6 +788,46 @@ services:
       - /:/host:ro,rslave
     restart: unless-stopped
 
+  fault-tools: &fault-tools
+    build:
+      context: ./infra/fault-tools
+      dockerfile: Dockerfile
+    image: tripsphere/fault-tools:latest
+    pull_policy: build
+    container_name: tripsphere-fault-tools
+    logging: *default-logging
+    volumes:
+      - ${TRIPSPHERE_DATA_ROOT:-./volumes}:/volumes
+    command: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+
+  fault-tools-socket-chat:
+    <<: *fault-tools
+    container_name: tripsphere-fault-tools-socket-chat
+    network_mode: "service:trip-chat-service"
+    volumes: []
+    depends_on:
+      trip-chat-service:
+        condition: service_started
+
+  fault-tools-socket-order:
+    <<: *fault-tools
+    container_name: tripsphere-fault-tools-socket-order
+    network_mode: "service:trip-order-service"
+    volumes: []
+    depends_on:
+      trip-order-service:
+        condition: service_started
+
+  fault-tools-socket-planner:
+    <<: *fault-tools
+    container_name: tripsphere-fault-tools-socket-planner
+    network_mode: "service:trip-itinerary-planner"
+    volumes: []
+    depends_on:
+      trip-itinerary-planner:
+        condition: service_started
+
   loki:
     build:
       context: ./infra/loki

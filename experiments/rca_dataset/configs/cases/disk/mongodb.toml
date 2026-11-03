@@ -10,15 +10,17 @@ tool = "fio"
 [fault.parameters]
 volume = "mongodb"
 volume_path = "volumes/mongodb"
+tool_path = "/volumes/mongodb"
 file_size_mb = 64
 rate_iops = 200
+tool_container = "tripsphere-fault-tools"
 
 [workload]
 profile = "tripsphere_mixed_realistic_200rps"
 baseline_seconds = 180
 fault_seconds = 300
 recovery_seconds = 180
-spawn_rate = 20
+spawn_rate = 10
 
 [collection]
 prometheus_url = "http://localhost:9090"

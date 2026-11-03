@@ -22,27 +22,28 @@ class DiskInjector:
         params = case.fault.parameters
         volume = str(params["volume"])
         path = str(params["volume_path"])
+        tool_path = str(params["tool_path"])
         size = int(params.get("file_size_mb", 64))
         iops = int(params.get("rate_iops", 200))
         timeout = case.workload.fault_seconds
-        filename = f"/target/.tripsphere-disk-stress-{case.case_id}-{volume}.bin"
-        shell = (
-            "set -eu; apk add --no-cache fio >/dev/null; "
-            f"fio --name=tripsphere-{volume} --filename={filename} "
-            f"--size={size}M --rw=randrw --rwmixread=50 --bs=4k --numjobs=2 "
-            f"--runtime={timeout}s --time_based --direct=1 --group_reporting "
-            f"--rate_iops={iops} --output-format=json --unlink=1"
-        )
-        command = ["docker", "run", "--rm", "--user", "0", "--volume",
-                   f"{path}:/target", "alpine:3.20", "sh", "-c", shell]
+        tool_container = str(params.get("tool_container", "tripsphere-fault-tools"))
+        filename = f"{tool_path}/.tripsphere-disk-stress-{case.case_id}-{volume}.bin"
+        command = ["docker", "exec", tool_container, "fio",
+                   f"--name=tripsphere-{volume}", f"--filename={filename}",
+                   f"--size={size}M", "--rw=randrw", "--rwmixread=50",
+                   "--bs=4k", "--numjobs=2", f"--runtime={timeout}s",
+                   "--time_based", "--direct=1", "--group_reporting",
+                   f"--rate_iops={iops}", "--output-format=json", "--unlink=1"]
         process = subprocess.Popen(command, text=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         self._active = InjectionResult(
             fault_type=case.fault_type, target=volume, tool="fio",
-            mode="temporary_container", command=command,
+            mode="predeployed_tool_container", command=command,
             started_at=iso(datetime.now().astimezone()),
             parameters={"volume": volume, "volume_path": path,
-                        "file_size_mb": size, "rate_iops": iops},
+                        "file_size_mb": size, "rate_iops": iops,
+                        "tool_container": tool_container,
+                        "tool_path": tool_path},
             raw={"process": process},
         )
         return self._active
