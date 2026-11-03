@@ -141,10 +141,10 @@ groups:
             sum by (exported_job, le) (
               rate(http_server_request_duration_seconds_bucket{
                 job="otel-collector-exporter",
-                http_route!~"^/actuator.*|(^|/)(health|ready|metrics)$"
+                http_route!~"^/actuator.*|(^|/)(health|ready|metrics)$|^/api/v1/itineraries/plannings/stream$|^/mcp$"
               }[5m])
             )
-          ) > 2
+          ) > 10
         for: 15s
         labels:
           severity: warning
@@ -155,16 +155,26 @@ groups:
             sum by (exported_job, server_address) (
               rate(http_client_request_duration_seconds_count{
                 job="otel-collector-exporter",
-                error_type=~".+"
+                error_type=~".+",
+                server_address!="169.254.169.254"
               }[5m])
             )
             /
             sum by (exported_job, server_address) (
               rate(http_client_request_duration_seconds_count{
-                job="otel-collector-exporter"
+                job="otel-collector-exporter",
+                server_address!="169.254.169.254"
               }[5m])
             )
           ) > 0.10
+          and
+          sum by (exported_job, server_address) (
+            rate(http_client_request_duration_seconds_count{
+              job="otel-collector-exporter",
+              error_type=~".+",
+              server_address!="169.254.169.254"
+            }[5m])
+          ) > 0.03
         for: 15s
         labels:
           severity: critical
@@ -175,10 +185,11 @@ groups:
             0.99,
             sum by (exported_job, server_address, le) (
               rate(http_client_request_duration_seconds_bucket{
-                job="otel-collector-exporter"
+                job="otel-collector-exporter",
+                server_address!="169.254.169.254"
               }[5m])
             )
-          ) > 3
+          ) > 10
         for: 15s
         labels:
           severity: warning
@@ -199,6 +210,13 @@ groups:
               }[5m])
             )
           ) > 0.05
+          and
+          sum by (exported_job, gen_ai_operation_name) (
+            rate(gen_ai_client_operation_duration_seconds_count{
+              job="otel-collector-exporter",
+              error_type=~".+"
+            }[5m])
+          ) > 0.03
         for: 15s
         labels:
           severity: critical
