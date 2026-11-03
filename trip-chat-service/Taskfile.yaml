@@ -71,7 +71,7 @@ tasks:
       PREFIX: '{{.PREFIX | default "tripsphere"}}'
       TAG: '{{.TAG | default "latest"}}'
     cmds:
-      - mv uv.lock uv.lock.backup
+      - cp uv.lock uv.lock.backup
       - defer: mv uv.lock.backup uv.lock
       - uv lock --default-index https://mirrors.aliyun.com/pypi/simple
       - docker build . -t {{.PREFIX}}/trip-chat-service:{{.TAG}}
