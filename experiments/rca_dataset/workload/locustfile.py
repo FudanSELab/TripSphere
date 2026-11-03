@@ -46,6 +46,8 @@ from workload_proto import (
     product_pb2,
     product_pb2_grpc,
     types_pb2,
+    user_pb2,
+    user_pb2_grpc,
 )
 
 def env_value(name: str, legacy_name: str, default: str) -> str:
@@ -567,4 +569,59 @@ class ItineraryUser(RateLimitedGrpcUser):
             itinerary_pb2.ListUserItinerariesRequest(
                 user_id=self.user_id, page_size=10
             ), (("x-user-id", self.user_id),),
+            )
+
+
+class UserProfileUser(RateLimitedGrpcUser):
+    rate = RATES["user_profile"]
+    fixed_count = rate.users
+    wait_time = constant_pacing(rate.users / rate.requests_per_second)
+
+    def on_start(self) -> None:
+        self.user_id = random.choice((
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002",
+        ))
+        self.channel = grpc.insecure_channel(
+            env_value(
+                "TRIPSPHERE_RCA_USER_HOST",
+                "CPU_HOG_USER_HOST",
+                "localhost:50056",
+            )
+        )
+        self.stub = user_pb2_grpc.UserServiceStub(self.channel)
+        credentials = {
+            "00000000-0000-4000-8000-000000000001": (
+                os.getenv("TRIPSPHERE_RCA_USER_A_EMAIL", "user-a@tripsphere.local"),
+                os.getenv("TRIPSPHERE_RCA_USER_A_PASSWORD", "TripSphereA1!"),
+            ),
+            "00000000-0000-4000-8000-000000000002": (
+                os.getenv("TRIPSPHERE_RCA_USER_B_EMAIL", "user-b@tripsphere.local"),
+                os.getenv("TRIPSPHERE_RCA_USER_B_PASSWORD", "TripSphereB1!"),
+            ),
+        }
+        email, password = credentials[self.user_id]
+        response = grpc_call(
+            self,
+            "UserService/SignIn (setup)",
+            self.stub.SignIn,
+            user_pb2.SignInRequest(email=email, password=password),
+            (),
+        )
+        self.authorization = f"Bearer {response.token}" if response else None
+        stagger_initial_request(self)
+
+    def on_stop(self) -> None:
+        self.channel.close()
+
+    @task
+    def get_current_user(self) -> None:
+        if not self.authorization:
+            return
+        grpc_call(
+            self,
+            "UserService/GetCurrentUser",
+            self.stub.GetCurrentUser,
+            user_pb2.GetCurrentUserRequest(),
+            (("authorization", self.authorization),),
         )

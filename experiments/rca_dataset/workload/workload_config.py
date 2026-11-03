@@ -39,20 +39,16 @@ AGENT_WORKLOADS = frozenset({
 })
 
 # Application services deployed with TripSphere. Log collection uses this list
-# so RCA cases retain the complete application context, while fault topology
-# remains defined separately by each case.
+# so RCA cases retain the complete application context.
 BUSINESS_SERVICES = (
     "trip-attraction-service",
     "trip-chat-service",
-    "trip-file-service",
     "trip-hotel-service",
     "trip-inventory-service",
     "trip-itinerary-planner",
     "trip-itinerary-service",
-    "trip-note-service",
     "trip-order-assistant",
     "trip-order-service",
-    "trip-poi-service",
     "trip-product-service",
     "trip-review-service",
     "trip-review-summary",
@@ -61,13 +57,14 @@ BUSINESS_SERVICES = (
 )
 
 # These are entry-point rates, not internal span or downstream RPC rates.
-# Traditional service entry points add up to 198 RPS. Agent requests model
-# larger user populations that invoke expensive operations less frequently.
+# Traditional service entry points add up to 198.5 RPS. Agent requests are kept
+# deliberately conservative because their long-running executions occupy
+# capacity for much longer than ordinary service calls.
 RATES = {
-    "planner": configured_rate("planner", users=30, requests_per_second=0.1),
-    "chat": configured_rate("chat", users=20, requests_per_second=0.1),
+    "planner": configured_rate("planner", users=30, requests_per_second=0.05),
+    "chat": configured_rate("chat", users=8, requests_per_second=0.05),
     "order_assistant": configured_rate(
-        "order_assistant", users=20, requests_per_second=0.1
+        "order_assistant", users=20, requests_per_second=0.05
     ),
     "order": configured_rate("order", users=30, requests_per_second=3.0),
     "attraction": configured_rate("attraction", users=60, requests_per_second=60.0),
@@ -75,7 +72,10 @@ RATES = {
     "product": configured_rate("product", users=50, requests_per_second=50.0),
     "itinerary": configured_rate("itinerary", users=30, requests_per_second=25.0),
     "review_summary": configured_rate(
-        "review_summary", users=30, requests_per_second=1.0
+        "review_summary", users=10, requests_per_second=0.5
+    ),
+    "user_profile": configured_rate(
+        "user_profile", users=10, requests_per_second=0.5
     ),
 }
 

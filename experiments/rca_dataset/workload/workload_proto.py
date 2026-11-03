@@ -14,6 +14,7 @@ from tripsphere.hotel.v1 import hotel_pb2, hotel_pb2_grpc
 from tripsphere.itinerary.v1 import itinerary_pb2, itinerary_pb2_grpc
 from tripsphere.product.v1 import product_pb2, product_pb2_grpc
 from tripsphere.order.v1 import order_pb2, order_pb2_grpc, types_pb2
+from tripsphere.user.v1 import user_pb2, user_pb2_grpc
 
 __all__ = [
     "attraction_pb2",
@@ -29,4 +30,6 @@ __all__ = [
     "order_pb2",
     "order_pb2_grpc",
     "types_pb2",
+    "user_pb2",
+    "user_pb2_grpc",
 ]
