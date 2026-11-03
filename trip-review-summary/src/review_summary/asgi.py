@@ -20,7 +20,10 @@ from review_summary.infra.nacos.prompts import (
     set_active_prompts,
 )
 from review_summary.infra.nacos.utils import client_shutdown
-from review_summary.mcp import create_review_summary_mcp_server
+from review_summary.mcp import (
+    McpDiagnosticsMiddleware,
+    create_review_summary_mcp_server,
+)
 from review_summary.prompts.query.local_search_system_prompt import (
     LOCAL_SEARCH_SYSTEM_PROMPT,
 )
@@ -154,7 +157,10 @@ def create_fastapi_app() -> FastAPI:
         lambda: app.state.review_summary_service
     )
     app.state.review_summary_mcp_app = review_summary_mcp.streamable_http_app()
-    app.mount("/", app.state.review_summary_mcp_app)
+    app.mount(
+        "/",
+        McpDiagnosticsMiddleware(app.state.review_summary_mcp_app),
+    )
     return app
 
 

@@ -1,3 +1,5 @@
+import json
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -7,6 +9,8 @@ from mcp.server.transport_security import TransportSecuritySettings
 from review_summary.clients.reviews import TargetType
 from review_summary.infra.nacos.utils import get_local_ip
 from review_summary.services.summarizer import ReviewSummaryService
+
+logger = logging.getLogger(__name__)
 
 _TARGET_ID_HEADER = "x-review-target-id"
 _TARGET_TYPE_HEADER = "x-review-target-type"
@@ -80,3 +84,61 @@ def _header_value(headers: Mapping[str, str], name: str) -> str | None:
             normalized_value = value.strip()
             return normalized_value or None
     return None
+
+
+class McpDiagnosticsMiddleware:
+    def __init__(self, app: Any) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
+        if scope.get("type") != "http" or scope.get("path") != "/mcp":
+            await self.app(scope, receive, send)
+            return
+
+        request_body = bytearray()
+        response_status: int | None = None
+        response_session_id: str | None = None
+
+        async def diagnostic_receive() -> dict[str, Any]:
+            message = await receive()
+            if message["type"] == "http.request":
+                request_body.extend(message.get("body", b""))
+            return message
+
+        async def diagnostic_send(message: dict[str, Any]) -> None:
+            nonlocal response_status, response_session_id
+            if message["type"] == "http.response.start":
+                response_status = message["status"]
+                response_headers = dict(message.get("headers", []))
+                raw_session_id = response_headers.get(b"mcp-session-id")
+                response_session_id = (
+                    raw_session_id.decode("utf-8", errors="replace")
+                    if raw_session_id
+                    else None
+                )
+            await send(message)
+
+        try:
+            await self.app(scope, diagnostic_receive, diagnostic_send)
+        finally:
+            request_headers = dict(scope.get("headers", []))
+            raw_session_id = request_headers.get(b"mcp-session-id")
+            request_session_id = (
+                raw_session_id.decode("utf-8", errors="replace")
+                if raw_session_id
+                else None
+            )
+            method = "unknown"
+            try:
+                method = json.loads(request_body).get("method", method)
+            except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+                pass
+            logger.info(
+                "MCP HTTP exchange method=%s http_method=%s status=%s "
+                "request_session_id=%s response_session_id=%s",
+                method,
+                scope.get("method", ""),
+                response_status,
+                request_session_id or "<none>",
+                response_session_id or "<none>",
+            )

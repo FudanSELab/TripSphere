@@ -7,9 +7,11 @@ from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams
 
 from chat.agent.remote_agent import RemoteAgentsFactory
 from chat.agent.review_summary_mcp import (
+    ReviewSummaryMcpToolset,
     create_review_summary_toolset,
     resolve_review_summary_url,
     review_summary_headers,
+    review_summary_http_client,
 )
 
 
@@ -80,9 +82,42 @@ def test_review_summary_toolset_uses_streamable_http_mcp() -> None:
 
     assert isinstance(toolset.connection_params, StreamableHTTPConnectionParams)
     assert toolset.connection_params.url.endswith("/mcp")
+    assert toolset.connection_params.timeout == 60
     assert toolset.tool_filter == ["summarize_reviews"]
     assert toolset.tool_name_prefix == "review_summary"
     assert toolset.header_provider is review_summary_headers
+    assert toolset._tool_list_cache_ttl_seconds == 300
+    assert toolset.connection_params.httpx_client_factory is review_summary_http_client
+
+
+def test_review_summary_tool_list_cache_ignores_request_id() -> None:
+    toolset = create_review_summary_toolset("http://review-summary:24212")
+
+    first_key = toolset._tool_list_cache_key(
+        {
+            "X-Request-ID": "request-1",
+            "X-Review-Target-Id": "hotel-42",
+            "X-Review-Target-Type": "hotel",
+        }
+    )
+    second_key = toolset._tool_list_cache_key(
+        {
+            "X-Request-ID": "request-2",
+            "X-Review-Target-Id": "hotel-42",
+            "X-Review-Target-Type": "hotel",
+        }
+    )
+    other_target_key = toolset._tool_list_cache_key(
+        {
+            "X-Request-ID": "request-3",
+            "X-Review-Target-Id": "attraction-7",
+            "X-Review-Target-Type": "attraction",
+        }
+    )
+
+    assert isinstance(toolset, ReviewSummaryMcpToolset)
+    assert first_key == second_key
+    assert first_key != other_target_key
 
 
 @pytest.mark.asyncio
@@ -168,7 +203,8 @@ async def test_review_summary_url_resolves_nacos_service_reference() -> None:
 
 
 @pytest.mark.asyncio
-async def test_review_summary_url_ignores_incomplete_endpoint_for_service_reference() -> None:
+async def test_review_summary_url_ignores_incomplete_endpoint_for_service_reference(
+) -> None:
     class FakeNacosAI:
         async def get_mcp_server(self, name: str, version: str | None = None):
             return SimpleNamespace(

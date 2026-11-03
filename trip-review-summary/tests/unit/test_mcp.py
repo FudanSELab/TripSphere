@@ -10,6 +10,7 @@ from v2.nacos.transport.grpc_util import GrpcUtils  # type: ignore
 from review_summary.clients.reviews import TargetType
 from review_summary.infra.nacos.ai import NacosAI
 from review_summary.mcp import (
+    McpDiagnosticsMiddleware,
     create_review_summary_mcp_server,
     target_from_headers,
 )
@@ -30,6 +31,50 @@ def test_target_from_headers_requires_a_supported_mounted_target() -> None:
 
     with pytest.raises(ValueError, match="mounted review target"):
         target_from_headers({})
+
+
+@pytest.mark.asyncio
+async def test_mcp_diagnostics_middleware_preserves_request_and_response() -> None:
+    messages = []
+
+    async def app(scope, receive, send):
+        messages.append(await receive())
+        await send({
+            "type": "http.response.start",
+            "status": 404,
+            "headers": [(b"mcp-session-id", b"session-2")],
+        })
+        await send({"type": "http.response.body", "body": b""})
+
+    middleware = McpDiagnosticsMiddleware(app)
+    sent = []
+    request_messages = iter([
+        {
+            "type": "http.request",
+            "body": b'{"jsonrpc":"2.0","method":"tools/list"}',
+            "more_body": False,
+        },
+    ])
+
+    async def receive():
+        return next(request_messages)
+
+    async def send(message):
+        sent.append(message)
+
+    await middleware(
+        {
+            "type": "http",
+            "path": "/mcp",
+            "method": "POST",
+            "headers": [(b"mcp-session-id", b"session-1")],
+        },
+        receive,
+        send,
+    )
+
+    assert messages[0]["body"].endswith(b'"tools/list"}')
+    assert sent[0]["status"] == 404
 
 
 @pytest.mark.asyncio

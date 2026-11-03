@@ -1,7 +1,9 @@
+import json
 import logging
 from collections.abc import Sequence
 from typing import Any, Protocol
 
+import httpx
 from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
@@ -9,6 +11,65 @@ from chat.agent.agui import extract_review_target
 from chat.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
+
+REVIEW_MCP_TIMEOUT_SECONDS = 60
+REVIEW_MCP_TOOL_LIST_CACHE_TTL_SECONDS = 300
+
+
+async def _log_mcp_request(request: httpx.Request) -> None:
+    if request.url.path != "/mcp":
+        return
+    method = "unknown"
+    try:
+        payload = json.loads(request.content.decode("utf-8"))
+        method = payload.get("method", method)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        pass
+    logger.info(
+        "Review Summary MCP request method=%s http_method=%s session_id=%s",
+        method,
+        request.method,
+        request.headers.get("mcp-session-id", "<none>"),
+    )
+
+
+async def _log_mcp_response(response: httpx.Response) -> None:
+    if response.request.url.path != "/mcp":
+        return
+    logger.info(
+        "Review Summary MCP response status=%s session_id=%s",
+        response.status_code,
+        response.headers.get(
+            "mcp-session-id",
+            response.request.headers.get("mcp-session-id", "<none>"),
+        ),
+    )
+
+
+def review_summary_http_client(
+    headers: dict[str, str] | None = None,
+    timeout: httpx.Timeout | None = None,
+    auth: httpx.Auth | None = None,
+) -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        headers=headers,
+        timeout=timeout,
+        auth=auth,
+        event_hooks={
+            "request": [_log_mcp_request],
+            "response": [_log_mcp_response],
+        },
+    )
+
+
+class ReviewSummaryMcpToolset(McpToolset):
+    def _tool_list_cache_key(self, headers: dict[str, str]) -> str | None:
+        cache_headers = {
+            name: value
+            for name, value in headers.items()
+            if name.lower() != "x-request-id"
+        }
+        return super()._tool_list_cache_key(cache_headers)
 
 
 class McpDiscovery(Protocol):
@@ -98,14 +159,16 @@ async def resolve_review_summary_url(
 
 def create_review_summary_toolset(base_url: str | None = None) -> McpToolset:
     base_url = _mcp_url(base_url or get_settings().review_summary.url)
-    return McpToolset(
+    return ReviewSummaryMcpToolset(
         connection_params=StreamableHTTPConnectionParams(
             url=base_url,
-            timeout=15,
+            timeout=REVIEW_MCP_TIMEOUT_SECONDS,
+            httpx_client_factory=review_summary_http_client,
         ),
         tool_filter=["summarize_reviews"],
         tool_name_prefix="review_summary",
         header_provider=review_summary_headers,
+        tool_list_cache_ttl_seconds=REVIEW_MCP_TOOL_LIST_CACHE_TTL_SECONDS,
     )
 
 
